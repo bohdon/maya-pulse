@@ -14,6 +14,7 @@ from . import version
 __all__ = [
     'Blueprint',
     'BuildAction',
+    'BuildActionError',
     'BuildGroup',
     'BuildItem',
     'getActionClass',
@@ -132,6 +133,15 @@ class BuildItem(object):
         """
         raise NotImplementedError
 
+    def __init__(self):
+        self.log = logging.getLogger(self.getLoggerName())
+
+    def getLoggerName(self):
+        """
+        Return the name of the logger for this BuildItem
+        """
+        raise NotImplementedError
+
     def getDisplayName(self):
         """
         Return the display name for this item.
@@ -175,6 +185,9 @@ class BuildGroup(BuildItem):
         # the list of build items to perform in order
         self.children = []
 
+    def getLoggerName(self):
+        return 'pulse.buildgroup'
+
     def getDisplayName(self):
         return self.displayName
 
@@ -213,6 +226,13 @@ class BuildGroup(BuildItem):
 BUILDITEM_TYPEMAP['group'] = BuildGroup
 
 
+class BuildActionError(Exception):
+    """
+    An error for reporting issues with BuildAction
+    configuration or related problems.
+    """
+    pass
+
 
 class BuildAction(BuildItem):
     """
@@ -234,14 +254,47 @@ class BuildAction(BuildItem):
     def __init__(self):
         super(BuildAction, self).__init__()
         if self.config is None:
-            LOG.warning(self.__class__.__name__ + " was loaded without a config. Use pulse action" +
-                " loading methods to ensure BuildActions are loaded properly")
+            LOG.warning(self.__class__.__name__ + " was loaded without a config. " +
+                "Use pulse action loading methods to ensure BuildActions are loaded properly")
         # initialize attributes from config
         for attr in self.config['attrs']:
-            setattr(self, attr['name'], attr.get('value'))
+            setattr(self, attr['name'], self.getDefaultValue(attr))
+
+    def getLoggerName(self):
+        return 'pulse.action.' + self.getTypeName().lower()
 
     def getDisplayName(self):
         return self.config['displayName']
+
+    def getAttrConfig(self, attrName):
+        """
+        Return config data for an attribute
+
+        Args:
+            attrName: A str name of the attribute
+        """
+        for attr in self.config['attrs']:
+            if attr['name'] == attrName:
+                return attr
+
+    def getDefaultValue(self, attr):
+        """
+        Return the default value for an attribute
+
+        Args:
+            attr: A dict object representing the config
+                data for the attribute
+        """
+        if 'value' in attr:
+            return attr['value']
+        else:
+            attrType = attr['type']
+            if 'list' in attrType:
+                return []
+            elif attrType in ['int', 'float']:
+                return 0
+            elif attrType == 'bool':
+                return False
 
     def serialize(self):
         data = super(BuildAction, self).serialize()
@@ -263,6 +316,7 @@ class BuildAction(BuildItem):
         that is desired.
         """
         raise NotImplementedError
+
 
 
 

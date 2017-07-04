@@ -14,7 +14,6 @@ __all__ = [
 ]
 
 LOG = logging.getLogger(__name__)
-LOG.level = logging.DEBUG
 
 
 def _isSamePythonFile(fileA, fileB):
@@ -87,12 +86,11 @@ class BuildActionLoader(object):
     def _getModuleFromFile(self, filePath):
         # get module name
         name = os.path.splitext(os.path.basename(filePath))[0]
-        # check for existing module in sys.modules.
-        # we usually dont want one to exist, so we can import and then erase it
+        # check for existing module in sys.modules
         if name in sys.modules:
             if _isSamePythonFile(sys.modules[name].__file__, filePath):
-                # module already imported, we'll take it
-                return sys.modules[name]
+                # correct module already imported, delete it to force reload
+                del sys.modules[name]
             else:
                 raise ImportError("BuildAction module does not have a unique module name: " + filePath)
         # add dir to sys path if necessary
@@ -102,8 +100,7 @@ class BuildActionLoader(object):
             sys.path.insert(0, dirName)
             isNotInSysPath = True
         module = importlib.import_module(name)
-        # remove module and path from sys
-        del sys.modules[name]
+        # remove path from sys
         if isNotInSysPath:
             sys.path.remove(dirName)
         return module

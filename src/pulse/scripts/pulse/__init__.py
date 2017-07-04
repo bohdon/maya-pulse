@@ -1,7 +1,14 @@
 
+import logging
+
 from .version import *
 from .core import *
 from .loader import *
+
+
+LOG = logging.getLogger("pulse")
+LOG.level = logging.DEBUG
+
 
 def loadActionsFromDirectory(startDir):
     """
