@@ -38,6 +38,9 @@ class BuildActionLoader(object):
         Args:
             startDir: A str path of the directory to search
         """
+        if '~' in startDir:
+            startDir = os.path.expanduser(startDir)
+
         result = []
 
         paths = os.listdir(startDir)
