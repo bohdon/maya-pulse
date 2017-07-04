@@ -4,6 +4,7 @@ import pymel.core as pm
 import os
 import logging
 import time
+import yaml
 
 import pymetanode as meta
 
@@ -15,6 +16,7 @@ __all__ = [
     'BuildAction',
     'BuildGroup',
     'BuildItem',
+    'getActionClass',
     'getBuildItemClass',
     'getRegisteredActions',
     'isBlueprintNode',
@@ -53,10 +55,21 @@ def loadBlueprintFromNode(node):
         result = Blueprint.fromData(data)
         return result
 
+def getActionClass(typeName):
+    """
+    Return a BuildAction class by type name
+
+    Args:
+        typeName: A str representing the name of a BuildAction type
+    """
+    if typeName in BUILDITEM_TYPEMAP:
+        actionClass = BUILDITEM_TYPEMAP[typeName]
+        if issubclass(actionClass, BuildAction):
+            return actionClass
 
 def getBuildItemClass(typeName):
     """
-    Return a BuildItem class by name
+    Return a BuildItem class by type name
 
     Args:
         typeName: A str representing the name of the BuildItem type
@@ -79,7 +92,7 @@ def registerActions(actionClasses):
         actionClasses: A list of BuildAction classes
     """
     for c in actionClasses:
-        typeName = c.__name__
+        typeName = c.getTypeName()
         if typeName == 'group':
             raise ValueError("BuildActions cannot use the reserved type `group`")
         BUILDITEM_TYPEMAP[typeName] = c
@@ -111,16 +124,17 @@ class BuildItem(object):
             item.deserialize(data)
             return item
 
-    def getDisplayName(self):
-        """
-        Return the name of this item for display purposes
-        """
-        raise NotImplementedError
-
-    def getTypeName(self):
+    @classmethod
+    def getTypeName(cls):
         """
         Return the type of BuildItem this is.
         Used for factory creation of BuildItems.
+        """
+        raise NotImplementedError
+
+    def getDisplayName(self):
+        """
+        Return the display name for this item.
         """
         raise NotImplementedError
 
@@ -149,6 +163,10 @@ class BuildGroup(BuildItem):
     Represents a group of BuildItems that will be run in order.
     This enables hierachical structuring of build items.
     """
+
+    @classmethod
+    def getTypeName(cls):
+        return 'BuildGroup'
     
     def __init__(self):
         super(BuildGroup, self).__init__()
@@ -159,9 +177,6 @@ class BuildGroup(BuildItem):
 
     def getDisplayName(self):
         return self.displayName
-
-    def getTypeName(self):
-        return 'group'
 
     def serialize(self):
         # TODO: make a recursion loop check
@@ -206,8 +221,40 @@ class BuildAction(BuildItem):
     actual rigging operations.
     """
 
-    def getTypeName(self):
-        return self.__class__.__name__
+    config = None
+    configFile = None
+
+    @classmethod
+    def getTypeName(cls):
+        result = cls.__name__
+        if result.endswith('Action'):
+            result = result[:-6]
+        return result
+
+    def __init__(self):
+        super(BuildAction, self).__init__()
+        if self.config is None:
+            LOG.warning(self.__class__.__name__ + " was loaded without a config. Use pulse action" +
+                " loading methods to ensure BuildActions are loaded properly")
+        # initialize attributes from config
+        for attr in self.config['attrs']:
+            setattr(self, attr['name'], attr.get('value'))
+
+    def getDisplayName(self):
+        return self.config['displayName']
+
+    def serialize(self):
+        data = super(BuildAction, self).serialize()
+        # serialize values for all attr values
+        for attr in self.config['attrs']:
+            data[attr['name']] = getattr(self, attr['name'])
+        return data
+
+    def deserialize(self, data):
+        super(BuildAction, self).deserialize(data)
+        # load values for all action attrs
+        for attr in self.config['attrs']:
+            setattr(self, attr['name'], data[attr['name']])
 
     def run(self):
         """
