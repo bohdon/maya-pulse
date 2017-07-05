@@ -399,15 +399,16 @@ class Blueprint(object):
         return blueprint
 
     @staticmethod
-    def fromDefaultNode():
+    def fromDefaultNode(create=False):
         """
         Return a Blueprint using the default blueprint node.
         Creates the default node if it does not exist.
         """
         if not pm.cmds.objExists(BLUEPRINT_NODENAME):
-            blueprint = Blueprint()
-            blueprint.saveToDefaultNode()
-            return blueprint
+            if create:
+                blueprint = Blueprint()
+                blueprint.saveToDefaultNode()
+                return blueprint
         else:
             return Blueprint.fromNode(BLUEPRINT_NODENAME)
 
