@@ -1,5 +1,8 @@
 
+import pymel.core as pm
+
 import pulse
+import pulse.nodes
 
 
 class BuildCoreHierarchyAction(pulse.BuildAction):
@@ -12,4 +15,22 @@ class BuildCoreHierarchyAction(pulse.BuildAction):
     """
 
     def run(self):
-        pass
+        grpData = dict()
+        for grpName, nodes in self.groups.iteritems():
+            grpNode = pm.group(name=grpName, em=True, p=self.rig)
+            for a in ('tx', 'ty', 'tz', 'rx', 'ry', 'rz', 'sx', 'sy', 'sz'):
+                grpNode.attr(a).setLocked(True)
+                grpNode.attr(a).setKeyable(False)
+
+            # parent blueprint nodes for this group
+            if len(nodes) > 0:
+                tops = pulse.nodes.getParentNodes(nodes)
+                if len(tops) > 0:
+                    pm.parent(tops, grpNode)
+
+            # add meta data to rig pointing to groups
+            grpData[grpName] = grpNode
+
+        self.updateRigMetaData({
+            'groups':grpData,
+        })

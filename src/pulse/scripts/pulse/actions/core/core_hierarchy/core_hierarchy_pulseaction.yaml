@@ -2,4 +2,12 @@ BuildCoreHierarchyAction:
   isBuiltin: true
   displayName: Build Core Hierarchy
   description: Builds the core hierarchy of the rig
-  attrs: []
+  attrs:
+    - name: groups
+      type: dict
+      keytype: str
+      valuetype: nodelist
+      value:
+        ctls: []
+        joints: []
+        meshes: []

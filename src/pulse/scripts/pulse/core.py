@@ -15,6 +15,7 @@ from . import version
 
 __all__ = [
     'Blueprint',
+    'BLUEPRINT_METACLASS',
     'BlueprintBuilder',
     'BuildAction',
     'BuildActionError',
@@ -24,6 +25,7 @@ __all__ = [
     'getBuildItemClass',
     'getRegisteredActions',
     'registerActions',
+    'RIG_METACLASS',
 ]
 
 
@@ -33,6 +35,8 @@ LOG = logging.getLogger(__name__)
 BLUEPRINT_METACLASS = 'pulse_blueprint'
 BLUEPRINT_VERSION = version.__version__
 BLUEPRINT_NODENAME = 'pulse_blueprint'
+
+RIG_METACLASS = 'pulse_rig'
 
 BUILDITEM_TYPEMAP = {}
 
@@ -83,6 +87,20 @@ def registerActions(actionClasses):
                 continue
         BUILDITEM_TYPEMAP[typeName] = c
 
+
+def createRigNode(name):
+    """
+    Create and return a new Rig node
+
+    Args:
+        name: A str name of the rig
+    """
+    if pm.cmds.objExists(name):
+        raise ValueError("Cannot create rig, node already exists: {0}".format(name))
+    node = pm.group(name=name, em=True)
+    # set initial meta data for the rig
+    meta.setMetaData(node, RIG_METACLASS, {'name':name})
+    return node
 
 
 class BuildItem(object):
@@ -257,6 +275,8 @@ class BuildAction(BuildItem):
         if self.config is None:
             LOG.warning(self.__class__.__name__ + " was loaded without a config. " +
                 "Use pulse action loading methods to ensure BuildActions are loaded properly")
+        # rig is only available during build
+        self.rig = None
         # initialize attributes from config
         for attr in self.config['attrs']:
             setattr(self, attr['name'], self.getDefaultValue(attr))
@@ -313,6 +333,15 @@ class BuildAction(BuildItem):
             else:
                 self.log.warning('No serialized data for attribute: {0}'.format(attr['name']))
                 setattr(self, attr['name'], self.getDefaultValue(attr))
+
+    def updateRigMetaData(self, data):
+        """
+        Add some meta data to the rig.
+        """
+        if not self.rig:
+            self.log.error('Cannot update rig meta data, no rig is set')
+            return
+        meta.updateMetaData(self.rig, RIG_METACLASS, data)
 
     def run(self):
         """
@@ -675,12 +704,22 @@ class BlueprintBuilder(object):
 
         yield dict(current=currentStep, total=totalSteps)
 
+        # create a new rig
+        self.rig = createRigNode(self.blueprint.rigName)
+        # add some additional meta data
+        meta.updateMetaData(self.rig, RIG_METACLASS, dict(
+            version = BLUEPRINT_VERSION,
+            blueprintFile = self.blueprintFile,
+        ))
+
         # recursively iterate through all build items
         allActions = list(self.blueprint.rootBuildItem.actionIterator())
         totalSteps = len(allActions)
         for currentStep, (action, grpIndex, grpPath) in enumerate(allActions):
             path = '{0}[{1}] - '.format(grpPath, grpIndex) if grpPath else ''
             self.log.info('[{0}/{1}] {path}{name}'.format(currentStep, totalSteps, path=path, name=action.getDisplayName()))
+            # run the action
+            action.rig = self.rig
             try:
                 action.run()
             except Exception as error:
