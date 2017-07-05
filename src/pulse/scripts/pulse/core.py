@@ -20,8 +20,6 @@ __all__ = [
     'getActionClass',
     'getBuildItemClass',
     'getRegisteredActions',
-    'isBlueprintNode',
-    'loadBlueprintFromNode',
     'registerActions',
 ]
 
@@ -35,26 +33,6 @@ BLUEPRINT_NODENAME = 'pulse_blueprint'
 
 BUILDITEM_TYPEMAP = {}
 
-
-
-def isBlueprintNode(node):
-    """
-    Return whether the given node is a Blueprint node
-    """
-    return meta.hasMetaClass(node, BLUEPRINT_METACLASS)
-
-
-def loadBlueprintFromNode(node):
-    """
-    Load a Blueprint from a node
-
-    Args:
-        node: A PyNode containing pulse blueprint data
-    """
-    if isBlueprint(node):
-        data = meta.getMetaData(node, BLUEPRINT_METACLASS)
-        result = Blueprint.fromData(data)
-        return result
 
 def getActionClass(typeName):
     """
@@ -223,7 +201,7 @@ class BuildGroup(BuildItem):
         self.children.insert(index, item)
 
 
-BUILDITEM_TYPEMAP['group'] = BuildGroup
+BUILDITEM_TYPEMAP['BuildGroup'] = BuildGroup
 
 
 class BuildActionError(Exception):
@@ -345,14 +323,48 @@ class Blueprint(object):
 
     @staticmethod
     def fromData(data):
-        result = Blueprint()
-        result.deserialize(data)
-        return result
+        """
+        Create a Blueprint instance from serialized data
+        """
+        blueprint = Blueprint()
+        blueprint.deserialize(data)
+        return blueprint
 
+    @staticmethod
+    def fromNode(node):
+        """
+        Load a Blueprint from a node.
+
+        Args:
+            node: A PyNode or node name containing blueprint data
+        """
+        blueprint = Blueprint()
+        blueprint.loadFromNode(node)
+        return blueprint
+
+    @staticmethod
+    def fromDefaultNode():
+        """
+        Return a Blueprint using the default blueprint node.
+        Creates the default node if it does not exist.
+        """
+        if not pm.cmds.objExists(BLUEPRINT_NODENAME):
+            blueprint = Blueprint()
+            blueprint.saveToDefaultNode()
+            return blueprint
+        else:
+            return Blueprint.fromNode(BLUEPRINT_NODENAME)
+
+    @staticmethod
+    def isBlueprintNode(node):
+        """
+        Return whether the given node is a Blueprint node
+        """
+        return meta.hasMetaClass(node, BLUEPRINT_METACLASS)
 
     def __init__(self):
         # the name of the rig this blueprint represents
-        self.name = 'newRig'
+        self.rigName = 'newRig'
         # the version of this blueprint
         self.version = BLUEPRINT_VERSION
         # the root BuildGroup of this blueprint
@@ -360,15 +372,46 @@ class Blueprint(object):
 
     def serialize(self):
         data = {}
-        data['name'] = self.name
+        data['rigName'] = self.rigName
         data['version'] = self.version
         data['buildItems'] = self.rootGroup.serialize()
         return data
 
     def deserialize(self, data):
-        self.name = data['name']
+        self.rigName = data['rigName']
         self.version = data['version']
         self.rootGroup = BuildItem.create(data['buildItems'])
+
+    def saveToNode(self, node, create=False):
+        """
+        Save this Blueprint to a node, creating a new node if desired.
+
+        Args:
+            node: A PyNode or node name
+            create: A bool, whether to create the node if it doesn't exist
+        """
+        if create and not pm.cmds.objExists(node):
+            node = pm.cmds.createNode('network', n=node)
+        data = self.serialize()
+        meta.setMetaData(node, BLUEPRINT_METACLASS, data)
+
+    def saveToDefaultNode(self):
+        self.saveToNode(BLUEPRINT_NODENAME, create=True)
+
+    def loadFromNode(self, node):
+        """
+        Load Blueprint data from a node.
+        
+        Args:
+            node: A PyNode or node name
+        """
+        if not Blueprint.isBlueprintNode(node):
+            raise ValueError("Node does not contain Blueprint data: {0}".format(node))
+        data = meta.getMetaData(node, BLUEPRINT_METACLASS)
+        self.deserialize(data)
+
+    def loadFromDefaultNode(self):
+        self.loadFromNode(BLUEPRINT_NODENAME)
 
 
 
