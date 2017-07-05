@@ -285,7 +285,11 @@ class BuildAction(BuildItem):
         super(BuildAction, self).deserialize(data)
         # load values for all action attrs
         for attr in self.config['attrs']:
-            setattr(self, attr['name'], data[attr['name']])
+            if attr['name'] in data:
+                setattr(self, attr['name'], data[attr['name']])
+            else:
+                self.log.warning('No serialized data for attribute: {0}'.format(attr['name']))
+                setattr(self, attr['name'], self.getDefaultValue(attr))
 
     def run(self):
         """
@@ -368,19 +372,19 @@ class Blueprint(object):
         # the version of this blueprint
         self.version = BLUEPRINT_VERSION
         # the root BuildGroup of this blueprint
-        self.rootGroup = BuildGroup()
+        self.rootBuildItem = BuildGroup()
 
     def serialize(self):
         data = {}
         data['rigName'] = self.rigName
         data['version'] = self.version
-        data['buildItems'] = self.rootGroup.serialize()
+        data['buildItems'] = self.rootBuildItem.serialize()
         return data
 
     def deserialize(self, data):
         self.rigName = data['rigName']
         self.version = data['version']
-        self.rootGroup = BuildItem.create(data['buildItems'])
+        self.rootBuildItem = BuildItem.create(data['buildItems'])
 
     def saveToNode(self, node, create=False):
         """
