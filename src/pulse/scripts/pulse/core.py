@@ -727,5 +727,8 @@ class BlueprintBuilder(object):
             # return progress
             yield dict(current=currentStep, total=totalSteps)
 
+        # delete the default blueprint node if it exists
+        if pm.cmds.objExists(BLUEPRINT_NODENAME):
+            pm.cmds.delete(BLUEPRINT_NODENAME)
 
         yield dict(current=currentStep, total=totalSteps, finish=True)
