@@ -612,7 +612,7 @@ class BlueprintBuilder(object):
         # log start of build
         self.log.info("Started building rig: {0}".format(self.blueprint.rigName))
         if self.debug:
-            self.log.info("Debug building is enabled")
+            self.log.info("Debug is enabled")
 
     def onProgress(self, current, total):
         """
