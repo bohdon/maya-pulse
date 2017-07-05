@@ -13,10 +13,10 @@ class SaveBuiltRigAction(pulse.BuildAction):
     """
 
     def run(self):
-    	sceneName = pm.sceneName()
+        sceneName = pm.sceneName()
         rigData = self.getRigMetaData()
-    	# save to temp location and open
-    	tempPath = os.path.join(tempfile.gettempdir(), 'pulse_built_rig_temp.mb')
+        # save to temp location and open
+        tempPath = os.path.join(tempfile.gettempdir(), 'pulse_built_rig_temp.mb')
         pm.select(self.rig)
         pm.exportSelected(tempPath, type='mayaBinary', force=True)
         pm.openFile(tempPath, force=True)
