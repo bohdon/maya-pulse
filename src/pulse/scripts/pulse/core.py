@@ -334,9 +334,18 @@ class BuildAction(BuildItem):
                 self.log.warning('No serialized data for attribute: {0}'.format(attr['name']))
                 setattr(self, attr['name'], self.getDefaultValue(attr))
 
+    def getRigMetaData(self):
+        """
+        Return all meta data on the rig being built
+        """
+        if not self.rig:
+            self.log.error('Cannot get rig meta data, no rig is set')
+            return
+        return meta.getMetaData(self.rig, RIG_METACLASS)
+
     def updateRigMetaData(self, data):
         """
-        Add some meta data to the rig.
+        Add some meta data to the rig being built
         """
         if not self.rig:
             self.log.error('Cannot update rig meta data, no rig is set')
