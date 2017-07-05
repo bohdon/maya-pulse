@@ -4,7 +4,9 @@ import pymel.core as pm
 import os
 import logging
 import time
+import tempfile
 import yaml
+from datetime import datetime
 
 import pymetanode as meta
 
@@ -13,6 +15,7 @@ from . import version
 
 __all__ = [
     'Blueprint',
+    'BlueprintBuilder',
     'BuildAction',
     'BuildActionError',
     'BuildGroup',
@@ -74,6 +77,10 @@ def registerActions(actionClasses):
         typeName = c.getTypeName()
         if typeName == 'group':
             raise ValueError("BuildActions cannot use the reserved type `group`")
+        elif typeName in BUILDITEM_TYPEMAP:
+            if BUILDITEM_TYPEMAP[typeName].config.get('isBuiltin', False):
+                LOG.error("A built-in BuildAction already exists with type name: {0}".format(typeName))
+                continue
         BUILDITEM_TYPEMAP[typeName] = c
 
 
@@ -156,10 +163,10 @@ class BuildGroup(BuildItem):
     def getTypeName(cls):
         return 'BuildGroup'
     
-    def __init__(self):
+    def __init__(self, displayName='NewGroup'):
         super(BuildGroup, self).__init__()
         # the display name of this group
-        self.displayName = 'MyBuildGroup'
+        self.displayName = displayName
         # the list of build items to perform in order
         self.children = []
 
@@ -199,6 +206,22 @@ class BuildGroup(BuildItem):
         if not isinstance(item, BuildItem):
             raise ValueError('{0} is not a valid BuildItem type'.format(type(item).__name__))
         self.children.insert(index, item)
+
+    def actionIterator(self, parentPath=None):
+        """
+        Yields all BuildActions in this BuildGroup,
+        recursively handling child BuildGroups as well.
+
+        Args:
+            parentPath: A string path representing the parent BuildGroup
+        """
+        thisPath = '/'.join([parentPath, self.getDisplayName()]) if parentPath else self.getDisplayName()
+        for index, item in enumerate(self.children):
+            if isinstance(item, BuildGroup):
+                for item2, index2, path2 in item.actionIterator(thisPath):
+                    yield item2, index2, path2
+            elif isinstance(item, BuildAction):
+                yield item, index, thisPath
 
 
 BUILDITEM_TYPEMAP['BuildGroup'] = BuildGroup
@@ -372,7 +395,7 @@ class Blueprint(object):
         # the version of this blueprint
         self.version = BLUEPRINT_VERSION
         # the root BuildGroup of this blueprint
-        self.rootBuildItem = BuildGroup()
+        self.rootBuildItem = BuildGroup(displayName='')
 
     def serialize(self):
         data = {}
@@ -385,6 +408,8 @@ class Blueprint(object):
         self.rigName = data['rigName']
         self.version = data['version']
         self.rootBuildItem = BuildItem.create(data['buildItems'])
+        # ignore whatever display name was serialized for root item
+        self.rootBuildItem.displayName = ''
 
     def saveToNode(self, node, create=False):
         """
@@ -417,6 +442,251 @@ class Blueprint(object):
     def loadFromDefaultNode(self):
         self.loadFromNode(BLUEPRINT_NODENAME)
 
+    def initializeDefaultActions(self):
+        """
+        Create a set of core BuildActions that are common in most
+        if not all Blueprints.
+
+        WARNING: This clears all BuildActions and replaces them
+        with the default set.
+        """
+        importAction = getActionClass('ImportReferences')()
+        hierAction = getActionClass('BuildCoreHierarchy')()
+        mainGroup = BuildGroup(displayName='Main')
+        saveAction = getActionClass('SaveBuiltRig')()
+        optimizeAction = getActionClass('OptimizeScene')()
+        self.rootBuildItem.children = [
+            importAction,
+            hierAction,
+            mainGroup,
+            saveAction,
+            optimizeAction,
+        ]
 
 
 
+
+
+class BlueprintBuilder(object):
+    """
+    The Blueprint Builder is responsible for turning a Blueprint
+    into a fully realized rig. The only prerequisite is
+    the Blueprint itself.
+    """
+
+    def __init__(self, blueprint, blueprintFile=None, debug=False, logDir=None):
+        """
+        Initialize a BlueprintBuilder
+
+        Args:
+            blueprint: A Blueprint to be built
+            blueprintFile: A string path to the maya file containing the blueprint
+                to be stored on the built rig for convenience
+
+        """
+        if not isinstance(blueprint, Blueprint):
+            raise ValueError("Expected Blueprint, got {0}".format(type(blueprint).__name__))
+
+        self.blueprint = blueprint
+        self.blueprintFile = blueprintFile
+        self.debug = debug
+
+        self.log = logging.getLogger('pulse.build')
+        # the output directory for log files
+        dateStr = datetime.now().strftime('%Y-%m-%d_%H%M%S')
+        if not logDir:
+            logDir = tempfile.gettempdir()
+        logFile = os.path.join(logDir, 'pulse_build_{0}_{1}.log'.format(self.blueprint.rigName, dateStr))
+        logHandler = logging.FileHandler(logFile)
+        logHandler.setLevel(logging.DEBUG)
+        logFormatter = logging.Formatter('%(asctime)s %(levelname)s %(name)s: %(message)s')
+        logHandler.setFormatter(logFormatter)
+        self.log.handlers = [logHandler]
+
+        self.errors = []
+        self.generator = None
+        self.isStarted = False
+        self.isFinished = False
+        self.isRunning = False
+        self.isCancelled = False
+        self.startTime = None
+        self.endTime = None
+        self.elapsedTime = 0
+
+    def start(self, run=True):
+        """
+        Start the build for the current blueprint
+        
+        Args:
+            run: A bool, whether to automatically run the build once it
+                is started or wait for `run` to be called manually
+        """
+        if self.isStarted:
+            self.log.warning("Builder has already been started")
+            return
+        if self.isFinished:
+            self.log.error("Cannot re-start a builder that has already finished, make a new builder instead")
+            return
+        if self.isCancelled:
+            self.log.warning("Builder was cancelled, create a new instance to build again")
+            return
+
+        self.isStarted = True
+        self.onStart()
+
+        # start the build generator
+        self.generator = self.buildGenerator()
+
+        if run:
+            self.run()
+
+        return True
+
+    def run(self):
+        """
+        Continue the current build
+
+        The builder must be started by calling `start` first
+        before this can be called
+        """
+        if self.isRunning:
+            self.log.warning("Builder is already running")
+            return
+        if not self.isStarted:
+            self.log.warning("Builder has not been started yet")
+            return
+        if self.isFinished or self.isCancelled:
+            self.log.warning("Cannot run/continue a finished or cancelled build")
+            return
+        self.isRunning = True
+
+        while True:
+            iterResult = self.generator.next()
+            # handle the result of the build iteration
+            if iterResult.get('finish'):
+                self.finish()
+            # report progress
+            self.onProgress(iterResult['current'], iterResult['total'])
+            # check for user cancel
+            if self.checkCancel():
+                self.cancel()
+            # check if we should stop running
+            if self.isFinished or self.isCancelled or self.checkPause():
+                break
+
+        self.isRunning = False
+
+    def checkPause(self):
+        """
+        Check for pause. Return True if the build should pause
+        """
+        return False
+
+    def checkCancel(self):
+        """
+        Check for cancellation. Return True if the build should be canceled
+        """
+        return False
+
+    def cancel(self):
+        """
+        Cancel the current build
+        """
+        self.isCancelled = True
+        self.onCancel()
+
+    def finish(self):
+        """
+        Finish the build by calling the appropriate finish methods
+        """
+        self.isFinished = True
+        self.onFinish()
+
+
+    def onStart(self):
+        """
+        Called right before the build starts
+        """
+        # record time
+        self.startTime = time.time()
+        # log start of build
+        self.log.info("Started building rig: {0}".format(self.blueprint.rigName))
+        if self.debug:
+            self.log.info("Debug building is enabled")
+
+    def onProgress(self, current, total):
+        """
+        Called after every step of the build.
+        Override this in subclasses to monitor progress.
+        
+        Args:
+            current: An int representing the current build step
+            total: An int representing the total number of build steps
+        """
+        pass
+
+    def onFinish(self):
+        """
+        Called when the build has completely finished.
+        """
+        # record time
+        self.endTime = time.time()
+        self.elapsedTime = self.endTime - self.startTime
+        # log results
+        info = '{0:.3f} seconds, {1} error(s)'.format(self.elapsedTime, len(self.errors))
+        lvl = logging.WARNING if len(self.errors) else logging.INFO
+        self.log.log(lvl, "Built Rig '{0}', {1}".format(self.blueprint.rigName, info), extra=dict(
+            duration=self.elapsedTime,
+            scenePath=self.blueprintFile,
+        ))
+
+    def onCancel(self):
+        """
+        Called if the build was cancelled
+        """
+        pass
+
+    def _onError(self, action, error):
+        self.errors.append(error)
+        self.onError(action, error)
+
+    def onError(self, action, error):
+        """
+        Called when an error occurs while running a BuildAction
+
+        Args:
+            action: The BuildAction for which the error occurred
+            error: The exception that occurred
+        """
+        if self.debug:
+            # when debugging, show stack trace
+            self.log.error('{0}'.format(action.getDisplayName()), exc_info=True)
+        else:
+            self.log.error('{0} : {1}'.format(action.getDisplayName(), error))
+
+
+    def buildGenerator(self):
+        """
+        This is the main iterator for performing all build operations.
+        It recursively traverses all BuildItems and runs them.
+        """
+        currentStep = 0
+        totalSteps = 0
+
+        yield dict(current=currentStep, total=totalSteps)
+
+        # recursively iterate through all build items
+        allActions = list(self.blueprint.rootBuildItem.actionIterator())
+        totalSteps = len(allActions)
+        for currentStep, (action, grpIndex, grpPath) in enumerate(allActions):
+            path = '{0}[{1}] - '.format(grpPath, grpIndex) if grpPath else ''
+            self.log.info('[{0}/{1}] {path}{name}'.format(currentStep, totalSteps, path=path, name=action.getDisplayName()))
+            try:
+                action.run()
+            except Exception as error:
+                self._onError(action, error)
+            # return progress
+            yield dict(current=currentStep, total=totalSteps)
+
+
+        yield dict(current=currentStep, total=totalSteps, finish=True)

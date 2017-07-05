@@ -1,0 +1,5 @@
+OptimizeSceneAction:
+  isBuiltin: true
+  displayName: Optimize Scene
+  description: Runs scene optimization, deleting unused nodes
+  attrs: []

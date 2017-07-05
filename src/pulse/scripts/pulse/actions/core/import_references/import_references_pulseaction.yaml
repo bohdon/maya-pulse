@@ -1,0 +1,5 @@
+ImportReferencesAction:
+  isBuiltin: true
+  displayName: Import References
+  description: Import all file references into the scene
+  attrs: []

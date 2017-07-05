@@ -1,4 +1,5 @@
 
+import os
 import logging
 
 from .version import *
@@ -9,6 +10,7 @@ from .loader import *
 LOG = logging.getLogger("pulse")
 LOG.level = logging.DEBUG
 
+BUILTIN_ACTIONS_LOADED = False
 
 def loadActionsFromDirectory(startDir):
     """
@@ -21,3 +23,14 @@ def loadActionsFromDirectory(startDir):
     loader = BuildActionLoader()
     actions = loader.loadActionsFromDirectory(startDir)
     registerActions(actions)
+
+
+def loadBuiltinActions():
+    """
+    Load all built-in pulse actions.
+    """
+    global BUILTIN_ACTIONS_LOADED
+    if not BUILTIN_ACTIONS_LOADED:
+        actionsDir = os.path.join(os.path.dirname(__file__), 'actions')
+        loadActionsFromDirectory(actionsDir)
+        BUILTIN_ACTIONS_LOADED = True

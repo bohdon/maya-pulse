@@ -51,11 +51,11 @@ class BuildActionLoader(object):
             if isinstance(obj, type) and issubclass(obj, core.BuildAction) and obj is not core.BuildAction:
                 if obj.config is None:
                     self.loadConfig(obj, module)
-                LOG.debug('Loaded {0}'.format(obj.getTypeName()))
+                LOG.debug('Loaded BuildAction: {0}'.format(obj.getTypeName()))
                 result.append(obj)
         return result
 
-    def loadActionsFromDirectory(self, startDir, pattern='*_action.py'):
+    def loadActionsFromDirectory(self, startDir, pattern='*_pulseaction.py'):
         """
         Return BuildItem type map data for all BuildActions found
         by searching a directory. Search is performed recursively for
