@@ -204,6 +204,9 @@ class BuildItem(object):
     def __init__(self):
         self.log = logging.getLogger(self.getLoggerName())
 
+    def __repr__(self):
+        return "<{0} '{1}'>".format(self.__class__.__name__, self.getDisplayName())
+
     def getLoggerName(self):
         """
         Return the name of the logger for this BuildItem
@@ -289,6 +292,14 @@ class BuildGroup(BuildItem):
         if not isinstance(item, BuildItem):
             raise ValueError('{0} is not a valid BuildItem type'.format(type(item).__name__))
         self.children.insert(index, item)
+
+    def getChildGroupByName(self, name):
+        """
+        Return a child BuildGroup by name
+        """
+        for item in self.children:
+            if isinstance(item, BuildGroup) and item.displayName == name:
+                return item
 
     def actionIterator(self, parentPath=None):
         """
@@ -575,6 +586,24 @@ class Blueprint(object):
             optimizeAction,
         ]
 
+    def getBuildGroup(self, groupPath=''):
+        """
+        Return a BuildGroup by path. If no path
+        is given, return the root BuildGroup.
+
+        Args:
+            groupPath: A string path to a BuildGroup,
+                e.g. 'Main/MyGroup/MySubGroup'
+        """
+        groupNames = []
+        if groupPath and groupPath != '/':
+            groupNames = groupPath.split('/')
+        currentGroup = self.rootBuildItem
+        for name in groupNames:
+            currentGroup = currentGroup.getChildGroupByName(name)
+            if not currentGroup:
+                return
+        return currentGroup
 
 
 
