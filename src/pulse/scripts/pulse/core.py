@@ -22,8 +22,13 @@ __all__ = [
     'BuildGroup',
     'BuildItem',
     'getActionClass',
+    'getAllRigs',
+    'getAllRigsByName',
     'getBuildItemClass',
     'getRegisteredActions',
+    'getRigFromNode',
+    'getSelectedRigs',
+    'isRig',
     'registerActions',
     'RIG_METACLASS',
 ]
@@ -88,6 +93,60 @@ def registerActions(actionClasses):
         BUILDITEM_TYPEMAP[typeName] = c
 
 
+
+def isRig(node):
+    """
+    Return whether a node represents a pulse rig
+
+    Args:
+        node: A PyNode or string node name
+    """
+    return meta.hasMetaClass(node, RIG_METACLASS)
+
+def getAllRigs():
+    """
+    Return a list of all rigs in the scene
+    """
+    return meta.findMetaNodes(RIG_METACLASS)
+
+def getAllRigsByName(names):
+    """
+    Return a list of all rigs in the scene that
+    have a specific rig name
+
+    Args:
+        names: A list of string rig names
+    """
+    rigs = getAllRigs()
+    matches = []
+    for r in rigs:
+        data = meta.getMetaData(r, RIG_METACLASS)
+        if data.get('name') in names:
+            matches.append(r)
+    return matches
+
+def getRigFromNode(node):
+    """
+    Return the rig that owns this node, if any
+
+    Args:
+        node: A PyNode rig or node that is part of a rig
+    """
+    if isRig(node):
+        return node
+    else:
+        parent = node.getParent()
+        if parent:
+            return getRigFromNode(parent)
+
+def getSelectedRigs():
+    """
+    Return the selected rigs
+    """
+    rigs = list(set([getRigFromNode(s) for s in pm.selected()]))
+    rigs = [r for r in rigs if r is not None]
+    return rigs
+
 def createRigNode(name):
     """
     Create and return a new Rig node
@@ -104,6 +163,9 @@ def createRigNode(name):
     # set initial meta data for the rig
     meta.setMetaData(node, RIG_METACLASS, {'name':name})
     return node
+
+
+
 
 
 class BuildItem(object):
