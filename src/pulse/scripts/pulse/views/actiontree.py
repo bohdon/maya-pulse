@@ -84,6 +84,11 @@ class ActionTreeItem(object):
     def data(self, column, role=QtCore.Qt.DisplayRole):
         if role == QtCore.Qt.DisplayRole:
             return self.buildItem.getDisplayName()
+        elif role == QtCore.Qt.DecorationRole:
+            iconFile = self.buildItem.getIconFile()
+            if iconFile:
+                return QtGui.QIcon(iconFile)
+
 
 
 

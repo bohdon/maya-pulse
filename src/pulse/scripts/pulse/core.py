@@ -219,6 +219,12 @@ class BuildItem(object):
         """
         raise NotImplementedError
 
+    def getIconFile(self):
+        """
+        Return the full path to this build items icon
+        """
+        raise NotImplementedError
+
     def serialize(self):
         """
         Return this BuildItem as a serialized dict object
@@ -261,6 +267,9 @@ class BuildGroup(BuildItem):
 
     def getDisplayName(self):
         return self.displayName
+
+    def getIconFile(self):
+        pass
 
     def serialize(self):
         # TODO: make a recursion loop check
@@ -370,6 +379,11 @@ class BuildAction(BuildItem):
 
     def getDisplayName(self):
         return self.config['displayName']
+
+    def getIconFile(self):
+        filename = self.config.get('icon')
+        if filename:
+            return os.path.join(os.path.dirname(self.configFile), filename)
 
     def getAttrConfig(self, attrName):
         """
