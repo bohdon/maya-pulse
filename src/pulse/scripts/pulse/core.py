@@ -98,6 +98,9 @@ def createRigNode(name):
     if pm.cmds.objExists(name):
         raise ValueError("Cannot create rig, node already exists: {0}".format(name))
     node = pm.group(name=name, em=True)
+    for a in ('tx', 'ty', 'tz', 'rx', 'ry', 'rz', 'sx', 'sy', 'sz'):
+        node.attr(a).setLocked(True)
+        node.attr(a).setKeyable(False)
     # set initial meta data for the rig
     meta.setMetaData(node, RIG_METACLASS, {'name':name})
     return node
@@ -270,7 +273,12 @@ class BuildAction(BuildItem):
             result = result[:-6]
         return result
 
-    def __init__(self):
+    def __init__(self, **attrKwargs):
+        """
+        Args:
+            attrKwargs: A dict of default values for this actions attributes.
+                Only values corresponding to a valid config attribute are used.
+        """
         super(BuildAction, self).__init__()
         if self.config is None:
             LOG.warning(self.__class__.__name__ + " was loaded without a config. " +
@@ -279,7 +287,10 @@ class BuildAction(BuildItem):
         self.rig = None
         # initialize attributes from config
         for attr in self.config['attrs']:
-            setattr(self, attr['name'], self.getDefaultValue(attr))
+            if attr['name'] in attrKwargs:
+                setattr(self, attr['name'], attrKwargs[attr['name']])
+            else:
+                setattr(self, attr['name'], self.getDefaultValue(attr))
 
     def getLoggerName(self):
         return 'pulse.action.' + self.getTypeName().lower()
@@ -721,6 +732,8 @@ class BlueprintBuilder(object):
             version = BLUEPRINT_VERSION,
             blueprintFile = self.blueprintFile,
         ))
+
+        yield dict(current=currentStep, total=totalSteps)
 
         # recursively iterate through all build items
         allActions = list(self.blueprint.rootBuildItem.actionIterator())

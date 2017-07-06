@@ -22,6 +22,8 @@ class BuildCoreHierarchyAction(pulse.BuildAction):
                 grpNode.attr(a).setLocked(True)
                 grpNode.attr(a).setKeyable(False)
 
+            # TODO: a way to make certain groups hidden
+
             # parent blueprint nodes for this group
             if len(nodes) > 0:
                 tops = pulse.nodes.getParentNodes(nodes)
