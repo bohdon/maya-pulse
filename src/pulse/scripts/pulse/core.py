@@ -518,21 +518,21 @@ class Blueprint(object):
         # the version of this blueprint
         self.version = BLUEPRINT_VERSION
         # the root BuildGroup of this blueprint
-        self.rootBuildItem = BuildGroup(displayName='')
+        self.rootGroup = BuildGroup(displayName='')
 
     def serialize(self):
         data = {}
         data['rigName'] = self.rigName
         data['version'] = self.version
-        data['buildItems'] = self.rootBuildItem.serialize()
+        data['buildItems'] = self.rootGroup.serialize()
         return data
 
     def deserialize(self, data):
         self.rigName = data['rigName']
         self.version = data['version']
-        self.rootBuildItem = BuildItem.create(data['buildItems'])
-        # ignore whatever display name was serialized for root item
-        self.rootBuildItem.displayName = ''
+        self.rootGroup = BuildItem.create(data['buildItems'])
+        # ignore whatever display name was serialized for root group
+        self.rootGroup.displayName = ''
 
     def saveToNode(self, node, create=False):
         """
@@ -565,6 +565,12 @@ class Blueprint(object):
     def loadFromDefaultNode(self):
         self.loadFromNode(BLUEPRINT_NODENAME)
 
+    def actionIterator(self):
+        """
+        Return the action iterator of the Blueprints root BuildGroup
+        """
+        return self.rootGroup.actionIterator()
+
     def initializeDefaultActions(self):
         """
         Create a set of core BuildActions that are common in most
@@ -578,7 +584,7 @@ class Blueprint(object):
         mainGroup = BuildGroup(displayName='Main')
         saveAction = getActionClass('SaveBuiltRig')()
         optimizeAction = getActionClass('OptimizeScene')()
-        self.rootBuildItem.children = [
+        self.rootGroup.children = [
             importAction,
             hierAction,
             mainGroup,
@@ -598,7 +604,7 @@ class Blueprint(object):
         groupNames = []
         if groupPath and groupPath != '/':
             groupNames = groupPath.split('/')
-        currentGroup = self.rootBuildItem
+        currentGroup = self.rootGroup
         for name in groupNames:
             currentGroup = currentGroup.getChildGroupByName(name)
             if not currentGroup:
@@ -827,7 +833,7 @@ class BlueprintBuilder(object):
         yield dict(current=currentStep, total=totalSteps)
 
         # recursively iterate through all build items
-        allActions = list(self.blueprint.rootBuildItem.actionIterator())
+        allActions = list(self.blueprint.actionIterator())
         totalSteps = len(allActions)
         for currentStep, (action, grpIndex, grpPath) in enumerate(allActions):
             path = '{0}[{1}] - '.format(grpPath, grpIndex) if grpPath else ''
