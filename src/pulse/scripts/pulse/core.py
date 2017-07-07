@@ -851,7 +851,7 @@ class BlueprintBuilder(object):
         totalSteps = len(allActions)
         for currentStep, (action, grpIndex, grpPath) in enumerate(allActions):
             path = '{0}[{1}] - '.format(grpPath, grpIndex) if grpPath else ''
-            self.log.info('[{0}/{1}] {path}{name}'.format(currentStep, totalSteps, path=path, name=action.getDisplayName()))
+            self.log.info('[{0}/{1}] {path}{name}'.format(currentStep+1, totalSteps, path=path, name=action.getDisplayName()))
             # run the action
             action.rig = self.rig
             try:
