@@ -88,6 +88,8 @@ class ActionTreeItem(object):
             iconFile = self.buildItem.getIconFile()
             if iconFile:
                 return QtGui.QIcon(iconFile)
+        elif role == QtCore.Qt.SizeHintRole:
+            return QtCore.QSize(0, 20)
 
 
 
