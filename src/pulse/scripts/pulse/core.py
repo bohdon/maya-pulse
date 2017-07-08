@@ -316,6 +316,9 @@ class BuildGroup(BuildItem):
             raise ValueError('{0} is not a valid BuildItem type'.format(type(item).__name__))
         self.children.insert(index, item)
 
+    def getChildCount(self):
+        return len(self.children)
+
     def getChildGroupByName(self, name):
         """
         Return a child BuildGroup by name

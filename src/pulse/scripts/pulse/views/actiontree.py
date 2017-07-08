@@ -83,14 +83,20 @@ class ActionTreeItem(object):
 
     def data(self, column, role=QtCore.Qt.DisplayRole):
         if role == QtCore.Qt.DisplayRole:
-            return self.buildItem.getDisplayName()
+            if isinstance(self.buildItem, pulse.BuildGroup):
+                return '{0} ({1})'.format(self.buildItem.getDisplayName(), self.buildItem.getChildCount())
+            elif isinstance(self.buildItem, pulse.BatchBuildAction):
+                return '{0} (x{1})'.format(self.buildItem.getDisplayName(), self.buildItem.getActionCount())
+            else:
+                return self.buildItem.getDisplayName()
+
         elif role == QtCore.Qt.DecorationRole:
             iconFile = self.buildItem.getIconFile()
             if iconFile:
                 return QtGui.QIcon(iconFile)
+
         elif role == QtCore.Qt.SizeHintRole:
             return QtCore.QSize(0, 20)
-
 
 
 
