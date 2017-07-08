@@ -167,6 +167,13 @@ def createRigNode(name):
 
 
 
+def copyData(data, refNode=None):
+    """
+    Performs a deep copy of the given data using pymetanode to
+    encode and decode the values.
+    """
+    return meta.decodeMetaData(meta.encodeMetaData(data), refNode)
+
 
 
 class BuildItem(object):
@@ -368,6 +375,14 @@ class BuildAction(BuildItem):
         return result
 
     @classmethod
+    def getAttrNames(cls):
+        """
+        Return a list of attribute names for this BuildAction class
+        """
+        for attr in cls.config['attrs']:
+            yield attr['name']
+
+    @classmethod
     def getAttrConfig(cls, attrName):
         """
         Return config data for an attribute
@@ -398,6 +413,23 @@ class BuildAction(BuildItem):
                 return 0
             elif attrType == 'bool':
                 return False
+
+    @staticmethod
+    def fromBatchAction(batchAction):
+        """
+        Return a new BuildAction created using a BatchBuildAction
+        as reference.
+        """
+        if not batchAction.actionClass:
+            raise ValueError("BatchBuildAction must have a valid actionClass")
+
+        # copy attribute values
+        data = batchAction.constantValues
+        if batchAction.variantValues:
+            data.update(batchAction.variantValues[0])
+        data = copyData(data)
+
+        return batchAction.actionClass(**data)
 
     def __init__(self, **attrKwargs):
         """
@@ -499,6 +531,23 @@ class BatchBuildAction(BuildItem):
     def getTypeName(cls):
         return 'BatchBuildAction'
 
+    @staticmethod
+    def fromBuildAction(action):
+        """
+        Return a new BatchBuildAction using a BuildAction as reference
+
+        Args:
+            action: A BuildAction object
+        """
+        batch = BatchBuildAction()
+        batch.setActionClass(action.__class__)
+
+        # copy attribute values
+        attrNames = list(action.getAttrNames())
+        data = {k:v for k, v in action.__dict__.iteritems() if k in attrNames}
+        batch.constantValues = copyData(data)
+        return batch
+
     def __init__(self):
         """
         Args:
@@ -533,7 +582,7 @@ class BatchBuildAction(BuildItem):
     def serialize(self):
         data = super(BatchBuildAction, self).serialize()
         data['actionClassName'] = self.actionClass.getTypeName() if self.actionClass else None
-        data['constantValues'] = self.constantValues.copy()
+        data['constantValues'] = self.constantValues
         data['variantAttributes'] = self.variantAttributes
         data['variantValues'] = self.variantValues
         return data
@@ -642,7 +691,7 @@ class BatchBuildAction(BuildItem):
         thisPath = parentPath + ('/' if parentPath else '') + 'Batch'
         for index, variant in enumerate(self.variantValues):
             pathAtIndex = '{0}[{1}]'.format(thisPath, index)
-            kwargs = {k:v for k, v in self.constantValues.items() if k not in self.variantAttributes}
+            kwargs = {k:v for k, v in self.constantValues.iteritems() if k not in self.variantAttributes}
             kwargs.update(variant)
             yield self.actionClass(**kwargs), pathAtIndex
 
