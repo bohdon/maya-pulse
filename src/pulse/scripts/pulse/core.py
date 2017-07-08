@@ -452,8 +452,6 @@ class BuildAction(BuildItem):
                 "Use pulse action loading methods to ensure BuildActions are loaded properly")
         # rig is only available during build
         self.rig = None
-        # display name member overrides config value if set
-        self.displayName = None
         # initialize attributes from config
         for attr in self.config['attrs']:
             if not hasattr(self, attr['name']):
@@ -466,10 +464,7 @@ class BuildAction(BuildItem):
         return 'pulse.action.' + self.getTypeName().lower()
 
     def getDisplayName(self):
-        if self.displayName:
-            return self.displayName
-        else:
-            return self.config['displayName']
+        return self.config['displayName']
 
     def getIconFile(self):
         filename = self.config.get('icon')
@@ -478,7 +473,6 @@ class BuildAction(BuildItem):
 
     def serialize(self):
         data = super(BuildAction, self).serialize()
-        data['displayName'] = self.displayName
         # serialize values for all attr values
         for attr in self.config['attrs']:
             data[attr['name']] = getattr(self, attr['name'])
@@ -486,7 +480,6 @@ class BuildAction(BuildItem):
 
     def deserialize(self, data):
         super(BuildAction, self).deserialize(data)
-        self.displayName = data.get('displayName')
         # load values for all action attrs
         for attr in self.config['attrs']:
             if attr['name'] in data:
