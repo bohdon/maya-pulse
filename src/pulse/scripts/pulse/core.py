@@ -850,11 +850,11 @@ class BlueprintBuilder(object):
         if not logDir:
             logDir = tempfile.gettempdir()
         logFile = os.path.join(logDir, 'pulse_build_{0}_{1}.log'.format(self.blueprint.rigName, dateStr))
-        logHandler = logging.FileHandler(logFile)
-        logHandler.setLevel(logging.DEBUG)
+        self.fileHandler = logging.FileHandler(logFile)
+        self.fileHandler.setLevel(logging.DEBUG)
         logFormatter = logging.Formatter('%(asctime)s %(levelname)s %(name)s: %(message)s')
-        logHandler.setFormatter(logFormatter)
-        self.log.handlers = [logHandler]
+        self.fileHandler.setFormatter(logFormatter)
+        self.log.handlers = [self.fileHandler]
 
         self.errors = []
         self.generator = None
@@ -992,6 +992,7 @@ class BlueprintBuilder(object):
             duration=self.elapsedTime,
             scenePath=self.blueprintFile,
         ))
+        self.fileHandler.close()
 
     def onCancel(self):
         """
