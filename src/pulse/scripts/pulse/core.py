@@ -210,10 +210,16 @@ class BuildItem(object):
         raise NotImplementedError
 
     def __init__(self):
-        self.log = logging.getLogger(self.getLoggerName())
+        pass
 
     def __repr__(self):
         return "<{0} '{1}'>".format(self.__class__.__name__, self.getDisplayName())
+
+    @property
+    def log(self):
+        if not hasattr(self, 'log'):
+            self._log = logging.getLogger(self.getLoggerName())
+        return self._log
 
     def getLoggerName(self):
         """
