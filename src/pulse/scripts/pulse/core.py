@@ -14,6 +14,7 @@ from . import version
 
 
 __all__ = [
+    'BatchBuildAction',
     'Blueprint',
     'BLUEPRINT_METACLASS',
     'BlueprintBuilder',
@@ -317,17 +318,28 @@ class BuildGroup(BuildItem):
 
         Args:
             parentPath: A string path representing the parent BuildGroup
+
+        Returns:
+            Iterator of (BuildAction, string) representing all actions and
+            the build group path leading to them.
         """
         thisPath = '/'.join([parentPath, self.getDisplayName()]) if parentPath else self.getDisplayName()
-        for index, item in enumerate(self.children):
-            if isinstance(item, BuildGroup):
-                for item2, index2, path2 in item.actionIterator(thisPath):
-                    yield item2, index2, path2
-            elif isinstance(item, BuildAction):
-                yield item, index, thisPath
+        for index, child in enumerate(self.children):
+            if thisPath:
+                pathAtIndex = '{0}[{1}]'.format(thisPath, index)
+            else:
+                pathAtIndex = None
+            if isinstance(child, (BuildGroup, BatchBuildAction)):
+                # iterate through child group or batch actions
+                for subItem, subPath in child.actionIterator(pathAtIndex):
+                    yield subItem, subPath
+            elif isinstance(child, BuildAction):
+                # return the action
+                yield child, pathAtIndex
 
 
 BUILDITEM_TYPEMAP['BuildGroup'] = BuildGroup
+
 
 
 class BuildActionError(Exception):
@@ -355,48 +367,20 @@ class BuildAction(BuildItem):
             result = result[:-6]
         return result
 
-    def __init__(self, **attrKwargs):
-        """
-        Args:
-            attrKwargs: A dict of default values for this actions attributes.
-                Only values corresponding to a valid config attribute are used.
-        """
-        super(BuildAction, self).__init__()
-        if self.config is None:
-            LOG.warning(self.__class__.__name__ + " was loaded without a config. " +
-                "Use pulse action loading methods to ensure BuildActions are loaded properly")
-        # rig is only available during build
-        self.rig = None
-        # initialize attributes from config
-        for attr in self.config['attrs']:
-            if attr['name'] in attrKwargs:
-                setattr(self, attr['name'], attrKwargs[attr['name']])
-            else:
-                setattr(self, attr['name'], self.getDefaultValue(attr))
-
-    def getLoggerName(self):
-        return 'pulse.action.' + self.getTypeName().lower()
-
-    def getDisplayName(self):
-        return self.config['displayName']
-
-    def getIconFile(self):
-        filename = self.config.get('icon')
-        if filename:
-            return os.path.join(os.path.dirname(self.configFile), filename)
-
-    def getAttrConfig(self, attrName):
+    @classmethod
+    def getAttrConfig(cls, attrName):
         """
         Return config data for an attribute
 
         Args:
             attrName: A str name of the attribute
         """
-        for attr in self.config['attrs']:
+        for attr in cls.config['attrs']:
             if attr['name'] == attrName:
                 return attr
 
-    def getDefaultValue(self, attr):
+    @classmethod
+    def getDefaultValue(cls, attr):
         """
         Return the default value for an attribute
 
@@ -415,8 +399,45 @@ class BuildAction(BuildItem):
             elif attrType == 'bool':
                 return False
 
+    def __init__(self, **attrKwargs):
+        """
+        Args:
+            attrKwargs: A dict of default values for this actions attributes.
+                Only values corresponding to a valid config attribute are used.
+        """
+        super(BuildAction, self).__init__()
+        if self.config is None:
+            LOG.warning(self.__class__.__name__ + " was loaded without a config. " +
+                "Use pulse action loading methods to ensure BuildActions are loaded properly")
+        # rig is only available during build
+        self.rig = None
+        # display name member overrides config value if set
+        self.displayName = None
+        # initialize attributes from config
+        for attr in self.config['attrs']:
+            if not hasattr(self, attr['name']):
+                if attr['name'] in attrKwargs:
+                    setattr(self, attr['name'], attrKwargs[attr['name']])
+                else:
+                    setattr(self, attr['name'], self.getDefaultValue(attr))
+
+    def getLoggerName(self):
+        return 'pulse.action.' + self.getTypeName().lower()
+
+    def getDisplayName(self):
+        if self.displayName:
+            return self.displayName
+        else:
+            return self.config['displayName']
+
+    def getIconFile(self):
+        filename = self.config.get('icon')
+        if filename:
+            return os.path.join(os.path.dirname(self.configFile), filename)
+
     def serialize(self):
         data = super(BuildAction, self).serialize()
+        data['displayName'] = self.displayName
         # serialize values for all attr values
         for attr in self.config['attrs']:
             data[attr['name']] = getattr(self, attr['name'])
@@ -424,6 +445,7 @@ class BuildAction(BuildItem):
 
     def deserialize(self, data):
         super(BuildAction, self).deserialize(data)
+        self.displayName = data.get('displayName')
         # load values for all action attrs
         for attr in self.config['attrs']:
             if attr['name'] in data:
@@ -457,6 +479,176 @@ class BuildAction(BuildItem):
         that is desired.
         """
         raise NotImplementedError
+
+
+
+
+class BatchBuildAction(BuildItem):
+    """
+    A special BuildItem that is designed to behave like
+    an existing BuildAction, but allows running the action
+    multiple times with different values for a subset of attributes.
+    BuildActions can be converted to and from BatchBuildAction
+    (with data loss when converting from Batch) for convenience.
+
+    BatchBuildActions are not run, instead they provide an actionIterator
+    just like BuildGroups which generates BuildAction instances at build time.
+    """
+
+    @classmethod
+    def getTypeName(cls):
+        return 'BatchBuildAction'
+
+    def __init__(self):
+        """
+        Args:
+            actionClass: The BuildAction class this batch action represents
+        """
+        super(BatchBuildAction, self).__init__()
+        # the BuildAction class this batch represents
+        self.actionClass = None
+        # all constant attribute values
+        self.constantValues = {}
+        # the list of attribute names that vary per action instance
+        self.variantAttributes = []
+        # all variant attribute values
+        self.variantValues = []
+
+    def getLoggerName(self):
+        return 'pulse.batchaction'
+
+    def getDisplayName(self):
+        if not self.actionClass:
+            return 'BatchBuildAction (unconfigured)'
+
+        return self.actionClass.config['displayName']
+
+    def getIconFile(self):
+        if self.actionClass:
+            filename = self.actionClass.config.get('icon')
+            if filename:
+                return os.path.join(os.path.dirname(self.actionClass.configFile), filename)
+
+
+    def serialize(self):
+        data = super(BatchBuildAction, self).serialize()
+        data['actionClassName'] = self.actionClass.getTypeName() if self.actionClass else None
+        data['constantValues'] = self.constantValues.copy()
+        data['variantAttributes'] = self.variantAttributes
+        data['variantValues'] = self.variantValues
+        return data
+
+    def deserialize(self, data):
+        super(BatchBuildAction, self).deserialize(data)
+        # retrieve action class
+        actionClassName = data['actionClassName']
+        if actionClassName:
+            self.setActionClass(getActionClass(actionClassName))
+        else:
+            self.setActionClass(None)
+        # all attributes values
+        self.constantValues = data['constantValues']
+        self.variantAttributes = data['variantAttributes']
+        self.variantValues = data['variantValues']
+
+    def setActionClass(self, actionClass):
+        """
+        Configure this batch action to represent the given BuildAction class.
+        Causes attribute values and variants to be cleared.
+
+        Args:
+            actionClass: A BuildAction class
+        """
+        if self.actionClass == actionClass:
+            return
+
+        self.actionClass = actionClass
+        self.constantValues = {}
+        self.variantAttributes = []
+        self.variantValues = []
+
+        if self.actionClass:
+            # initialize attributes from config
+            self._initActionAttrs()
+
+    def _initActionAttrs(self):
+        """
+        Initialize all attributes for a BuildAction class
+        as members on this BatchBuildAction
+
+        Args:
+            actionClass: A BuildAction class
+        """
+        if self.actionClass:
+            for attr in self.actionClass.config['attrs']:
+                if attr['name'] not in self.constantValues:
+                    self.constantValues[attr['name']] = self.actionClass.getDefaultValue(attr)
+
+    def addVariantAttr(self, attrName):
+        """
+        """
+        if attrName in self.variantAttributes:
+            return
+
+        # add attr to variant attrs list
+        self.variantAttributes.append(attrName)
+        # update variant values with new attr, using
+        # current constant value for all variants
+        for item in self.variantValues:
+            if attrName not in item:
+                item[attrName] = self.constantValues[attrName]
+        # remove attribute from constant values
+        del self.constantValues[attrName]
+
+
+    def removeVariantAttr(self, attrName):
+        """
+        """
+        if attrName not in self.variantAttributes:
+            return
+
+        # remove from attributes list
+        self.variantAttributes.remove(attrName)
+        # add to constant values, using either first variant
+        # value or the default
+        if len(self.variantValues):
+            self.constantValues[attrName] = self.variantValues[0][attrName]
+        else:
+            attr = self.actionClass.getAttrConfig(attrName)
+            self.constantValues[attrName] = self.actionClass.getDefaultValue(attr)
+        # remove all values from variant values
+        for item in self.variantValues:
+            del item[attrName]
+        
+
+    def getActionCount(self):
+        """
+        Return how many action attribute variants this batch contains
+        """
+        return len(self.variantValues)
+
+    def actionIterator(self, parentPath=None):
+        """
+        Return an iterator for all action instances that this batch
+        action represents, with their appropriate attribuate variations.
+
+        Args:
+            parentPath: A string path representing the parent BuildGroup
+
+        Returns:
+            Iterator of (BuildAction, string) representing all actions and
+            the build group path leading to them.
+        """
+        thisPath = parentPath + ('/' if parentPath else '') + 'Batch'
+        for index, variant in enumerate(self.variantValues):
+            pathAtIndex = '{0}[{1}]'.format(thisPath, index)
+            kwargs = {k:v for k, v in self.constantValues.items() if k not in self.variantAttributes}
+            kwargs.update(variant)
+            yield self.actionClass(**kwargs), pathAtIndex
+
+
+BUILDITEM_TYPEMAP['BatchBuildAction'] = BatchBuildAction
+
 
 
 
@@ -849,9 +1041,9 @@ class BlueprintBuilder(object):
         # recursively iterate through all build items
         allActions = list(self.blueprint.actionIterator())
         totalSteps = len(allActions)
-        for currentStep, (action, grpIndex, grpPath) in enumerate(allActions):
-            path = '{0}[{1}] - '.format(grpPath, grpIndex) if grpPath else ''
-            self.log.info('[{0}/{1}] {path}{name}'.format(currentStep+1, totalSteps, path=path, name=action.getDisplayName()))
+        for currentStep, (action, path) in enumerate(allActions):
+            _path = path + ' - ' if path else ''
+            self.log.info('[{0}/{1}] {path}{name}'.format(currentStep+1, totalSteps, path=_path, name=action.getDisplayName()))
             # run the action
             action.rig = self.rig
             try:
