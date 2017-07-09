@@ -1,0 +1,20 @@
+SimpleConstrainAction:
+  displayName: Simple Constrain
+  description: Create a simple full constraint between nodes
+  attrs:
+    - name: leader
+      type: node
+    - name: follower
+      type: node
+    - name: createFollowerOffset
+      description: Creates and constrains a parent transform for the follower node, instead of constraining the follower itself
+      type: option
+      value: 1
+      options:
+        - Always
+        - Exclude Joints
+    - name: worldSpaceScaling
+      type: bool
+      value: False
+      description: Causes scale constraint to consider world space matrices to better handle situations where the leader and follower have different orientations
+      advanced: True

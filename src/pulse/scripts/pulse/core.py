@@ -73,6 +73,10 @@ def getRegisteredActions():
     """
     Return all registered BuildAction classes organized
     by their registered type name
+
+    Returns:
+        A dict of {string: BuildAction} where keys represent
+        the registered type name of the action.
     """
     return {k:v for k,v in BUILDITEM_TYPEMAP.iteritems() if issubclass(v, BuildAction)}
 
