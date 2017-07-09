@@ -98,6 +98,11 @@ class ActionTreeItem(object):
         elif role == QtCore.Qt.SizeHintRole:
             return QtCore.QSize(0, 20)
 
+        elif role == QtCore.Qt.ForegroundRole:
+            color = self.buildItem.getColor()
+            if color:
+                return QtGui.QColor(*[c * 255 for c in color])
+
 
 
 

@@ -233,11 +233,17 @@ class BuildItem(object):
         """
         raise NotImplementedError
 
+    def getColor(self):
+        """
+        Return the color of this BuildItem when represented in the UI
+        """
+        pass
+
     def getIconFile(self):
         """
         Return the full path to this build items icon
         """
-        raise NotImplementedError
+        pass
 
     def serialize(self):
         """
@@ -466,6 +472,9 @@ class BuildAction(BuildItem):
     def getDisplayName(self):
         return self.config['displayName']
 
+    def getColor(self):
+        return self.config.get('color')
+
     def getIconFile(self):
         filename = self.config.get('icon')
         if filename:
@@ -573,6 +582,10 @@ class BatchBuildAction(BuildItem):
             return 'BatchBuildAction (unconfigured)'
 
         return self.actionClass.config['displayName']
+
+    def getColor(self):
+        if self.actionClass:
+            return self.actionClass.config.get('color')
 
     def getIconFile(self):
         if self.actionClass:
