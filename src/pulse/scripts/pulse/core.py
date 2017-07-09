@@ -292,9 +292,6 @@ class BuildGroup(BuildItem):
     def getDisplayName(self):
         return self.displayName
 
-    def getIconFile(self):
-        pass
-
     def serialize(self):
         # TODO: make a recursion loop check
         data = super(BuildGroup, self).serialize()

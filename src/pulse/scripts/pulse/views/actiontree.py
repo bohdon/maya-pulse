@@ -189,6 +189,7 @@ class ActionTreeWidget(QtWidgets.QWidget):
     def refreshTreeData(self):
         model = ActionTreeItemModel(self, pulse.Blueprint.fromDefaultNode())
         self.treeView.setModel(model)
+        self.treeView.expandAll()
 
     def setupUi(self, parent):
         lay = QtWidgets.QVBoxLayout(parent)
@@ -206,6 +207,57 @@ class ActionTreeWidget(QtWidgets.QWidget):
         lay.addWidget(self.treeView)
 
 
+class ActionButtonsWidget(QtWidgets.QWidget):
+
+    clicked = QtCore.Signal(str)
+
+    def __init__(self, parent=None):
+        super(ActionButtonsWidget, self).__init__(parent=parent)
+
+        lay = QtWidgets.QVBoxLayout(self)
+
+        registeredActions = pulse.getRegisteredActions().values()
+        categories = list(set([ac.config.get('category', 'Default') for ac in registeredActions]))
+
+        tabWidget = QtWidgets.QTabWidget(self)
+        tabWidget.setObjectName("tabWidget")
+
+        tabWidgets = {}
+
+        for i, cat in enumerate(categories):
+            tab = QtWidgets.QWidget()
+            tabOuterLay = QtWidgets.QVBoxLayout(tab)
+            tabScroll = QtWidgets.QScrollArea(tab)
+            tabScroll.setWidgetResizable(True)
+            tabScrollWidget = QtWidgets.QWidget(tab)
+            tabLay = QtWidgets.QVBoxLayout(tabScrollWidget)
+            tabWidgets[cat] = tabScrollWidget
+            # setup relationships
+            tabScroll.setWidget(tabScrollWidget)
+            tabOuterLay.addWidget(tabScroll)
+            tabWidget.addTab(tab, "")
+            # set tab label
+            tabWidget.setTabText(i, cat)
+
+        lay.addWidget(tabWidget)
+
+        for actionClass in registeredActions:
+            cat = actionClass.config.get('category', 'Default')
+            btn = QtWidgets.QPushButton()
+            btn.setText(actionClass.config['displayName'])
+            cmd = lambda x=actionClass.getTypeName(): self.onActionClicked(x)
+            btn.clicked.connect(cmd)
+            tabWidgets[cat].layout().addWidget(btn)
+
+        for cat in categories:
+            spacer = QtWidgets.QSpacerItem(0, 0, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
+            tabWidgets[cat].layout().addItem(spacer)
+
+    def onActionClicked(self, typeName):
+        self.clicked.emit(typeName)
+
+
+
 
 class ActionTreeWindow(QtWidgets.QMainWindow):
 
@@ -219,5 +271,31 @@ class ActionTreeWindow(QtWidgets.QMainWindow):
         self.setWindowFlags(QtCore.Qt.Window)
         self.setProperty("saveWindowPref", True)
 
+        widget = QtWidgets.QWidget(self)
+        self.setCentralWidget(widget)
+
+        layout = QtWidgets.QVBoxLayout(self)
+        widget.setLayout(layout)
+
         self.actionTree = ActionTreeWidget(self)
-        self.setCentralWidget(self.actionTree)
+        layout.addWidget(self.actionTree)
+
+        self.actionButtons = ActionButtonsWidget(self)
+        self.actionButtons.clicked.connect(self.onActionClicked)
+        layout.addWidget(self.actionButtons)
+
+        layout.setStretch(layout.indexOf(self.actionTree), 2)
+        layout.setStretch(layout.indexOf(self.actionButtons), 1)
+
+    def onActionClicked(self, typeName):
+        blueprint = pulse.Blueprint.fromDefaultNode()
+        if blueprint:
+            ac = pulse.getActionClass(typeName)
+            action = ac()
+            mainGrp = blueprint.getBuildGroup('Main')
+            if mainGrp:
+                mainGrp.addChild(action)
+                blueprint.saveToDefaultNode()
+                self.actionTree.refreshTreeData()
+
+
