@@ -1,6 +1,7 @@
 BindSkinAction:
   displayName: Bind Skin
   description: Binds a mesh to a joint hierarchy
+  color: [1.0, .85, 0.5]
   category: Deformers
   attrs:
 
