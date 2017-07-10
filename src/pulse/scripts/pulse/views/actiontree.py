@@ -120,6 +120,15 @@ class ActionTreeItem(object):
 
         return True
 
+    def setData(self, column, value):
+        if not self.isGroup():
+            return False
+
+        self.buildItem.displayName = value
+
+        return True
+
+
     def data(self, column, role=QtCore.Qt.DisplayRole):
         if role == QtCore.Qt.DisplayRole:
             if isinstance(self.buildItem, pulse.BuildGroup):
@@ -128,6 +137,9 @@ class ActionTreeItem(object):
                 return '{0} (x{1})'.format(self.buildItem.getDisplayName(), self.buildItem.getActionCount())
             else:
                 return self.buildItem.getDisplayName()
+
+        elif role == QtCore.Qt.EditRole:
+            return self.buildItem.getDisplayName()
 
         elif role == QtCore.Qt.DecorationRole:
             iconFile = self.buildItem.getIconFile()
@@ -183,7 +195,7 @@ class ActionTreeItemModel(QtCore.QAbstractItemModel):
         flags = QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsDragEnabled
         item = self.getItem(index)
         if item.isGroup():
-            flags |= QtCore.Qt.ItemIsDropEnabled
+            flags |= QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsDropEnabled
         return flags
 
     def supportedDropActions(self):
@@ -234,6 +246,18 @@ class ActionTreeItemModel(QtCore.QAbstractItemModel):
         
         item = index.internalPointer()
         return item.data(index.column(), role)
+
+    def setData(self, index, value, role=QtCore.Qt.EditRole):
+        if role != QtCore.Qt.EditRole:
+            return False
+
+        item = self.getItem(index)
+        result = item.setData(index.column(), value)
+
+        if result:
+            self.dataChanged.emit(index, index)
+
+        return result
 
     def mimeTypes(self):
         return ['text/plain']
