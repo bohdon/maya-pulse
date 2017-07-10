@@ -56,10 +56,22 @@ class ActionTreeItem(object):
     def __init__(self, buildItem, parent=None):
         # the parent ActionTreeItem of this item
         self._parent = parent
-        # the child ActionTreeItems of this item
-        self.children = []
+        # children are lazily loaded when needed
+        self._children = None
         # the actual BuildItem of this model item
         self.buildItem = buildItem
+
+    @property
+    def children(self):
+        if self._children is None:
+            if self.isGroup():
+                self._children = [ActionTreeItem(c, self) for c in self.buildItem.children]
+            else:
+                self._children = []
+        return self._children
+
+    def isGroup(self):
+        return isinstance(self.buildItem, pulse.BuildGroup)
 
     def appendChild(self, item):
         self.children.append(item)
@@ -80,6 +92,32 @@ class ActionTreeItem(object):
         if self._parent:
             return self._parent.children.index(self)
         return 0
+
+    def insertChildren(self, position, childBuildItems):
+        if not self.isGroup():
+            return False
+
+        if position < 0 or position > len(self.children):
+            return False
+
+        for childBuildItem in childBuildItems:
+            self.buildItem.insertChild(position, childBuildItem)
+            self.children.insert(position, ActionTreeItem(childBuildItem, self))
+
+        return True
+
+    def removeChildren(self, position, count):
+        if not self.isGroup():
+            return False
+
+        if position < 0 or position + count > len(self.children):
+            return False
+
+        for row in range(count):
+            self.buildItem.removeChildAt(position)
+            del self.children[position]
+
+        return True
 
     def data(self, column, role=QtCore.Qt.DisplayRole):
         if role == QtCore.Qt.DisplayRole:
@@ -113,23 +151,23 @@ class ActionTreeItemModel(QtCore.QAbstractItemModel):
         # the blueprint to use for this models data
         self.blueprint = blueprint
         self.rootItem = ActionTreeItem(self.blueprint.rootGroup)
-        self.updateModelItems(self.rootItem)
 
-    def updateModelItems(self, parent):
-        if isinstance(parent.buildItem, pulse.BuildGroup):
-            for childBuildItem in parent.buildItem.children:
-                child = ActionTreeItem(childBuildItem, parent)
-                parent.appendChild(child)
-                self.updateModelItems(child)
+    def getItem(self, index):
+        """
+        Return the ActionTreeItem for a QModelIndex
+        """
+        if index.isValid():
+            item = index.internalPointer()
+            if item:
+                return item
+
+        return self.rootItem
 
     def index(self, row, column, parent): # override
         if not self.hasIndex(row, column, parent):
             return QtCore.QModelIndex()
 
-        if parent.isValid():
-            parentItem = parent.internalPointer()
-        else:
-            parentItem = self.rootItem
+        parentItem = self.getItem(parent)
 
         childItem = parentItem.child(row)
         if childItem:
@@ -138,21 +176,10 @@ class ActionTreeItemModel(QtCore.QAbstractItemModel):
             return QtCore.QModelIndex()
 
     def columnCount(self, parent): # override
-        if parent.isValid():
-            return parent.internalPointer().columnCount()
-        else:
-            return self.rootItem.columnCount()
+        return self.rootItem.columnCount()
 
-    def rowCount(self, parent): # override
-        if parent.column() > 0:
-            return 0
-
-        if parent.isValid():
-            parentItem = parent.internalPointer()
-        else:
-            parentItem = self.rootItem
-
-        return parentItem.childCount()
+    def rowCount(self, parent=QtCore.QModelIndex()): # override
+        return self.getItem(parent).childCount()
 
     def parent(self, index): # override
         if not index.isValid():
@@ -165,6 +192,27 @@ class ActionTreeItemModel(QtCore.QAbstractItemModel):
             return QtCore.QModelIndex()
 
         return self.createIndex(parentItem.row(), 0, parentItem)
+
+    def insertRows(self, position, rows, parent=QtCore.QModelIndex()):
+        raise RuntimeError("Cannot insert rows without data, use insertBuildItems instead")
+
+    def insertBuildItems(self, position, childBuildItems, parent=QtCore.QModelIndex()):
+        parentItem = self.getItem(parent)
+
+        self.beginInsertRows(parent, position, position + len(childBuildItems) - 1)
+        success = parentItem.insertChildren(position, childBuildItems)
+        self.endInsertRows()
+
+        return success
+
+    def removeRows(self, position, rows, parent=QtCore.QModelIndex()):
+        parentItem = self.getItem(parent)
+
+        self.beginRemoveRows(parent, position, position + rows - 1)
+        success = parentItem.removeChildren(position, rows)
+        self.endRemoveRows()
+
+        return success
 
     def data(self, index, role=QtCore.Qt.DisplayRole): # override
         if not index.isValid():
@@ -179,16 +227,27 @@ class ActionTreeWidget(QtWidgets.QWidget):
     
     def __init__(self, parent=None):
         super(ActionTreeWidget, self).__init__(parent=parent)
+        self.blueprint = pulse.Blueprint.fromDefaultNode()
         # build the ui
         self.setupUi(self)
         # connect buttons
         self.refreshBtn.clicked.connect(self.refreshTreeData)
-        # perform initial refresh
+        # update tree model
         self.refreshTreeData()
 
+    def eventFilter(self, widget, event):
+        if (event.type() == QtCore.QEvent.KeyPress and
+            widget is self.treeView):
+            key = event.key()
+            if key == QtCore.Qt.Key_Delete:
+                self.deleteSelectedItems()
+                return True
+        return QtWidgets.QWidget.eventFilter(self, widget, event)
+
     def refreshTreeData(self):
-        model = ActionTreeItemModel(self, pulse.Blueprint.fromDefaultNode())
-        self.treeView.setModel(model)
+        self.blueprint.loadFromDefaultNode()
+        self.model = ActionTreeItemModel(self, self.blueprint)
+        self.treeView.setModel(self.model)
         self.treeView.expandAll()
 
     def setupUi(self, parent):
@@ -204,7 +263,41 @@ class ActionTreeWidget(QtWidgets.QWidget):
         self.treeView.setDragDropMode(QtWidgets.QAbstractItemView.DragDropMode.InternalMove)
         self.treeView.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.ExtendedSelection)
         self.treeView.setIndentation(14)
+        self.treeView.installEventFilter(self)
         lay.addWidget(self.treeView)
+
+    def deleteSelectedItems(self):
+        wasChanged = False
+        while True:
+            indexes = self.treeView.selectionModel().selectedIndexes()
+            if not indexes:
+                break
+            if not self.model.removeRow(indexes[0].row(), indexes[0].parent()):
+                break
+            wasChanged = True
+        if wasChanged:
+            self.blueprint.saveToDefaultNode()
+
+    def getSelectedGroups(self):
+        """
+        Return the currently selected BuildGroup indexes
+        """
+        indexes = self.treeView.selectionModel().selectedIndexes()
+        grps = []
+        for index in indexes:
+            item = index.internalPointer()
+            if item.isGroup():
+                grps.append(index)
+            else:
+                grps.append(index.parent())
+        return list(set(grps))
+
+
+    def getSelectedAction(self):
+        """
+        Return the currently selected BuildAction, if any.
+        """
+        pass
 
 
 class ActionButtonsWidget(QtWidgets.QWidget):
@@ -281,21 +374,47 @@ class ActionTreeWindow(QtWidgets.QMainWindow):
         layout.addWidget(self.actionTree)
 
         self.actionButtons = ActionButtonsWidget(self)
-        self.actionButtons.clicked.connect(self.onActionClicked)
+        self.actionButtons.clicked.connect(self.addBuildAction)
         layout.addWidget(self.actionButtons)
+
+        grpBtn = QtWidgets.QPushButton(self)
+        grpBtn.setText("New Group")
+        grpBtn.clicked.connect(self.addBuildGroup)
+        layout.addWidget(grpBtn)
+
+        initBtn = QtWidgets.QPushButton(self)
+        initBtn.setText("Initialize Default Actions")
+        initBtn.clicked.connect(self.initializeDefaultActions)
+        layout.addWidget(initBtn)
 
         layout.setStretch(layout.indexOf(self.actionTree), 2)
         layout.setStretch(layout.indexOf(self.actionButtons), 1)
 
-    def onActionClicked(self, typeName):
-        blueprint = pulse.Blueprint.fromDefaultNode()
-        if blueprint:
-            ac = pulse.getActionClass(typeName)
+    def initializeDefaultActions(self):
+        self.actionTree.blueprint.initializeDefaultActions()
+        self.actionTree.blueprint.saveToDefaultNode()
+        self.actionTree.refreshTreeData()
+
+    def addBuildGroup(self):
+        if not self.actionTree.blueprint:
+            return
+
+        grpIndexes = self.actionTree.getSelectedGroups()
+        gc = pulse.getBuildItemClass('BuildGroup')
+        for grpIndex in grpIndexes:
+            grp = gc()
+            self.actionTree.model.insertBuildItems(0, [grp], grpIndex)
+        self.actionTree.blueprint.saveToDefaultNode()
+
+    def addBuildAction(self, typeName):
+        if not self.actionTree.blueprint:
+            return
+
+        grpIndexes = self.actionTree.getSelectedGroups()
+        ac = pulse.getActionClass(typeName)
+        for grpIndex in grpIndexes:
             action = ac()
-            mainGrp = blueprint.getBuildGroup('Main')
-            if mainGrp:
-                mainGrp.addChild(action)
-                blueprint.saveToDefaultNode()
-                self.actionTree.refreshTreeData()
+            self.actionTree.model.insertBuildItems(0, [action], grpIndex)
+        self.actionTree.blueprint.saveToDefaultNode()
 
 

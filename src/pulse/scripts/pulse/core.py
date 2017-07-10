@@ -318,6 +318,12 @@ class BuildGroup(BuildItem):
         if item in self.children:
             self.children.remove(item)
 
+    def removeChildAt(self, index):
+        if index < 0 or index >= len(self.children):
+            return
+
+        del self.children[index]
+
     def insertChild(self, index, item):
         if not isinstance(item, BuildItem):
             raise ValueError('{0} is not a valid BuildItem type'.format(type(item).__name__))
