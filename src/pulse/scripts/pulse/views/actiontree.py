@@ -1,6 +1,7 @@
 
 from Qt import QtCore, QtWidgets, QtGui
 import pymel.core as pm
+import pymetanode as meta
 
 import pulse
 
@@ -97,8 +98,8 @@ class ActionTreeItem(object):
         if not self.isGroup():
             return False
 
-        if position < 0 or position > len(self.children):
-            return False
+        if position < 0:
+            position = self.childCount()
 
         for childBuildItem in childBuildItems:
             self.buildItem.insertChild(position, childBuildItem)
@@ -110,7 +111,7 @@ class ActionTreeItem(object):
         if not self.isGroup():
             return False
 
-        if position < 0 or position + count > len(self.children):
+        if position < 0 or position + count > self.childCount():
             return False
 
         for row in range(count):
@@ -175,6 +176,19 @@ class ActionTreeItemModel(QtCore.QAbstractItemModel):
         else:
             return QtCore.QModelIndex()
 
+    def flags(self, index):
+        if not index.isValid():
+            return 0
+
+        flags = QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsDragEnabled
+        item = self.getItem(index)
+        if item.isGroup():
+            flags |= QtCore.Qt.ItemIsDropEnabled
+        return flags
+
+    def supportedDropActions(self):
+        return QtCore.Qt.CopyAction | QtCore.Qt.MoveAction
+
     def columnCount(self, parent): # override
         return self.rootItem.columnCount()
 
@@ -221,6 +235,25 @@ class ActionTreeItemModel(QtCore.QAbstractItemModel):
         item = index.internalPointer()
         return item.data(index.column(), role)
 
+    def mimeTypes(self):
+        return ['text/plain']
+
+    def mimeData(self, indexes):
+        result = QtCore.QMimeData()
+        itemDataList = [index.internalPointer().buildItem.serialize() for index in indexes]
+        datastr = meta.encodeMetaData(itemDataList)
+        result.setData('text/plain', datastr)
+        return result
+
+    def dropMimeData(self, data, action, row, column, parent):
+        try:
+            itemDataList = meta.decodeMetaData(str(data.data('text/plain')))
+        except:
+            return False
+        newBuildItems = [pulse.BuildItem.create(itemData) for itemData in itemDataList]
+        return self.insertBuildItems(row, newBuildItems, parent)
+
+
 
 
 class ActionTreeWidget(QtWidgets.QWidget):
@@ -236,12 +269,12 @@ class ActionTreeWidget(QtWidgets.QWidget):
         self.refreshTreeData()
 
     def eventFilter(self, widget, event):
-        if (event.type() == QtCore.QEvent.KeyPress and
-            widget is self.treeView):
-            key = event.key()
-            if key == QtCore.Qt.Key_Delete:
-                self.deleteSelectedItems()
-                return True
+        if widget is self.treeView:
+            if event.type() == QtCore.QEvent.KeyPress:
+                key = event.key()
+                if key == QtCore.Qt.Key_Delete:
+                    self.deleteSelectedItems()
+                    return True
         return QtWidgets.QWidget.eventFilter(self, widget, event)
 
     def refreshTreeData(self):
