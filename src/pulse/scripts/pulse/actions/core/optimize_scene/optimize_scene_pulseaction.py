@@ -11,7 +11,7 @@ class OptimizeSceneAction(pulse.BuildAction):
         pm.mel.cleanUp_EnableProgressReporting(True)
         pm.mel.deleteInvalidNurbs(0)
         pm.mel.deleteUnusedCommon_Multi(("stitchSrf","rebuildSurface","insertKnotSurface","avgNurbsSurfacePoints"), 0,"")
-        pm.mel.deleteUnusedInUnusedHierarchy("nurbsCurve", 0, "")
+        # pm.mel.deleteUnusedInUnusedHierarchy("nurbsCurve", 0, "")
         pm.mel.deleteUnusedLocators()
         pm.mel.deleteUnusedConstraints()
         pm.mel.deleteUnusedPairBlends()
