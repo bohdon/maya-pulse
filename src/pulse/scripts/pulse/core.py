@@ -840,7 +840,8 @@ class Blueprint(object):
         self.deserialize(data)
 
     def loadFromDefaultNode(self):
-        self.loadFromNode(BLUEPRINT_NODENAME)
+        if pm.cmds.objExists(BLUEPRINT_NODENAME):
+            self.loadFromNode(BLUEPRINT_NODENAME)
 
     def actionIterator(self):
         """

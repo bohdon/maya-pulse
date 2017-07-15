@@ -284,13 +284,13 @@ class ActionTreeWidget(QtWidgets.QWidget):
     
     def __init__(self, parent=None):
         super(ActionTreeWidget, self).__init__(parent=parent)
-        self.blueprint = pulse.Blueprint.fromDefaultNode()
+        self.blueprint = None
         # build the ui
         self.setupUi(self)
         # connect buttons
-        self.refreshBtn.clicked.connect(self.refreshTreeData)
+        self.refreshBtn.clicked.connect(self.reloadBlueprint)
         # update tree model
-        self.refreshTreeData()
+        self.reloadBlueprint()
 
     def eventFilter(self, widget, event):
         if widget is self.treeView:
@@ -301,9 +301,13 @@ class ActionTreeWidget(QtWidgets.QWidget):
                     return True
         return QtWidgets.QWidget.eventFilter(self, widget, event)
 
-    def refreshTreeData(self):
-        self.blueprint.loadFromDefaultNode()
-        self.model = ActionTreeItemModel(self, self.blueprint)
+    def reloadBlueprint(self):
+        self.blueprint = pulse.Blueprint.fromDefaultNode()
+        if self.blueprint:
+            self.model = ActionTreeItemModel(self, self.blueprint)
+        else:
+            self.model = None
+        
         self.treeView.setModel(self.model)
         self.treeView.expandAll()
 
@@ -324,6 +328,9 @@ class ActionTreeWidget(QtWidgets.QWidget):
         lay.addWidget(self.treeView)
 
     def deleteSelectedItems(self):
+        if not self.blueprint:
+            return
+
         wasChanged = False
         while True:
             indexes = self.treeView.selectionModel().selectedIndexes()
@@ -440,17 +447,18 @@ class ActionTreeWindow(QtWidgets.QMainWindow):
         layout.addWidget(grpBtn)
 
         initBtn = QtWidgets.QPushButton(self)
-        initBtn.setText("Initialize Default Actions")
-        initBtn.clicked.connect(self.initializeDefaultActions)
+        initBtn.setText("Create Default Blueprint")
+        initBtn.clicked.connect(self.createDefaultBlueprint)
         layout.addWidget(initBtn)
 
         layout.setStretch(layout.indexOf(self.actionTree), 2)
         layout.setStretch(layout.indexOf(self.actionButtons), 1)
 
-    def initializeDefaultActions(self):
-        self.actionTree.blueprint.initializeDefaultActions()
-        self.actionTree.blueprint.saveToDefaultNode()
-        self.actionTree.refreshTreeData()
+    def createDefaultBlueprint(self):
+        blueprint = pulse.Blueprint()
+        blueprint.initializeDefaultActions()
+        blueprint.saveToDefaultNode()
+        self.actionTree.reloadBlueprint()
 
     def addBuildGroup(self):
         if not self.actionTree.blueprint:
