@@ -1,0 +1,17 @@
+AnimControlAction:
+  displayName: Anim Control
+  description: Configures a node to be used as an animation control
+  color: [.85, .65, .4]
+  category: Controls
+  controlMetaClass: pulse_animcontrol
+  attrs:
+    - name: controlNode
+      type: node
+    - name: createOffset
+      description: Creates an offset transform to absorb local transformations on the control node
+      type: bool
+      value: True
+    - name: keyableAttrs
+      description: Defines attributes that can be animated. All others will be locked
+      type: strlist
+      value: ['t', 'r', 's']

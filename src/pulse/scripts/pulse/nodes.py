@@ -7,6 +7,7 @@ __all__ = [
     'createOffsetGroup',
     'getAllParents',
     'getAssemblies',
+    'getExpandedAttrNames',
     'getParentNodes',
     'setConstraintLocked',
 ]
@@ -117,6 +118,34 @@ def createOffsetGroup(node, name='{0}_offset'):
 
     return offset
 
+
+
+# Attribute Retrieval
+# -------------------
+
+def getExpandedAttrNames(attrs):
+    """
+    Given a list of compound attribute names, return a
+    list of all leaf attributes that they represent.
+    Only supports the more common transform attributes.
+
+    e.g. ['t', 'rx', 'ry'] -> ['tx', 'ty', 'tz', 'rx', 'ry']
+
+    Args:
+        attrs: A list of strings representing attribute names
+    """
+    _attrs = []
+    for attr in attrs:
+        if attr in ('t', 'r', 'rp', 's', 'sp', 'ra'):
+            # translate, rotate, scale and their pivots, also rotate axis
+            _attrs.extend([attr + a for a in 'xyz'])
+        elif attr in ('sh',):
+            # shear
+            _attrs.extend([attr + a for a in ('xy', 'xz', 'yz')])
+        else:
+            # not a known compound attribute
+            _attrs.append(attr)
+    return _attrs
 
 
 
