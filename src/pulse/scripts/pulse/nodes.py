@@ -4,6 +4,7 @@ import pymel.core as pm
 
 __all__ = [
     'convertScaleConstraintToWorldSpace',
+    'createOffsetGroup',
     'getAllParents',
     'getAssemblies',
     'getParentNodes',
@@ -67,6 +68,55 @@ def getAssemblies(nodes):
     if not isinstance(nodes, (list, tuple)):
         nodes = [nodes]
     return list(set([n[:(n+'|').find('|', 1)] for n in nodes]))
+
+
+
+# Node Creation
+# -------------
+
+def createOffsetGroup(node, name='{0}_offset'):
+    """
+    Create a group transform that is inserted as the new parent of
+    a node. The group absorbs all relative transformations of the node
+    so that the nodes local matrix becomes identity. This includes
+    absorbing the rotate axis of the node.
+
+    Args:
+        node: A PyNode to create an offset for
+        name: A string that can optionally be formatted with
+            the name of the node being grouped
+    """
+    # create the offset transform
+    _name = name.format(node.nodeName())
+    offset = pm.createNode('transform', n=_name)
+
+    # parent the offset to the node and reset
+    # its local transformation
+    offset.setParent(node)
+    pm.cmds.xform(offset.nodeName(), objectSpace=True,
+        translation=[0,0,0],
+        rotation=[0,0,0],
+        scale=[1,1,1],
+        shear=[0,0,0],
+    )
+
+    # with transforms now absorbed, move offset to be a sibling of the node
+    offset.setParent(node.getParent())
+
+    # now parent the node to the new offset, and reset its transform
+    node.setParent(offset)
+    pm.cmds.xform(node.nodeName(), objectSpace=True,
+        translation=[0,0,0],
+        rotation=[0,0,0],
+        scale=[1,1,1],
+        shear=[0,0,0],
+        # reset rotate axis since it is now part
+        # of the offset transform
+        rotateAxis=[0,0,0],
+    )
+
+    return offset
+
 
 
 
