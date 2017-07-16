@@ -3,6 +3,7 @@ from Qt import QtCore, QtWidgets, QtGui
 
 import pulse
 from pulse.views.core import PulseWindow
+from pulse.views.actiontree import ActionTreeItemModel
 
 
 __all__ = [
@@ -30,6 +31,7 @@ class BlueprintEditorWidget(QtWidgets.QWidget):
         blueprint = pulse.Blueprint()
         blueprint.initializeDefaultActions()
         blueprint.saveToDefaultNode()
+        ActionTreeItemModel.getSharedModel().reloadBlueprint()
 
 
 

@@ -842,6 +842,8 @@ class Blueprint(object):
     def loadFromDefaultNode(self):
         if pm.cmds.objExists(BLUEPRINT_NODENAME):
             self.loadFromNode(BLUEPRINT_NODENAME)
+            return True
+        return False
 
     def actionIterator(self):
         """

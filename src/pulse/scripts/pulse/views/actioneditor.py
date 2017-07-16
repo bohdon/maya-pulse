@@ -4,6 +4,7 @@ import pymetanode as meta
 
 import pulse
 from pulse.views.core import PulseWindow
+from pulse.views.actiontree import ActionTreeSelectionModel
 
 
 __all__ = [
@@ -17,7 +18,14 @@ class ActionEditorWidget(QtWidgets.QWidget):
     def __init__(self, parent=None):
         super(ActionEditorWidget, self).__init__(parent=parent)
 
+        self.selectionModel = ActionTreeSelectionModel.getSharedModel()
+
         layout = QtWidgets.QVBoxLayout(self)
+
+        self.selectionModel.selectionChanged.connect(self.selectionChanged)
+
+    def selectionChanged(self, selected, deselected):
+        print(selected, deselected)
 
 
 class ActionEditorWindow(PulseWindow):

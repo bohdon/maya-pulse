@@ -7,10 +7,11 @@ from pulse.views.core import PulseWindow
 
 
 __all__ = [
+    'ActionButtonsWidget',
     'ActionTreeItem',
     'ActionTreeItemModel',
+    'ActionTreeSelectionModel',
     'ActionTreeWidget',
-    'ActionButtonsWidget',
     'ActionTreeWindow',
 ]
 
@@ -126,11 +127,26 @@ class ActionTreeItem(object):
 
 class ActionTreeItemModel(QtCore.QAbstractItemModel):
 
-    def __init__(self, parent=None, blueprint=None):
+    INSTANCE = None
+
+    @classmethod
+    def getSharedModel(cls):
+        if not cls.INSTANCE:
+            cls.INSTANCE = cls()
+        return cls.INSTANCE
+
+    def __init__(self, parent=None):
         super(ActionTreeItemModel, self).__init__(parent=parent)
         # the blueprint to use for this models data
-        self.blueprint = blueprint
+        self.blueprint = pulse.Blueprint()
         self.rootItem = ActionTreeItem(self.blueprint.rootGroup)
+
+    def reloadBlueprint(self):
+        if not self.blueprint.loadFromDefaultNode():
+            # no blueprint, reset to new instance
+            self.blueprint = pulse.Blueprint()
+        self.rootItem = ActionTreeItem(self.blueprint.rootGroup)
+        self.modelReset.emit()
 
     def getItem(self, index):
         """
@@ -246,74 +262,22 @@ class ActionTreeItemModel(QtCore.QAbstractItemModel):
 
 
 
+class ActionTreeSelectionModel(QtCore.QItemSelectionModel):
 
-class ActionTreeWidget(QtWidgets.QWidget):
-    
-    def __init__(self, parent=None):
-        super(ActionTreeWidget, self).__init__(parent=parent)
-        self.blueprint = None
-        # build the ui
-        self.setupUi(self)
-        # connect buttons
-        self.refreshBtn.clicked.connect(self.reloadBlueprint)
-        # update tree model
-        self.reloadBlueprint()
+    INSTANCE = None
 
-    def eventFilter(self, widget, event):
-        if widget is self.treeView:
-            if event.type() == QtCore.QEvent.KeyPress:
-                key = event.key()
-                if key == QtCore.Qt.Key_Delete:
-                    self.deleteSelectedItems()
-                    return True
-        return QtWidgets.QWidget.eventFilter(self, widget, event)
-
-    def reloadBlueprint(self):
-        self.blueprint = pulse.Blueprint.fromDefaultNode()
-        if self.blueprint:
-            self.model = ActionTreeItemModel(self, self.blueprint)
-        else:
-            self.model = None
-
-        self.treeView.setModel(self.model)
-        self.treeView.expandAll()
-
-    def setupUi(self, parent):
-        lay = QtWidgets.QVBoxLayout(parent)
-
-        self.refreshBtn = QtWidgets.QPushButton()
-        self.refreshBtn.setText('Refresh')
-        lay.addWidget(self.refreshBtn)
-
-        self.treeView = QtWidgets.QTreeView(parent)
-        self.treeView.setHeaderHidden(True)
-        self.treeView.setDragEnabled(True)
-        self.treeView.setDragDropMode(QtWidgets.QAbstractItemView.DragDropMode.InternalMove)
-        self.treeView.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.ExtendedSelection)
-        self.treeView.setIndentation(14)
-        self.treeView.installEventFilter(self)
-        lay.addWidget(self.treeView)
-
-    def deleteSelectedItems(self):
-        if not self.blueprint:
-            return
-
-        wasChanged = False
-        while True:
-            indexes = self.treeView.selectionModel().selectedIndexes()
-            if not indexes:
-                break
-            if not self.model.removeRow(indexes[0].row(), indexes[0].parent()):
-                break
-            wasChanged = True
-        if wasChanged:
-            self.blueprint.saveToDefaultNode()
+    @classmethod
+    def getSharedModel(cls):
+        if not cls.INSTANCE:
+            cls.INSTANCE = cls(ActionTreeItemModel.getSharedModel())
+            cls.INSTANCE.asdf = 1234
+        return cls.INSTANCE
 
     def getSelectedGroups(self):
         """
         Return the currently selected BuildGroup indexes
         """
-        indexes = self.treeView.selectionModel().selectedIndexes()
+        indexes = self.selectedIndexes()
         grps = []
         for index in indexes:
             item = index.internalPointer()
@@ -331,14 +295,76 @@ class ActionTreeWidget(QtWidgets.QWidget):
         pass
 
 
-class ActionButtonsWidget(QtWidgets.QWidget):
 
-    clicked = QtCore.Signal(str)
+
+class ActionTreeWidget(QtWidgets.QWidget):
+    
+    def __init__(self, parent=None):
+        super(ActionTreeWidget, self).__init__(parent=parent)
+        # get shared models
+        self.model = ActionTreeItemModel.getSharedModel()
+        self.selectionModel = ActionTreeSelectionModel.getSharedModel()
+        # build the ui
+        self.setupUi(self)
+        # connect buttons
+        self.refreshBtn.clicked.connect(self.model.reloadBlueprint)
+
+    def eventFilter(self, widget, event):
+        if widget is self.treeView:
+            if event.type() == QtCore.QEvent.KeyPress:
+                key = event.key()
+                if key == QtCore.Qt.Key_Delete:
+                    self.deleteSelectedItems()
+                    return True
+        return QtWidgets.QWidget.eventFilter(self, widget, event)
+
+    def setupUi(self, parent):
+        lay = QtWidgets.QVBoxLayout(parent)
+
+        self.refreshBtn = QtWidgets.QPushButton()
+        self.refreshBtn.setText('Refresh')
+        lay.addWidget(self.refreshBtn)
+
+        self.treeView = QtWidgets.QTreeView(parent)
+        self.treeView.setHeaderHidden(True)
+        self.treeView.setDragEnabled(True)
+        self.treeView.setDragDropMode(QtWidgets.QAbstractItemView.DragDropMode.InternalMove)
+        self.treeView.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.ExtendedSelection)
+        self.treeView.setIndentation(14)
+        self.treeView.installEventFilter(self)
+        self.treeView.setModel(self.model)
+        self.treeView.setSelectionModel(self.selectionModel)
+        lay.addWidget(self.treeView)
+
+    def deleteSelectedItems(self):
+        wasChanged = False
+        while True:
+            indexes = self.selectionModel.selectedIndexes()
+            if not indexes:
+                break
+            if not self.model.removeRow(indexes[0].row(), indexes[0].parent()):
+                break
+            wasChanged = True
+        if wasChanged:
+            self.model.blueprint.saveToDefaultNode()
+
+
+
+
+class ActionButtonsWidget(QtWidgets.QWidget):
 
     def __init__(self, parent=None):
         super(ActionButtonsWidget, self).__init__(parent=parent)
 
-        lay = QtWidgets.QVBoxLayout(self)
+        self.model = ActionTreeItemModel.getSharedModel()
+        self.selectionModel = ActionTreeSelectionModel.getSharedModel()
+
+        layout = QtWidgets.QVBoxLayout(self)
+
+        grpBtn = QtWidgets.QPushButton(self)
+        grpBtn.setText("New Group")
+        grpBtn.clicked.connect(self.createBuildGroup)
+        layout.addWidget(grpBtn)
 
         registeredActions = pulse.getRegisteredActions().values()
         categories = list(set([ac.config.get('category', 'Default') for ac in registeredActions]))
@@ -363,13 +389,13 @@ class ActionButtonsWidget(QtWidgets.QWidget):
             # set tab label
             tabWidget.setTabText(i, cat)
 
-        lay.addWidget(tabWidget)
+        layout.addWidget(tabWidget)
 
         for actionClass in registeredActions:
             cat = actionClass.config.get('category', 'Default')
             btn = QtWidgets.QPushButton()
             btn.setText(actionClass.config['displayName'])
-            cmd = lambda x=actionClass.getTypeName(): self.onActionClicked(x)
+            cmd = lambda x=actionClass.getTypeName(): self.createBuildAction(x)
             btn.clicked.connect(cmd)
             tabWidgets[cat].layout().addWidget(btn)
 
@@ -378,7 +404,30 @@ class ActionButtonsWidget(QtWidgets.QWidget):
             tabWidgets[cat].layout().addItem(spacer)
 
     def onActionClicked(self, typeName):
+        self.model
         self.clicked.emit(typeName)
+
+    def createBuildGroup(self):
+        if not self.model.blueprint:
+            return
+
+        grpIndexes = self.selectionModel.getSelectedGroups()
+        gc = pulse.getBuildItemClass('BuildGroup')
+        for grpIndex in grpIndexes:
+            grp = gc()
+            self.model.insertBuildItems(0, [grp], grpIndex)
+        self.model.blueprint.saveToDefaultNode()
+
+    def createBuildAction(self, typeName):
+        if not self.model.blueprint:
+            return
+
+        grpIndexes = self.selectionModel.getSelectedGroups()
+        ac = pulse.getActionClass(typeName)
+        for grpIndex in grpIndexes:
+            action = ac()
+            self.model.insertBuildItems(0, [action], grpIndex)
+        self.model.blueprint.saveToDefaultNode()
 
 
 
@@ -402,38 +451,8 @@ class ActionTreeWindow(PulseWindow):
         layout.addWidget(self.actionTree)
 
         self.actionButtons = ActionButtonsWidget(self)
-        self.actionButtons.clicked.connect(self.addBuildAction)
         layout.addWidget(self.actionButtons)
-
-        grpBtn = QtWidgets.QPushButton(self)
-        grpBtn.setText("New Group")
-        grpBtn.clicked.connect(self.addBuildGroup)
-        layout.addWidget(grpBtn)
 
         layout.setStretch(layout.indexOf(self.actionTree), 2)
         layout.setStretch(layout.indexOf(self.actionButtons), 1)
-
-
-    def addBuildGroup(self):
-        if not self.actionTree.blueprint:
-            return
-
-        grpIndexes = self.actionTree.getSelectedGroups()
-        gc = pulse.getBuildItemClass('BuildGroup')
-        for grpIndex in grpIndexes:
-            grp = gc()
-            self.actionTree.model.insertBuildItems(0, [grp], grpIndex)
-        self.actionTree.blueprint.saveToDefaultNode()
-
-    def addBuildAction(self, typeName):
-        if not self.actionTree.blueprint:
-            return
-
-        grpIndexes = self.actionTree.getSelectedGroups()
-        ac = pulse.getActionClass(typeName)
-        for grpIndex in grpIndexes:
-            action = ac()
-            self.actionTree.model.insertBuildItems(0, [action], grpIndex)
-        self.actionTree.blueprint.saveToDefaultNode()
-
 
