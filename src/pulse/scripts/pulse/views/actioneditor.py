@@ -1,4 +1,5 @@
 
+from functools import partial
 from Qt import QtCore, QtWidgets, QtGui
 import pymetanode as meta
 
@@ -9,23 +10,23 @@ from pulse.views.actiontree import ActionTreeSelectionModel
 
 
 __all__ = [
-    'ActionAttrWidget',
+    'ActionAttrForm',
     'ActionEditorWidget',
     'ActionEditorWindow',
     'BatchActionEditorWidget',
     'BuildGroupEditorWidget',
     'BuildItemEditorWidget',
-    'DefaultAttrWidget',
-    'OptionAttrWidget',
+    'DefaultAttrForm',
+    'OptionAttrForm',
 ]
 
 
-ATTR_WIDGET_TYPEMAP = {}
+ATTRFORM_TYPEMAP = {}
 
 
-class ActionAttrWidget(QtWidgets.QWidget):
+class ActionAttrForm(QtWidgets.QWidget):
     """
-    The base class for all widgets used to edit action attributes.
+    The base class for all forms used to edit action attributes.
     Provides input validation and basic signals for keeping
     track of value changes.
     """
@@ -33,12 +34,13 @@ class ActionAttrWidget(QtWidgets.QWidget):
     LABEL_WIDTH = 150
     LABEL_HEIGHT = 20
 
-    valueChanged = QtCore.Signal(object)
+    # valueChanged(newValue, isValueValid)
+    valueChanged = QtCore.Signal(object, bool)
 
     @staticmethod
-    def createAttrWidget(attr, attrValue, parent=None):
+    def createAttrForm(attr, attrValue, parent=None):
         """
-        Create a new ActionAttrWidget of the appropriate
+        Create a new ActionAttrForm of the appropriate
         type based on a BuildAction attribute.
 
         Args:
@@ -46,25 +48,39 @@ class ActionAttrWidget(QtWidgets.QWidget):
             attrValue: The current value of the attribute
         """
         attrType = attr['type']
-        if attrType in ATTR_WIDGET_TYPEMAP:
-            return ATTR_WIDGET_TYPEMAP[attrType](attr, attrValue, parent=parent)
+        if attrType in ATTRFORM_TYPEMAP:
+            return ATTRFORM_TYPEMAP[attrType](attr, attrValue, parent=parent)
         # fallback to the default widget
-        return DefaultAttrWidget(attr, attrValue)
+        return DefaultAttrForm(attr, attrValue)
 
     def __init__(self, attr, attrValue, parent=None):
-        super(ActionAttrWidget, self).__init__(parent=parent)
+        super(ActionAttrForm, self).__init__(parent=parent)
         # the config data of the attribute being edited
         self.attr = attr
         # the current value of the attribute
         self.attrValue = attrValue
         # build the ui
         self.setupUi(self)
+        # update the ui with the current attr value
+        self._setFormValue(self.attrValue)
+        # update current valid state after ui has been setup
+        self.isValueValid = self._isValueValid(self.attrValue)
 
-    def isValid(self):
+    def setAttrValue(self, newValue):
         """
-        Return true if the current attribute value is valid
+        Set the current value of the attribute in this form.
+        Performs partial validation and prevents setting
+        the value if it's type is invalid.
         """
-        raise NotImplementedError
+        # value doesn't need to be valid as long
+        # as it has the right type
+        if self._isValueTypeValid(newValue):
+            self.attrValue = newValue
+            self._setFormValue(newValue)
+            self.isValueValid = self._isValueValid(newValue)
+            return True
+        else:
+            return False
 
     def setupUi(self, parent):
         """
@@ -72,10 +88,59 @@ class ActionAttrWidget(QtWidgets.QWidget):
         """
         raise NotImplementedError
 
+    def _setFormValue(self, attrValue):
+        """
+        Set the current value displayed in the UI form
+        """
+        raise NotImplementedError
+
+    def _getFormValue(self):
+        """
+        Return the current attribute value from the UI form.
+        The result must always be of a valid type for this attr,
+        though the value itself can be invalid.
+        """
+        raise NotImplementedError
+
+    def _isFormValid(self):
+        """
+        Return True if the current form contains valid data.
+        """
+        return True
+
+    def _isValueTypeValid(self, attrValue):
+        """
+        Return True if a potential value for the attribute matches
+        the type of attribute. Attributes of at least a valid
+        type can be saved, even though they may cause issues if not
+        fixed before building.
+        """
+        return True
+
+    def _isValueValid(self, attrValue):
+        """
+        Return True if a potential value for the attribute is valid
+        """
+        return True
+
+    def _valueChanged(self):
+        """
+        Update the current attrValue and isValueValid state.
+        Should be called whenever relevant UI values change.
+        The new value will be retrieved by using `_getFormValue`,
+        and validated using `_isValueValid`
+        """
+        # only emit when form is valid
+        if self._isFormValid():
+            self.attrValue = self._getFormValue()
+            self.isValueValid = self._isValueValid(self.attrValue)
+            self.valueChanged.emit(self.attrValue, self.isValueValid)
+
     def setupDefaultFormUi(self, parent):
         """
-        Builds a default set of UI that creates a standardized
-        attribute editor layout
+        Optional UI setup that builds a standardized layout.
+        Includes a form layout and a label with the attributes name.
+        Should be called at the start of setupUi if desired.
         """
         self.formLayout = QtWidgets.QFormLayout(parent)
         self.formLayout.setContentsMargins(0,0,0,0)
@@ -91,12 +156,16 @@ class ActionAttrWidget(QtWidgets.QWidget):
         self.formLayout.setWidget(0, QtWidgets.QFormLayout.LabelRole, self.label)
 
     def setDefaultFormWidget(self, widget):
+        """
+        Set the attribute field widget for the default form layout.
+        Requires `setupDefaultFormUi` to be used.
+        """
         self.formLayout.setWidget(0, QtWidgets.QFormLayout.FieldRole, widget)
 
 
 
 
-class DefaultAttrWidget(ActionAttrWidget):
+class DefaultAttrForm(ActionAttrForm):
     """
     A catchall attribute widget that can handle any attribute type
     by leveraging pymetanode serialization. Provides a text field
@@ -105,14 +174,31 @@ class DefaultAttrWidget(ActionAttrWidget):
     def setupUi(self, parent):
         self.setupDefaultFormUi(parent)
 
+        self._didFailDecode = False
+
         self.textEdit = QtWidgets.QLineEdit(parent)
         self.textEdit.setStyleSheet('font: 8pt "Consolas Spaced";')
-        self.textEdit.setText(meta.encodeMetaData(self.attrValue))
+        self.textEdit.textChanged.connect(self._valueChanged)
 
         self.setDefaultFormWidget(self.textEdit)
 
+    def _setFormValue(self, attrValue):
+        self.textEdit.setText(meta.encodeMetaData(attrValue))
 
-class OptionAttrWidget(ActionAttrWidget):
+    def _getFormValue(self):
+        return meta.decodeMetaData(self.textEdit.text())
+
+    def _isFormValid(self):
+        try:
+            meta.decodeMetaData(self.textEdit.text())
+            return True
+        except Exception as e:
+            return False
+
+
+
+
+class OptionAttrForm(ActionAttrForm):
 
     def setupUi(self, parent):
         self.setupDefaultFormUi(parent)
@@ -120,10 +206,23 @@ class OptionAttrWidget(ActionAttrWidget):
         self.combo = QtWidgets.QComboBox(parent)
         for option in self.attr['options']:
             self.combo.addItem(option)
+        self.combo.currentIndexChanged.connect(self._valueChanged)
 
         self.setDefaultFormWidget(self.combo)
 
-ATTR_WIDGET_TYPEMAP['option'] = OptionAttrWidget
+    def _setFormValue(self, attrValue):
+        self.combo.setCurrentIndex(attrValue)
+
+    def _getFormValue(self):
+        return self.combo.currentIndex()
+
+    def _isValueTypeValid(self, attrValue):
+        return isinstance(attrValue, (int, long))
+
+    def _isValueValid(self, attrValue):
+        return attrValue >= 0 and attrValue < len(self.attr['options'])
+
+ATTRFORM_TYPEMAP['option'] = OptionAttrForm
 
 
 
@@ -201,8 +300,12 @@ class ActionEditorWidget(BuildItemEditorWidget):
     def setupContentUi(self, parent):
         for attr in self.buildItem.config['attrs']:
             attrValue = getattr(self.buildItem, attr['name'])
-            attrWidget = ActionAttrWidget.createAttrWidget(attr, attrValue, parent=parent)
-            self.layout.addWidget(attrWidget)
+            attrForm = ActionAttrForm.createAttrForm(attr, attrValue, parent=parent)
+            attrForm.valueChanged.connect(partial(self.attrValueChanged, attrForm))
+            self.layout.addWidget(attrForm)
+
+    def attrValueChanged(self, attrForm, attrValue, isValueValid):
+        setattr(self.buildItem, attrForm.attr['name'], attrValue)
 
 
 class BatchActionEditorWidget(BuildItemEditorWidget):

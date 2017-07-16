@@ -255,10 +255,12 @@ class ActionTreeItemModel(QtCore.QAbstractItemModel):
     def dropMimeData(self, data, action, row, column, parent):
         try:
             itemDataList = meta.decodeMetaData(str(data.data('text/plain')))
-        except:
+        except Exception as e:
+            print(e)
             return False
-        newBuildItems = [pulse.BuildItem.create(itemData) for itemData in itemDataList]
-        return self.insertBuildItems(row, newBuildItems, parent)
+        else:
+            newBuildItems = [pulse.BuildItem.create(itemData) for itemData in itemDataList]
+            return self.insertBuildItems(row, newBuildItems, parent)
 
 
 
@@ -307,7 +309,7 @@ class ActionTreeWidget(QtWidgets.QWidget):
         self.setupUi(self)
         # connect buttons
         self.refreshBtn.clicked.connect(self.model.reloadBlueprint)
-        
+
         self.model.reloadBlueprint()
 
     def eventFilter(self, widget, event):
