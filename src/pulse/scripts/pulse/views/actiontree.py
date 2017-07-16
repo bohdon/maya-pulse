@@ -1,51 +1,18 @@
 
 from Qt import QtCore, QtWidgets, QtGui
-import pymel.core as pm
 import pymetanode as meta
 
 import pulse
-
-# the title of the window
-WINDOW_TITLE = 'PulseActionTree'
-# the name of the action tree maya window
-WINDOW_OBJECT = 'pulseActionTreeWindow'
+from pulse.views.core import PulseWindow
 
 
-def _mainWindow():
-    """
-    Return Maya's main Qt window
-    """
-    for obj in QtWidgets.qApp.topLevelWidgets():
-        if obj.objectName() == 'MayaWindow':
-            return obj
-    raise RuntimeError('Could not find MayaWindow instance')
-
-def _deleteUI():
-    """
-    Delete existing ActionTreeWindow
-    """
-    if pm.cmds.window(WINDOW_OBJECT, q=True, exists=True):
-        pm.cmds.deleteUI(WINDOW_OBJECT)
-    if pm.cmds.dockControl('MayaWindow|' + WINDOW_TITLE, q=True, ex=True):
-        pm.cmds.deleteUI('MayaWindow|' + WINDOW_TITLE)
-
-def show(dock=False):
-    """
-    Show the ActionTreeWindow
-    """
-    _deleteUI()
-
-    window = ActionTreeWindow(parent=_mainWindow())
-
-    if not dock:
-        window.show()
-    else:
-        allowedAreas = ['right', 'left']
-        pm.cmds.dockControl(WINDOW_TITLE, label=WINDOW_TITLE, area='left',
-                         content=WINDOW_OBJECT, allowedArea=allowedAreas)
-
-    return window
-
+__all__ = [
+    'ActionTreeItem',
+    'ActionTreeItemModel',
+    'ActionTreeWidget',
+    'ActionButtonsWidget',
+    'ActionTreeWindow',
+]
 
 
 class ActionTreeItem(object):
@@ -307,7 +274,7 @@ class ActionTreeWidget(QtWidgets.QWidget):
             self.model = ActionTreeItemModel(self, self.blueprint)
         else:
             self.model = None
-        
+
         self.treeView.setModel(self.model)
         self.treeView.expandAll()
 
@@ -416,17 +383,14 @@ class ActionButtonsWidget(QtWidgets.QWidget):
 
 
 
-class ActionTreeWindow(QtWidgets.QMainWindow):
+class ActionTreeWindow(PulseWindow):
+
+    OBJECT_NAME = 'pulseActionTreeWindow'
 
     def __init__(self, parent=None):
         super(ActionTreeWindow, self).__init__(parent=parent)
 
-        # set object name and window title for maya to find
-        self.setObjectName(WINDOW_OBJECT)
-        self.setWindowTitle(WINDOW_TITLE)
-
-        self.setWindowFlags(QtCore.Qt.Window)
-        self.setProperty("saveWindowPref", True)
+        self.setWindowTitle('Pulse Action Tree')
 
         widget = QtWidgets.QWidget(self)
         self.setCentralWidget(widget)
@@ -446,19 +410,9 @@ class ActionTreeWindow(QtWidgets.QMainWindow):
         grpBtn.clicked.connect(self.addBuildGroup)
         layout.addWidget(grpBtn)
 
-        initBtn = QtWidgets.QPushButton(self)
-        initBtn.setText("Create Default Blueprint")
-        initBtn.clicked.connect(self.createDefaultBlueprint)
-        layout.addWidget(initBtn)
-
         layout.setStretch(layout.indexOf(self.actionTree), 2)
         layout.setStretch(layout.indexOf(self.actionButtons), 1)
 
-    def createDefaultBlueprint(self):
-        blueprint = pulse.Blueprint()
-        blueprint.initializeDefaultActions()
-        blueprint.saveToDefaultNode()
-        self.actionTree.reloadBlueprint()
 
     def addBuildGroup(self):
         if not self.actionTree.blueprint:
