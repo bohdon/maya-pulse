@@ -287,7 +287,6 @@ class ActionTreeSelectionModel(QtCore.QItemSelectionModel):
                 grps.append(index.parent())
         return list(set(grps))
 
-
     def getSelectedAction(self):
         """
         Return the currently selected BuildAction, if any.
@@ -308,6 +307,8 @@ class ActionTreeWidget(QtWidgets.QWidget):
         self.setupUi(self)
         # connect buttons
         self.refreshBtn.clicked.connect(self.model.reloadBlueprint)
+        
+        self.model.reloadBlueprint()
 
     def eventFilter(self, widget, event):
         if widget is self.treeView:
@@ -378,6 +379,7 @@ class ActionButtonsWidget(QtWidgets.QWidget):
             tab = QtWidgets.QWidget()
             tabOuterLay = QtWidgets.QVBoxLayout(tab)
             tabScroll = QtWidgets.QScrollArea(tab)
+            tabScroll.setFrameShape(QtWidgets.QScrollArea.NoFrame)
             tabScroll.setWidgetResizable(True)
             tabScrollWidget = QtWidgets.QWidget(tab)
             tabLay = QtWidgets.QVBoxLayout(tabScrollWidget)
