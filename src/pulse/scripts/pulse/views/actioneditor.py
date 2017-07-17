@@ -8,7 +8,7 @@ import pulse
 import pulse.names
 from pulse.views.core import PulseWindow
 from pulse.views import utils as viewutils
-from pulse.views.actiontree import ActionTreeSelectionModel
+from pulse.views.actiontree import ActionTreeItemModel, ActionTreeSelectionModel
 
 
 __all__ = [
@@ -348,6 +348,8 @@ class BuildItemEditorWidget(QtWidgets.QWidget):
     Base class for a form for editing any type of BuildItem
     """
 
+    buildItemChanged = QtCore.Signal()
+
     @staticmethod
     def createItemWidget(buildItem, parent=None):
         if isinstance(buildItem, pulse.BuildGroup):
@@ -412,6 +414,7 @@ class BuildGroupEditorWidget(BuildItemEditorWidget):
 
 
 class ActionEditorWidget(BuildItemEditorWidget):
+
     def setupContentUi(self, parent):
         for attr in self.buildItem.config['attrs']:
             attrValue = getattr(self.buildItem, attr['name'])
@@ -421,6 +424,7 @@ class ActionEditorWidget(BuildItemEditorWidget):
 
     def attrValueChanged(self, attrForm, attrValue, isValueValid):
         setattr(self.buildItem, attrForm.attr['name'], attrValue)
+        self.buildItemChanged.emit()
 
 
 class BatchActionEditorWidget(BuildItemEditorWidget):
@@ -446,6 +450,7 @@ class ActionEditorWindow(PulseWindow):
         self.setCentralWidget(widget)
         self.setupUi(widget)
 
+        self.model = ActionTreeItemModel.getSharedModel()
         self.selectionModel = ActionTreeSelectionModel.getSharedModel()
         self.selectionModel.selectionChanged.connect(self.selectionChanged)
 
@@ -481,4 +486,9 @@ class ActionEditorWindow(PulseWindow):
     def setupItemsUi(self, parent):
         for buildItem in self.buildItems[:1]:
             itemWidget = BuildItemEditorWidget.createItemWidget(buildItem, parent=parent)
+            itemWidget.buildItemChanged.connect(partial(self.buildItemChanged, itemWidget))
             self.layout.addWidget(itemWidget)
+
+    def buildItemChanged(self, itemWidget):
+        self.model.blueprint.saveToDefaultNode()
+
