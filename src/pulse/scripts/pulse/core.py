@@ -551,7 +551,7 @@ class BatchBuildAction(BuildItem):
         return 'BatchBuildAction'
 
     @staticmethod
-    def fromBuildAction(action):
+    def fromAction(action):
         """
         Return a new BatchBuildAction using a BuildAction as reference
 

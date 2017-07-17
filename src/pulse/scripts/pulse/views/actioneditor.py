@@ -15,7 +15,6 @@ __all__ = [
     'ActionAttrForm',
     'ActionEditorWidget',
     'ActionEditorWindow',
-    'BatchActionEditorWidget',
     'BoolAttrForm',
     'BuildGroupEditorWidget',
     'BuildItemEditorWidget',
@@ -354,16 +353,15 @@ class BuildItemEditorWidget(QtWidgets.QWidget):
     def createItemWidget(buildItem, parent=None):
         if isinstance(buildItem, pulse.BuildGroup):
             return BuildGroupEditorWidget(buildItem, parent=parent)
-        elif isinstance(buildItem, pulse.BuildAction):
+        elif isinstance(buildItem, (pulse.BuildAction, pulse.BatchBuildAction)):
             return ActionEditorWidget(buildItem, parent=parent)
-        elif isinstance(buildItem, pulse.BatchBuildAction):
-            return BatchActionEditorWidget(buildItem, parent=parent)
         return QtWidgets.QWidget(parent=parent)
 
     def __init__(self, buildItem, parent=None):
         super(BuildItemEditorWidget, self).__init__(parent=parent)
         self.buildItem = buildItem
         self.setupUi(self)
+        self.setupContentUi(self)
 
     def setupUi(self, parent):
         """
@@ -375,19 +373,21 @@ class BuildItemEditorWidget(QtWidgets.QWidget):
         layout.setSpacing(12)
 
         # header frame
-        headerFrame = QtWidgets.QFrame(parent)
-        headerFrame.setStyleSheet(".QFrame{ background-color: rgba(255, 255, 255, 30); }")
-        layout.addWidget(headerFrame)
+        self.headerFrame = QtWidgets.QFrame(parent)
+        self.headerFrame.setStyleSheet(".QFrame{ background-color: rgba(255, 255, 255, 30); }")
+        layout.addWidget(self.headerFrame)
         # header layout
-        headerLay = QtWidgets.QHBoxLayout(headerFrame)
+        self.headerLayout = QtWidgets.QHBoxLayout(self.headerFrame)
+        self.headerLayout.setContentsMargins(10, 4, 4, 4)
         # display name label
         font = QtGui.QFont()
         font.setWeight(75)
         font.setBold(True)
-        self.displayNameLabel = QtWidgets.QLabel(headerFrame)
+        self.displayNameLabel = QtWidgets.QLabel(self.headerFrame)
+        self.displayNameLabel.setMinimumHeight(20)
         self.displayNameLabel.setFont(font)
         self.displayNameLabel.setText(self.buildItem.getDisplayName())
-        headerLay.addWidget(self.displayNameLabel)
+        self.headerLayout.addWidget(self.displayNameLabel)
 
         # body layout
         bodyLay = QtWidgets.QVBoxLayout(parent)
@@ -401,8 +401,6 @@ class BuildItemEditorWidget(QtWidgets.QWidget):
         spacer = QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
         bodyLay.addItem(spacer)
 
-        self.setupContentUi(parent)
-
     def setupContentUi(self, parent):
         pass
 
@@ -414,12 +412,71 @@ class BuildGroupEditorWidget(BuildItemEditorWidget):
 
 
 class ActionEditorWidget(BuildItemEditorWidget):
+    """
+    Editor widget for both BuildActions and BatchBuildActions.
+    Creates an ActionAttrForm for all attributes of the action.
+    """
+
+    convertToBatchClicked = QtCore.Signal()
+    convertToActionClicked = QtCore.Signal()
+
+    def isBatchAction(self):
+        return isinstance(self.buildItem, pulse.BatchBuildAction)
+
+    def setupUi(self, parent):
+        super(ActionEditorWidget, self).setupUi(parent)
+
+        # add action -> batch conversion button to header
+        self.convertToBatchBtn = QtWidgets.QPushButton(parent)
+        self.convertToBatchBtn.setVisible(not self.isBatchAction())
+        self.convertToBatchBtn.setIcon(viewutils.getIcon("convertActionToBatch.png"))
+        self.convertToBatchBtn.setFixedSize(QtCore.QSize(20, 20))
+        self.convertToBatchBtn.clicked.connect(self.convertToBatchClicked.emit)
+        self.headerLayout.addWidget(self.convertToBatchBtn)
+
+        # add batch -> action conversion button to header
+        self.convertToActionBtn = QtWidgets.QPushButton(parent)
+        self.convertToActionBtn.setVisible(self.isBatchAction())
+        self.convertToActionBtn.setIcon(viewutils.getIcon("convertBatchToAction.png"))
+        self.convertToActionBtn.setFixedSize(QtCore.QSize(20, 20))
+        self.convertToActionBtn.clicked.connect(self.convertToActionClicked.emit)
+        self.headerLayout.addWidget(self.convertToActionBtn)
 
     def setupContentUi(self, parent):
+        if self.isBatchAction():
+            self.setupBatchContentUi(parent)
+        else:
+            self.setupActionContentUi(parent)
+
+    def setupActionContentUi(self, parent):
         for attr in self.buildItem.config['attrs']:
             attrValue = getattr(self.buildItem, attr['name'])
             attrForm = ActionAttrForm.createAttrForm(attr, attrValue, parent=parent)
             attrForm.valueChanged.connect(partial(self.attrValueChanged, attrForm))
+            self.layout.addWidget(attrForm)
+
+    def setupBatchContentUi(self, parent):
+        label1 = QtWidgets.QLabel(parent)
+        label1.setText("Constant:")
+        self.layout.addWidget(label1)
+
+        # forms for all constant attributes
+        for attrName, attrValue in self.buildItem.constantValues.iteritems():
+            attr = self.buildItem.actionClass.getAttrConfig(attrName)
+            attrForm = ActionAttrForm.createAttrForm(attr, attrValue, parent=parent)
+            # attrForm.valueChanged.connect(partial(self.attrValueChanged, attrForm))
+            self.layout.addWidget(attrForm)
+
+        label2 = QtWidgets.QLabel(parent)
+        label2.setText("Variant:")
+        self.layout.addWidget(label2)
+
+        # forms for all variant attributes
+        for attrName in self.buildItem.variantAttributes:
+            attrValue = None
+            attr = self.buildItem.actionClass.getAttrConfig(attrName)
+            attrForm = ActionAttrForm.createAttrForm(attr, attrValue, parent=parent)
+            # attrForm.valueChanged.connect(partial(self.attrValueChanged, attrForm))
             self.layout.addWidget(attrForm)
 
     def attrValueChanged(self, attrForm, attrValue, isValueValid):
@@ -472,8 +529,7 @@ class ActionEditorWindow(PulseWindow):
 
     def selectionChanged(self, selected, deselected):
         self.clearItemsUi()
-        self.buildItems = [i.internalPointer().buildItem for i in self.selectionModel.selectedIndexes()]
-        self.setupItemsUi(self.scrollWidget)
+        self.setupItemsUi(self.selectionModel.selectedIndexes(), self.scrollWidget)
 
     def clearItemsUi(self):
         while True:
@@ -483,12 +539,42 @@ class ActionEditorWindow(PulseWindow):
             else:
                 break
 
-    def setupItemsUi(self, parent):
-        for buildItem in self.buildItems[:1]:
+    def setupItemsUi(self, itemIndexes, parent):
+        for index in itemIndexes[:1]:
+            buildItem = index.internalPointer().buildItem
             itemWidget = BuildItemEditorWidget.createItemWidget(buildItem, parent=parent)
             itemWidget.buildItemChanged.connect(partial(self.buildItemChanged, itemWidget))
+            if isinstance(itemWidget, ActionEditorWidget):
+                itemWidget.convertToBatchClicked.connect(partial(self.convertActionToBatch, index))
+                itemWidget.convertToActionClicked.connect(partial(self.convertBatchToAction, index))
             self.layout.addWidget(itemWidget)
 
     def buildItemChanged(self, itemWidget):
         self.model.blueprint.saveToDefaultNode()
+
+    def convertActionToBatch(self, itemModelIndex):
+        # create new BatchBuildAction
+        oldAction = itemModelIndex.internalPointer().buildItem
+        newAction = pulse.BatchBuildAction.fromAction(oldAction)
+        # replace the item in the model
+        parentIndex = itemModelIndex.parent()
+        row = itemModelIndex.row()
+        self.model.removeRows(row, 1, parentIndex)
+        self.model.insertBuildItems(row, [newAction], parentIndex)
+        self.model.blueprint.saveToDefaultNode()
+        # select new item
+        self.selectionModel.select(self.model.index(row, 0, parentIndex), QtCore.QItemSelectionModel.Select)
+
+    def convertBatchToAction(self, itemModelIndex):
+        # create new BuildAction
+        oldAction = itemModelIndex.internalPointer().buildItem
+        newAction = pulse.BuildAction.fromBatchAction(oldAction)
+        # replace the item in the model
+        parentIndex = itemModelIndex.parent()
+        row = itemModelIndex.row()
+        self.model.removeRows(row, 1, parentIndex)
+        self.model.insertBuildItems(row, [newAction], parentIndex)
+        self.model.blueprint.saveToDefaultNode()
+        # select new item
+        self.selectionModel.select(self.model.index(row, 0, parentIndex), QtCore.QItemSelectionModel.Select)
 
