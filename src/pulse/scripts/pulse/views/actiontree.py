@@ -137,9 +137,9 @@ class ActionTreeItemModel(QtCore.QAbstractItemModel):
 
     def __init__(self, parent=None):
         super(ActionTreeItemModel, self).__init__(parent=parent)
-        # the blueprint to use for this models data
+        # load the blueprint from the scene
         self.blueprint = pulse.Blueprint()
-        self.rootItem = ActionTreeItem(self.blueprint.rootGroup)
+        self.reloadBlueprint()
 
     def reloadBlueprint(self):
         if not self.blueprint.loadFromDefaultNode():
@@ -307,10 +307,12 @@ class ActionTreeWidget(QtWidgets.QWidget):
         self.selectionModel = ActionTreeSelectionModel.getSharedModel()
         # build the ui
         self.setupUi(self)
-        # connect buttons
+        # connect signals
         self.refreshBtn.clicked.connect(self.model.reloadBlueprint)
+        self.model.modelReset.connect(self.onBlueprintLoaded)
 
-        self.model.reloadBlueprint()
+    def onBlueprintLoaded(self):
+        self.treeView.expandAll()
 
     def eventFilter(self, widget, event):
         if widget is self.treeView:
@@ -337,6 +339,7 @@ class ActionTreeWidget(QtWidgets.QWidget):
         self.treeView.installEventFilter(self)
         self.treeView.setModel(self.model)
         self.treeView.setSelectionModel(self.selectionModel)
+        self.treeView.expandAll()
         lay.addWidget(self.treeView)
 
     def deleteSelectedItems(self):

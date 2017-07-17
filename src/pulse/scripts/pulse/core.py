@@ -5,6 +5,7 @@ import os
 import logging
 import time
 import tempfile
+import traceback
 import yaml
 from datetime import datetime
 
@@ -1089,6 +1090,7 @@ class BlueprintBuilder(object):
         if self.debug:
             # when debugging, show stack trace
             self.log.error('{0}'.format(action.getDisplayName()), exc_info=True)
+            traceback.print_exc()
         else:
             self.log.error('{0} : {1}'.format(action.getDisplayName(), error))
 
