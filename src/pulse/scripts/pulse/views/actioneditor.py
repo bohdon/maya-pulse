@@ -15,6 +15,7 @@ __all__ = [
     'ActionAttrForm',
     'ActionEditorWidget',
     'ActionEditorWindow',
+    'BatchActionEditorWidget',
     'BoolAttrForm',
     'BuildGroupEditorWidget',
     'BuildItemEditorWidget',
@@ -353,8 +354,10 @@ class BuildItemEditorWidget(QtWidgets.QWidget):
     def createItemWidget(buildItem, parent=None):
         if isinstance(buildItem, pulse.BuildGroup):
             return BuildGroupEditorWidget(buildItem, parent=parent)
-        elif isinstance(buildItem, (pulse.BuildAction, pulse.BatchBuildAction)):
+        elif isinstance(buildItem, pulse.BuildAction):
             return ActionEditorWidget(buildItem, parent=parent)
+        elif isinstance(buildItem, pulse.BatchBuildAction):
+            return BatchActionEditorWidget(buildItem, parent=parent)
         return QtWidgets.QWidget(parent=parent)
 
     def __init__(self, buildItem, parent=None):
@@ -409,10 +412,10 @@ class BuildItemEditorWidget(QtWidgets.QWidget):
         bodyLay = QtWidgets.QVBoxLayout(parent)
         layout.addLayout(bodyLay)
         # main body content layout
-        self.layout = QtWidgets.QVBoxLayout(parent)
+        self.mainLayout = QtWidgets.QVBoxLayout(parent)
         # no spacing between attributes
-        self.layout.setSpacing(0)
-        bodyLay.addLayout(self.layout)
+        self.mainLayout.setSpacing(0)
+        bodyLay.addLayout(self.mainLayout)
         # body spacer
         spacer = QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
         bodyLay.addItem(spacer)
@@ -436,82 +439,187 @@ class ActionEditorWidget(BuildItemEditorWidget):
     """
 
     convertToBatchClicked = QtCore.Signal()
-    convertToActionClicked = QtCore.Signal()
-
-    def isBatchAction(self):
-        return isinstance(self.buildItem, pulse.BatchBuildAction)
-
-    def getItemDisplayName(self):
-        if self.isBatchAction():
-            return 'Batch {0} (x{1})'.format(self.buildItem.getDisplayName(), self.buildItem.getActionCount())
-        else:
-            return super(ActionEditorWidget, self).getItemDisplayName()
 
     def setupUi(self, parent):
         super(ActionEditorWidget, self).setupUi(parent)
 
-        # add action -> batch conversion button to header
-        self.convertToBatchBtn = QtWidgets.QPushButton(parent)
-        self.convertToBatchBtn.setVisible(not self.isBatchAction())
-        self.convertToBatchBtn.setIcon(viewutils.getIcon("convertActionToBatch.png"))
-        self.convertToBatchBtn.setFixedSize(QtCore.QSize(20, 20))
-        self.convertToBatchBtn.clicked.connect(self.convertToBatchClicked.emit)
-        self.headerLayout.addWidget(self.convertToBatchBtn)
-
-        # add batch -> action conversion button to header
-        self.convertToActionBtn = QtWidgets.QPushButton(parent)
-        self.convertToActionBtn.setVisible(self.isBatchAction())
-        self.convertToActionBtn.setIcon(viewutils.getIcon("convertBatchToAction.png"))
-        self.convertToActionBtn.setFixedSize(QtCore.QSize(20, 20))
-        self.convertToActionBtn.clicked.connect(self.convertToActionClicked.emit)
-        self.headerLayout.addWidget(self.convertToActionBtn)
+        # add batch conversion button to header
+        convertToBatchBtn = QtWidgets.QPushButton(parent)
+        convertToBatchBtn.setIcon(viewutils.getIcon("convertActionToBatch.png"))
+        convertToBatchBtn.setFixedSize(QtCore.QSize(20, 20))
+        convertToBatchBtn.clicked.connect(self.convertToBatchClicked.emit)
+        self.headerLayout.addWidget(convertToBatchBtn)
 
     def setupContentUi(self, parent):
-        if self.isBatchAction():
-            self.setupBatchContentUi(parent)
-        else:
-            self.setupActionContentUi(parent)
-
-    def setupActionContentUi(self, parent):
         for attr in self.buildItem.config['attrs']:
             attrValue = getattr(self.buildItem, attr['name'])
             attrForm = ActionAttrForm.createAttrForm(attr, attrValue, parent=parent)
             attrForm.valueChanged.connect(partial(self.attrValueChanged, attrForm))
-            self.layout.addWidget(attrForm)
-
-    def setupBatchContentUi(self, parent):
-        label1 = QtWidgets.QLabel(parent)
-        label1.setText("Constant:")
-        self.layout.addWidget(label1)
-
-        # forms for all constant attributes
-        for attrName, attrValue in self.buildItem.constantValues.iteritems():
-            attr = self.buildItem.actionClass.getAttrConfig(attrName)
-            attrForm = ActionAttrForm.createAttrForm(attr, attrValue, parent=parent)
-            # attrForm.valueChanged.connect(partial(self.attrValueChanged, attrForm))
-            self.layout.addWidget(attrForm)
-
-        label2 = QtWidgets.QLabel(parent)
-        label2.setText("Variant:")
-        self.layout.addWidget(label2)
-
-        # forms for all variant attributes
-        for attrName in self.buildItem.variantAttributes:
-            attrValue = None
-            attr = self.buildItem.actionClass.getAttrConfig(attrName)
-            attrForm = ActionAttrForm.createAttrForm(attr, attrValue, parent=parent)
-            # attrForm.valueChanged.connect(partial(self.attrValueChanged, attrForm))
-            self.layout.addWidget(attrForm)
+            self.mainLayout.addWidget(attrForm)
 
     def attrValueChanged(self, attrForm, attrValue, isValueValid):
         setattr(self.buildItem, attrForm.attr['name'], attrValue)
         self.buildItemChanged.emit()
 
 
+
 class BatchActionEditorWidget(BuildItemEditorWidget):
-    pass
+
+    convertToActionClicked = QtCore.Signal()
+
+    def getItemDisplayName(self):
+        return 'Batch {0} (x{1})'.format(self.buildItem.getDisplayName(), self.buildItem.getActionCount())
+
+    def setupUi(self, parent):
+        super(BatchActionEditorWidget, self).setupUi(parent)
+
+        # add action conversion button to header
+        convertToActionBtn = QtWidgets.QPushButton(parent)
+        convertToActionBtn.setIcon(viewutils.getIcon("convertBatchToAction.png"))
+        convertToActionBtn.setFixedSize(QtCore.QSize(20, 20))
+        convertToActionBtn.clicked.connect(self.convertToActionClicked.emit)
+        self.headerLayout.addWidget(convertToActionBtn)
+
+    def setupContentUi(self, parent):
+        """
+        Build the content ui for this BatchBuildAction.
+        Creates ui to manage the array of variant attributes.
+        """
+
+        # constants main layout
+        self.constantsLayout = QtWidgets.QVBoxLayout(parent)
+        self.constantsLayout.setContentsMargins(0, 0, 0, 0)
+        self.mainLayout.addLayout(self.constantsLayout)
+
+        spacer = QtWidgets.QSpacerItem(24, 24, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
+        self.mainLayout.addItem(spacer)
+
+        # variant header
+        variantHeader = QtWidgets.QFrame(parent)
+        variantHeader.setStyleSheet(".QFrame{ background-color: rgb(255, 255, 255, 20); }")
+        self.mainLayout.addWidget(variantHeader)
+
+        variantHeaderLayout = QtWidgets.QHBoxLayout(variantHeader)
+        variantHeaderLayout.setContentsMargins(10, 4, 4, 4)
+        variantHeaderLayout.setSpacing(4)
+
+        self.variantsLabel = QtWidgets.QLabel(variantHeader)
+        self.variantsLabel.setText("Variants: {0}".format(len(self.buildItem.variantValues)))
+        variantHeaderLayout.addWidget(self.variantsLabel)
+
+        addBtn = QtWidgets.QPushButton(variantHeader)
+        addBtn.setText('+')
+        addBtn.setFixedSize(QtCore.QSize(20, 20))
+        addBtn.clicked.connect(self.addVariant)
+        variantHeaderLayout.addWidget(addBtn)
+
+        removeBtn = QtWidgets.QPushButton(variantHeader)
+        removeBtn.setText('-')
+        removeBtn.setFixedSize(QtCore.QSize(20, 20))
+        removeBtn.clicked.connect(self.removeVariantFromEnd)
+        variantHeaderLayout.addWidget(removeBtn)
+
+        # variant list main layout
+        self.variantLayout = QtWidgets.QVBoxLayout(parent)
+        self.variantLayout.setContentsMargins(0, 0, 0, 0)
+        self.mainLayout.addLayout(self.variantLayout)
+
+        self.setupConstantsUi(parent)
+        self.setupVariantsUi(parent)
+
+    def setupConstantsUi(self, parent):
+        viewutils.clearLayout(self.constantsLayout)
+
+        # create attr form all constant attributes
+        for attr in self.buildItem.actionClass.config['attrs']:
+            isConstant = (attr['name'] in self.buildItem.constantValues)
+            # always make an HBox with a button to toggle variant state
+            attrHLayout = QtWidgets.QHBoxLayout(parent)
+            attrHLayout.setContentsMargins(0, 0, 0, 0)
+            self.constantsLayout.addLayout(attrHLayout)
+
+            # not a constant value, add a line with button to make it constant
+            # button to toggle variant
+            toggleVariantBtn = QtWidgets.QPushButton(parent)
+            toggleVariantBtn.setText("v")
+            toggleVariantBtn.setFixedSize(QtCore.QSize(20, 20))
+            toggleVariantBtn.setCheckable(True)
+            toggleVariantBtn.setChecked(not isConstant)
+            attrHLayout.addWidget(toggleVariantBtn)
+            toggleVariantBtn.clicked.connect(partial(self.setIsVariantAttr, attr['name'], isConstant))
+
+            if isConstant:
+                # constant value, make an attr form
+                attrValue = self.buildItem.constantValues[attr['name']]
+                context = self.buildItem.constantValues
+                attrForm = ActionAttrForm.createAttrForm(attr, attrValue, parent=parent)
+                attrForm.valueChanged.connect(partial(self.attrValueChanged, context, attrForm))
+                attrHLayout.addWidget(attrForm)
+            else:
+                # variant value, just make a label
+                attrLabel = QtWidgets.QLabel(parent)
+                # extra 2 to account for the left-side frame padding that occurs in the ActionAttrForm
+                attrLabel.setFixedSize(QtCore.QSize(ActionAttrForm.LABEL_WIDTH + 2, ActionAttrForm.LABEL_HEIGHT))
+                attrLabel.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignTrailing|QtCore.Qt.AlignTop)
+                attrLabel.setMargin(2)
+                attrLabel.setText(pulse.names.toTitle(attr['name']))
+                attrLabel.setEnabled(False)
+                attrHLayout.addWidget(attrLabel)
+
+                spacer = QtWidgets.QSpacerItem(24, 24, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
+                attrHLayout.addItem(spacer)
+
+    def setupVariantsUi(self, parent):
+        viewutils.clearLayout(self.variantLayout)
+
+        self.variantsLabel.setText("Variants: {0}".format(len(self.buildItem.variantValues)))
+        for i, variant in enumerate(self.buildItem.variantValues):
+
+            layout = QtWidgets.QVBoxLayout(parent)
+            self.variantLayout.addLayout(layout)
+
+            label = QtWidgets.QLabel(parent)
+            label.setText("{0}:".format(i))
+            layout.addWidget(label)
+
+            # create attr form for all variant attributes
+            for attr in self.buildItem.actionClass.config['attrs']:
+                if attr['name'] not in self.buildItem.variantAttributes:
+                    continue
+                attrValue = variant[attr['name']]
+                # context = variant
+                attrForm = ActionAttrForm.createAttrForm(attr, attrValue, parent=parent)
+                attrForm.valueChanged.connect(partial(self.attrValueChanged, variant, attrForm))
+                layout.addWidget(attrForm)
 
 
+    def setIsVariantAttr(self, attrName, isVariant):
+        if isVariant:
+            self.buildItem.addVariantAttr(attrName)
+        else:
+            self.buildItem.removeVariantAttr(attrName)
+        self.setupConstantsUi(self)
+        self.setupVariantsUi(self)
+
+    def addVariant(self):
+        self.buildItem.addVariant()
+        self.setupVariantsUi(self)
+
+    def removeVariantFromEnd(self):
+        self.buildItem.removeVariantAt(-1)
+        self.setupVariantsUi(self)
+
+    def attrValueChanged(self, context, attrForm, attrValue, isValueValid):
+        """
+        Args:
+            context: A dict representing the either constantValues object or
+                a variant within the batch action
+        """
+        attrName = attrForm.attr['name']
+        # prevent adding new keys to the context dict
+        if attrName in context:
+            context[attrName] = attrValue
+            self.buildItemChanged.emit()
 
 
 
@@ -547,9 +655,9 @@ class ActionEditorWindow(PulseWindow):
         self.scrollWidget = QtWidgets.QWidget()
         self.scrollArea.setWidget(self.scrollWidget)
 
-        self.layout = QtWidgets.QVBoxLayout(self.scrollWidget)
-        self.layout.setContentsMargins(0, 0, 0, 0)
-        self.scrollWidget.setLayout(self.layout)
+        self.mainLayout = QtWidgets.QVBoxLayout(self.scrollWidget)
+        self.mainLayout.setContentsMargins(0, 0, 0, 0)
+        self.scrollWidget.setLayout(self.mainLayout)
 
     def selectionChanged(self, selected, deselected):
         self.clearItemsUi()
@@ -557,7 +665,7 @@ class ActionEditorWindow(PulseWindow):
 
     def clearItemsUi(self):
         while True:
-            item = self.layout.takeAt(0)
+            item = self.mainLayout.takeAt(0)
             if item:
                 w = item.widget().setParent(None)
             else:
@@ -570,8 +678,9 @@ class ActionEditorWindow(PulseWindow):
             itemWidget.buildItemChanged.connect(partial(self.buildItemChanged, itemWidget))
             if isinstance(itemWidget, ActionEditorWidget):
                 itemWidget.convertToBatchClicked.connect(partial(self.convertActionToBatch, index))
+            elif isinstance(itemWidget, BatchActionEditorWidget):
                 itemWidget.convertToActionClicked.connect(partial(self.convertBatchToAction, index))
-            self.layout.addWidget(itemWidget)
+            self.mainLayout.addWidget(itemWidget)
 
     def buildItemChanged(self, itemWidget):
         self.model.blueprint.saveToDefaultNode()

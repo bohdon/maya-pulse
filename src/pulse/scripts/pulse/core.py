@@ -691,7 +691,33 @@ class BatchBuildAction(BuildItem):
         # remove all values from variant values
         for item in self.variantValues:
             del item[attrName]
-        
+
+    def _createNewVariant(self):
+        variant = {}
+        for attrName in self.variantAttributes:
+            attr = self.actionClass.getAttrConfig(attrName)
+            variant[attrName] = self.actionClass.getDefaultValue(attr)
+        return variant
+    
+    def addVariant(self):
+        """
+        Add a variant of attribute values.
+        """
+        self.variantValues.append(self._createNewVariant())
+
+    def insertVariant(self, position):
+        """
+        Insert a variant of attribute values.
+        """
+        self.variantValues.insert(position, self._createNewVariant())
+
+    def removeVariantAt(self, position):
+        """
+        Remove a variant of attribute values.
+        """
+        count = len(self.variantValues)
+        if position >= -count and position < count:
+            del self.variantValues[position]
 
     def getActionCount(self):
         """
