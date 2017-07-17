@@ -94,7 +94,7 @@ def createOffsetGroup(node, name='{0}_offset'):
     # parent the offset to the node and reset
     # its local transformation
     offset.setParent(node)
-    pm.cmds.xform(offset.nodeName(), objectSpace=True,
+    pm.xform(offset, objectSpace=True,
         translation=[0,0,0],
         rotation=[0,0,0],
         scale=[1,1,1],
@@ -106,7 +106,7 @@ def createOffsetGroup(node, name='{0}_offset'):
 
     # now parent the node to the new offset, and reset its transform
     node.setParent(offset)
-    pm.cmds.xform(node.nodeName(), objectSpace=True,
+    pm.xform(node.n, objectSpace=True,
         translation=[0,0,0],
         rotation=[0,0,0],
         scale=[1,1,1],
