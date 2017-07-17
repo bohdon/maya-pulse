@@ -342,6 +342,55 @@ class NodeAttrForm(ActionAttrForm):
 ATTRFORM_TYPEMAP['node'] = NodeAttrForm
 
 
+class NodeListAttrForm(ActionAttrForm):
+    """
+    A special form that allows picking nodes from the scene.
+    """
+    def setupUi(self, parent):
+        self.setupDefaultFormUi(parent)
+
+        hlayout = QtWidgets.QHBoxLayout(parent)
+        hlayout.setSpacing(4)
+        
+        self.listWidget = QtWidgets.QListWidget(parent)
+        self.listWidget.setSortingEnabled(True)
+        self.listWidget.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.ExtendedSelection)
+        hlayout.addWidget(self.listWidget)
+
+        self.pickButton = QtWidgets.QPushButton(parent)
+        self.pickButton.setIcon(viewutils.getIcon("select.png"))
+        self.pickButton.setFixedSize(QtCore.QSize(20, 20))
+        self.pickButton.clicked.connect(self.setFromSelection)
+        hlayout.addWidget(self.pickButton)
+        hlayout.setAlignment(self.pickButton, QtCore.Qt.AlignTop)
+
+        self.setDefaultFormLayout(hlayout)
+
+    def _setFormValue(self, attrValue):
+        while self.listWidget.takeItem(0):
+            pass
+        for node in attrValue:
+            self.listWidget.addItem(QtWidgets.QListWidgetItem(node.nodeName()))
+
+    def _getFormValue(self):
+        return self.attrValue
+
+    def _isValueTypeValid(self, attrValue):
+        if not isinstance(attrValue, list):
+            return False
+        return all([isinstance(n, pm.nt.DependNode) for n in attrValue])
+
+    def setFromSelection(self):
+        self.setAttrValue(pm.selected())
+        self.valueChanged.emit(self.attrValue, self.isValueValid)
+
+
+ATTRFORM_TYPEMAP['nodelist'] = NodeListAttrForm
+
+
+
+
+
 
 class BuildItemEditorWidget(QtWidgets.QWidget):
     """
