@@ -1,5 +1,6 @@
 
 from Qt import QtCore, QtWidgets, QtGui
+import pymetanode as meta
 
 import pulse
 from pulse.views.core import PulseWindow
@@ -24,6 +25,11 @@ class BlueprintEditorWidget(QtWidgets.QWidget):
         createBtn.clicked.connect(self.createDefaultBlueprint)
         layout.addWidget(createBtn)
 
+        debugPrintBtn = QtWidgets.QPushButton(self)
+        debugPrintBtn.setText("Debug Print Serialized")
+        debugPrintBtn.clicked.connect(self.debugPrintSerialized)
+        layout.addWidget(debugPrintBtn)
+
         spacer = QtWidgets.QSpacerItem(0, 0, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
         layout.addItem(spacer)
 
@@ -32,6 +38,12 @@ class BlueprintEditorWidget(QtWidgets.QWidget):
         blueprint.initializeDefaultActions()
         blueprint.saveToDefaultNode()
         ActionTreeItemModel.getSharedModel().reloadBlueprint()
+
+    def debugPrintSerialized(self):
+        import pprint
+        blueprint = pulse.Blueprint.fromDefaultNode()
+        if blueprint:
+            pprint.pprint(blueprint.serialize())
 
 
 
