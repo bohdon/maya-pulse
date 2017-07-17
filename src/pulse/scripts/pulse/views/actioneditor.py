@@ -65,6 +65,7 @@ class ActionAttrForm(QtWidgets.QWidget):
         self._setFormValue(self.attrValue)
         # update current valid state after ui has been setup
         self.isValueValid = self._isValueValid(self.attrValue)
+        self._setUiValidState(self.isValueValid)
 
     def setAttrValue(self, newValue):
         """
@@ -78,6 +79,7 @@ class ActionAttrForm(QtWidgets.QWidget):
             self.attrValue = newValue
             self._setFormValue(newValue)
             self.isValueValid = self._isValueValid(newValue)
+            self._setUiValidState(self.isValueValid)
             return True
         else:
             return False
@@ -134,7 +136,17 @@ class ActionAttrForm(QtWidgets.QWidget):
         if self._isFormValid():
             self.attrValue = self._getFormValue()
             self.isValueValid = self._isValueValid(self.attrValue)
+            self._setUiValidState(self.isValueValid)
             self.valueChanged.emit(self.attrValue, self.isValueValid)
+        else:
+            self._setUiValidState(False)
+
+    def _setUiValidState(self, isValid):
+        if hasattr(self, 'frame'):
+            if isValid:
+                self.frame.setStyleSheet('')
+            else:
+                self.frame.setStyleSheet('.QFrame{ background-color: rgb(255, 0, 0, 35); }')
 
     def setupDefaultFormUi(self, parent):
         """
@@ -142,17 +154,27 @@ class ActionAttrForm(QtWidgets.QWidget):
         Includes a form layout and a label with the attributes name.
         Should be called at the start of setupUi if desired.
         """
-        self.formLayout = QtWidgets.QFormLayout(parent)
-        self.formLayout.setContentsMargins(0,0,0,0)
+        layout = QtWidgets.QVBoxLayout(parent)
+        layout.setContentsMargins(0, 0, 0, 0)
+
+        self.frame = QtWidgets.QFrame(parent)
+        layout.addWidget(self.frame)
+
+        self.formLayout = QtWidgets.QFormLayout(self.frame)
+        # margin that will give us some visible area of
+        # the frame that can change color based on valid state
+        self.formLayout.setContentsMargins(2, 2, 2, 2)
         self.formLayout.setFieldGrowthPolicy(QtWidgets.QFormLayout.ExpandingFieldsGrow)
         self.formLayout.setLabelAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignTop|QtCore.Qt.AlignTrailing)
         self.formLayout.setHorizontalSpacing(10)
 
         # attribute name
-        self.label = QtWidgets.QLabel(parent)
+        self.label = QtWidgets.QLabel(self.frame)
         self.label.setMinimumSize(QtCore.QSize(self.LABEL_WIDTH, self.LABEL_HEIGHT))
+        self.label.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignTrailing|QtCore.Qt.AlignTop)
+        # add some space above the label so it lines up
+        self.label.setMargin(2)
         self.label.setText(pulse.names.toTitle(self.attr['name']))
-        self.label.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignTrailing|QtCore.Qt.AlignVCenter)
         self.formLayout.setWidget(0, QtWidgets.QFormLayout.LabelRole, self.label)
 
     def setDefaultFormWidget(self, widget):
@@ -183,7 +205,10 @@ class DefaultAttrForm(ActionAttrForm):
         self.setDefaultFormWidget(self.textEdit)
 
     def _setFormValue(self, attrValue):
-        self.textEdit.setText(meta.encodeMetaData(attrValue))
+        if isinstance(attrValue, basestring):
+            self.textEdit.setText(repr(attrValue))
+        else:
+            self.textEdit.setText(meta.encodeMetaData(attrValue))
 
     def _getFormValue(self):
         return meta.decodeMetaData(self.textEdit.text())
@@ -224,6 +249,28 @@ class OptionAttrForm(ActionAttrForm):
 
 ATTRFORM_TYPEMAP['option'] = OptionAttrForm
 
+
+
+class BoolAttrForm(ActionAttrForm):
+    def setupUi(self, parent):
+        self.setupDefaultFormUi(parent)
+
+        self.checkbox = QtWidgets.QCheckBox(parent)
+        self.checkbox.setMinimumHeight(self.LABEL_HEIGHT)
+        self.checkbox.stateChanged.connect(self._valueChanged)
+
+        self.setDefaultFormWidget(self.checkbox)
+
+    def _setFormValue(self, attrValue):
+        self.checkbox.setChecked(attrValue)
+
+    def _getFormValue(self):
+        return self.checkbox.isChecked()
+
+    def _isValueTypeValid(self, attrValue):
+        return attrValue is True or attrValue is False
+
+ATTRFORM_TYPEMAP['bool'] = BoolAttrForm
 
 
 
@@ -277,8 +324,8 @@ class BuildItemEditorWidget(QtWidgets.QWidget):
         layout.addLayout(bodyLay)
         # main body content layout
         self.layout = QtWidgets.QVBoxLayout(parent)
-        # spacing between attributes
-        self.layout.setSpacing(4)
+        # no spacing between attributes
+        self.layout.setSpacing(0)
         bodyLay.addLayout(self.layout)
         # body spacer
         spacer = QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
@@ -353,7 +400,6 @@ class ActionEditorWindow(PulseWindow):
     def selectionChanged(self, selected, deselected):
         self.clearItemsUi()
         self.buildItems = [i.internalPointer().buildItem for i in self.selectionModel.selectedIndexes()]
-        print(self.buildItems)
         self.setupItemsUi(self.scrollWidget)
 
     def clearItemsUi(self):
