@@ -25,11 +25,7 @@ class SimpleConstrainAction(pulse.BuildAction):
 
         _follower = self.follower
         if shouldCreateOffset:
-            _follower = pm.group(p=self.follower.getParent(), name='{0}_offset'.format(self.follower))
-            _follower.t.set(self.follower.t.get())
-            _follower.r.set(self.follower.r.get())
-            _follower.s.set(self.follower.s.get())
-            self.follower.setParent(_follower)
+            _follower = pulse.nodes.createOffsetGroup(self.follower)
 
         # parent constrain (translate and rotate)
         pc = pm.parentConstraint(self.leader, _follower, mo=True)
