@@ -587,16 +587,6 @@ class BatchActionEditorWidget(BuildItemEditorWidget):
             attrHLayout.setContentsMargins(0, 0, 0, 0)
             self.constantsLayout.addLayout(attrHLayout)
 
-            # not a constant value, add a line with button to make it constant
-            # button to toggle variant
-            toggleVariantBtn = QtWidgets.QPushButton(parent)
-            toggleVariantBtn.setText("v")
-            toggleVariantBtn.setFixedSize(QtCore.QSize(20, 20))
-            toggleVariantBtn.setCheckable(True)
-            toggleVariantBtn.setChecked(not isConstant)
-            attrHLayout.addWidget(toggleVariantBtn)
-            toggleVariantBtn.clicked.connect(partial(self.setIsVariantAttr, attr['name'], isConstant))
-
             if isConstant:
                 # constant value, make an attr form
                 attrValue = self.buildItem.constantValues[attr['name']]
@@ -617,6 +607,17 @@ class BatchActionEditorWidget(BuildItemEditorWidget):
 
                 spacer = QtWidgets.QSpacerItem(24, 24, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
                 attrHLayout.addItem(spacer)
+
+            # not a constant value, add a line with button to make it constant
+            # button to toggle variant
+            toggleVariantBtn = QtWidgets.QPushButton(parent)
+            toggleVariantBtn.setText("v")
+            toggleVariantBtn.setFixedSize(QtCore.QSize(20, 20))
+            toggleVariantBtn.setCheckable(True)
+            toggleVariantBtn.setChecked(not isConstant)
+            attrHLayout.addWidget(toggleVariantBtn)
+            toggleVariantBtn.clicked.connect(partial(self.setIsVariantAttr, attr['name'], isConstant))
+
 
     def setupVariantsUi(self, parent):
         viewutils.clearLayout(self.variantLayout)
