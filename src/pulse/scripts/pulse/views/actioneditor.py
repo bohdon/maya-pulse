@@ -1,11 +1,13 @@
 
 from functools import partial
 from Qt import QtCore, QtWidgets, QtGui
+import pymel.core as pm
 import pymetanode as meta
 
 import pulse
 import pulse.names
 from pulse.views.core import PulseWindow
+from pulse.views import utils as viewutils
 from pulse.views.actiontree import ActionTreeSelectionModel
 
 
@@ -18,6 +20,7 @@ __all__ = [
     'BuildGroupEditorWidget',
     'BuildItemEditorWidget',
     'DefaultAttrForm',
+    'NodeAttrForm',
     'OptionAttrForm',
 ]
 
@@ -180,17 +183,24 @@ class ActionAttrForm(QtWidgets.QWidget):
 
     def setDefaultFormWidget(self, widget):
         """
-        Set the attribute field widget for the default form layout.
+        Set the widget to be used as the field in the default form layout
         Requires `setupDefaultFormUi` to be used.
         """
         self.formLayout.setWidget(0, QtWidgets.QFormLayout.FieldRole, widget)
+
+    def setDefaultFormLayout(self, layout):
+        """
+        Set the layout to be used as the field in the default form layout.
+        Requires `setupDefaultFormUi` to be used.
+        """
+        self.formLayout.setLayout(0, QtWidgets.QFormLayout.FieldRole, layout)
 
 
 
 
 class DefaultAttrForm(ActionAttrForm):
     """
-    A catchall attribute widget that can handle any attribute type
+    A catchall attribute form that can handle any attribute type
     by leveraging pymetanode serialization. Provides a text field
     where values can typed representing serialized string data.
     """
@@ -225,6 +235,10 @@ class DefaultAttrForm(ActionAttrForm):
 
 
 class OptionAttrForm(ActionAttrForm):
+    """
+    A options list form that uses a combo box
+    to display options and keeps data stored as an int value
+    """
 
     def setupUi(self, parent):
         self.setupDefaultFormUi(parent)
@@ -253,6 +267,10 @@ ATTRFORM_TYPEMAP['option'] = OptionAttrForm
 
 
 class BoolAttrForm(ActionAttrForm):
+    """
+    A simple checkbox attribute form
+    """
+
     def setupUi(self, parent):
         self.setupDefaultFormUi(parent)
 
@@ -273,6 +291,55 @@ class BoolAttrForm(ActionAttrForm):
 
 ATTRFORM_TYPEMAP['bool'] = BoolAttrForm
 
+
+class NodeAttrForm(ActionAttrForm):
+    """
+    A special form that allows picking nodes from the scene.
+    """
+    def setupUi(self, parent):
+        self.setupDefaultFormUi(parent)
+
+        hlayout = QtWidgets.QHBoxLayout(parent)
+        hlayout.setSpacing(4)
+        
+        self.listWidget = QtWidgets.QListWidget(parent)
+        self.listWidget.setFixedHeight(20)
+        self.listWidget.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
+        self.listWidget.setSortingEnabled(True)
+        self.listWidget.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.ExtendedSelection)
+        hlayout.addWidget(self.listWidget)
+
+        self.pickButton = QtWidgets.QPushButton(parent)
+        self.pickButton.setIcon(viewutils.getIcon("select.png"))
+        self.pickButton.setFixedSize(QtCore.QSize(20, 20))
+        self.pickButton.clicked.connect(self.setFromSelection)
+        hlayout.addWidget(self.pickButton)
+        hlayout.setAlignment(self.pickButton, QtCore.Qt.AlignTop)
+
+        self.setDefaultFormLayout(hlayout)
+
+    def _setFormValue(self, attrValue):
+        while self.listWidget.takeItem(0):
+            pass
+        if attrValue:
+            self.listWidget.addItem(QtWidgets.QListWidgetItem(attrValue.nodeName()))
+
+    def _getFormValue(self):
+        return self.attrValue
+
+    def _isValueTypeValid(self, attrValue):
+        return attrValue is None or isinstance(attrValue, pm.nt.DependNode)
+
+    def setFromSelection(self):
+        sel = pm.selected()
+        if sel:
+            self.setAttrValue(sel[0])
+            self.valueChanged.emit(self.attrValue, self.isValueValid)
+        else:
+            self.setAttrValue(None)
+
+
+ATTRFORM_TYPEMAP['node'] = NodeAttrForm
 
 
 
