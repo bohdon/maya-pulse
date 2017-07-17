@@ -363,6 +363,21 @@ class BuildItemEditorWidget(QtWidgets.QWidget):
         self.setupUi(self)
         self.setupContentUi(self)
 
+    def getItemDisplayName(self):
+        return self.buildItem.getDisplayName()
+
+    def getItemIcon(self):
+        iconFile = self.buildItem.getIconFile()
+        if iconFile:
+            return QtGui.QIcon(iconFile)
+
+    def getItemColor(self):
+        color = self.buildItem.getColor()
+        if color:
+            return [int(c * 255) for c in color]
+        else:
+            return [255, 255, 255]
+
     def setupUi(self, parent):
         """
         Create the UI that is common to all BuildItem editors, including
@@ -374,7 +389,8 @@ class BuildItemEditorWidget(QtWidgets.QWidget):
 
         # header frame
         self.headerFrame = QtWidgets.QFrame(parent)
-        self.headerFrame.setStyleSheet(".QFrame{ background-color: rgba(255, 255, 255, 30); }")
+        colorstr = 'rgba({0}, {1}, {2}, 30)'.format(*self.getItemColor())
+        self.headerFrame.setStyleSheet(".QFrame{{ background-color: {color}; }}".format(color=colorstr))
         layout.addWidget(self.headerFrame)
         # header layout
         self.headerLayout = QtWidgets.QHBoxLayout(self.headerFrame)
@@ -386,7 +402,7 @@ class BuildItemEditorWidget(QtWidgets.QWidget):
         self.displayNameLabel = QtWidgets.QLabel(self.headerFrame)
         self.displayNameLabel.setMinimumHeight(20)
         self.displayNameLabel.setFont(font)
-        self.displayNameLabel.setText(self.buildItem.getDisplayName())
+        self.displayNameLabel.setText(self.getItemDisplayName())
         self.headerLayout.addWidget(self.displayNameLabel)
 
         # body layout
@@ -408,7 +424,9 @@ class BuildItemEditorWidget(QtWidgets.QWidget):
 
 
 class BuildGroupEditorWidget(BuildItemEditorWidget):
-    pass
+
+    def getItemDisplayName(self):
+        return '{0} ({1})'.format(self.buildItem.getDisplayName(), self.buildItem.getChildCount())
 
 
 class ActionEditorWidget(BuildItemEditorWidget):
@@ -422,6 +440,12 @@ class ActionEditorWidget(BuildItemEditorWidget):
 
     def isBatchAction(self):
         return isinstance(self.buildItem, pulse.BatchBuildAction)
+
+    def getItemDisplayName(self):
+        if self.isBatchAction():
+            return 'Batch {0} (x{1})'.format(self.buildItem.getDisplayName(), self.buildItem.getActionCount())
+        else:
+            return super(ActionEditorWidget, self).getItemDisplayName()
 
     def setupUi(self, parent):
         super(ActionEditorWidget, self).setupUi(parent)
