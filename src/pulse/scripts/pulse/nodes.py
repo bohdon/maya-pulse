@@ -106,7 +106,7 @@ def createOffsetGroup(node, name='{0}_offset'):
 
     # now parent the node to the new offset, and reset its transform
     node.setParent(offset)
-    pm.xform(node.n, objectSpace=True,
+    pm.xform(node, objectSpace=True,
         translation=[0,0,0],
         rotation=[0,0,0],
         scale=[1,1,1],
