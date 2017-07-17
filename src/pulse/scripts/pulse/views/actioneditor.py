@@ -199,7 +199,7 @@ class DefaultAttrForm(ActionAttrForm):
         self._didFailDecode = False
 
         self.textEdit = QtWidgets.QLineEdit(parent)
-        self.textEdit.setStyleSheet('font: 8pt "Consolas Spaced";')
+        self.textEdit.setStyleSheet('font: 8pt "Consolas";')
         self.textEdit.textChanged.connect(self._valueChanged)
 
         self.setDefaultFormWidget(self.textEdit)
