@@ -14,6 +14,7 @@ __all__ = [
     'ActionEditorWidget',
     'ActionEditorWindow',
     'BatchActionEditorWidget',
+    'BoolAttrForm',
     'BuildGroupEditorWidget',
     'BuildItemEditorWidget',
     'DefaultAttrForm',
