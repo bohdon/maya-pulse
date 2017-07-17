@@ -428,9 +428,15 @@ class ActionButtonsWidget(QtWidgets.QWidget):
 
         grpIndexes = self.selectionModel.getSelectedGroups()
         ac = pulse.getActionClass(typeName)
+        newIndexes = []
         for grpIndex in grpIndexes:
             action = ac()
-            self.model.insertBuildItems(0, [action], grpIndex)
+            if self.model.insertBuildItems(0, [action], grpIndex):
+                newIndexes.append(self.model.index(0, 0, grpIndex))
+        # select new items
+        self.selectionModel.clearSelection()
+        for index in newIndexes:
+            self.selectionModel.select(index, QtCore.QItemSelectionModel.Select)
         self.model.blueprint.saveToDefaultNode()
 
 
