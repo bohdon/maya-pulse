@@ -79,6 +79,7 @@ class BlueprintEditorWidget(QtWidgets.QWidget):
         blueprintFile = str(pm.sceneName())
         builder = pulse.BlueprintBuilder(self.blueprint, blueprintFile=blueprintFile, debug=True)
         builder.start()
+        self.model.reloadBlueprint()
 
     def debugSaveBlueprint(self):
         self.blueprint.saveToDefaultNode()
@@ -103,6 +104,7 @@ class BlueprintEditorWidget(QtWidgets.QWidget):
 
         print('Opening blueprint: ' + blueprintFile)
         pm.openFile(blueprintFile, f=True)
+        self.model.reloadBlueprint()
 
 
 

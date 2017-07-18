@@ -584,6 +584,7 @@ class BatchActionEditorWidget(BuildItemEditorWidget):
             isConstant = (attr['name'] in self.buildItem.constantValues)
             # always make an HBox with a button to toggle variant state
             attrHLayout = QtWidgets.QHBoxLayout(parent)
+            attrHLayout.setSpacing(10)
             attrHLayout.setContentsMargins(0, 0, 0, 0)
             self.constantsLayout.addLayout(attrHLayout)
 
@@ -616,6 +617,7 @@ class BatchActionEditorWidget(BuildItemEditorWidget):
             toggleVariantBtn.setCheckable(True)
             toggleVariantBtn.setChecked(not isConstant)
             attrHLayout.addWidget(toggleVariantBtn)
+            attrHLayout.setAlignment(toggleVariantBtn, QtCore.Qt.AlignTop)
             toggleVariantBtn.clicked.connect(partial(self.setIsVariantAttr, attr['name'], isConstant))
 
 
