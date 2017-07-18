@@ -737,7 +737,8 @@ class BatchBuildAction(BuildItem):
             Iterator of (BuildAction, string) representing all actions and
             the build group path leading to them.
         """
-        thisPath = parentPath + ('/' if parentPath else '') + 'Batch'
+        _parentPath = (parentPath + '/') if parentPath else ''
+        thisPath = _parentPath + 'Batch'
         for index, variant in enumerate(self.variantValues):
             pathAtIndex = '{0}[{1}]'.format(thisPath, index)
             kwargs = {k:v for k, v in self.constantValues.iteritems() if k not in self.variantAttributes}

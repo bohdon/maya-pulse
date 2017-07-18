@@ -1,13 +1,14 @@
 BuildCoreHierarchyAction:
   isBuiltin: true
   displayName: Build Core Hierarchy
-  description: Builds the core hierarchy of the rig
+  description: Gathers nodes into a core hierarchy of the rig
   attrs:
-    - name: groups
-      type: dict
-      keytype: str
-      valuetype: nodelist
-      value:
-        ctls: []
-        joints: []
-        meshes: []
+    - name: groupName
+      type: str
+    - name: groupVisible
+      description: Whether the group should be visible or not in the built rig
+      type: bool
+      value: True
+    - name: nodes
+      type: nodelist
+      value: []
