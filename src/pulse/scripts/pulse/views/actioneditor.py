@@ -25,8 +25,6 @@ __all__ = [
 ]
 
 
-ATTRFORM_TYPEMAP = {}
-
 
 class ActionAttrForm(QtWidgets.QWidget):
     """
@@ -34,6 +32,8 @@ class ActionAttrForm(QtWidgets.QWidget):
     Provides input validation and basic signals for keeping
     track of value changes.
     """
+
+    TYPEMAP = {}
 
     LABEL_WIDTH = 150
     LABEL_HEIGHT = 20
@@ -52,8 +52,8 @@ class ActionAttrForm(QtWidgets.QWidget):
             attrValue: The current value of the attribute
         """
         attrType = attr['type']
-        if attrType in ATTRFORM_TYPEMAP:
-            return ATTRFORM_TYPEMAP[attrType](attr, attrValue, parent=parent)
+        if attrType in ActionAttrForm.TYPEMAP:
+            return ActionAttrForm.TYPEMAP[attrType](attr, attrValue, parent=parent)
         # fallback to the default widget
         return DefaultAttrForm(attr, attrValue)
 
@@ -262,7 +262,7 @@ class OptionAttrForm(ActionAttrForm):
     def _isValueValid(self, attrValue):
         return attrValue >= 0 and attrValue < len(self.attr['options'])
 
-ATTRFORM_TYPEMAP['option'] = OptionAttrForm
+ActionAttrForm.TYPEMAP['option'] = OptionAttrForm
 
 
 
@@ -289,7 +289,7 @@ class BoolAttrForm(ActionAttrForm):
     def _isValueTypeValid(self, attrValue):
         return attrValue is True or attrValue is False
 
-ATTRFORM_TYPEMAP['bool'] = BoolAttrForm
+ActionAttrForm.TYPEMAP['bool'] = BoolAttrForm
 
 
 class NodeAttrForm(ActionAttrForm):
@@ -339,7 +339,7 @@ class NodeAttrForm(ActionAttrForm):
             self.setAttrValue(None)
 
 
-ATTRFORM_TYPEMAP['node'] = NodeAttrForm
+ActionAttrForm.TYPEMAP['node'] = NodeAttrForm
 
 
 class NodeListAttrForm(ActionAttrForm):
@@ -385,9 +385,93 @@ class NodeListAttrForm(ActionAttrForm):
         self.valueChanged.emit(self.attrValue, self.isValueValid)
 
 
-ATTRFORM_TYPEMAP['nodelist'] = NodeListAttrForm
+ActionAttrForm.TYPEMAP['nodelist'] = NodeListAttrForm
 
 
+
+class BatchAttrEditor(QtWidgets.QWidget):
+    """
+    The base class for an attribute form designed to
+    bulk edit all variants in a batch action.
+    This appears where the default attr form usually appears
+    when the attribute is marked as variant.
+    
+    BatchAttrForms should only exist if they provide an
+    easy way to bulk set different values for all variants,
+    as its pointless to provide functionality for setting all
+    variants to the same value (would make the attribute constant).
+    """
+
+    TYPEMAP = {}
+    
+    valuesChanged = QtCore.Signal()
+    variantCountChanged = QtCore.Signal()
+
+    @staticmethod
+    def doesEditorExist(attr):
+        return attr['type'] in BatchAttrEditor.TYPEMAP
+
+    @staticmethod
+    def createEditor(action, attr, parent=None):
+        """
+        Create a new ActionAttrForm of the appropriate
+        type based on a BuildAction attribute.
+
+        Args:
+            attr: A dict representing the config of a BuildAction attribute
+        """
+        attrType = attr['type']
+        if attrType in BatchAttrEditor.TYPEMAP:
+            return BatchAttrEditor.TYPEMAP[attrType](action, attr, parent=parent)
+
+    def __init__(self, batchAction, attr, parent=None):
+        super(BatchAttrEditor, self).__init__(parent=parent)
+        self.batchAction = batchAction
+        self.attr = attr
+        self.setupUi(self)
+
+    def setupUi(self, parent):
+        raise NotImplementedError
+
+
+
+class NodeBatchAttrForm(BatchAttrEditor):
+
+    def setupUi(self, parent):
+        hlayout = QtWidgets.QHBoxLayout(parent)
+        hlayout.setContentsMargins(2, 2, 2, 2)
+
+        pickButton = QtWidgets.QPushButton(parent)
+        pickButton.setIcon(viewutils.getIcon("select.png"))
+        pickButton.setFixedSize(QtCore.QSize(20, 20))
+        pickButton.clicked.connect(self.setFromSelection)
+        hlayout.addWidget(pickButton)
+        hlayout.setAlignment(pickButton, QtCore.Qt.AlignTop)
+        # body spacer
+        spacer = QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
+        hlayout.addItem(spacer)
+
+    def setFromSelection(self):
+        """
+        Set the node value for this attribute for each variant
+        based on the selected list of nodes. Increases the variant
+        list size if necessary to match the selection.
+        """
+        sel = pm.selected()
+        # resize variant list to match selection
+        didCountChange = False
+        while len(self.batchAction.variantValues) < len(sel):
+            self.batchAction.addVariant()
+            didCountChange = True
+
+        for i, node in enumerate(sel):
+            self.batchAction.variantValues[i][self.attr['name']] = sel[i]
+        self.valuesChanged.emit()
+        if didCountChange:
+            self.variantCountChanged.emit()
+
+
+BatchAttrEditor.TYPEMAP['node'] = NodeBatchAttrForm
 
 
 
@@ -596,7 +680,7 @@ class BatchActionEditorWidget(BuildItemEditorWidget):
                 attrForm.valueChanged.connect(partial(self.attrValueChanged, context, attrForm))
                 attrHLayout.addWidget(attrForm)
             else:
-                # variant value, just make a label
+                # variant value, check for batch editor, or just display a label
                 attrLabel = QtWidgets.QLabel(parent)
                 # extra 2 to account for the left-side frame padding that occurs in the ActionAttrForm
                 attrLabel.setFixedSize(QtCore.QSize(ActionAttrForm.LABEL_WIDTH + 2, ActionAttrForm.LABEL_HEIGHT))
@@ -606,8 +690,13 @@ class BatchActionEditorWidget(BuildItemEditorWidget):
                 attrLabel.setEnabled(False)
                 attrHLayout.addWidget(attrLabel)
 
-                spacer = QtWidgets.QSpacerItem(24, 24, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
-                attrHLayout.addItem(spacer)
+                if BatchAttrEditor.doesEditorExist(attr):
+                    batchEditor = BatchAttrEditor.createEditor(self.buildItem, attr, parent=parent)
+                    batchEditor.valuesChanged.connect(self.batchEditorValuesChanged)
+                    attrHLayout.addWidget(batchEditor)
+                else:
+                    spacer = QtWidgets.QSpacerItem(24, 24, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
+                    attrHLayout.addItem(spacer)
 
             # not a constant value, add a line with button to make it constant
             # button to toggle variant
@@ -672,6 +761,9 @@ class BatchActionEditorWidget(BuildItemEditorWidget):
         if attrName in context:
             context[attrName] = attrValue
             self.buildItemChanged.emit()
+
+    def batchEditorValuesChanged(self):
+        self.setupVariantsUi(self)
 
 
 
