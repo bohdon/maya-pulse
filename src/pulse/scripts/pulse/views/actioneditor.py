@@ -435,7 +435,19 @@ class BatchAttrEditor(QtWidgets.QWidget):
 
 
 
-class NodeBatchAttrForm(BatchAttrEditor):
+class NodeBatchAttrEditor(BatchAttrEditor):
+    """
+    A batch attr editor for node values.
+
+    Provides a button for setting the value of
+    all variants at once based on the scene selection.
+    Each variant value will be set to a single node,
+    and the order of the selection matters.
+
+    The number of variants in the batch action is
+    automatically adjusted to match the number of
+    selected nodes.
+    """
 
     def setupUi(self, parent):
         hlayout = QtWidgets.QHBoxLayout(parent)
@@ -471,7 +483,7 @@ class NodeBatchAttrForm(BatchAttrEditor):
             self.variantCountChanged.emit()
 
 
-BatchAttrEditor.TYPEMAP['node'] = NodeBatchAttrForm
+BatchAttrEditor.TYPEMAP['node'] = NodeBatchAttrEditor
 
 
 
@@ -597,6 +609,19 @@ class ActionEditorWidget(BuildItemEditorWidget):
 
 
 class BatchActionEditorWidget(BuildItemEditorWidget):
+    """
+    The main editor for Batch Actions. Very similar
+    to the standard ActionEditorWidget, with a few key
+    differences.
+
+    Each attribute has a toggle that controls
+    whether the attribute is variant or not.
+
+    All variants are displayed in a list, with the ability
+    to easily add and remove variants. If a BatchAttrEditor
+    exists for a variant attribute type, it will be displayed
+    in place of the normal AttrEditor form.
+    """
 
     convertToActionClicked = QtCore.Signal()
 
@@ -769,6 +794,12 @@ class BatchActionEditorWidget(BuildItemEditorWidget):
 
 
 class ActionEditorWindow(PulseWindow):
+    """
+    The main window for inspecting and editing BuildActions.
+
+    Uses the shared action tree selection model to automatically
+    display editors for the selected actions.
+    """
 
     OBJECT_NAME = 'pulseActionEditorWindow'
 
