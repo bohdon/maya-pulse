@@ -19,6 +19,21 @@ class PulseWindow(MayaQWidgetDockableMixin, QtWidgets.QMainWindow):
         window = cls()
         window.show()
         return window
+    
+    @classmethod
+    def exists(cls):
+        """
+        Return True if an instance of this window exists
+        """
+        result = False
+        workspaceControlName = cls.OBJECT_NAME + 'WorkspaceControl'
+        if cmds.workspaceControl(workspaceControlName, q=True, ex=True):
+            result = True
+        if cmds.workspaceControl(workspaceControlName, q=True, ex=True):
+            result = True
+        if cmds.window(cls.OBJECT_NAME, q=True, ex=True):
+            result = True
+        return result
 
     @classmethod
     def deleteInstances(cls):

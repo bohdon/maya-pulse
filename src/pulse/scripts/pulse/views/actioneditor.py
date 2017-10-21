@@ -15,10 +15,11 @@ __all__ = [
     'ActionAttrForm',
     'ActionEditorWidget',
     'ActionEditorWindow',
-    'BatchActionEditorWidget',
+    'ActionForm',
+    'BatchActionForm',
     'BoolAttrForm',
-    'BuildGroupEditorWidget',
-    'BuildItemEditorWidget',
+    'BuildGroupForm',
+    'BuildItemForm',
     'DefaultAttrForm',
     'NodeAttrForm',
     'OptionAttrForm',
@@ -488,7 +489,7 @@ BatchAttrEditor.TYPEMAP['node'] = NodeBatchAttrEditor
 
 
 
-class BuildItemEditorWidget(QtWidgets.QWidget):
+class BuildItemForm(QtWidgets.QWidget):
     """
     Base class for a form for editing any type of BuildItem
     """
@@ -498,15 +499,15 @@ class BuildItemEditorWidget(QtWidgets.QWidget):
     @staticmethod
     def createItemWidget(buildItem, parent=None):
         if isinstance(buildItem, pulse.BuildGroup):
-            return BuildGroupEditorWidget(buildItem, parent=parent)
+            return BuildGroupForm(buildItem, parent=parent)
         elif isinstance(buildItem, pulse.BuildAction):
-            return ActionEditorWidget(buildItem, parent=parent)
+            return ActionForm(buildItem, parent=parent)
         elif isinstance(buildItem, pulse.BatchBuildAction):
-            return BatchActionEditorWidget(buildItem, parent=parent)
+            return BatchActionForm(buildItem, parent=parent)
         return QtWidgets.QWidget(parent=parent)
 
     def __init__(self, buildItem, parent=None):
-        super(BuildItemEditorWidget, self).__init__(parent=parent)
+        super(BuildItemForm, self).__init__(parent=parent)
         self.buildItem = buildItem
         self.setupUi(self)
         self.setupContentUi(self)
@@ -571,13 +572,13 @@ class BuildItemEditorWidget(QtWidgets.QWidget):
 
 
 
-class BuildGroupEditorWidget(BuildItemEditorWidget):
+class BuildGroupForm(BuildItemForm):
 
     def getItemDisplayName(self):
         return '{0} ({1})'.format(self.buildItem.getDisplayName(), self.buildItem.getChildCount())
 
 
-class ActionEditorWidget(BuildItemEditorWidget):
+class ActionForm(BuildItemForm):
     """
     Editor widget for both BuildActions and BatchBuildActions.
     Creates an ActionAttrForm for all attributes of the action.
@@ -586,7 +587,7 @@ class ActionEditorWidget(BuildItemEditorWidget):
     convertToBatchClicked = QtCore.Signal()
 
     def setupUi(self, parent):
-        super(ActionEditorWidget, self).setupUi(parent)
+        super(ActionForm, self).setupUi(parent)
 
         # add batch conversion button to header
         convertToBatchBtn = QtWidgets.QPushButton(parent)
@@ -608,10 +609,10 @@ class ActionEditorWidget(BuildItemEditorWidget):
 
 
 
-class BatchActionEditorWidget(BuildItemEditorWidget):
+class BatchActionForm(BuildItemForm):
     """
     The main editor for Batch Actions. Very similar
-    to the standard ActionEditorWidget, with a few key
+    to the standard ActionForm, with a few key
     differences.
 
     Each attribute has a toggle that controls
@@ -629,7 +630,7 @@ class BatchActionEditorWidget(BuildItemEditorWidget):
         return 'Batch {0} (x{1})'.format(self.buildItem.getDisplayName(), self.buildItem.getActionCount())
 
     def setupUi(self, parent):
-        super(BatchActionEditorWidget, self).setupUi(parent)
+        super(BatchActionForm, self).setupUi(parent)
 
         # add action conversion button to header
         convertToActionBtn = QtWidgets.QPushButton(parent)
@@ -792,27 +793,20 @@ class BatchActionEditorWidget(BuildItemEditorWidget):
 
 
 
-
-class ActionEditorWindow(PulseWindow):
+class ActionEditorWidget(QtWidgets.QWidget):
     """
-    The main window for inspecting and editing BuildActions.
+    The main widget for inspecting and editing BuildActions.
 
     Uses the shared action tree selection model to automatically
     display editors for the selected actions.
     """
 
-    OBJECT_NAME = 'pulseActionEditorWindow'
-
     def __init__(self, parent=None):
-        super(ActionEditorWindow, self).__init__(parent=parent)
-
-        self.setWindowTitle('Pulse Action Editor')
+        super(ActionEditorWidget, self).__init__(parent=parent)
 
         self.buildItems = []
 
-        widget = QtWidgets.QWidget(self)
-        self.setCentralWidget(widget)
-        self.setupUi(widget)
+        self.setupUi(self)
 
         self.model = ActionTreeItemModel.getSharedModel()
         self.selectionModel = ActionTreeSelectionModel.getSharedModel()
@@ -849,11 +843,11 @@ class ActionEditorWindow(PulseWindow):
     def setupItemsUi(self, itemIndexes, parent):
         for index in itemIndexes[:1]:
             buildItem = index.internalPointer().buildItem
-            itemWidget = BuildItemEditorWidget.createItemWidget(buildItem, parent=parent)
+            itemWidget = BuildItemForm.createItemWidget(buildItem, parent=parent)
             itemWidget.buildItemChanged.connect(partial(self.buildItemChanged, itemWidget))
-            if isinstance(itemWidget, ActionEditorWidget):
+            if isinstance(itemWidget, ActionForm):
                 itemWidget.convertToBatchClicked.connect(partial(self.convertActionToBatch, index))
-            elif isinstance(itemWidget, BatchActionEditorWidget):
+            elif isinstance(itemWidget, BatchActionForm):
                 itemWidget.convertToActionClicked.connect(partial(self.convertBatchToAction, index))
             self.mainLayout.addWidget(itemWidget)
 
@@ -885,4 +879,18 @@ class ActionEditorWindow(PulseWindow):
         self.model.blueprint.saveToDefaultNode()
         # select new item
         self.selectionModel.select(self.model.index(row, 0, parentIndex), QtCore.QItemSelectionModel.Select)
+
+
+
+class ActionEditorWindow(PulseWindow):
+
+    OBJECT_NAME = 'pulseActionEditorWindow'
+
+    def __init__(self, parent=None):
+        super(ActionEditorWindow, self).__init__(parent=parent)
+
+        self.setWindowTitle('Pulse Action Editor')
+
+        widget = ActionEditorWidget(self)
+        self.setCentralWidget(widget)
 
