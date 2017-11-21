@@ -432,10 +432,12 @@ class BuildAction(BuildItem):
             attrType = attr['type']
             if 'list' in attrType:
                 return []
-            elif attrType in ['int', 'float']:
-                return 0
             elif attrType == 'bool':
                 return False
+            elif attrType in ['int', 'float']:
+                return 0
+            elif attrType == 'string':
+                return ''
 
     @staticmethod
     def fromBatchAction(batchAction):
