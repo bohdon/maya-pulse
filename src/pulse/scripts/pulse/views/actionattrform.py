@@ -11,6 +11,7 @@ __all__ = [
     'BoolAttrForm',
     'DefaultAttrForm',
     'NodeAttrForm',
+    'NodeListAttrForm',
     'OptionAttrForm',
     'StringAttrForm',
 ]
