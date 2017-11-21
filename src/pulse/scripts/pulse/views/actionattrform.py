@@ -10,6 +10,7 @@ __all__ = [
     'ActionAttrForm',
     'BoolAttrForm',
     'DefaultAttrForm',
+    'FloatAttrForm',
     'IntAttrForm',
     'NodeAttrForm',
     'NodeListAttrForm',
@@ -266,8 +267,8 @@ class IntAttrForm(ActionAttrForm):
         self.spinBox = QtWidgets.QSpinBox(parent)
         self.spinBox.setMinimumHeight(self.LABEL_HEIGHT)
         self.spinBox.setMinimumWidth(self.FORM_WIDTH_SMALL)
-        self.spinBox.setMinimum(self.attr.get('min', 0))
-        self.spinBox.setMaximum(self.attr.get('max', 100))
+        self.spinBox.setRange(self.attr.get('min', 0),
+                              self.attr.get('max', 100))
         if self._isValueTypeValid(self.attrValue):
             self._setFormValue(self.attrValue)
         self.spinBox.valueChanged.connect(self._valueChanged)
@@ -285,6 +286,40 @@ class IntAttrForm(ActionAttrForm):
 
 
 ActionAttrForm.TYPEMAP['int'] = IntAttrForm
+
+
+class FloatAttrForm(ActionAttrForm):
+    """
+    A simple float attribute form
+    """
+
+    def setupUi(self, parent):
+        self.setupDefaultFormUi(parent)
+
+        self.spinBox = QtWidgets.QDoubleSpinBox(parent)
+        self.spinBox.setMinimumHeight(self.LABEL_HEIGHT)
+        self.spinBox.setMinimumWidth(self.FORM_WIDTH_SMALL)
+        self.spinBox.setDecimals(self.attr.get('decimals', 3))
+        self.spinBox.setSingleStep(self.attr.get('stepSize', 0.1))
+        self.spinBox.setRange(self.attr.get('min', 0),
+                              self.attr.get('max', 100))
+        if self._isValueTypeValid(self.attrValue):
+            self._setFormValue(self.attrValue)
+        self.spinBox.valueChanged.connect(self._valueChanged)
+
+        self.setDefaultFormWidget(self.spinBox)
+
+    def _setFormValue(self, attrValue):
+        self.spinBox.setValue(attrValue)
+
+    def _getFormValue(self):
+        return self.spinBox.value()
+
+    def _isValueTypeValid(self, attrValue):
+        return isinstance(attrValue, float)
+
+
+ActionAttrForm.TYPEMAP['float'] = FloatAttrForm
 
 
 class StringAttrForm(ActionAttrForm):
