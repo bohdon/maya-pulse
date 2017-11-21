@@ -5,6 +5,7 @@ from .core import *
 from .blueprinteditor import *
 from .actiontree import *
 from .actioneditor import *
+from .actionattrform import *
 from .pulseeditor import *
 
 

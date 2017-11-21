@@ -4,8 +4,8 @@ import pymel.core as pm
 import pymetanode as meta
 
 import pulse
-from pulse.views.core import PulseWindow
-from pulse.views.actiontree import ActionTreeItemModel
+from .core import PulseWindow
+from .actiontree import ActionTreeItemModel
 
 
 __all__ = [

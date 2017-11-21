@@ -3,7 +3,7 @@ from pulse.vendor.Qt import QtCore, QtWidgets, QtGui
 import pymetanode as meta
 
 import pulse
-from pulse.views.core import PulseWindow
+from .core import PulseWindow
 
 
 __all__ = [

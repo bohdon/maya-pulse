@@ -2,11 +2,11 @@
 from pulse.vendor.Qt import QtCore, QtWidgets, QtGui
 
 import pulse
-from pulse.views.core import PulseWindow
-from pulse.views.blueprinteditor import BlueprintEditorWidget
-from pulse.views.actiontree import ActionTreeWidget
-from pulse.views.actiontree import ActionButtonsWidget
-from pulse.views.actioneditor import ActionEditorWidget
+from .core import PulseWindow
+from .blueprinteditor import BlueprintEditorWidget
+from .actiontree import ActionTreeWidget
+from .actiontree import ActionButtonsWidget
+from .actioneditor import ActionEditorWidget
 
 
 __all__ = [
