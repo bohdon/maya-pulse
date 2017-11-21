@@ -10,6 +10,7 @@ __all__ = [
     'ActionAttrForm',
     'BoolAttrForm',
     'DefaultAttrForm',
+    'IntAttrForm',
     'NodeAttrForm',
     'NodeListAttrForm',
     'OptionAttrForm',
@@ -28,6 +29,7 @@ class ActionAttrForm(QtWidgets.QWidget):
 
     LABEL_WIDTH = 150
     LABEL_HEIGHT = 20
+    FORM_WIDTH_SMALL = 80
 
     # valueChanged(newValue, isValueValid)
     valueChanged = QtCore.Signal(object, bool)
@@ -56,10 +58,9 @@ class ActionAttrForm(QtWidgets.QWidget):
         self.attrValue = attrValue
         # build the ui
         self.setupUi(self)
-        # update the ui with the current attr value
-        self._setFormValue(self.attrValue)
-        # update current valid state after ui has been setup
-        self.isValueValid = self._isValueValid(self.attrValue)
+        # update valid state, check both type and value here
+        # because the current value may be of an invalid type
+        self.isValueValid = self._isValueTypeValid(self.attrValue) and self._isValueValid(self.attrValue)
         self._setUiValidState(self.isValueValid)
 
     def setAttrValue(self, newValue):
@@ -202,6 +203,8 @@ class DefaultAttrForm(ActionAttrForm):
 
         self.textEdit = QtWidgets.QLineEdit(parent)
         self.textEdit.setStyleSheet('font: 8pt "Consolas";')
+        if self._isValueTypeValid(self.attrValue):
+            self._setFormValue(self.attrValue)
         self.textEdit.textChanged.connect(self._valueChanged)
 
         self.setDefaultFormWidget(self.textEdit)
@@ -224,39 +227,6 @@ class DefaultAttrForm(ActionAttrForm):
 
 
 
-
-class OptionAttrForm(ActionAttrForm):
-    """
-    A options list form that uses a combo box
-    to display options and keeps data stored as an int value
-    """
-
-    def setupUi(self, parent):
-        self.setupDefaultFormUi(parent)
-
-        self.combo = QtWidgets.QComboBox(parent)
-        for option in self.attr['options']:
-            self.combo.addItem(option)
-        self.combo.currentIndexChanged.connect(self._valueChanged)
-
-        self.setDefaultFormWidget(self.combo)
-
-    def _setFormValue(self, attrValue):
-        self.combo.setCurrentIndex(attrValue)
-
-    def _getFormValue(self):
-        return self.combo.currentIndex()
-
-    def _isValueTypeValid(self, attrValue):
-        return isinstance(attrValue, (int, long))
-
-    def _isValueValid(self, attrValue):
-        return attrValue >= 0 and attrValue < len(self.attr['options'])
-
-ActionAttrForm.TYPEMAP['option'] = OptionAttrForm
-
-
-
 class BoolAttrForm(ActionAttrForm):
     """
     A simple checkbox attribute form
@@ -266,6 +236,8 @@ class BoolAttrForm(ActionAttrForm):
         self.setupDefaultFormUi(parent)
 
         self.checkbox = QtWidgets.QCheckBox(parent)
+        if self._isValueTypeValid(self.attrValue):
+            self._setFormValue(self.attrValue)
         self.checkbox.setMinimumHeight(self.LABEL_HEIGHT)
         self.checkbox.stateChanged.connect(self._valueChanged)
 
@@ -283,10 +255,41 @@ class BoolAttrForm(ActionAttrForm):
 ActionAttrForm.TYPEMAP['bool'] = BoolAttrForm
 
 
+class IntAttrForm(ActionAttrForm):
+    """
+    A simple integer attribute form
+    """
+
+    def setupUi(self, parent):
+        self.setupDefaultFormUi(parent)
+
+        self.spinBox = QtWidgets.QSpinBox(parent)
+        self.spinBox.setMinimumHeight(self.LABEL_HEIGHT)
+        self.spinBox.setMinimumWidth(self.FORM_WIDTH_SMALL)
+        self.spinBox.setMinimum(self.attr.get('min', 0))
+        self.spinBox.setMaximum(self.attr.get('max', 100))
+        if self._isValueTypeValid(self.attrValue):
+            self._setFormValue(self.attrValue)
+        self.spinBox.valueChanged.connect(self._valueChanged)
+
+        self.setDefaultFormWidget(self.spinBox)
+
+    def _setFormValue(self, attrValue):
+        self.spinBox.setValue(attrValue)
+
+    def _getFormValue(self):
+        return self.spinBox.value()
+
+    def _isValueTypeValid(self, attrValue):
+        return isinstance(attrValue, (int, long))
+
+
+ActionAttrForm.TYPEMAP['int'] = IntAttrForm
+
 
 class StringAttrForm(ActionAttrForm):
     """
-    A simple checkbox attribute form
+    A simple string attribute form
     """
 
     def setupUi(self, parent):
@@ -294,6 +297,8 @@ class StringAttrForm(ActionAttrForm):
 
         self.lineEdit = QtWidgets.QLineEdit(parent)
         self.lineEdit.setMinimumHeight(self.LABEL_HEIGHT)
+        if self._isValueTypeValid(self.attrValue):
+            self._setFormValue(self.attrValue)
         self.lineEdit.textChanged.connect(self._valueChanged)
 
         self.setDefaultFormWidget(self.lineEdit)
@@ -310,6 +315,39 @@ class StringAttrForm(ActionAttrForm):
 
 ActionAttrForm.TYPEMAP['string'] = StringAttrForm
 
+
+class OptionAttrForm(ActionAttrForm):
+    """
+    A options list form that uses a combo box
+    to display options and keeps data stored as an int value
+    """
+
+    def setupUi(self, parent):
+        self.setupDefaultFormUi(parent)
+
+        self.combo = QtWidgets.QComboBox(parent)
+        for option in self.attr['options']:
+            self.combo.addItem(option)
+        if self._isValueTypeValid(self.attrValue):
+            self._setFormValue(self.attrValue)
+        self.combo.currentIndexChanged.connect(self._valueChanged)
+
+        self.setDefaultFormWidget(self.combo)
+
+    def _setFormValue(self, attrValue):
+        self.combo.setCurrentIndex(attrValue)
+
+    def _getFormValue(self):
+        return self.combo.currentIndex()
+
+    def _isValueTypeValid(self, attrValue):
+        return isinstance(attrValue, (int, long))
+
+    def _isValueValid(self, attrValue):
+        return attrValue >= 0 and attrValue < len(self.attr['options'])
+
+
+ActionAttrForm.TYPEMAP['option'] = OptionAttrForm
 
 
 class NodeAttrForm(ActionAttrForm):
@@ -335,6 +373,9 @@ class NodeAttrForm(ActionAttrForm):
         self.pickButton.clicked.connect(self.setFromSelection)
         hlayout.addWidget(self.pickButton)
         hlayout.setAlignment(self.pickButton, QtCore.Qt.AlignTop)
+
+        if self._isValueTypeValid(self.attrValue):
+            self._setFormValue(self.attrValue)
 
         self.setDefaultFormLayout(hlayout)
 
@@ -385,6 +426,9 @@ class NodeListAttrForm(ActionAttrForm):
         hlayout.setAlignment(self.pickButton, QtCore.Qt.AlignTop)
 
         self.setDefaultFormLayout(hlayout)
+
+        if self._isValueTypeValid(self.attrValue):
+            self._setFormValue(self.attrValue)
 
     def _setFormValue(self, attrValue):
         while self.listWidget.takeItem(0):
