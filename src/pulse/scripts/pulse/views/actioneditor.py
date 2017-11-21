@@ -1,6 +1,6 @@
 
 from functools import partial
-from Qt import QtCore, QtWidgets, QtGui
+from pulse.vendor.Qt import QtCore, QtWidgets, QtGui
 import pymel.core as pm
 import pymetanode as meta
 

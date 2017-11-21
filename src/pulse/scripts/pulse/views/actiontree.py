@@ -1,5 +1,5 @@
 
-from Qt import QtCore, QtWidgets, QtGui
+from pulse.vendor.Qt import QtCore, QtWidgets, QtGui
 import pymetanode as meta
 
 import pulse

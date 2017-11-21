@@ -1,6 +1,6 @@
 
 import os
-from Qt import QtCore, QtWidgets, QtGui
+from pulse.vendor.Qt import QtCore, QtWidgets, QtGui
 
 
 __all__ = [

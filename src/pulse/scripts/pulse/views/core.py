@@ -1,5 +1,5 @@
 
-from Qt import QtCore, QtWidgets, QtGui
+from pulse.vendor.Qt import QtCore, QtWidgets, QtGui
 import maya.cmds as cmds
 from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
 
