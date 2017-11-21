@@ -13,5 +13,5 @@ AnimControlAction:
       value: True
     - name: keyableAttrs
       description: Defines attributes that can be animated. All others will be locked
-      type: strlist
+      type: stringlist
       value: ['t', 'r', 's']

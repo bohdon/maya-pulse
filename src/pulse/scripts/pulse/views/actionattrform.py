@@ -12,6 +12,7 @@ __all__ = [
     'DefaultAttrForm',
     'NodeAttrForm',
     'OptionAttrForm',
+    'StringAttrForm',
 ]
 
 
@@ -281,6 +282,35 @@ class BoolAttrForm(ActionAttrForm):
 ActionAttrForm.TYPEMAP['bool'] = BoolAttrForm
 
 
+
+class StringAttrForm(ActionAttrForm):
+    """
+    A simple checkbox attribute form
+    """
+
+    def setupUi(self, parent):
+        self.setupDefaultFormUi(parent)
+
+        self.lineEdit = QtWidgets.QLineEdit(parent)
+        self.lineEdit.setMinimumHeight(self.LABEL_HEIGHT)
+        self.lineEdit.textChanged.connect(self._valueChanged)
+
+        self.setDefaultFormWidget(self.lineEdit)
+
+    def _setFormValue(self, attrValue):
+        self.lineEdit.setText(attrValue)
+
+    def _getFormValue(self):
+        return self.lineEdit.text()
+
+    def _isValueTypeValid(self, attrValue):
+        return isinstance(attrValue, basestring)
+
+
+ActionAttrForm.TYPEMAP['string'] = StringAttrForm
+
+
+
 class NodeAttrForm(ActionAttrForm):
     """
     A special form that allows picking nodes from the scene.
@@ -327,8 +357,8 @@ class NodeAttrForm(ActionAttrForm):
         else:
             self.setAttrValue(None)
 
-
 ActionAttrForm.TYPEMAP['node'] = NodeAttrForm
+
 
 
 class NodeListAttrForm(ActionAttrForm):
@@ -372,6 +402,5 @@ class NodeListAttrForm(ActionAttrForm):
     def setFromSelection(self):
         self.setAttrValue(pm.selected())
         self.valueChanged.emit(self.attrValue, self.isValueValid)
-
 
 ActionAttrForm.TYPEMAP['nodelist'] = NodeListAttrForm

@@ -4,5 +4,5 @@ SaveBuiltRigAction:
   description: Saves the rig to its own file after it is built
   attrs:
     - name: filename
-      type: str
+      type: string
       value: "{rig[name]}_rig"

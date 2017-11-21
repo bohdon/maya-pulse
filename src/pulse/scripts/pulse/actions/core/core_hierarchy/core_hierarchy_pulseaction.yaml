@@ -4,7 +4,7 @@ BuildCoreHierarchyAction:
   description: Gathers nodes into a core hierarchy of the rig
   attrs:
     - name: groupName
-      type: str
+      type: string
     - name: groupVisible
       description: Whether the group should be visible or not in the built rig
       type: bool
