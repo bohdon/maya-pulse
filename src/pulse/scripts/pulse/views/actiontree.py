@@ -173,7 +173,7 @@ class ActionTreeItemModel(QtCore.QAbstractItemModel):
 
     def flags(self, index):
         if not index.isValid():
-            return 0
+            return QtCore.Qt.ItemIsDropEnabled
 
         flags = QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsDragEnabled
         item = self.getItem(index)
@@ -333,7 +333,8 @@ class ActionTreeWidget(QtWidgets.QWidget):
         self.treeView = QtWidgets.QTreeView(parent)
         self.treeView.setHeaderHidden(True)
         self.treeView.setDragEnabled(True)
-        self.treeView.setDragDropMode(QtWidgets.QAbstractItemView.DragDropMode.InternalMove)
+        self.treeView.setDragDropMode(QtWidgets.QAbstractItemView.DragDropMode.DragDrop)
+        self.treeView.setDefaultDropAction(QtCore.Qt.DropAction.MoveAction)
         self.treeView.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.ExtendedSelection)
         self.treeView.setIndentation(14)
         self.treeView.installEventFilter(self)
