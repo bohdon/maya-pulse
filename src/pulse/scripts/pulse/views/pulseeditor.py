@@ -70,13 +70,17 @@ class PulseEditorWindow(PulseWindow):
         actionEditorBtn.clicked.connect(self.showActionEditor)
         actionsLayout.addWidget(actionEditorBtn)
 
+        actionsSplitter = QtWidgets.QSplitter(parent)
+        actionsSplitter.setOrientation(QtCore.Qt.Orientation.Vertical)
+        actionsLayout.addWidget(actionsSplitter)
+
         actionTree = ActionTreeWidget(actionsTab)
         actionTree.layout().setMargin(0)
-        actionsLayout.addWidget(actionTree)
+        actionsSplitter.addWidget(actionTree)
 
         actionButtons = ActionButtonsWidget(actionsTab)
         actionButtons.layout().setMargin(0)
-        actionsLayout.addWidget(actionButtons)
+        actionsSplitter.addWidget(actionButtons)
 
         tabWidget.addTab(actionsTab, "Actions")
 
