@@ -4,6 +4,7 @@ from pulse.vendor.Qt import QtCore, QtWidgets, QtGui
 import pulse
 from .core import PulseWindow
 from .blueprinteditor import BlueprintEditorWidget
+from .buildtoolbar import BuildToolbarWidget
 from .actiontree import ActionTreeWidget
 from .actiontree import ActionButtonsWidget
 from .actioneditor import ActionEditorWidget
@@ -28,25 +29,54 @@ class PulseEditorWindow(PulseWindow):
 
         pulse.loadBuiltinActions()
 
+        self.setupUi(self)
+    
+    def setupUi(self, parent):
         widget = QtWidgets.QWidget(self)
         self.setCentralWidget(widget)
 
         layout = QtWidgets.QVBoxLayout(self)
         widget.setLayout(layout)
 
+        buildToolbar = BuildToolbarWidget(self)
+        layout.addWidget(buildToolbar)
+
+        tabWidget = QtWidgets.QTabWidget(self)
+
+
+        # config tab
+        configTab = QtWidgets.QWidget(self)
+        configLayout = QtWidgets.QVBoxLayout(configTab)
+
         blueprintEditor = BlueprintEditorWidget(self)
-        layout.addWidget(blueprintEditor)
-        layout.setStretchFactor(blueprintEditor, 0)
+        configLayout.addWidget(blueprintEditor)
+
+        tabWidget.addTab(configTab, "Config")
+
+
+        # design tab
+        designTab = QtWidgets.QWidget(self)
+
+        tabWidget.addTab(designTab, "Design")
+        
+
+        # actions tab
+        actionsTab = QtWidgets.QWidget(self)
+        actionsLayout = QtWidgets.QVBoxLayout(actionsTab)
 
         actionTree = ActionTreeWidget(self)
-        layout.addWidget(actionTree)
-        layout.setStretchFactor(actionTree, 2)
+        actionsLayout.addWidget(actionTree)
+        actionsLayout.setStretchFactor(actionTree, 2)
 
         actionButtons = ActionButtonsWidget(self)
-        layout.addWidget(actionButtons)
-        layout.setStretchFactor(actionButtons, 1)
+        actionsLayout.addWidget(actionButtons)
+        actionsLayout.setStretchFactor(actionButtons, 1)
 
         actionEditor = ActionEditorWidget(self)
-        layout.addWidget(actionEditor)
-        layout.setStretchFactor(actionEditor, 2)
+        actionsLayout.addWidget(actionEditor)
+        actionsLayout.setStretchFactor(actionEditor, 2)
 
+        tabWidget.addTab(actionsTab, "Actions")
+
+
+        layout.addWidget(tabWidget)

@@ -24,11 +24,6 @@ class BlueprintEditorWidget(QtWidgets.QWidget):
 
         layout = QtWidgets.QVBoxLayout(self)
 
-        buildBtn = QtWidgets.QPushButton(self)
-        buildBtn.setText("Build Rig")
-        buildBtn.clicked.connect(self.buildRig)
-        layout.addWidget(buildBtn)
-
         self.rigNameText = QtWidgets.QLineEdit(self)
         self.rigNameText.setText(self.blueprint.rigName)
         self.rigNameText.textChanged.connect(self.rigNameTextChanged)
@@ -72,13 +67,6 @@ class BlueprintEditorWidget(QtWidgets.QWidget):
         blueprint = pulse.Blueprint()
         blueprint.initializeDefaultActions()
         blueprint.saveToDefaultNode()
-        self.model.reloadBlueprint()
-
-    def buildRig(self):
-        self.model.reloadBlueprint()
-        blueprintFile = str(pm.sceneName())
-        builder = pulse.BlueprintBuilder(self.blueprint, blueprintFile=blueprintFile, debug=True)
-        builder.start()
         self.model.reloadBlueprint()
 
     def debugSaveBlueprint(self):

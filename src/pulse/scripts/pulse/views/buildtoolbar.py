@@ -1,11 +1,11 @@
 
-from Qt import QtCore, QtWidgets, QtGui
+from pulse.vendor.Qt import QtCore, QtWidgets, QtGui
 import pymel.core as pm
 import pymetanode as meta
 
 import pulse
-from pulse.views.core import PulseWindow
-from pulse.views.actiontree import ActionTreeItemModel
+from .core import PulseWindow
+from .actiontree import ActionTreeItemModel
 
 
 __all__ = [
@@ -27,13 +27,20 @@ class BuildToolbarWidget(QtWidgets.QWidget):
     def setupUi(self, parent):
         layout = QtWidgets.QHBoxLayout(parent)
 
-        rigNameLabel = QtWidgets.QLabel(parent)
-        layout.addWidget(rigNameLabel)
+        self.rigNameLabel = QtWidgets.QLabel(parent)
+        self.rigNameLabel.setText(self.blueprint.rigName)
+        layout.addWidget(self.rigNameLabel)
 
         checkBtn = QtWidgets.QPushButton(parent)
+        checkBtn.setText("Check")
+        checkBtn.setMaximumWidth(80)
+        checkBtn.clicked.connect(self.runCheck)
         layout.addWidget(checkBtn)
 
         buildBtn = QtWidgets.QPushButton(parent)
+        buildBtn.setText("Build")
+        buildBtn.setMaximumWidth(80)
+        buildBtn.clicked.connect(self.runBuild)
         layout.addWidget(buildBtn)
 
     @property
@@ -41,19 +48,17 @@ class BuildToolbarWidget(QtWidgets.QWidget):
         return self.model.blueprint
 
     def onBlueprintLoaded(self):
-        # self.rigNameText.setText(self.blueprint.rigName)
-        pass
+        self.rigNameLabel.setText(self.blueprint.rigName)
 
     def runCheck(self):
         pass
 
     def runBuild(self):
-        pass
-        # self.model.reloadBlueprint()
-        # blueprintFile = str(pm.sceneName())
-        # builder = pulse.BlueprintBuilder(self.blueprint, blueprintFile=blueprintFile, debug=True)
-        # builder.start()
-        # self.model.reloadBlueprint()
+        self.model.reloadBlueprint()
+        blueprintFile = str(pm.sceneName())
+        builder = pulse.BlueprintBuilder(self.blueprint, blueprintFile=blueprintFile, debug=True)
+        builder.start()
+        self.model.reloadBlueprint()
 
 
 class BuildToolbarWindow(PulseWindow):
