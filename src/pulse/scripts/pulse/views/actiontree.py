@@ -308,7 +308,6 @@ class ActionTreeWidget(QtWidgets.QWidget):
         # build the ui
         self.setupUi(self)
         # connect signals
-        self.refreshBtn.clicked.connect(self.model.reloadBlueprint)
         self.model.modelReset.connect(self.onBlueprintLoaded)
 
     def onBlueprintLoaded(self):
@@ -325,10 +324,6 @@ class ActionTreeWidget(QtWidgets.QWidget):
 
     def setupUi(self, parent):
         lay = QtWidgets.QVBoxLayout(parent)
-
-        self.refreshBtn = QtWidgets.QPushButton()
-        self.refreshBtn.setText('Refresh')
-        lay.addWidget(self.refreshBtn)
 
         self.treeView = QtWidgets.QTreeView(parent)
         self.treeView.setHeaderHidden(True)
@@ -365,6 +360,8 @@ class ActionButtonsWidget(QtWidgets.QWidget):
 
         self.model = ActionTreeItemModel.getSharedModel()
         self.selectionModel = ActionTreeSelectionModel.getSharedModel()
+
+        self.setMaximumHeight(200)
 
         layout = QtWidgets.QVBoxLayout(self)
 

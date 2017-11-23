@@ -5,9 +5,8 @@ import pulse
 from .core import PulseWindow
 from .blueprinteditor import BlueprintEditorWidget
 from .buildtoolbar import BuildToolbarWidget
-from .actiontree import ActionTreeWidget
-from .actiontree import ActionButtonsWidget
-from .actioneditor import ActionEditorWidget
+from .actiontree import ActionTreeItemModel, ActionTreeWidget, ActionButtonsWidget
+from .actioneditor import ActionEditorWidget, ActionEditorWindow
 
 
 __all__ = [
@@ -32,51 +31,62 @@ class PulseEditorWindow(PulseWindow):
         self.setupUi(self)
     
     def setupUi(self, parent):
-        widget = QtWidgets.QWidget(self)
+        widget = QtWidgets.QWidget(parent)
+        widget.setMinimumWidth(280)
         self.setCentralWidget(widget)
 
-        layout = QtWidgets.QVBoxLayout(self)
+        layout = QtWidgets.QVBoxLayout(parent)
         widget.setLayout(layout)
 
-        buildToolbar = BuildToolbarWidget(self)
+        buildToolbar = BuildToolbarWidget(parent)
         layout.addWidget(buildToolbar)
 
-        tabWidget = QtWidgets.QTabWidget(self)
+        tabWidget = QtWidgets.QTabWidget(parent)
 
 
         # config tab
-        configTab = QtWidgets.QWidget(self)
+        configTab = QtWidgets.QWidget(parent)
         configLayout = QtWidgets.QVBoxLayout(configTab)
 
-        blueprintEditor = BlueprintEditorWidget(self)
+        blueprintEditor = BlueprintEditorWidget(configTab)
         configLayout.addWidget(blueprintEditor)
 
         tabWidget.addTab(configTab, "Config")
 
 
         # design tab
-        designTab = QtWidgets.QWidget(self)
+        designTab = QtWidgets.QWidget(parent)
 
         tabWidget.addTab(designTab, "Design")
         
 
         # actions tab
-        actionsTab = QtWidgets.QWidget(self)
+        actionsTab = QtWidgets.QWidget(parent)
         actionsLayout = QtWidgets.QVBoxLayout(actionsTab)
 
-        actionTree = ActionTreeWidget(self)
+        actionEditorBtn = QtWidgets.QPushButton(actionsTab)
+        actionEditorBtn.setText("Action Editor")
+        actionEditorBtn.clicked.connect(self.showActionEditor)
+        actionsLayout.addWidget(actionEditorBtn)
+
+        actionTree = ActionTreeWidget(actionsTab)
         actionsLayout.addWidget(actionTree)
-        actionsLayout.setStretchFactor(actionTree, 2)
+        actionsLayout.setStretchFactor(actionTree, 1)
 
-        actionButtons = ActionButtonsWidget(self)
+        actionButtons = ActionButtonsWidget(actionsTab)
         actionsLayout.addWidget(actionButtons)
-        actionsLayout.setStretchFactor(actionButtons, 1)
-
-        actionEditor = ActionEditorWidget(self)
-        actionsLayout.addWidget(actionEditor)
-        actionsLayout.setStretchFactor(actionEditor, 2)
 
         tabWidget.addTab(actionsTab, "Actions")
 
 
         layout.addWidget(tabWidget)
+
+        # debug controls
+        refreshBtn = QtWidgets.QPushButton(parent)
+        refreshBtn.setText('Refresh')
+        model = ActionTreeItemModel.getSharedModel()
+        refreshBtn.clicked.connect(model.reloadBlueprint)
+        layout.addWidget(refreshBtn)
+    
+    def showActionEditor(self):
+        ActionEditorWindow.createAndShow()

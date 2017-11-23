@@ -526,5 +526,6 @@ class ActionEditorWindow(PulseWindow):
         self.setWindowTitle('Pulse Action Editor')
 
         widget = ActionEditorWidget(self)
+        widget.setMinimumSize(400, 300)
         self.setCentralWidget(widget)
 
