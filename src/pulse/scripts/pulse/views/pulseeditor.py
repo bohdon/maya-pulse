@@ -49,6 +49,7 @@ class PulseEditorWindow(PulseWindow):
         configLayout = QtWidgets.QVBoxLayout(configTab)
 
         blueprintEditor = BlueprintEditorWidget(configTab)
+        blueprintEditor.layout().setMargin(0)
         configLayout.addWidget(blueprintEditor)
 
         tabWidget.addTab(configTab, "Config")
@@ -70,10 +71,11 @@ class PulseEditorWindow(PulseWindow):
         actionsLayout.addWidget(actionEditorBtn)
 
         actionTree = ActionTreeWidget(actionsTab)
+        actionTree.layout().setMargin(0)
         actionsLayout.addWidget(actionTree)
-        actionsLayout.setStretchFactor(actionTree, 1)
 
         actionButtons = ActionButtonsWidget(actionsTab)
+        actionButtons.layout().setMargin(0)
         actionsLayout.addWidget(actionButtons)
 
         tabWidget.addTab(actionsTab, "Actions")

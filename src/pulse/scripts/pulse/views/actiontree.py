@@ -323,7 +323,7 @@ class ActionTreeWidget(QtWidgets.QWidget):
         return QtWidgets.QWidget.eventFilter(self, widget, event)
 
     def setupUi(self, parent):
-        lay = QtWidgets.QVBoxLayout(parent)
+        layout = QtWidgets.QVBoxLayout(parent)
 
         self.treeView = QtWidgets.QTreeView(parent)
         self.treeView.setHeaderHidden(True)
@@ -336,7 +336,7 @@ class ActionTreeWidget(QtWidgets.QWidget):
         self.treeView.setModel(self.model)
         self.treeView.setSelectionModel(self.selectionModel)
         self.treeView.expandAll()
-        lay.addWidget(self.treeView)
+        layout.addWidget(self.treeView)
 
     def deleteSelectedItems(self):
         wasChanged = False
@@ -360,53 +360,75 @@ class ActionButtonsWidget(QtWidgets.QWidget):
 
         self.model = ActionTreeItemModel.getSharedModel()
         self.selectionModel = ActionTreeSelectionModel.getSharedModel()
-
-        self.setMaximumHeight(200)
-
-        layout = QtWidgets.QVBoxLayout(self)
-
-        grpBtn = QtWidgets.QPushButton(self)
+        self.setupUi(self)
+    
+    def setupUi(self, parent):
+        layout = QtWidgets.QVBoxLayout(parent)
+    
+        grpBtn = QtWidgets.QPushButton(parent)
         grpBtn.setText("New Group")
         grpBtn.clicked.connect(self.createBuildGroup)
         layout.addWidget(grpBtn)
 
+        searchField = QtWidgets.QLineEdit(parent)
+        searchField.setPlaceholderText("Search")
+        layout.addWidget(searchField)
+
+        tabScrollWidget = QtWidgets.QWidget(parent)
+        tabScroll = QtWidgets.QScrollArea(parent)
+        tabScroll.setFrameShape(QtWidgets.QScrollArea.NoFrame)
+        tabScroll.setWidgetResizable(True)
+        tabScroll.setWidget(tabScrollWidget)
+
+        self.setupContentUi(tabScrollWidget)
+
+        layout.addWidget(tabScroll)
+
+    def setupContentUi(self, parent):
+        layout = QtWidgets.QVBoxLayout(parent)
+        
+        # make button for each action
         registeredActions = pulse.getRegisteredActions().values()
         categories = list(set([ac.config.get('category', 'Default') for ac in registeredActions]))
+        categoryLayouts = {}
 
-        tabWidget = QtWidgets.QTabWidget(self)
-        tabWidget.setObjectName("tabWidget")
-
-        tabWidgets = {}
-
-        for i, cat in enumerate(categories):
-            tab = QtWidgets.QWidget()
-            tabOuterLay = QtWidgets.QVBoxLayout(tab)
-            tabScroll = QtWidgets.QScrollArea(tab)
-            tabScroll.setFrameShape(QtWidgets.QScrollArea.NoFrame)
-            tabScroll.setWidgetResizable(True)
-            tabScrollWidget = QtWidgets.QWidget(tab)
-            tabLay = QtWidgets.QVBoxLayout(tabScrollWidget)
-            tabWidgets[cat] = tabScrollWidget
-            # setup relationships
-            tabScroll.setWidget(tabScrollWidget)
-            tabOuterLay.addWidget(tabScroll)
-            tabWidget.addTab(tab, "")
-            # set tab label
-            tabWidget.setTabText(i, cat)
-
-        layout.addWidget(tabWidget)
+        # create category layouts
+        for i, cat in enumerate(sorted(categories)):
+            catLay = QtWidgets.QVBoxLayout(parent)
+            layout.addLayout(catLay)
+            categoryLayouts[cat] = catLay
+            # add label
+            label = self.createLabel(parent, cat)
+            catLay.addWidget(label)
 
         for actionClass in registeredActions:
             cat = actionClass.config.get('category', 'Default')
-            btn = QtWidgets.QPushButton()
+            color = self.getActionColor(actionClass)
+            btn = QtWidgets.QPushButton(parent)
             btn.setText(actionClass.config['displayName'])
+            btn.setStyleSheet('background-color:rgba({0}, {1}, {2}, 30)'.format(*color))
             cmd = lambda x=actionClass.getTypeName(): self.createBuildAction(x)
             btn.clicked.connect(cmd)
-            tabWidgets[cat].layout().addWidget(btn)
+            categoryLayouts[cat].addWidget(btn)
 
         for cat in categories:
             spacer = QtWidgets.QSpacerItem(0, 0, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
-            tabWidgets[cat].layout().addItem(spacer)
+            categoryLayouts[cat].addItem(spacer)
+    
+    def createLabel(self, parent, text):
+        label = QtWidgets.QLabel(parent)
+        label.setText(text)
+        label.setMinimumHeight(20)
+        label.setMargin(2)
+        label.setStyleSheet('background-color: rgba(0, 0, 0, 0.15)')
+        return label
+    
+    def getActionColor(self, actionClass):
+        color = actionClass.config.get('color', [1, 1, 1])
+        if color:
+            return [int(c * 255) for c in color]
+        else:
+            return [255, 255, 255]
 
     def onActionClicked(self, typeName):
         self.model
