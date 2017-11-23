@@ -411,9 +411,8 @@ class ActionButtonsWidget(QtWidgets.QWidget):
             btn.clicked.connect(cmd)
             categoryLayouts[cat].addWidget(btn)
 
-        for cat in categories:
-            spacer = QtWidgets.QSpacerItem(0, 0, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
-            categoryLayouts[cat].addItem(spacer)
+        spacer = QtWidgets.QSpacerItem(0, 0, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
+        layout.addItem(spacer)
     
     def createLabel(self, parent, text):
         label = QtWidgets.QLabel(parent)
