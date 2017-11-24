@@ -446,6 +446,8 @@ class ActionEditorWidget(QtWidgets.QWidget):
         self.selectionModel = ActionTreeSelectionModel.getSharedModel()
         self.selectionModel.selectionChanged.connect(self.selectionChanged)
 
+        self.setupItemsUiForSelection()
+
     def setupUi(self, parent):
         outerLayout = QtWidgets.QVBoxLayout(parent)
         outerLayout.setContentsMargins(0, 0, 0, 0)
@@ -463,8 +465,7 @@ class ActionEditorWidget(QtWidgets.QWidget):
         self.scrollWidget.setLayout(self.mainLayout)
 
     def selectionChanged(self, selected, deselected):
-        self.clearItemsUi()
-        self.setupItemsUi(self.selectionModel.selectedIndexes(), self.scrollWidget)
+        self.rebuildItemsUi()
 
     def clearItemsUi(self):
         while True:
@@ -484,6 +485,13 @@ class ActionEditorWidget(QtWidgets.QWidget):
             elif isinstance(itemWidget, BatchActionForm):
                 itemWidget.convertToActionClicked.connect(partial(self.convertBatchToAction, index))
             self.mainLayout.addWidget(itemWidget)
+    
+    def rebuildItemsUi(self):
+        self.clearItemsUi()
+        self.setupItemsUiForSelection()
+    
+    def setupItemsUiForSelection(self):
+        self.setupItemsUi(self.selectionModel.selectedIndexes(), self.scrollWidget)
 
     def buildItemChanged(self, itemWidget):
         self.model.blueprint.saveToDefaultNode()
