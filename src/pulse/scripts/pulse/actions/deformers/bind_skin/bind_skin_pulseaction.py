@@ -1,6 +1,5 @@
 
 import pymel.core as pm
-import pymetanode as meta
 
 import pulse
 
