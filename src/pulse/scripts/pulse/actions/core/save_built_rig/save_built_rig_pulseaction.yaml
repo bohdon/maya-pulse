@@ -2,6 +2,7 @@ SaveBuiltRigAction:
   isBuiltin: true
   displayName: Save Built Rig
   description: Saves the rig to its own file after it is built
+  category: Core
   attrs:
     - name: filename
       type: string

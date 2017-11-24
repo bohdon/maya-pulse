@@ -2,6 +2,7 @@ BuildCoreHierarchyAction:
   isBuiltin: true
   displayName: Build Core Hierarchy
   description: Gathers nodes into a core hierarchy of the rig
+  category: Core
   attrs:
     - name: groupName
       type: string
