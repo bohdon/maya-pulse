@@ -460,23 +460,36 @@ class ActionEditorWidget(QtWidgets.QWidget):
         self.scrollWidget = QtWidgets.QWidget()
         self.scrollArea.setWidget(self.scrollWidget)
 
+        # scroll layout contains the main layout and a spacer item
+        self.scrollLayout = QtWidgets.QVBoxLayout(self.scrollWidget)
+
         self.mainLayout = QtWidgets.QVBoxLayout(self.scrollWidget)
         self.mainLayout.setContentsMargins(0, 0, 0, 0)
-        self.scrollWidget.setLayout(self.mainLayout)
+        self.scrollLayout.addLayout(self.mainLayout)
+
+        spacer = QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
+        self.scrollLayout.addItem(spacer)
+
+        self.scrollWidget.setLayout(self.scrollLayout)
+
 
     def selectionChanged(self, selected, deselected):
-        self.rebuildItemsUi()
+        self.setupItemsUiForSelection()
 
     def clearItemsUi(self):
         while True:
             item = self.mainLayout.takeAt(0)
             if item:
-                w = item.widget().setParent(None)
+                widget = item.widget()
+                if widget:
+                    widget.setParent(None)
             else:
                 break
 
     def setupItemsUi(self, itemIndexes, parent):
-        for index in itemIndexes[:1]:
+        self.clearItemsUi()
+
+        for index in itemIndexes:
             buildItem = index.internalPointer().buildItem
             itemWidget = BuildItemForm.createItemWidget(buildItem, parent=parent)
             itemWidget.buildItemChanged.connect(partial(self.buildItemChanged, itemWidget))
@@ -485,10 +498,6 @@ class ActionEditorWidget(QtWidgets.QWidget):
             elif isinstance(itemWidget, BatchActionForm):
                 itemWidget.convertToActionClicked.connect(partial(self.convertBatchToAction, index))
             self.mainLayout.addWidget(itemWidget)
-    
-    def rebuildItemsUi(self):
-        self.clearItemsUi()
-        self.setupItemsUiForSelection()
     
     def setupItemsUiForSelection(self):
         self.setupItemsUi(self.selectionModel.selectedIndexes(), self.scrollWidget)
