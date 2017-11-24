@@ -68,12 +68,13 @@ class BuildItemForm(QtWidgets.QWidget):
         """
         # main layout containing header and body
         layout = QtWidgets.QVBoxLayout(parent)
-        layout.setSpacing(12)
+        layout.setSpacing(4)
+        layout.setMargin(0)
 
         # header frame
         self.headerFrame = QtWidgets.QFrame(parent)
-        colorstr = 'rgba({0}, {1}, {2}, 30)'.format(*self.getItemColor())
-        self.headerFrame.setStyleSheet(".QFrame{{ background-color: {color}; }}".format(color=colorstr))
+        headerColor = 'rgba({0}, {1}, {2}, 40)'.format(*self.getItemColor())
+        self.headerFrame.setStyleSheet(".QFrame{{ background-color: {color}; border-radius: 2px; }}".format(color=headerColor))
         layout.addWidget(self.headerFrame)
         # header layout
         self.headerLayout = QtWidgets.QHBoxLayout(self.headerFrame)
@@ -83,22 +84,21 @@ class BuildItemForm(QtWidgets.QWidget):
         font.setWeight(75)
         font.setBold(True)
         self.displayNameLabel = QtWidgets.QLabel(self.headerFrame)
-        self.displayNameLabel.setMinimumHeight(20)
+        self.displayNameLabel.setMinimumHeight(18)
         self.displayNameLabel.setFont(font)
         self.displayNameLabel.setText(self.getItemDisplayName())
         self.headerLayout.addWidget(self.displayNameLabel)
 
         # body layout
-        bodyLay = QtWidgets.QVBoxLayout(parent)
-        layout.addLayout(bodyLay)
-        # main body content layout
-        self.mainLayout = QtWidgets.QVBoxLayout(parent)
-        # no spacing between attributes
+        bodyFrame = QtWidgets.QFrame(parent)
+        bodyFrame.setObjectName("bodyFrame")
+        bodyColor = 'rgba({0}, {1}, {2}, 10)'.format(*self.getItemColor())
+        bodyFrame.setStyleSheet(".QFrame#bodyFrame{{ background-color: {color}; }}".format(color=bodyColor))
+        layout.addWidget(bodyFrame)
+
+        self.mainLayout = QtWidgets.QVBoxLayout(bodyFrame)
+        self.mainLayout.setMargin(6)
         self.mainLayout.setSpacing(0)
-        bodyLay.addLayout(self.mainLayout)
-        # body spacer
-        spacer = QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
-        bodyLay.addItem(spacer)
 
     def setupContentUi(self, parent):
         pass
@@ -126,7 +126,7 @@ class ActionForm(BuildItemForm):
         # add batch conversion button to header
         convertToBatchBtn = QtWidgets.QPushButton(parent)
         convertToBatchBtn.setIcon(viewutils.getIcon("convertActionToBatch.png"))
-        convertToBatchBtn.setFixedSize(QtCore.QSize(20, 20))
+        convertToBatchBtn.setFixedSize(QtCore.QSize(18, 18))
         convertToBatchBtn.clicked.connect(self.convertToBatchClicked.emit)
         self.headerLayout.addWidget(convertToBatchBtn)
 
@@ -170,7 +170,7 @@ class BatchActionForm(BuildItemForm):
         # add action conversion button to header
         convertToActionBtn = QtWidgets.QPushButton(parent)
         convertToActionBtn.setIcon(viewutils.getIcon("convertBatchToAction.png"))
-        convertToActionBtn.setFixedSize(QtCore.QSize(20, 20))
+        convertToActionBtn.setFixedSize(QtCore.QSize(18, 18))
         convertToActionBtn.clicked.connect(self.convertToActionClicked.emit)
         self.headerLayout.addWidget(convertToActionBtn)
 
@@ -351,7 +351,6 @@ class ActionEditorWidget(QtWidgets.QWidget):
 
     def setupUi(self, parent):
         outerLayout = QtWidgets.QVBoxLayout(parent)
-        outerLayout.setContentsMargins(0, 0, 0, 0)
 
         self.scrollArea = QtWidgets.QScrollArea(parent)
         self.scrollArea.setFrameShape(QtWidgets.QScrollArea.NoFrame)
@@ -363,9 +362,11 @@ class ActionEditorWidget(QtWidgets.QWidget):
 
         # scroll layout contains the main layout and a spacer item
         self.scrollLayout = QtWidgets.QVBoxLayout(self.scrollWidget)
+        self.scrollLayout.setMargin(0)
 
         self.mainLayout = QtWidgets.QVBoxLayout(self.scrollWidget)
-        self.mainLayout.setContentsMargins(0, 0, 0, 0)
+        self.mainLayout.setSpacing(12)
+        self.mainLayout.setMargin(4)
         self.scrollLayout.addLayout(self.mainLayout)
 
         spacer = QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
@@ -384,6 +385,7 @@ class ActionEditorWidget(QtWidgets.QWidget):
                 widget = item.widget()
                 if widget:
                     widget.setParent(None)
+                    widget.deleteLater()
             else:
                 break
 

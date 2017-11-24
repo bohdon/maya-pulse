@@ -548,6 +548,7 @@ class NodeListAttrForm(ActionAttrForm):
         
         self.listWidget = QtWidgets.QListWidget(parent)
         self.listWidget.setSortingEnabled(True)
+        self.listWidget.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
         self.listWidget.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.ExtendedSelection)
         hlayout.addWidget(self.listWidget)
 
@@ -568,6 +569,9 @@ class NodeListAttrForm(ActionAttrForm):
             pass
         for node in attrValue:
             self.listWidget.addItem(QtWidgets.QListWidgetItem(node.nodeName()))
+        # 13px line height per item, clamped in range 40..120, added 8px buffer
+        newHeight = max(40, min(120, 8 + 13 * self.listWidget.count()))
+        self.listWidget.setFixedHeight(newHeight)
 
     def _getFormValue(self):
         return self.attrValue
