@@ -92,7 +92,7 @@ class BuildItemForm(QtWidgets.QWidget):
         # body layout
         bodyFrame = QtWidgets.QFrame(parent)
         bodyFrame.setObjectName("bodyFrame")
-        bodyColor = 'rgba({0}, {1}, {2}, 10)'.format(*self.getItemColor())
+        bodyColor = 'rgba(255, 255, 255, 5)'.format(*self.getItemColor())
         bodyFrame.setStyleSheet(".QFrame#bodyFrame{{ background-color: {color}; }}".format(color=bodyColor))
         layout.addWidget(bodyFrame)
 
@@ -185,12 +185,12 @@ class BatchActionForm(BuildItemForm):
         self.constantsLayout.setContentsMargins(0, 0, 0, 0)
         self.mainLayout.addLayout(self.constantsLayout)
 
-        spacer = QtWidgets.QSpacerItem(24, 24, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
+        spacer = QtWidgets.QSpacerItem(20, 4, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
         self.mainLayout.addItem(spacer)
 
         # variant header
         variantHeader = QtWidgets.QFrame(parent)
-        variantHeader.setStyleSheet(".QFrame{ background-color: rgb(255, 255, 255, 20); }")
+        variantHeader.setStyleSheet(".QFrame{ background-color: rgb(255, 255, 255, 15); border-radius: 2px }")
         self.mainLayout.addWidget(variantHeader)
 
         variantHeaderLayout = QtWidgets.QHBoxLayout(variantHeader)
@@ -201,21 +201,20 @@ class BatchActionForm(BuildItemForm):
         self.variantsLabel.setText("Variants: {0}".format(len(self.buildItem.variantValues)))
         variantHeaderLayout.addWidget(self.variantsLabel)
 
-        addBtn = QtWidgets.QPushButton(variantHeader)
-        addBtn.setText('+')
-        addBtn.setFixedSize(QtCore.QSize(20, 20))
-        addBtn.clicked.connect(self.addVariant)
-        variantHeaderLayout.addWidget(addBtn)
-
-        removeBtn = QtWidgets.QPushButton(variantHeader)
-        removeBtn.setText('-')
-        removeBtn.setFixedSize(QtCore.QSize(20, 20))
-        removeBtn.clicked.connect(self.removeVariantFromEnd)
-        variantHeaderLayout.addWidget(removeBtn)
+        spacer = QtWidgets.QSpacerItem(20, 4, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
+        self.mainLayout.addItem(spacer)
+        
+        # add variant button
+        addVariantBtn = QtWidgets.QPushButton(variantHeader)
+        addVariantBtn.setText('+')
+        addVariantBtn.setFixedSize(QtCore.QSize(20, 20))
+        addVariantBtn.clicked.connect(self.addVariant)
+        variantHeaderLayout.addWidget(addVariantBtn)
 
         # variant list main layout
         self.variantLayout = QtWidgets.QVBoxLayout(parent)
         self.variantLayout.setContentsMargins(0, 0, 0, 0)
+        self.variantLayout.setSpacing(4)
         self.mainLayout.addLayout(self.variantLayout)
 
         self.setupConstantsUi(parent)
@@ -227,10 +226,10 @@ class BatchActionForm(BuildItemForm):
         # create attr form all constant attributes
         for attr in self.buildItem.actionClass.config['attrs']:
             isConstant = (attr['name'] in self.buildItem.constantValues)
-            # always make an HBox with a button to toggle variant state
+            # make an HBox with a button to toggle variant state
             attrHLayout = QtWidgets.QHBoxLayout(parent)
             attrHLayout.setSpacing(10)
-            attrHLayout.setContentsMargins(0, 0, 0, 0)
+            attrHLayout.setMargin(0)
             self.constantsLayout.addLayout(attrHLayout)
 
             if isConstant:
@@ -277,22 +276,45 @@ class BatchActionForm(BuildItemForm):
         self.variantsLabel.setText("Variants: {0}".format(len(self.buildItem.variantValues)))
         for i, variant in enumerate(self.buildItem.variantValues):
 
-            layout = QtWidgets.QVBoxLayout(parent)
-            self.variantLayout.addLayout(layout)
+            if i > 0:        
+                # divider line
+                dividerLine = QtWidgets.QFrame(parent)
+                dividerLine.setStyleSheet(".QFrame{ background-color: rgb(0, 0, 0, 15); border-radius: 2px }")
+                dividerLine.setMinimumHeight(2)
+                self.variantLayout.addWidget(dividerLine)
 
-            label = QtWidgets.QLabel(parent)
-            label.setText("{0}:".format(i))
-            layout.addWidget(label)
+            variantHLayout = QtWidgets.QHBoxLayout(parent)
+
+            # remove variant button
+            removeVariantBtn = QtWidgets.QPushButton(parent)
+            removeVariantBtn.setText('x')
+            removeVariantBtn.setFixedSize(QtCore.QSize(20, 20))
+            removeVariantBtn.clicked.connect(partial(self.removeVariantAtIndex, i))
+            variantHLayout.addWidget(removeVariantBtn)
 
             # create attr form for all variant attributes
-            for attr in self.buildItem.actionClass.config['attrs']:
-                if attr['name'] not in self.buildItem.variantAttributes:
-                    continue
-                attrValue = variant[attr['name']]
-                # context = variant
-                attrForm = ActionAttrForm.createForm(attr, attrValue, parent=parent)
-                attrForm.valueChanged.connect(partial(self.attrValueChanged, variant, attrForm))
-                layout.addWidget(attrForm)
+            variantVLayout = QtWidgets.QVBoxLayout(parent)
+            variantVLayout.setSpacing(0)
+            variantHLayout.addLayout(variantVLayout)
+
+            if self.buildItem.variantAttributes:
+                for attr in self.buildItem.actionClass.config['attrs']:
+                    if attr['name'] not in self.buildItem.variantAttributes:
+                        continue
+                    attrValue = variant[attr['name']]
+                    # context = variant
+                    attrForm = ActionAttrForm.createForm(attr, attrValue, parent=parent)
+                    attrForm.valueChanged.connect(partial(self.attrValueChanged, variant, attrForm))
+                    variantVLayout.addWidget(attrForm)
+            else:
+                noAttrsLabel = QtWidgets.QLabel(parent)
+                noAttrsLabel.setText("No variant attributes")
+                noAttrsLabel.setMinimumHeight(24)
+                noAttrsLabel.setContentsMargins(10, 0, 0, 0)
+                noAttrsLabel.setEnabled(False)
+                variantVLayout.addWidget(noAttrsLabel)
+            
+            self.variantLayout.addLayout(variantHLayout)
 
 
     def setIsVariantAttr(self, attrName, isVariant):
@@ -305,6 +327,10 @@ class BatchActionForm(BuildItemForm):
 
     def addVariant(self):
         self.buildItem.addVariant()
+        self.setupVariantsUi(self)
+    
+    def removeVariantAtIndex(self, index):
+        self.buildItem.removeVariantAt(index)
         self.setupVariantsUi(self)
 
     def removeVariantFromEnd(self):
