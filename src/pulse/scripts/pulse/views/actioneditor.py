@@ -9,7 +9,7 @@ import pulse.names
 from .core import PulseWindow
 from . import utils as viewutils
 from .actiontree import ActionTreeItemModel, ActionTreeSelectionModel
-from .actionattrform import ActionAttrForm
+from .actionattrform import ActionAttrForm, BatchAttrForm
 
 
 __all__ = [
@@ -20,106 +20,6 @@ __all__ = [
     'BuildGroupForm',
     'BuildItemForm',
 ]
-
-
-
-
-class BatchAttrEditor(QtWidgets.QWidget):
-    """
-    The base class for an attribute form designed to
-    bulk edit all variants in a batch action.
-    This appears where the default attr form usually appears
-    when the attribute is marked as variant.
-    
-    BatchAttrForms should only exist if they provide an
-    easy way to bulk set different values for all variants,
-    as its pointless to provide functionality for setting all
-    variants to the same value (would make the attribute constant).
-    """
-
-    TYPEMAP = {}
-    
-    valuesChanged = QtCore.Signal()
-    variantCountChanged = QtCore.Signal()
-
-    @staticmethod
-    def doesEditorExist(attr):
-        return attr['type'] in BatchAttrEditor.TYPEMAP
-
-    @staticmethod
-    def createEditor(action, attr, parent=None):
-        """
-        Create a new ActionAttrForm of the appropriate
-        type based on a BuildAction attribute.
-
-        Args:
-            attr: A dict representing the config of a BuildAction attribute
-        """
-        attrType = attr['type']
-        if attrType in BatchAttrEditor.TYPEMAP:
-            return BatchAttrEditor.TYPEMAP[attrType](action, attr, parent=parent)
-
-    def __init__(self, batchAction, attr, parent=None):
-        super(BatchAttrEditor, self).__init__(parent=parent)
-        self.batchAction = batchAction
-        self.attr = attr
-        self.setupUi(self)
-
-    def setupUi(self, parent):
-        raise NotImplementedError
-
-
-
-class NodeBatchAttrEditor(BatchAttrEditor):
-    """
-    A batch attr editor for node values.
-
-    Provides a button for setting the value of
-    all variants at once based on the scene selection.
-    Each variant value will be set to a single node,
-    and the order of the selection matters.
-
-    The number of variants in the batch action is
-    automatically adjusted to match the number of
-    selected nodes.
-    """
-
-    def setupUi(self, parent):
-        hlayout = QtWidgets.QHBoxLayout(parent)
-        hlayout.setContentsMargins(2, 2, 2, 2)
-
-        pickButton = QtWidgets.QPushButton(parent)
-        pickButton.setIcon(viewutils.getIcon("select.png"))
-        pickButton.setFixedSize(QtCore.QSize(20, 20))
-        pickButton.clicked.connect(self.setFromSelection)
-        hlayout.addWidget(pickButton)
-        hlayout.setAlignment(pickButton, QtCore.Qt.AlignTop)
-        # body spacer
-        spacer = QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
-        hlayout.addItem(spacer)
-
-    def setFromSelection(self):
-        """
-        Set the node value for this attribute for each variant
-        based on the selected list of nodes. Increases the variant
-        list size if necessary to match the selection.
-        """
-        sel = pm.selected()
-        # resize variant list to match selection
-        didCountChange = False
-        while len(self.batchAction.variantValues) < len(sel):
-            self.batchAction.addVariant()
-            didCountChange = True
-
-        for i, node in enumerate(sel):
-            self.batchAction.variantValues[i][self.attr['name']] = sel[i]
-        self.valuesChanged.emit()
-        if didCountChange:
-            self.variantCountChanged.emit()
-
-
-BatchAttrEditor.TYPEMAP['node'] = NodeBatchAttrEditor
-
 
 
 
@@ -214,8 +114,8 @@ class BuildGroupForm(BuildItemForm):
 
 class ActionForm(BuildItemForm):
     """
-    Editor widget for both BuildActions and BatchBuildActions.
-    Creates an ActionAttrForm for all attributes of the action.
+    Form for editing Actions that displays an attr form
+    for every attribute on the action.
     """
 
     convertToBatchClicked = QtCore.Signal()
@@ -233,7 +133,7 @@ class ActionForm(BuildItemForm):
     def setupContentUi(self, parent):
         for attr in self.buildItem.config['attrs']:
             attrValue = getattr(self.buildItem, attr['name'])
-            attrForm = ActionAttrForm.createAttrForm(attr, attrValue, parent=parent)
+            attrForm = ActionAttrForm.createForm(attr, attrValue, parent=parent)
             attrForm.valueChanged.connect(partial(self.attrValueChanged, attrForm))
             self.mainLayout.addWidget(attrForm)
 
@@ -245,7 +145,7 @@ class ActionForm(BuildItemForm):
 
 class BatchActionForm(BuildItemForm):
     """
-    The main editor for Batch Actions. Very similar
+    Form for editing Batch Actions. Very similar
     to the standard ActionForm, with a few key
     differences.
 
@@ -253,9 +153,10 @@ class BatchActionForm(BuildItemForm):
     whether the attribute is variant or not.
 
     All variants are displayed in a list, with the ability
-    to easily add and remove variants. If a BatchAttrEditor
+    to easily add and remove variants. If a BatchAttrForm
     exists for a variant attribute type, it will be displayed
-    in place of the normal AttrEditor form.
+    in place of the normal AttrEditor form (only when that
+    attribute is marked as variant).
     """
 
     convertToActionClicked = QtCore.Signal()
@@ -336,7 +237,7 @@ class BatchActionForm(BuildItemForm):
                 # constant value, make an attr form
                 attrValue = self.buildItem.constantValues[attr['name']]
                 context = self.buildItem.constantValues
-                attrForm = ActionAttrForm.createAttrForm(attr, attrValue, parent=parent)
+                attrForm = ActionAttrForm.createForm(attr, attrValue, parent=parent)
                 attrForm.valueChanged.connect(partial(self.attrValueChanged, context, attrForm))
                 attrHLayout.addWidget(attrForm)
             else:
@@ -350,8 +251,8 @@ class BatchActionForm(BuildItemForm):
                 attrLabel.setEnabled(False)
                 attrHLayout.addWidget(attrLabel)
 
-                if BatchAttrEditor.doesEditorExist(attr):
-                    batchEditor = BatchAttrEditor.createEditor(self.buildItem, attr, parent=parent)
+                if BatchAttrForm.doesFormExist(attr):
+                    batchEditor = BatchAttrForm.createForm(self.buildItem, attr, parent=parent)
                     batchEditor.valuesChanged.connect(self.batchEditorValuesChanged)
                     attrHLayout.addWidget(batchEditor)
                 else:
@@ -389,7 +290,7 @@ class BatchActionForm(BuildItemForm):
                     continue
                 attrValue = variant[attr['name']]
                 # context = variant
-                attrForm = ActionAttrForm.createAttrForm(attr, attrValue, parent=parent)
+                attrForm = ActionAttrForm.createForm(attr, attrValue, parent=parent)
                 attrForm.valueChanged.connect(partial(self.attrValueChanged, variant, attrForm))
                 layout.addWidget(attrForm)
 

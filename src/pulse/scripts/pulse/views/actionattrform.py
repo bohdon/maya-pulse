@@ -8,11 +8,13 @@ from . import utils as viewutils
 
 __all__ = [
     'ActionAttrForm',
+    'BatchAttrForm',
     'BoolAttrForm',
     'DefaultAttrForm',
     'FloatAttrForm',
     'IntAttrForm',
     'NodeAttrForm',
+    'NodeBatchAttrForm',
     'NodeListAttrForm',
     'OptionAttrForm',
     'StringAttrForm',
@@ -36,7 +38,7 @@ class ActionAttrForm(QtWidgets.QWidget):
     valueChanged = QtCore.Signal(object, bool)
 
     @staticmethod
-    def createAttrForm(attr, attrValue, parent=None):
+    def createForm(attr, attrValue, parent=None):
         """
         Create a new ActionAttrForm of the appropriate
         type based on a BuildAction attribute.
@@ -187,6 +189,52 @@ class ActionAttrForm(QtWidgets.QWidget):
         Requires `setupDefaultFormUi` to be used.
         """
         self.formLayout.setLayout(0, QtWidgets.QFormLayout.FieldRole, layout)
+
+
+
+class BatchAttrForm(QtWidgets.QWidget):
+    """
+    The base class for an attribute form designed to
+    bulk edit all variants of an attribute on a batch action.
+    This appears where the default attr form usually appears
+    when the attribute is marked as variant.
+    
+    BatchAttrForms should only exist if they provide an
+    easy way to bulk set different values for all variants,
+    as its pointless to provide functionality for setting all
+    variants to the same value (would make the attribute constant).
+    """
+
+    TYPEMAP = {}
+    
+    valuesChanged = QtCore.Signal()
+    variantCountChanged = QtCore.Signal()
+
+    @staticmethod
+    def doesFormExist(attr):
+        return attr['type'] in BatchAttrForm.TYPEMAP
+
+    @staticmethod
+    def createForm(action, attr, parent=None):
+        """
+        Create a new ActionAttrForm of the appropriate
+        type based on a BuildAction attribute.
+
+        Args:
+            attr: A dict representing the config of a BuildAction attribute
+        """
+        attrType = attr['type']
+        if attrType in BatchAttrForm.TYPEMAP:
+            return BatchAttrForm.TYPEMAP[attrType](action, attr, parent=parent)
+
+    def __init__(self, batchAction, attr, parent=None):
+        super(BatchAttrForm, self).__init__(parent=parent)
+        self.batchAction = batchAction
+        self.attr = attr
+        self.setupUi(self)
+
+    def setupUi(self, parent):
+        raise NotImplementedError
 
 
 
@@ -436,6 +484,56 @@ class NodeAttrForm(ActionAttrForm):
 
 ActionAttrForm.TYPEMAP['node'] = NodeAttrForm
 
+
+class NodeBatchAttrForm(BatchAttrForm):
+    """
+    A batch attr editor for node values.
+
+    Provides a button for setting the value of
+    all variants at once based on the scene selection.
+    Each variant value will be set to a single node,
+    and the order of the selection matters.
+
+    The number of variants in the batch action is
+    automatically adjusted to match the number of
+    selected nodes.
+    """
+
+    def setupUi(self, parent):
+        hlayout = QtWidgets.QHBoxLayout(parent)
+        hlayout.setContentsMargins(2, 2, 2, 2)
+
+        pickButton = QtWidgets.QPushButton(parent)
+        pickButton.setIcon(viewutils.getIcon("select.png"))
+        pickButton.setFixedSize(QtCore.QSize(20, 20))
+        pickButton.clicked.connect(self.setFromSelection)
+        hlayout.addWidget(pickButton)
+        hlayout.setAlignment(pickButton, QtCore.Qt.AlignTop)
+        # body spacer
+        spacer = QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
+        hlayout.addItem(spacer)
+
+    def setFromSelection(self):
+        """
+        Set the node value for this attribute for each variant
+        based on the selected list of nodes. Increases the variant
+        list size if necessary to match the selection.
+        """
+        sel = pm.selected()
+        # resize variant list to match selection
+        didCountChange = False
+        while len(self.batchAction.variantValues) < len(sel):
+            self.batchAction.addVariant()
+            didCountChange = True
+
+        for i, node in enumerate(sel):
+            self.batchAction.variantValues[i][self.attr['name']] = sel[i]
+        self.valuesChanged.emit()
+        if didCountChange:
+            self.variantCountChanged.emit()
+
+
+BatchAttrForm.TYPEMAP['node'] = NodeBatchAttrForm
 
 
 class NodeListAttrForm(ActionAttrForm):
