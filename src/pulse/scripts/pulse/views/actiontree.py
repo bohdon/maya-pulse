@@ -394,7 +394,9 @@ class ActionButtonsWidget(QtWidgets.QWidget):
 
         # create category layouts
         for i, cat in enumerate(sorted(categories)):
+            # add category layout
             catLay = QtWidgets.QVBoxLayout(parent)
+            catLay.setSpacing(4)
             layout.addLayout(catLay)
             categoryLayouts[cat] = catLay
             # add label
@@ -407,6 +409,7 @@ class ActionButtonsWidget(QtWidgets.QWidget):
             btn = QtWidgets.QPushButton(parent)
             btn.setText(actionClass.config['displayName'])
             btn.setStyleSheet('background-color:rgba({0}, {1}, {2}, 30)'.format(*color))
+            btn.setMinimumHeight(22)
             cmd = lambda x=actionClass.getTypeName(): self.createBuildAction(x)
             btn.clicked.connect(cmd)
             categoryLayouts[cat].addWidget(btn)
@@ -418,8 +421,8 @@ class ActionButtonsWidget(QtWidgets.QWidget):
         label = QtWidgets.QLabel(parent)
         label.setText(text)
         label.setMinimumHeight(20)
-        label.setMargin(2)
-        label.setStyleSheet('background-color: rgba(0, 0, 0, 0.15)')
+        label.setContentsMargins(10, 2, 2, 2)
+        label.setStyleSheet('background-color: rgba(0, 0, 0, 40); border-radius: 2px')
         return label
     
     def getActionColor(self, actionClass):
