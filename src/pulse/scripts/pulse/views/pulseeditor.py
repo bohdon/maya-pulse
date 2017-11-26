@@ -7,6 +7,7 @@ from .blueprinteditor import BlueprintEditorWidget
 from .buildtoolbar import BuildToolbarWidget
 from .actiontree import ActionTreeItemModel, ActionTreeWidget, ActionButtonsWidget
 from .actioneditor import ActionEditorWidget, ActionEditorWindow
+from .designview import DesignViewWidget
 
 
 __all__ = [
@@ -43,23 +44,13 @@ class PulseEditorWindow(PulseWindow):
 
         tabWidget = QtWidgets.QTabWidget(parent)
 
-
         # config tab
-        configTab = QtWidgets.QWidget(parent)
-        configLayout = QtWidgets.QVBoxLayout(configTab)
-
-        blueprintEditor = BlueprintEditorWidget(configTab)
-        blueprintEditor.layout().setMargin(0)
-        configLayout.addWidget(blueprintEditor)
-
+        configTab = BlueprintEditorWidget(parent)
         tabWidget.addTab(configTab, "Config")
 
-
         # design tab
-        designTab = QtWidgets.QWidget(parent)
-
+        designTab = DesignViewWidget(parent)
         tabWidget.addTab(designTab, "Design")
-        
 
         # actions tab
         actionsTab = QtWidgets.QWidget(parent)
