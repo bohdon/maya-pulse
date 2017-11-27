@@ -26,10 +26,9 @@ class PulseWindow(MayaQWidgetDockableMixin, QtWidgets.QMainWindow):
         Return True if an instance of this window exists
         """
         result = False
-        workspaceControlName = cls.OBJECT_NAME + 'WorkspaceControl'
-        if cmds.workspaceControl(workspaceControlName, q=True, ex=True):
+        if cmds.workspaceControl(cls.getWorkspaceControlName(), q=True, ex=True):
             result = True
-        if cmds.workspaceControl(workspaceControlName, q=True, ex=True):
+        if cmds.workspaceControl(cls.getWorkspaceControlName(), q=True, ex=True):
             result = True
         if cmds.window(cls.OBJECT_NAME, q=True, ex=True):
             result = True
@@ -41,18 +40,21 @@ class PulseWindow(MayaQWidgetDockableMixin, QtWidgets.QMainWindow):
         Delete existing instances of this window
         """
         result = False
-        workspaceControlName = cls.OBJECT_NAME + 'WorkspaceControl'
         # close and delete an existing workspace control
-        if cmds.workspaceControl(workspaceControlName, q=True, ex=True):
-            cmds.workspaceControl(workspaceControlName, e=True, close=True)
+        if cmds.workspaceControl(cls.getWorkspaceControlName(), q=True, ex=True):
+            cmds.workspaceControl(cls.getWorkspaceControlName(), e=True, close=True)
             result = True
-        if cmds.workspaceControl(workspaceControlName, q=True, ex=True):
-            cmds.deleteUI(workspaceControlName, control=True)
+        if cmds.workspaceControl(cls.getWorkspaceControlName(), q=True, ex=True):
+            cmds.deleteUI(cls.getWorkspaceControlName(), control=True)
             result = True
         if cmds.window(cls.OBJECT_NAME, q=True, ex=True):
             cmds.deleteUI(cls.OBJECT_NAME, window=True)
             result = True
         return result
+
+    @classmethod
+    def getWorkspaceControlName(cls):
+        return cls.OBJECT_NAME + 'WorkspaceControl'
 
     def __init__(self, parent=None):
         super(PulseWindow, self).__init__(parent=parent)

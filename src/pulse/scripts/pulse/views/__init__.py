@@ -26,6 +26,7 @@ def showPulseUI():
         return
     
     PulseEditorWindow().createAndShow()
+    cmds.workspaceControl(PulseEditorWindow.getWorkspaceControlName(), e=True, dtm=['left', False])
 
 def hidePulseUI():
     if not isPulseUIShowing():
