@@ -46,17 +46,17 @@ class GeneralPanel(DesignViewPanel):
         parentSelBtn.clicked.connect(buttonCommand(pulse.nodes.parentSelected))
         gridLayout.addWidget(parentSelBtn, 1, 0, 1, 1)
 
-        createOffsetBtn = QtWidgets.QPushButton(parent)
-        createOffsetBtn.setText("Create Offset")
-        createOffsetBtn.setStatusTip("Group the selected transform, creating the group exactly where the transform is")
-        createOffsetBtn.clicked.connect(buttonCommand(pulse.nodes.createOffsetForSelected))
-        gridLayout.addWidget(createOffsetBtn, 1, 1, 1, 1)
-
         parentInOrderBtn = QtWidgets.QPushButton(parent)
         parentInOrderBtn.setText("Parent in Order")
         parentInOrderBtn.setStatusTip("Parent the selection in order, select leaders to followers")
         parentInOrderBtn.clicked.connect(buttonCommand(pulse.nodes.parentSelectedInOrder))
-        gridLayout.addWidget(parentInOrderBtn, 2, 0, 1, 1)
+        gridLayout.addWidget(parentInOrderBtn, 1, 1, 1, 1)
+
+        createOffsetBtn = QtWidgets.QPushButton(parent)
+        createOffsetBtn.setText("Create Offset")
+        createOffsetBtn.setStatusTip("Group the selected transform, creating the group exactly where the transform is")
+        createOffsetBtn.clicked.connect(buttonCommand(pulse.nodes.createOffsetForSelected))
+        gridLayout.addWidget(createOffsetBtn, 2, 0, 1, 1)
 
         selectChildrenBtn = QtWidgets.QPushButton(parent)
         selectChildrenBtn.setText("Select Children")
