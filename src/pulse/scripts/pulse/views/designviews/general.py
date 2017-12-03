@@ -54,6 +54,7 @@ class GeneralPanel(DesignViewPanel):
         parentInOrderBtn = QtWidgets.QPushButton(parent)
         parentInOrderBtn.setText("Parent in Order")
         parentInOrderBtn.setStatusTip("Parent the selection in order, select leaders to followers")
+        parentInOrderBtn.clicked.connect(buttonCommand(pulse.nodes.parentSelectedInOrder))
         gridLayout.addWidget(parentInOrderBtn, 2, 0, 1, 1)
 
         selectChildrenBtn = QtWidgets.QPushButton(parent)

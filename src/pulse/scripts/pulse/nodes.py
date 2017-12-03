@@ -18,7 +18,9 @@ __all__ = [
     'getExpandedAttrNames',
     'getParentNodes',
     'getTransformHierarchy',
+    'parentInOrder',
     'parentSelected',
+    'parentSelectedInOrder',
     'setConstraintLocked',
     'setParent',
     'setTransformHierarchy',
@@ -136,17 +138,24 @@ def setParent(children, parent):
     """
     if not isinstance(children, (list, tuple)):
         children = [children]
-    # find any children that are parents of the parent node
-    conflicts = []
-    for child in children:
-        if parent.hasParent(child):
-            conflicts.append(child)
-    if conflicts:
-        # move the parent node so that it
-        # becomes a sibling of a top-most child node
-        tops = getParentNodes(conflicts)
-        pm.parent(parent, tops[0].getParent())
-    pm.parent(children, parent)
+    # eliminate nodes that are already correctly children
+    children = [c for c in children if c.getParent() != parent]
+    if not children:
+        # nothing left to do
+        return
+    # find any issues where a child is a current parent of the new parent
+    if parent is not None:
+        conflicts = []
+        for child in children:
+            if parent.hasParent(child):
+                conflicts.append(child)
+        if conflicts:
+            # move the parent node so that it
+            # becomes a sibling of a top-most child node
+            tops = getParentNodes(conflicts)
+            pm.parent(parent, tops[0].getParent())
+    args = children[:] + [parent]
+    pm.parent(*args)
 
 
 def parentSelected():
@@ -157,10 +166,47 @@ def parentSelected():
     """
     sel = pm.selected()
     if len(sel) < 2:
-        pm.error('More that one node must be selected')
+        pm.warning('More that one node must be selected')
         return
     setParent(sel[1:], sel[0])
     pm.select(sel)
+
+
+def parentInOrder(nodes):
+    """
+    Parent the given nodes to each other in order.
+    Leaders then folowers, eg. [A, B, C] -> A|B|C
+
+    Args:
+        nodes: A list of nodes to parent to each other in order
+    """
+    if len(nodes) < 2:
+        pm.warning("More than one node must be given")
+        return
+    # find the first parent of our new parent that is not
+    # going to be a child in the new hierarchy, this prevents
+    # nodes from being improperly pushed out of the hierarchy
+    # when setParent resolves child->parent issues
+    safeParent = nodes[0].getParent()
+    while safeParent in nodes:
+        safeParent = safeParent.getParent()
+        if safeParent is None:
+            # None should never be in the given list of nodes,
+            # but this is a failsafe to prevent infinite loop if it is
+            break
+    setParent(nodes, safeParent)
+    # parent all nodes in order
+    for i in range(len(nodes) - 1):
+        parent, child = nodes[i:i+2]
+        setParent(child, parent)
+
+def parentSelectedInOrder():
+    """
+    Parent the selected nodes to each other in order.
+    Select from top of hierarchy downward, eg. [A, B, C] -> A|B|C
+    """
+    with preservedSelection() as sel:
+        parentInOrder(sel[:])
 
 
 # Node Creation
@@ -317,7 +363,7 @@ def freezeScalesForSelectedHierarchies():
     See `freezeScalesForHierarchy` for more details.
     """
     with preservedSelection() as sel:
-        tops = getParentNodes(sel)
+        tops = getParentNodes(sel[:])
         for t in tops:
             freezeScalesForHierarchy(t)
 
