@@ -17,7 +17,9 @@ __all__ = [
     'getExpandedAttrNames',
     'getParentNodes',
     'getTransformHierarchy',
+    'parentSelected',
     'setConstraintLocked',
+    'setParent',
     'setTransformHierarchy',
 ]
 
@@ -118,13 +120,46 @@ def setTransformHierarchy(hierarchy):
     """
 
     for (parent, children) in hierarchy:
-        for child in children:
+        setParent(children, parent)
 
-            # make sure parent is not a descendent of the child
-            if parent and parent.isChildOf(child):
-                parent.setParent(None)
-            
-            child.setParent(parent)
+
+def setParent(children, parent):
+    """
+    Parent one or more nodes to a new parent node.
+    Resolves situations where a node is currently a
+    parent of its new parent.
+
+    Args:
+        children: A list of nodes to reparent
+        parent: A node to use as the new parent
+    """
+    if not isinstance(children, (list, tuple)):
+        children = [children]
+    # find any children that are parents of the parent node
+    conflicts = []
+    for child in children:
+        if parent.hasParent(child):
+            conflicts.append(child)
+    if conflicts:
+        # move the parent node so that it
+        # becomes a sibling of a top-most child node
+        tops = getParentNodes(conflicts)
+        pm.parent(parent, tops[0].getParent())
+    pm.parent(children, parent)
+
+
+def parentSelected():
+    """
+    Parent the selected nodes. Select a leader then followers.
+    
+    [A, B, C] -> A|B, A|C
+    """
+    sel = pm.selected()
+    if len(sel) < 2:
+        pm.error('More that one node must be selected')
+        return
+    setParent(sel[1:], sel[0])
+    pm.select(sel)
 
 
 # Node Creation

@@ -42,6 +42,7 @@ class GeneralPanel(DesignViewPanel):
         parentSelBtn = QtWidgets.QPushButton(parent)
         parentSelBtn.setText("Parent Selected")
         parentSelBtn.setStatusTip("Parent the selected nodes, select one leader then followers")
+        parentSelBtn.clicked.connect(buttonCommand(pulse.nodes.parentSelected))
         gridLayout.addWidget(parentSelBtn, 1, 0, 1, 1)
 
         createOffsetBtn = QtWidgets.QPushButton(parent)
