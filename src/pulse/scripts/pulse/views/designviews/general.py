@@ -1,6 +1,8 @@
 
 from pulse.vendor.Qt import QtCore, QtWidgets, QtGui
 
+import pulse.nodes
+
 from .core import DesignViewPanel
 
 __all__ = [
@@ -26,22 +28,28 @@ class GeneralPanel(DesignViewPanel):
 
         freezeScaleBtn = QtWidgets.QPushButton(parent)
         freezeScaleBtn.setText("Freeze Scales")
+        freezeScaleBtn.setStatusTip("Freeze the scales of the selected node and its children without affecting their pivots")
+        freezeScaleBtn.clicked.connect(pulse.nodes.freezeScalesForSelectedHierarchies)
         gridLayout.addWidget(freezeScaleBtn, 0, 0, 1, 1)
 
         freezePivotBtn = QtWidgets.QPushButton(parent)
         freezePivotBtn.setText("Freeze Pivot")
+        freezePivotBtn.setStatusTip("Freeze the local pivot of the selected nodes by baking the values into translate")
         gridLayout.addWidget(freezePivotBtn, 0, 1, 1, 1)
 
         parentSelBtn = QtWidgets.QPushButton(parent)
         parentSelBtn.setText("Parent Selected")
+        parentSelBtn.setStatusTip("Parent the selected nodes, select one leader then followers")
         gridLayout.addWidget(parentSelBtn, 1, 0, 1, 1)
 
         createOffsetBtn = QtWidgets.QPushButton(parent)
         createOffsetBtn.setText("Create Offset")
+        createOffsetBtn.setStatusTip("Group the selected transform, creating the group exactly where the transform is")
         gridLayout.addWidget(createOffsetBtn, 1, 1, 1, 1)
 
         parentInOrderBtn = QtWidgets.QPushButton(parent)
         parentInOrderBtn.setText("Parent in Order")
+        parentInOrderBtn.setStatusTip("Parent the selection in order, select leaders to followers")
         gridLayout.addWidget(parentInOrderBtn, 2, 0, 1, 1)
 
         selectChildrenBtn = QtWidgets.QPushButton(parent)

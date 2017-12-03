@@ -1,15 +1,21 @@
 
 import pymel.core as pm
 
+from mayacoretools import preservedSelection
+
 
 __all__ = [
     'convertScaleConstraintToWorldSpace',
     'createOffsetGroup',
+    'freezeScalesForHierarchy',
+    'freezeScalesForSelectedHierarchies',
     'getAllParents',
     'getAssemblies',
     'getExpandedAttrNames',
     'getParentNodes',
+    'getTransformHierarchy',
     'setConstraintLocked',
+    'setTransformHierarchy',
 ]
 
 
@@ -70,6 +76,52 @@ def getAssemblies(nodes):
         nodes = [nodes]
     return list(set([n[:(n+'|').find('|', 1)] for n in nodes]))
 
+
+
+# Transform Parenting
+# -------------------
+
+
+def getTransformHierarchy(transform, includeParent=True):
+    """
+    Return a list of (parent, [children]) tuples for a transform
+    and all of its descendents.
+
+    Args:
+        transform: A Transform node
+        includeParent: A bool, when True, the relationship between
+            the transform and its parent is included
+    """
+    result = []
+    if includeParent:
+        result.append((transform.getParent(), [transform]))
+    
+    descendents = transform.listRelatives(ad=True, type='transform')
+
+    for t in [transform] + descendents:
+        children = t.getChildren(type='transform')
+        if children:
+            result.append((t, children))
+    
+    return result
+
+
+def setTransformHierarchy(hierarchy):
+    """
+    Reparent one or more transform nodes.
+
+    Args:
+        hierarchy: A list of (parent, [children]) tuples
+    """
+
+    for (parent, children) in hierarchy:
+        for child in children:
+
+            # make sure parent is not a descendent of the child
+            if parent and parent.isChildOf(child):
+                parent.setParent(None)
+            
+            child.setParent(parent)
 
 
 # Node Creation
@@ -194,3 +246,33 @@ def convertScaleConstraintToWorldSpace(scaleConstraint):
                 break
 
 
+
+# Transform Modification
+# ----------------------
+
+def freezeScalesForHierarchy(transform):
+    """
+    Freeze scales on a transform and all its descendants without affecting pivots.
+    Does this by parenting all children to the world, freezing, then restoring the hierarchy.
+
+    Args:
+        transform: A Transform node
+    """
+    hierarchy = getTransformHierarchy(transform)
+    children = transform.listRelatives(ad=True, type='transform')
+    for c in children:
+        c.setParent(None)
+    for n in [transform] + children:
+        pm.makeIdentity(n, t=False, r=False, s=True, n=False, apply=True)
+    setTransformHierarchy(hierarchy)
+
+
+def freezeScalesForSelectedHierarchies():
+    """
+    Freeze scales on the selected transforms and all their descendants.
+    See `freezeScalesForHierarchy` for more details.
+    """
+    with preservedSelection() as sel:
+        tops = getParentNodes(sel)
+        for t in tops:
+            freezeScalesForHierarchy(t)
