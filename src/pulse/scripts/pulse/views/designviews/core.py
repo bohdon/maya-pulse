@@ -2,6 +2,8 @@
 from pulse.vendor.Qt import QtCore, QtWidgets, QtGui
 from maya import cmds
 
+from pulse.views.core import CollapsibleFrame
+
 __all__ = [
     "DesignViewPanel",
 ]
@@ -48,9 +50,10 @@ class DesignViewPanel(QtWidgets.QWidget):
         self.mainLayout.setSpacing(2)
 
         # header frame
-        self.headerFrame = QtWidgets.QFrame(parent)
+        self.headerFrame = CollapsibleFrame(parent)
         headerColor = 'rgba({0}, {1}, {2}, 40)'.format(*self.getPanelColor())
-        self.headerFrame.setStyleSheet(".QFrame{{ background-color: {color}; border-radius: 2px; }}".format(color=headerColor))
+        self.headerFrame.setStyleSheet(".CollapsibleFrame{{ background-color: {color}; border-radius: 2px; }}".format(color=headerColor))
+        self.headerFrame.collapsedChanged.connect(self.onCollapsedChanged)
         # header layout
         self.headerLayout = QtWidgets.QHBoxLayout(self.headerFrame)
         self.headerLayout.setContentsMargins(10, 2, 2, 2)
@@ -74,6 +77,9 @@ class DesignViewPanel(QtWidgets.QWidget):
         Setup the ui for the contents of the panel
         """
         raise NotImplementedError
+    
+    def onCollapsedChanged(self, isCollapsed):
+        self.panelWidget.setVisible(not isCollapsed)
     
     @staticmethod
     def createPanelFrame(parent):

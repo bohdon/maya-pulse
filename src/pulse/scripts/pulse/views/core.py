@@ -6,6 +6,7 @@ from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
 
 __all__ = [
     'buttonCommand',
+    'CollapsibleFrame',
     'PulseWindow',
 ]
 
@@ -26,6 +27,27 @@ def buttonCommand(func):
     
     return wrapper
 
+
+class CollapsibleFrame(QtWidgets.QFrame):
+
+    collapsedChanged = QtCore.Signal(bool)
+
+    def __init__(self, parent):
+        super(CollapsibleFrame, self).__init__(parent)
+        self._isCollapsed = False
+    
+    def mouseReleaseEvent(self, QMouseEvent):
+        if QMouseEvent.button() == QtCore.Qt.MouseButton.LeftButton:
+            self.setIsCollapsed(not self._isCollapsed)
+        else:
+            return super(CollapsibleFrame, self).mouseReleaseEvent(QMouseEvent)
+    
+    def setIsCollapsed(self, newCollapsed):
+        self._isCollapsed = newCollapsed
+        self.collapsedChanged.emit(self._isCollapsed)
+    
+    def isCollapsed(self):
+        return self._isCollapsed
 
 
 class PulseWindow(MayaQWidgetDockableMixin, QtWidgets.QMainWindow):
