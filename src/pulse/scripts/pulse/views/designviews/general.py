@@ -1,5 +1,6 @@
 
 from pulse.vendor.Qt import QtCore, QtWidgets, QtGui
+import pymel.core as pm
 
 import pulse.nodes
 
@@ -59,6 +60,18 @@ class GeneralPanel(DesignViewPanel):
 
         selectChildrenBtn = QtWidgets.QPushButton(parent)
         selectChildrenBtn.setText("Select Children")
+        selectChildrenBtn.setStatusTip("Select all descendants of the selected node")
+        selectChildrenBtn.clicked.connect(buttonCommand(self.selectChildren))
         gridLayout.addWidget(selectChildrenBtn, 2, 1, 1, 1)
 
         layout.addLayout(gridLayout)
+
+    def selectChildren(self):
+        """
+        Select all child nodes. Similar to select hierarchy except
+        only transforms or joints are selected.
+        """
+        objs = []
+        for obj in pm.selected():
+            objs.extend(obj.listRelatives(ad=True, type=['transform', 'joint']))
+        pm.select(objs, add=True)
