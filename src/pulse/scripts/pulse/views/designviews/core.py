@@ -1,5 +1,6 @@
 
 from pulse.vendor.Qt import QtCore, QtWidgets, QtGui
+from maya import cmds
 
 __all__ = [
     "DesignViewPanel",
@@ -13,6 +14,18 @@ class DesignViewPanel(QtWidgets.QWidget):
     Provides functionality for building a consistent
     ui across all design view panels.
     """
+    
+    PRESET_COLORS = {
+        'red':'rgba(120, 60, 60, 1)',
+        'green':'rgba(60, 110, 60, 1)',
+        'blue':'rgba(60, 70, 120, 1)',
+    }
+
+    def __init__(self, parent):
+        super(DesignViewPanel, self).__init__(parent=parent)
+
+        self.setupUi(self)
+        self.setupPanelUi(self.panelWidget)
 
     def getPanelDisplayName(self):
         """
@@ -23,14 +36,12 @@ class DesignViewPanel(QtWidgets.QWidget):
     def getPanelColor(self):
         return [0, 0, 0]
 
-    def setupPanelUi(self, parent):
+    def setupUi(self, parent):
         """
         Build a collapsible panel ui that can be used
         by all design panels.
 
-        Sets `self.panelLayout` and `self.panelFrame` which can
-        be used as the layout and parent widget for the panel's
-        unique contents.
+        All panel widgets should be attached to `self.panelWidget`
         """
         self.mainLayout = QtWidgets.QVBoxLayout(parent)
         self.mainLayout.setMargin(0)
@@ -55,12 +66,35 @@ class DesignViewPanel(QtWidgets.QWidget):
 
         self.mainLayout.addWidget(self.headerFrame)
 
-        # body layout
-        self.panelFrame = QtWidgets.QFrame(parent)
-        self.panelFrame.setObjectName("panelFrame")
-        self.panelFrame.setStyleSheet(".QFrame#panelFrame{ background-color: rgba(255, 255, 255, 5); }")
-        self.panelLayout = QtWidgets.QVBoxLayout(self.panelFrame)
-        self.panelLayout.setMargin(4)
-        self.mainLayout.addWidget(self.panelFrame)
+        self.panelWidget = QtWidgets.QWidget(parent)
+        self.mainLayout.addWidget(self.panelWidget)
+    
+    def setupPanelUi(self, parent):
+        """
+        Setup the ui for the contents of the panel
+        """
+        raise NotImplementedError
+    
+    @staticmethod
+    def createPanelFrame(parent):
+        """
+        Create a QFrame with consistent styling for a design view panel
+        """
+        frame = QtWidgets.QFrame(parent)
+        frame.setObjectName("panelFrame")
+        frame.setStyleSheet(".QFrame#panelFrame{ background-color: rgba(255, 255, 255, 5); }")
+        return frame
+    
+    @staticmethod
+    def setPresetColor(widget, preset):
+        """
+        Apply a preset color to the given widget using style sheets
 
-        return self.panelLayout, self.panelFrame
+        Args:
+            widget: A QWidget to apply styling to
+            preset: A string name of the preset color
+        """
+        if preset in DesignViewPanel.PRESET_COLORS:
+            widget.setStyleSheet('background-color: {0};'.format(DesignViewPanel.PRESET_COLORS[preset]))
+        else:
+            cmds.warning('preset color not found: `{0}`'.format(preset))
