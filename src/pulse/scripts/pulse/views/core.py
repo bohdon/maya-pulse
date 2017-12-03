@@ -10,7 +10,7 @@ __all__ = [
     'PulseWindow',
 ]
 
-def buttonCommand(func):
+def buttonCommand(func, *args, **kwargs):
     """
     Return a function that can be called which will execute
     the given function with proper undo chunk handling.
@@ -19,7 +19,7 @@ def buttonCommand(func):
     def wrapper():
         cmds.undoInfo(openChunk=True)
         try:
-            func()
+            func(*args, **kwargs)
         except Exception as e:
             print(e)
         finally:
