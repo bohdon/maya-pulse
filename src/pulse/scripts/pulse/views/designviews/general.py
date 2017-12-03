@@ -48,6 +48,7 @@ class GeneralPanel(DesignViewPanel):
         createOffsetBtn = QtWidgets.QPushButton(parent)
         createOffsetBtn.setText("Create Offset")
         createOffsetBtn.setStatusTip("Group the selected transform, creating the group exactly where the transform is")
+        createOffsetBtn.clicked.connect(buttonCommand(pulse.nodes.createOffsetForSelected))
         gridLayout.addWidget(createOffsetBtn, 1, 1, 1, 1)
 
         parentInOrderBtn = QtWidgets.QPushButton(parent)

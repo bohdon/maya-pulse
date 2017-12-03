@@ -6,6 +6,7 @@ from mayacoretools import preservedSelection
 
 __all__ = [
     'convertScaleConstraintToWorldSpace',
+    'createOffsetForSelected',
     'createOffsetGroup',
     'freezePivot',
     'freezePivotsForHierarchy',
@@ -208,6 +209,11 @@ def createOffsetGroup(node, name='{0}_offset'):
 
     return offset
 
+def createOffsetForSelected():
+    """
+    Create an offset group for the selected nodes
+    """
+    pm.select([createOffsetGroup(s) for s in pm.selected(type='transform')])
 
 
 # Attribute Retrieval
