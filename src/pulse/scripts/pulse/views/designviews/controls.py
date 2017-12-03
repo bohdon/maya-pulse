@@ -38,39 +38,24 @@ class ControlsPanel(DesignViewPanel):
     def setupEditControlsUi(self, parent):
         layout = QtWidgets.QHBoxLayout(parent)
         layout.setSpacing(2)
+        
+        def createRotateComponentsButton(text, color, axis, degrees):
+            btn = QtWidgets.QPushButton(parent)
+            btn.setText(text)
+            btn.setStatusTip('Rotate the components of the selected controls {0} degrees around the {1} axis'.format(degrees, {0:'X', 1:'Y', 2:'Z'}[axis]))
+            self.setPresetColor(btn, color)
+            btn.clicked.connect(buttonCommand(pulse.shapes.rotateSelectedComponentsAroundAxis, axis, degrees))
+            return btn
 
-        btn = QtWidgets.QPushButton(parent)
-        btn.setText('- X')
-        btn.clicked.connect(buttonCommand(pulse.shapes.rotateSelectedComponentsAroundAxis, 0, -90))
-        self.setPresetColor(btn, 'red')
+        btn = createRotateComponentsButton('- X', 'red', 0, -90)
         layout.addWidget(btn)
-
-        btn = QtWidgets.QPushButton(parent)
-        btn.setText('+ X')
-        btn.clicked.connect(buttonCommand(pulse.shapes.rotateSelectedComponentsAroundAxis, 0, 90))
-        self.setPresetColor(btn, 'red')
+        btn = createRotateComponentsButton('+ X', 'red', 0, 90)
         layout.addWidget(btn)
-
-        btn = QtWidgets.QPushButton(parent)
-        btn.setText('- Y')
-        btn.clicked.connect(buttonCommand(pulse.shapes.rotateSelectedComponentsAroundAxis, 1, -90))
-        self.setPresetColor(btn, 'green')
+        btn = createRotateComponentsButton('- Y', 'green', 1, -90)
         layout.addWidget(btn)
-
-        btn = QtWidgets.QPushButton(parent)
-        btn.setText('+ Y')
-        btn.clicked.connect(buttonCommand(pulse.shapes.rotateSelectedComponentsAroundAxis, 1, 90))
-        self.setPresetColor(btn, 'green')
+        btn = createRotateComponentsButton('+ Y', 'green', 1, 90)
         layout.addWidget(btn)
-
-        btn = QtWidgets.QPushButton(parent)
-        btn.setText('- Z')
-        btn.clicked.connect(buttonCommand(pulse.shapes.rotateSelectedComponentsAroundAxis, 2, -90))
-        self.setPresetColor(btn, 'blue')
+        btn = createRotateComponentsButton('- Z', 'blue', 2, -90)
         layout.addWidget(btn)
-
-        btn = QtWidgets.QPushButton(parent)
-        btn.setText('+ Z')
-        btn.clicked.connect(buttonCommand(pulse.shapes.rotateSelectedComponentsAroundAxis, 2, 90))
-        self.setPresetColor(btn, 'blue')
+        btn = createRotateComponentsButton('+ Z', 'blue', 2, 90)
         layout.addWidget(btn)
