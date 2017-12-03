@@ -3,6 +3,7 @@ from pulse.vendor.Qt import QtCore, QtWidgets, QtGui
 
 import pulse.nodes
 
+from pulse.views.core import buttonCommand
 from .core import DesignViewPanel
 
 __all__ = [
@@ -29,12 +30,13 @@ class GeneralPanel(DesignViewPanel):
         freezeScaleBtn = QtWidgets.QPushButton(parent)
         freezeScaleBtn.setText("Freeze Scales")
         freezeScaleBtn.setStatusTip("Freeze the scales of the selected node and its children without affecting their pivots")
-        freezeScaleBtn.clicked.connect(pulse.nodes.freezeScalesForSelectedHierarchies)
+        freezeScaleBtn.clicked.connect(buttonCommand(pulse.nodes.freezeScalesForSelectedHierarchies))
         gridLayout.addWidget(freezeScaleBtn, 0, 0, 1, 1)
 
         freezePivotBtn = QtWidgets.QPushButton(parent)
-        freezePivotBtn.setText("Freeze Pivot")
-        freezePivotBtn.setStatusTip("Freeze the local pivot of the selected nodes by baking the values into translate")
+        freezePivotBtn.setText("Freeze Pivots")
+        freezePivotBtn.setStatusTip("Freeze the local pivots of the selected node and its children by baking the values into translate")
+        freezePivotBtn.clicked.connect(buttonCommand(pulse.nodes.freezePivotsForSelectedHierarchies))
         gridLayout.addWidget(freezePivotBtn, 0, 1, 1, 1)
 
         parentSelBtn = QtWidgets.QPushButton(parent)

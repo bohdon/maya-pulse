@@ -5,8 +5,27 @@ from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
 
 
 __all__ = [
+    'buttonCommand',
     'PulseWindow',
 ]
+
+def buttonCommand(func):
+    """
+    Return a function that can be called which will execute
+    the given function with proper undo chunk handling.
+    """
+
+    def wrapper():
+        cmds.undoInfo(openChunk=True)
+        try:
+            func()
+        except Exception as e:
+            print(e)
+        finally:
+            cmds.undoInfo(closeChunk=True)
+    
+    return wrapper
+
 
 
 class PulseWindow(MayaQWidgetDockableMixin, QtWidgets.QMainWindow):

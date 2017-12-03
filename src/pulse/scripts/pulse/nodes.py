@@ -7,6 +7,9 @@ from mayacoretools import preservedSelection
 __all__ = [
     'convertScaleConstraintToWorldSpace',
     'createOffsetGroup',
+    'freezePivot',
+    'freezePivotsForHierarchy',
+    'freezePivotsForSelectedHierarchies',
     'freezeScalesForHierarchy',
     'freezeScalesForSelectedHierarchies',
     'getAllParents',
@@ -276,3 +279,52 @@ def freezeScalesForSelectedHierarchies():
         tops = getParentNodes(sel)
         for t in tops:
             freezeScalesForHierarchy(t)
+
+def freezePivot(transform):
+    """
+    Freeze the given transform such that its local pivot becomes zero,
+    but its world space pivot remains unchanged.
+
+    Args:
+        transform: A Transform node
+    """
+    pivot = pm.dt.Vector(pm.xform(transform, q=True, rp=True, worldSpace=True))
+    # asking for worldspace translate gives different result than world space matrix
+    # translate. we want the former in this situation because we will be setting
+    # with the same world space translate method
+    translate = pm.dt.Vector(pm.xform(transform, q=True, t=True, worldSpace=True))
+    parentTranslate = pm.dt.Vector()
+    parent = transform.getParent()
+    if parent:
+        # we want the world space matrix translate of the parent
+        # because thats the real location that zeroed out child transforms would exist.
+        # note that the world space translate (not retrieving matrix) can be a different value
+        parentTranslate = pm.dt.Matrix(pm.xform(parent, q=True, m=True, worldSpace=True)).translate
+    # move current pivot to the parents world space location
+    pm.xform(transform, t=(translate - pivot + parentTranslate), ws=True)
+    # now that the transform is at the same world space position as its parent, freeze it
+    pm.makeIdentity(transform, t=True, apply=True)
+    # restore world pivot position with translation
+    pm.xform(transform, t=pivot, ws=True)
+
+
+def freezePivotsForHierarchy(transform):
+    """
+    Freeze pivots on a transform and all its descendants.
+
+    Args:
+        transform: A Transform node
+    """
+    hierarchy = getTransformHierarchy(transform)
+    children = transform.listRelatives(ad=True, type='transform')
+    for c in children:
+        c.setParent(None)
+    for n in [transform] + children:
+        freezePivot(n)
+    setTransformHierarchy(hierarchy)
+
+
+def freezePivotsForSelectedHierarchies():
+    with preservedSelection() as sel:
+        for s in sel:
+            freezePivotsForHierarchy(s)
