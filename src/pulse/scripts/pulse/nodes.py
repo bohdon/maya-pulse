@@ -18,12 +18,15 @@ __all__ = [
     'getExpandedAttrNames',
     'getParentNodes',
     'getTransformHierarchy',
+    'getWorldMatrix',
+    'matchWorldMatrix',
     'parentInOrder',
     'parentSelected',
     'parentSelectedInOrder',
     'setConstraintLocked',
     'setParent',
     'setTransformHierarchy',
+    'setWorldMatrix',
 ]
 
 
@@ -415,3 +418,80 @@ def freezePivotsForSelectedHierarchies():
     with preservedSelection() as sel:
         for s in sel:
             freezePivotsForHierarchy(s)
+
+
+
+def getEulerRotationFromMatrix(matrix):
+    """
+    Return the euler rotation in degrees of a matrix
+    """
+    if not isinstance(matrix, pm.dt.TransformationMatrix):
+        matrix = pm.dt.TransformationMatrix(matrix)
+    rEuler = matrix.getRotation()
+    rEuler.setDisplayUnit('degrees')
+    return rEuler
+
+def getWorldMatrix(node, negateRotateAxis=True):
+    if not isinstance(node, pm.PyNode):
+        node = pm.PyNode(node)
+    if isinstance(node, pm.nt.Transform):
+        wm = pm.dt.TransformationMatrix(node.wm.get())
+        if negateRotateAxis:
+            r = pm.dt.EulerRotation(pm.cmds.xform(node.longName(), q=True, ws=True, ro=True))
+            wm.setRotation(r, node.getRotationOrder())
+        return wm
+    else:
+        return pm.dt.TransformationMatrix()
+
+
+def setWorldMatrix(node, matrix, translate=True, rotate=True, scale=True, matchAxes=False):
+    if not isinstance(node, pm.PyNode):
+        node = pm.PyNode(node)
+
+    if not isinstance(matrix, pm.dt.TransformationMatrix):
+        matrix = pm.dt.TransformationMatrix(matrix)
+
+    # Conver the rotation order
+    ro = node.getRotationOrder()
+    if ro != matrix.rotationOrder():
+        matrix.reorderRotation(ro)
+
+    if translate:
+        pm.cmds.xform(node.longName(), ws=True, t=matrix.getTranslation('world'))
+    if rotate:
+        if matchAxes and any(node.ra.get()):
+            # Get the source's rotation matrix
+            source_rotMtx = pm.dt.TransformationMatrix(getEulerRotationFromMatrix(matrix).asMatrix())
+            # Get the target transform's inverse rotation matrix
+            target_invRaMtx = pm.dt.EulerRotation(node.ra.get()).asMatrix().inverse()
+            # Multiply the source's rotation matrix by the inverse of the
+            # target's rotation axis to get just the difference in rotation
+            target_rotMtx = target_invRaMtx * source_rotMtx
+            # Get the new rotation value as a Euler in the correct rotation order
+            target_rotation = getEulerRotationFromMatrix(target_rotMtx)
+            rotation = target_rotation.reorder(node.getRotationOrder())
+            rotation.setDisplayUnit('degrees')
+        else:
+            rotation = getEulerRotationFromMatrix(matrix)
+        pm.cmds.xform(node.longName(), ws=True, ro=rotation)
+    if scale:
+        localScaleMatrix = matrix * node.pim.get()
+        pm.cmds.xform(node.longName(), s=localScaleMatrix.getScale('world'))
+
+
+def matchWorldMatrix(leader, *followers):
+    """
+    Set the world matrix of one or more nodes to match a leader's world matrix.
+
+    Args:
+        leader: A transform
+        followers: One or more transforms to update
+    """
+    m = getWorldMatrix(leader)
+    # handle joint orientations
+    p = pm.xform(leader, q=True, ws=True, rp=True)
+    r = pm.xform(leader, q=True, ws=True, ro=True)
+    for f in followers:
+        setWorldMatrix(f, m)
+        pm.xform(f, t=p, ws=True)
+        pm.xform(f, ro=r, ws=True)

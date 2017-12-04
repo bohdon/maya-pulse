@@ -3,8 +3,8 @@ import pymel.core as pm
 
 
 __all__ = [
-    "rotateComponents",
-    "rotateSelectedComponentsAroundAxis",
+    'rotateComponents',
+    'rotateSelectedComponentsAroundAxis',
 ]
 
 

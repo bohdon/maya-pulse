@@ -2,6 +2,7 @@
 from pulse.vendor.Qt import QtCore, QtWidgets, QtGui
 
 import pulse.shapes
+import pulse.controlshapes
 
 from pulse.views.core import buttonCommand
 from .core import DesignViewPanel
@@ -34,6 +35,22 @@ class ControlsPanel(DesignViewPanel):
     def setupCreateControlsUi(self, parent):
         gridLayout = QtWidgets.QGridLayout(parent)
         gridLayout.setSpacing(4)
+
+        pulse.controlshapes.loadBuiltinControlShapes()
+
+        def createControlShapeButton(text, shapeData):
+            btn = QtWidgets.QPushButton(parent)
+            btn.setText(text)
+            btn.setStatusTip("Create a new control")
+            btn.clicked.connect(buttonCommand(pulse.controlshapes.createControlsForSelected, shapeData))
+            return btn
+
+        shapes = pulse.controlshapes.getControlShapes()
+
+        for s in shapes:
+            btn = createControlShapeButton(s['name'], s)
+            gridLayout.addWidget(btn)
+            
     
     def setupEditControlsUi(self, parent):
         layout = QtWidgets.QHBoxLayout(parent)
