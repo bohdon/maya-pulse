@@ -23,6 +23,7 @@ class ControlsPanel(DesignViewPanel):
     def setupPanelUi(self, parent):
         layout = QtWidgets.QVBoxLayout(parent)
         layout.setMargin(0)
+        layout.setSpacing(4)
 
         createFrame = self.createPanelFrame(parent)
         layout.addWidget(createFrame)

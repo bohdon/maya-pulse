@@ -18,6 +18,7 @@ __all__ = [
     'getExpandedAttrNames',
     'getParentNodes',
     'getTransformHierarchy',
+    'getTranslationMidpoint',
     'getWorldMatrix',
     'matchWorldMatrix',
     'parentInOrder',
@@ -495,3 +496,16 @@ def matchWorldMatrix(leader, *followers):
         setWorldMatrix(f, m)
         pm.xform(f, t=p, ws=True)
         pm.xform(f, ro=r, ws=True)
+
+def getTranslationMidpoint(a, b):
+    """
+    Return a vector representing the middle point between the
+    world translation of two nodes.
+
+    Args:
+        a: A transform node
+        b: A transform node
+    """
+    ta = a.getTranslation(ws=True)
+    tb = b.getTranslation(ws=True)
+    return (ta + tb) * 0.5

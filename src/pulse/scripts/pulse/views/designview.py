@@ -4,6 +4,7 @@ from pulse.vendor.Qt import QtCore, QtWidgets, QtGui
 from .core import PulseWindow
 from .designviews.general import GeneralPanel
 from .designviews.controls import ControlsPanel
+from .designviews.joints import JointsPanel
 
 __all__ = [
     "DesignViewWidget",
@@ -50,6 +51,9 @@ class DesignViewWidget(QtWidgets.QWidget):
 
         controls = ControlsPanel(parent)
         layout.addWidget(controls)
+
+        joints = JointsPanel(parent)
+        layout.addWidget(joints)
 
         spacer = QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
         layout.addItem(spacer)

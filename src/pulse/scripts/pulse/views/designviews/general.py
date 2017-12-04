@@ -61,7 +61,7 @@ class GeneralPanel(DesignViewPanel):
         gridLayout.addWidget(createOffsetBtn, 2, 0, 1, 1)
 
         selectChildrenBtn = QtWidgets.QPushButton(frame)
-        selectChildrenBtn.setText("Select Children")
+        selectChildrenBtn.setText("Select Hierarchy")
         selectChildrenBtn.setStatusTip("Select all descendants of the selected node")
         selectChildrenBtn.clicked.connect(buttonCommand(self.selectChildren))
         gridLayout.addWidget(selectChildrenBtn, 2, 1, 1, 1)
