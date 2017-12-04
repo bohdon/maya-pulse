@@ -1,5 +1,6 @@
 name: Cube
-icon: curve_cube.png
+icon: cube.png
+sort: 4
 curves:
 - degree: 1
   periodic: false

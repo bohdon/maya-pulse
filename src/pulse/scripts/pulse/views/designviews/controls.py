@@ -3,8 +3,8 @@ from pulse.vendor.Qt import QtCore, QtWidgets, QtGui
 
 import pulse.shapes
 import pulse.controlshapes
-
 from pulse.views.core import buttonCommand
+from .. import utils as viewutils
 from .core import DesignViewPanel
 
 __all__ = [
@@ -34,22 +34,33 @@ class ControlsPanel(DesignViewPanel):
     
     def setupCreateControlsUi(self, parent):
         gridLayout = QtWidgets.QGridLayout(parent)
-        gridLayout.setSpacing(4)
+        gridLayout.setSpacing(2)
 
         pulse.controlshapes.loadBuiltinControlShapes()
 
         def createControlShapeButton(text, shapeData):
             btn = QtWidgets.QPushButton(parent)
-            btn.setText(text)
             btn.setStatusTip("Create a new control")
+            if 'icon' in shapeData:
+                btn.setIcon(viewutils.getIcon("controls/" + shapeData["icon"]))
+                btn.setIconSize(QtCore.QSize(32, 32))
+            else:
+                btn.setText(text)
             btn.clicked.connect(buttonCommand(pulse.controlshapes.createControlsForSelected, shapeData))
             return btn
 
         shapes = pulse.controlshapes.getControlShapes()
 
+        row = 0
+        col = 0
+        columnCount = 5
         for s in shapes:
             btn = createControlShapeButton(s['name'], s)
-            gridLayout.addWidget(btn)
+            gridLayout.addWidget(btn, row, col, 1, 1)
+            col += 1
+            if col == columnCount:
+                row += 1
+                col = 0
             
     
     def setupEditControlsUi(self, parent):

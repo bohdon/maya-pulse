@@ -1,5 +1,6 @@
 name: Square
-icon: curve_square.png
+icon: square.png
+sort: 1
 curves:
 - degree: 1
   periodic: false

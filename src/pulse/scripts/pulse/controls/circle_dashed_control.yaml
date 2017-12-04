@@ -1,5 +1,6 @@
 name: Circle Dashed
-icon: curve_circleDashed.png
+icon: circleDashed.png
+sort: 5
 curves:
 - degree: 1
   periodic: false

@@ -33,7 +33,7 @@ class PulseEditorWindow(PulseWindow):
     
     def setupUi(self, parent):
         widget = QtWidgets.QWidget(parent)
-        widget.setMinimumWidth(280)
+        widget.setMinimumWidth(300)
         self.setCentralWidget(widget)
 
         layout = QtWidgets.QVBoxLayout(parent)

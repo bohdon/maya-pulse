@@ -29,8 +29,13 @@ def getControlShapes():
     """
     Return all available control shapes
     """
-    keys = sorted(CONTROLSHAPES.keys())
-    return [CONTROLSHAPES[k] for k in keys]
+    def sort(a, b):
+        result = cmp(a.get('sort', 999), b.get('sort', 999))
+        if result == 0:
+            result = cmp(a['name'], b['name'])
+        return result
+    
+    return sorted(CONTROLSHAPES.values(), sort)
 
 def registerControlShape(name, shape):
     """
@@ -143,15 +148,20 @@ def createControlsForSelected(shapeData):
         shapeData: A dict containing control shape data
     """
     result = []
-    for node in pm.selected():
-        if meta.hasMetaClass(node, CONTROLSHAPE_METACLASS):
-            # update shape
-            replaceShapes(node, shapeData)
-            result.append(node)
-        else:
-            # create new control
-            ctl = createControl(shapeData, targetNode=node)
-            result.append(ctl)
+    sel = pm.selected()
+    if not sel:
+        ctl = createControl(shapeData)
+        result.append(ctl)
+    else:
+        for node in sel:
+            if meta.hasMetaClass(node, CONTROLSHAPE_METACLASS):
+                # update shape
+                replaceShapes(node, shapeData)
+                result.append(node)
+            else:
+                # create new control
+                ctl = createControl(shapeData, targetNode=node)
+                result.append(ctl)
     pm.select(result)
     return result
 

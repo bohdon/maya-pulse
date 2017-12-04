@@ -1,5 +1,6 @@
 name: Hexagon
-icon: curve_hexagon.png
+icon: hexagon.png
+sort: 2
 curves:
 - degree: 1
   periodic: true

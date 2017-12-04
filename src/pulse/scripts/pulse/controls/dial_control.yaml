@@ -1,5 +1,6 @@
 name: Dial
-icon: curve_dial.png
+icon: dial.png
+sort: 3
 curves:
 - degree: 3
   periodic: false

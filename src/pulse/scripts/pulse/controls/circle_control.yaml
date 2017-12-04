@@ -1,5 +1,6 @@
 name: Circle
-icon: curve_circle.png
+icon: circle.png
+sort: 0
 curves:
 - degree: 3
   periodic: true

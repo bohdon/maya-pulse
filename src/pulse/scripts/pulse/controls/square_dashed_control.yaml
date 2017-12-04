@@ -1,5 +1,6 @@
 name: Square Dashed
-icon: curve_squareDashed.png
+icon: squareDashed.png
+sort: 6
 curves:
 - degree: 1
   periodic: false
