@@ -23,3 +23,6 @@ coverage.xml
 
 # Sphinx documentation
 docs/_build/
+
+# Project files
+.vscode/
