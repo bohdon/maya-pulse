@@ -27,3 +27,9 @@ tools.deleteModules('pulse*')
 import pulse.views
 pulse.views.showPulseUI()
 ```
+
+## Roadmap
+
+You can view the Pulse roadmap on trello here:
+
+[Pulse Roadmap](https://trello.com/b/x1EgkZA7)
