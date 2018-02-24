@@ -1,7 +1,7 @@
 
 import pymel.core as pm
 
-from mayacoretools import preservedSelection
+from pulse.vendor.mayacoretools import preservedSelection
 
 
 __all__ = [
