@@ -1,7 +1,7 @@
 
-from fnmatch import fnmatch
 import os
-import yaml
+import pulse.vendor.yaml as yaml
+from fnmatch import fnmatch
 import pymel.core as pm
 import pymetanode as meta
 

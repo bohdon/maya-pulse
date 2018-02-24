@@ -1,14 +1,13 @@
 
-import pymel.core as pm
 
 import os
 import logging
 import time
 import tempfile
 import traceback
-import yaml
 from datetime import datetime
-
+import pulse.vendor.yaml as yaml
+import pymel.core as pm
 import pymetanode as meta
 
 from . import version

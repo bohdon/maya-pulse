@@ -1,8 +1,6 @@
 
 import pymel.core as pm
 
-from pulse.vendor.mayacoretools import preservedSelection
-
 import pulse.nodes
 
 __all__ = [

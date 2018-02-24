@@ -4,7 +4,7 @@ import os
 import logging
 import importlib
 from fnmatch import fnmatch
-import yaml
+import pulse.vendor.yaml as yaml
 
 from . import core
 
