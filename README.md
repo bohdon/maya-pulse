@@ -21,7 +21,7 @@ try:
 except:
     pass
 
-import mayacoretools as tools
+import pulse.vendor.mayacoretools as tools
 tools.deleteModules('pulse*')
 
 import pulse.views
