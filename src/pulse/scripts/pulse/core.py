@@ -810,6 +810,11 @@ class Blueprint(object):
                 return blueprint
         else:
             return Blueprint.fromNode(BLUEPRINT_NODENAME)
+    
+    @staticmethod
+    def deleteDefaultNode():
+        if pm.cmds.objExists(BLUEPRINT_NODENAME):
+            pm.cmds.delete(BLUEPRINT_NODENAME)
 
     @staticmethod
     def isBlueprintNode(node):
@@ -1160,8 +1165,7 @@ class BlueprintBuilder(object):
             # return progress
             yield dict(current=currentStep, total=totalSteps)
 
-        # delete the default blueprint node if it exists
-        if pm.cmds.objExists(BLUEPRINT_NODENAME):
-            pm.cmds.delete(BLUEPRINT_NODENAME)
+        # delete the blueprint node
+        Blueprint.deleteDefaultNode()
 
         yield dict(current=currentStep, total=totalSteps, finish=True)

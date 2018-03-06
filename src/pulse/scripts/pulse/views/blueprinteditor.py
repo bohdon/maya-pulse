@@ -5,6 +5,7 @@ import pymetanode as meta
 
 import pulse
 from .core import PulseWindow
+from .style import UIColors
 from .actiontree import ActionTreeItemModel
 
 
@@ -49,6 +50,12 @@ class BlueprintEditorWidget(QtWidgets.QWidget):
         debugOpenBpBtn.clicked.connect(self.debugOpenBlueprintScene)
         layout.addWidget(debugOpenBpBtn)
 
+        deleteBlueprintBtn = QtWidgets.QPushButton(self)
+        deleteBlueprintBtn.setText("Delete Blueprint")
+        deleteBlueprintBtn.setStyleSheet(UIColors.asBGColor(UIColors.RED))
+        deleteBlueprintBtn.clicked.connect(self.deleteBlueprint)
+        layout.addWidget(deleteBlueprintBtn)
+
         spacer = QtWidgets.QSpacerItem(0, 0, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
         layout.addItem(spacer)
 
@@ -68,6 +75,9 @@ class BlueprintEditorWidget(QtWidgets.QWidget):
         blueprint.initializeDefaultActions()
         blueprint.saveToDefaultNode()
         self.model.reloadBlueprint()
+    
+    def deleteBlueprint(self):
+        pulse.Blueprint.deleteDefaultNode()
 
     def debugSaveBlueprint(self):
         self.blueprint.saveToDefaultNode()
