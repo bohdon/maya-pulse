@@ -67,8 +67,11 @@ class UIEventMixin(object):
     _IS_REGISTERED = False
     # the MCallbackIDs of registered messages
     _MSGIDS = []
-    # a flag for preventing redundant deferred node updates
+    # flags for preventing redundant deferred event calls
     _NODES_DIRTY = False
+    _BLUEPRINT_DIRTY = False
+    # MCallbackID for the blueprint attribute change message
+    _MSGID_BLUEPRINTCHANGE = None
     
     @staticmethod
     def _registerUIEventCallbacks():
@@ -77,12 +80,12 @@ class UIEventMixin(object):
         """
         if not UIEventMixin._IS_REGISTERED:
             UIEventMixin._IS_REGISTERED = True
-            ids = []
-            ids.append(om.MDGMessage.addNodeAddedCallback(UIEventMixin._onNodesChanged, 'network'))
-            ids.append(om.MDGMessage.addNodeRemovedCallback(UIEventMixin._onNodesChanged, 'network'))
-            ids.append(om.MDGMessage.addNodeAddedCallback(UIEventMixin._onNodesChanged, 'transform'))
-            ids.append(om.MDGMessage.addNodeRemovedCallback(UIEventMixin._onNodesChanged, 'transform'))
-            UIEventMixin._MSGIDS = ids
+            msgIds = []
+            msgIds.append(om.MDGMessage.addNodeAddedCallback(UIEventMixin._onNodesChanged, 'network'))
+            msgIds.append(om.MDGMessage.addNodeRemovedCallback(UIEventMixin._onNodesChanged, 'network'))
+            msgIds.append(om.MDGMessage.addNodeAddedCallback(UIEventMixin._onNodesChanged, 'transform'))
+            msgIds.append(om.MDGMessage.addNodeRemovedCallback(UIEventMixin._onNodesChanged, 'transform'))
+            UIEventMixin._MSGIDS = msgIds
     
     @staticmethod
     def _unregisterUIEventCallbacks():
@@ -115,10 +118,39 @@ class UIEventMixin(object):
         """
         UIEventMixin._NODES_DIRTY = False
         blueprintExists = pulse.Blueprint.doesDefaultNodeExist()
+        if blueprintExists:
+            UIEventMixin._registerBlueprintChangeCallbacks()
+        else:
+            UIEventMixin._unregisterBlueprintChangeCallbacks()
         rigExists = len(pulse.getAllRigs()) > 0
         for listener in UIEventMixin._LISTENERS:
             listener.setBlueprintExists(blueprintExists)
             listener.setRigExists(rigExists)
+    
+    @staticmethod
+    def _registerBlueprintChangeCallbacks():
+        blueprintNode = pulse.Blueprint.getDefaultNode()
+        if (UIEventMixin._MSGID_BLUEPRINTCHANGE is None) and blueprintNode:
+            msgId = om.MNodeMessage.addAttributeChangedCallback(blueprintNode.__apimobject__(), UIEventMixin._onBlueprintAttrChanged)
+            UIEventMixin._MSGID_BLUEPRINTCHANGE = msgId
+    
+    @staticmethod
+    def _unregisterBlueprintChangeCallbacks():
+        if not (UIEventMixin._MSGID_BLUEPRINTCHANGE is None):
+            om.MMessage.removeCallback(UIEventMixin._MSGID_BLUEPRINTCHANGE)
+            UIEventMixin._MSGID_BLUEPRINTCHANGE = None
+    
+    @staticmethod
+    def _onBlueprintAttrChanged(changeType, srcPlug, dstPlug, clientData):
+        if srcPlug.partialName() == 'pyMetaData' and not UIEventMixin._BLUEPRINT_DIRTY:
+            UIEventMixin._BLUEPRINT_DIRTY = True
+            cmds.evalDeferred(UIEventMixin._onBlueprintChangedDeferred)
+    
+    @staticmethod
+    def _onBlueprintChangedDeferred():
+        UIEventMixin._BLUEPRINT_DIRTY = False
+        for listener in UIEventMixin._LISTENERS:
+            listener.onBlueprintChanged()
     
     def initUIEventMixin(self):
         self.blueprintExists = pulse.Blueprint.doesDefaultNodeExist()
@@ -131,6 +163,7 @@ class UIEventMixin(object):
         if self not in UIEventMixin._LISTENERS:
             UIEventMixin._LISTENERS.append(self)
         UIEventMixin._registerUIEventCallbacks()
+        UIEventMixin._registerBlueprintChangeCallbacks()
     
     def disableUIMixinEvents(self):
         """
@@ -140,6 +173,7 @@ class UIEventMixin(object):
             UIEventMixin._LISTENERS.remove(self)
         if not UIEventMixin._LISTENERS:
             UIEventMixin._unregisterUIEventCallbacks()
+            UIEventMixin._unregisterBlueprintChangeCallbacks()
     
     def setBlueprintExists(self, newExists):
         if newExists != self.blueprintExists:
@@ -166,6 +200,14 @@ class UIEventMixin(object):
         pass
     
     def onBlueprintCreated(self):
+        pass
+    
+    def onBlueprintChanged(self):
+        """
+        Called whenever the serialized Blueprint has changed.
+        This may not be as granular as expected depending on how
+        the attr form reports and applies Blueprint edits.
+        """
         pass
     
     def onBlueprintDeleted(self):
