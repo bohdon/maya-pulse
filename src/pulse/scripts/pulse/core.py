@@ -11,6 +11,7 @@ import pymel.core as pm
 import pymetanode as meta
 
 from . import version
+from . import cameras
 
 
 __all__ = [
@@ -187,7 +188,9 @@ def openRigBlueprint(rig):
         return
 
     print('Opening blueprint: ' + blueprintFile)
+    cameras.saveCameras()
     pm.openFile(blueprintFile, f=True)
+    cameras.restoreCameras()
 
 def openFirstRigBlueprint():
     rigs = getAllRigs()
