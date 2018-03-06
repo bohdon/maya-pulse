@@ -841,9 +841,11 @@ class Blueprint(object):
     
     @staticmethod
     def createDefaultBlueprint():
+        pm.cmds.undoInfo(openChunk=True, chunkName='Create Pulse Blueprint')
         blueprint = Blueprint()
         blueprint.initializeDefaultActions()
         blueprint.saveToDefaultNode()
+        pm.cmds.undoInfo(closeChunk=True)
     
     @staticmethod
     def getDefaultNode():
