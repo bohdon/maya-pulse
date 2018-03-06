@@ -4,6 +4,7 @@ from pulse.vendor.Qt import QtCore, QtWidgets, QtGui
 import pulse.shapes
 import pulse.controlshapes
 from pulse.views.core import buttonCommand
+from pulse.views.style import UIColors
 from .. import utils as viewutils
 from .core import DesignViewPanel
 
@@ -72,19 +73,19 @@ class ControlsPanel(DesignViewPanel):
             btn = QtWidgets.QPushButton(parent)
             btn.setText(text)
             btn.setStatusTip('Rotate the components of the selected controls {0} degrees around the {1} axis'.format(degrees, {0:'X', 1:'Y', 2:'Z'}[axis]))
-            self.setPresetColor(btn, color)
+            btn.setStyleSheet(UIColors.asBGColor(color))
             btn.clicked.connect(buttonCommand(pulse.shapes.rotateSelectedComponentsAroundAxis, axis, degrees))
             return btn
 
-        btn = createRotateComponentsButton('- X', 'red', 0, -90)
+        btn = createRotateComponentsButton('- X', UIColors.RED, 0, -90)
         layout.addWidget(btn)
-        btn = createRotateComponentsButton('+ X', 'red', 0, 90)
+        btn = createRotateComponentsButton('+ X', UIColors.RED, 0, 90)
         layout.addWidget(btn)
-        btn = createRotateComponentsButton('- Y', 'green', 1, -90)
+        btn = createRotateComponentsButton('- Y', UIColors.GREEN, 1, -90)
         layout.addWidget(btn)
-        btn = createRotateComponentsButton('+ Y', 'green', 1, 90)
+        btn = createRotateComponentsButton('+ Y', UIColors.GREEN, 1, 90)
         layout.addWidget(btn)
-        btn = createRotateComponentsButton('- Z', 'blue', 2, -90)
+        btn = createRotateComponentsButton('- Z', UIColors.BLUE, 2, -90)
         layout.addWidget(btn)
-        btn = createRotateComponentsButton('+ Z', 'blue', 2, 90)
+        btn = createRotateComponentsButton('+ Z', UIColors.BLUE, 2, 90)
         layout.addWidget(btn)

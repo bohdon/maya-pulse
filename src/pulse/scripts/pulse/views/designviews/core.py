@@ -16,12 +16,6 @@ class DesignViewPanel(QtWidgets.QWidget):
     Provides functionality for building a consistent
     ui across all design view panels.
     """
-    
-    PRESET_COLORS = {
-        'red':'rgba(120, 60, 60, 1)',
-        'green':'rgba(60, 110, 60, 1)',
-        'blue':'rgba(60, 70, 120, 1)',
-    }
 
     def __init__(self, parent):
         super(DesignViewPanel, self).__init__(parent=parent)
@@ -90,17 +84,3 @@ class DesignViewPanel(QtWidgets.QWidget):
         frame.setObjectName("panelFrame")
         frame.setStyleSheet(".QFrame#panelFrame{ background-color: rgba(255, 255, 255, 5); }")
         return frame
-    
-    @staticmethod
-    def setPresetColor(widget, preset):
-        """
-        Apply a preset color to the given widget using style sheets
-
-        Args:
-            widget: A QWidget to apply styling to
-            preset: A string name of the preset color
-        """
-        if preset in DesignViewPanel.PRESET_COLORS:
-            widget.setStyleSheet('background-color: {0};'.format(DesignViewPanel.PRESET_COLORS[preset]))
-        else:
-            cmds.warning('preset color not found: `{0}`'.format(preset))
