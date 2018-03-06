@@ -120,6 +120,10 @@ class UIEventMixin(object):
             listener.setBlueprintExists(blueprintExists)
             listener.setRigExists(rigExists)
     
+    def initUIEventMixin(self):
+        self.blueprintExists = pulse.Blueprint.doesDefaultNodeExist()
+        self.rigExists = len(pulse.getAllRigs()) > 0
+    
     def enableUIMixinEvents(self):
         """
         Enable events on this object
@@ -127,9 +131,6 @@ class UIEventMixin(object):
         if self not in UIEventMixin._LISTENERS:
             UIEventMixin._LISTENERS.append(self)
         UIEventMixin._registerUIEventCallbacks()
-
-        self.blueprintExists = pulse.Blueprint.doesDefaultNodeExist()
-        self.rigExists = len(pulse.getAllRigs()) > 0
     
     def disableUIMixinEvents(self):
         """
@@ -147,6 +148,7 @@ class UIEventMixin(object):
                 self.onBlueprintCreated()
             else:
                 self.onBlueprintDeleted()
+            self.onPulseNodesChanged()
     
     def setRigExists(self, newExists):
         if newExists != self.rigExists:
@@ -155,6 +157,13 @@ class UIEventMixin(object):
                 self.onRigCreated()
             else:
                 self.onRigDeleted()
+            self.onPulseNodesChanged()
+    
+    def onPulseNodesChanged(self):
+        """
+        Called whenever a blueprint or rig is created or deleted.
+        """
+        pass
     
     def onBlueprintCreated(self):
         pass

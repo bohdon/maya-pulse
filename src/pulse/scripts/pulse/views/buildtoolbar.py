@@ -21,6 +21,8 @@ class BuildToolbarWidget(QtWidgets.QWidget, UIEventMixin):
     def __init__(self, parent=None):
         super(BuildToolbarWidget, self).__init__(parent=parent)
 
+        self.initUIEventMixin()
+
         self.model = ActionTreeItemModel.getSharedModel()
         self.model.modelReset.connect(self.onBlueprintLoaded)
 
@@ -41,17 +43,35 @@ class BuildToolbarWidget(QtWidgets.QWidget, UIEventMixin):
         self.rigNameLabel.setText(self.blueprint.rigName)
         layout.addWidget(self.rigNameLabel)
 
-        checkBtn = QtWidgets.QPushButton(parent)
-        checkBtn.setText("Check")
-        checkBtn.setMaximumWidth(80)
-        checkBtn.clicked.connect(self.runCheck)
-        layout.addWidget(checkBtn)
+        self.createBtn = QtWidgets.QPushButton(parent)
+        self.createBtn.setText("Create Blueprint")
+        self.createBtn.clicked.connect(self.createBlueprint)
+        layout.addWidget(self.createBtn)
 
-        buildBtn = QtWidgets.QPushButton(parent)
-        buildBtn.setText("Build")
-        buildBtn.setMaximumWidth(80)
-        buildBtn.clicked.connect(self.runBuild)
-        layout.addWidget(buildBtn)
+        self.checkBtn = QtWidgets.QPushButton(parent)
+        self.checkBtn.setText("Check")
+        self.checkBtn.setMaximumWidth(80)
+        self.checkBtn.clicked.connect(self.runCheck)
+        layout.addWidget(self.checkBtn)
+
+        self.buildBtn = QtWidgets.QPushButton(parent)
+        self.buildBtn.setText("Build")
+        self.buildBtn.setMaximumWidth(80)
+        self.buildBtn.clicked.connect(self.runBuild)
+        layout.addWidget(self.buildBtn)
+
+        self.openBPBtn = QtWidgets.QPushButton(parent)
+        self.openBPBtn.setText("Open Blueprint")
+        self.openBPBtn.clicked.connect(pulse.openFirstRigBlueprint)
+        layout.addWidget(self.openBPBtn)
+
+        self.onPulseNodesChanged()
+    
+    def onPulseNodesChanged(self):
+        self.createBtn.setVisible(not (self.blueprintExists or self.rigExists))
+        self.checkBtn.setVisible(self.blueprintExists and not self.rigExists)
+        self.buildBtn.setVisible(self.blueprintExists and not self.rigExists)
+        self.openBPBtn.setVisible(self.rigExists)
 
     @property
     def blueprint(self):
@@ -59,6 +79,10 @@ class BuildToolbarWidget(QtWidgets.QWidget, UIEventMixin):
 
     def onBlueprintLoaded(self):
         self.rigNameLabel.setText(self.blueprint.rigName)
+    
+    def createBlueprint(self):
+        pulse.Blueprint.createDefaultBlueprint()
+        self.model.reloadBlueprint()
 
     def runCheck(self):
         pass

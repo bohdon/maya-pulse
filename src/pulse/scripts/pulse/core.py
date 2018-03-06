@@ -15,8 +15,8 @@ from . import version
 
 __all__ = [
     'BatchBuildAction',
-    'Blueprint',
     'BLUEPRINT_METACLASS',
+    'Blueprint',
     'BlueprintBuilder',
     'BuildAction',
     'BuildActionError',
@@ -30,6 +30,8 @@ __all__ = [
     'getRigFromNode',
     'getSelectedRigs',
     'isRig',
+    'openFirstRigBlueprint',
+    'openRigBlueprint',
     'registerActions',
     'RIG_METACLASS',
 ]
@@ -169,7 +171,30 @@ def createRigNode(name):
     meta.setMetaData(node, RIG_METACLASS, {'name':name})
     return node
 
+def openRigBlueprint(rig):
+    """
+    Open the Blueprint source file that was used
+    to build a rig.
 
+    Args:
+        rig: A rig node
+    """
+
+    rigdata = meta.getMetaData(rig, RIG_METACLASS)
+    blueprintFile = rigdata.get('blueprintFile')
+    if not blueprintFile:
+        print('No blueprintFile set on the rig')
+        return
+
+    print('Opening blueprint: ' + blueprintFile)
+    pm.openFile(blueprintFile, f=True)
+
+def openFirstRigBlueprint():
+    rigs = getAllRigs()
+    if not rigs:
+        print('No rig in the scene')
+        return
+    openRigBlueprint(rigs[0])
 
 def copyData(data, refNode=None):
     """
@@ -810,6 +835,12 @@ class Blueprint(object):
                 return blueprint
         else:
             return Blueprint.fromNode(BLUEPRINT_NODENAME)
+    
+    @staticmethod
+    def createDefaultBlueprint():
+        blueprint = Blueprint()
+        blueprint.initializeDefaultActions()
+        blueprint.saveToDefaultNode()
     
     @staticmethod
     def deleteDefaultNode():

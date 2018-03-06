@@ -32,7 +32,7 @@ class BlueprintEditorWidget(QtWidgets.QWidget):
 
         createBtn = QtWidgets.QPushButton(self)
         createBtn.setText("Create Default Blueprint")
-        createBtn.clicked.connect(self.createDefaultBlueprint)
+        createBtn.clicked.connect(pulse.Blueprint.createDefaultBlueprint)
         layout.addWidget(createBtn)
 
         saveBtn = QtWidgets.QPushButton(self)
@@ -47,7 +47,7 @@ class BlueprintEditorWidget(QtWidgets.QWidget):
 
         debugOpenBpBtn = QtWidgets.QPushButton(self)
         debugOpenBpBtn.setText("Debug Open Blueprint Scene")
-        debugOpenBpBtn.clicked.connect(self.debugOpenBlueprintScene)
+        debugOpenBpBtn.clicked.connect(pulse.openFirstRigBlueprint)
         layout.addWidget(debugOpenBpBtn)
 
         deleteBlueprintBtn = QtWidgets.QPushButton(self)
@@ -71,9 +71,7 @@ class BlueprintEditorWidget(QtWidgets.QWidget):
         self.blueprint.saveToDefaultNode()
 
     def createDefaultBlueprint(self):
-        blueprint = pulse.Blueprint()
-        blueprint.initializeDefaultActions()
-        blueprint.saveToDefaultNode()
+        pulse.Blueprint.createDefaultBlueprint()
         self.model.reloadBlueprint()
     
     def deleteBlueprint(self):
@@ -87,22 +85,6 @@ class BlueprintEditorWidget(QtWidgets.QWidget):
         blueprint = pulse.Blueprint.fromDefaultNode()
         if blueprint:
             pprint.pprint(blueprint.serialize())
-
-    def debugOpenBlueprintScene(self):
-        rigs = pulse.getAllRigs()
-        if not rigs:
-            print('No rig in the scene')
-            return
-
-        rigdata = meta.getMetaData(rigs[0], pulse.RIG_METACLASS)
-        blueprintFile = rigdata.get('blueprintFile')
-        if not blueprintFile:
-            print('No blueprintFile set on the rig')
-            return
-
-        print('Opening blueprint: ' + blueprintFile)
-        pm.openFile(blueprintFile, f=True)
-        self.model.reloadBlueprint()
 
 
 
