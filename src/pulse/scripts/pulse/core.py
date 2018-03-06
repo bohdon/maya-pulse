@@ -890,6 +890,7 @@ class Blueprint(object):
         """
         importAction = getActionClass('ImportReferences')()
         hierAction = getActionClass('BuildCoreHierarchy')()
+        hierAction.allNodes = True
         mainGroup = BuildGroup(displayName='Main')
         saveAction = getActionClass('SaveBuiltRig')()
         optimizeAction = getActionClass('OptimizeScene')()
@@ -936,8 +937,9 @@ class BlueprintBuilder(object):
 
         Args:
             blueprint: A Blueprint to be built
-            blueprintFile: A string path to the maya file containing the blueprint
-                to be stored on the built rig for convenience
+            blueprintFile: An optional string path to the maya file that contains
+                the blueprint for the built rig. This path is stored in the built
+                rig for convenience.
 
         """
         if not isinstance(blueprint, Blueprint):
