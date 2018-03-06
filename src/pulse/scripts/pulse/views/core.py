@@ -1,13 +1,17 @@
 
+from functools import partial
 from pulse.vendor.Qt import QtCore, QtWidgets, QtGui
+import maya.OpenMaya as om
 import maya.cmds as cmds
 from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
 
+import pulse
 
 __all__ = [
     'buttonCommand',
     'CollapsibleFrame',
     'PulseWindow',
+    'UIEventMixin',
 ]
 
 def buttonCommand(func, *args, **kwargs):
@@ -48,6 +52,121 @@ class CollapsibleFrame(QtWidgets.QFrame):
     
     def isCollapsed(self):
         return self._isCollapsed
+
+
+class UIEventMixin(object):
+    """
+    A mixin for listening to shared events related
+    to pulse scene changes, such as the creation or
+    deletion of a Blueprint.
+    """
+
+    # the list of currently active ui objects listening for events
+    _LISTENERS = []
+    # is the mixin globally registered with maya callbacks?
+    _IS_REGISTERED = False
+    # the MCallbackIDs of registered messages
+    _MSGIDS = []
+    # a flag for preventing redundant deferred node updates
+    _NODES_DIRTY = False
+    
+    @staticmethod
+    def _registerUIEventCallbacks():
+        """
+        Add MMessage callbacks for necessary Maya events
+        """
+        if not UIEventMixin._IS_REGISTERED:
+            UIEventMixin._IS_REGISTERED = True
+            ids = []
+            ids.append(om.MDGMessage.addNodeAddedCallback(UIEventMixin._onNodesChanged, 'network'))
+            ids.append(om.MDGMessage.addNodeRemovedCallback(UIEventMixin._onNodesChanged, 'network'))
+            ids.append(om.MDGMessage.addNodeAddedCallback(UIEventMixin._onNodesChanged, 'transform'))
+            ids.append(om.MDGMessage.addNodeRemovedCallback(UIEventMixin._onNodesChanged, 'transform'))
+            UIEventMixin._MSGIDS = ids
+    
+    @staticmethod
+    def _unregisterUIEventCallbacks():
+        """
+        Remove all registered MMessage callbacks
+        """
+        if UIEventMixin._IS_REGISTERED:
+            UIEventMixin._IS_REGISTERED = False
+            if UIEventMixin._MSGIDS:
+                for id in UIEventMixin._MSGIDS:
+                    om.MMessage.removeCallback(id)
+                UIEventMixin._MSGIDS = []
+
+    @staticmethod
+    def _nodeAdded(node, *args):
+        UIEventMixin._onNodesChanged()
+
+    @staticmethod
+    def _onNodesChanged(node, *args):
+        # queue deferred change event only once per scene changes
+        if not UIEventMixin._NODES_DIRTY:
+            UIEventMixin._NODES_DIRTY = True
+            cmds.evalDeferred(UIEventMixin._onNodesChangedDeferred)
+    
+    @staticmethod
+    def _onNodesChangedDeferred():
+        """
+        Called when relevant nodes are added or removed.
+        Used to check for changes in blueprints or rigs.
+        """
+        UIEventMixin._NODES_DIRTY = False
+        blueprintExists = pulse.Blueprint.doesDefaultNodeExist()
+        rigExists = len(pulse.getAllRigs()) > 0
+        for listener in UIEventMixin._LISTENERS:
+            listener.setBlueprintExists(blueprintExists)
+            listener.setRigExists(rigExists)
+    
+    def enableUIMixinEvents(self):
+        """
+        Enable events on this object
+        """
+        if self not in UIEventMixin._LISTENERS:
+            UIEventMixin._LISTENERS.append(self)
+        UIEventMixin._registerUIEventCallbacks()
+
+        self.blueprintExists = pulse.Blueprint.doesDefaultNodeExist()
+        self.rigExists = len(pulse.getAllRigs()) > 0
+    
+    def disableUIMixinEvents(self):
+        """
+        Disable events on this object
+        """
+        if self in UIEventMixin._LISTENERS:
+            UIEventMixin._LISTENERS.remove(self)
+        if not UIEventMixin._LISTENERS:
+            UIEventMixin._unregisterUIEventCallbacks()
+    
+    def setBlueprintExists(self, newExists):
+        if newExists != self.blueprintExists:
+            self.blueprintExists = newExists
+            if self.blueprintExists:
+                self.onBlueprintCreated()
+            else:
+                self.onBlueprintDeleted()
+    
+    def setRigExists(self, newExists):
+        if newExists != self.rigExists:
+            self.rigExists = newExists
+            if self.rigExists:
+                self.onRigCreated()
+            else:
+                self.onRigDeleted()
+    
+    def onBlueprintCreated(self):
+        pass
+    
+    def onBlueprintDeleted(self):
+        pass
+    
+    def onRigCreated(self):
+        pass
+    
+    def onRigDeleted(self):
+        pass
 
 
 class PulseWindow(MayaQWidgetDockableMixin, QtWidgets.QMainWindow):

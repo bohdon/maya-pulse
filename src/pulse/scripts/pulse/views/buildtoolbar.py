@@ -1,10 +1,12 @@
 
 from pulse.vendor.Qt import QtCore, QtWidgets, QtGui
+import maya.OpenMaya as om
 import pymel.core as pm
 import pymetanode as meta
 
 import pulse
 from .core import PulseWindow
+from .core import UIEventMixin
 from .actiontree import ActionTreeItemModel
 
 
@@ -14,7 +16,7 @@ __all__ = [
 ]
 
 
-class BuildToolbarWidget(QtWidgets.QWidget):
+class BuildToolbarWidget(QtWidgets.QWidget, UIEventMixin):
 
     def __init__(self, parent=None):
         super(BuildToolbarWidget, self).__init__(parent=parent)
@@ -23,6 +25,14 @@ class BuildToolbarWidget(QtWidgets.QWidget):
         self.model.modelReset.connect(self.onBlueprintLoaded)
 
         self.setupUi(self)
+    
+    def showEvent(self, event):
+        super(BuildToolbarWidget, self).showEvent(event)
+        self.enableUIMixinEvents()
+    
+    def hideEvent(self, event):
+        super(BuildToolbarWidget, self).hideEvent(event)
+        self.disableUIMixinEvents()
 
     def setupUi(self, parent):
         layout = QtWidgets.QHBoxLayout(parent)

@@ -815,6 +815,10 @@ class Blueprint(object):
     def deleteDefaultNode():
         if pm.cmds.objExists(BLUEPRINT_NODENAME):
             pm.cmds.delete(BLUEPRINT_NODENAME)
+    
+    @staticmethod
+    def doesDefaultNodeExist():
+        return pm.cmds.objExists(BLUEPRINT_NODENAME)
 
     @staticmethod
     def isBlueprintNode(node):
