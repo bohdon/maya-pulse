@@ -1142,14 +1142,24 @@ class BlueprintBuilder(object):
         # record time
         self.endTime = time.time()
         self.elapsedTime = self.endTime - self.startTime
+
+        errorCount = len(self.errors)
         # log results
-        info = '{0:.3f} seconds, {1} error(s)'.format(self.elapsedTime, len(self.errors))
-        lvl = logging.WARNING if len(self.errors) else logging.INFO
-        self.log.log(lvl, "Built Rig '{0}', {1}".format(self.blueprint.rigName, info), extra=dict(
+        logMsg = "Built Rig '{0}', {1:.3f} seconds, {2} error(s)".format(self.blueprint.rigName, self.elapsedTime, errorCount)
+        lvl = logging.WARNING if errorCount else logging.INFO
+        self.log.log(lvl, logMsg, extra=dict(
             duration=self.elapsedTime,
             scenePath=self.blueprintFile,
         ))
         self.fileHandler.close()
+        
+        # show results with in view message
+        if errorCount:
+            pm.inViewMessage(amg='Build Finished with {0} error(s)'.format(errorCount),
+                pos='topCenter', backColor=0xaa8336,
+                fade=True, fadeStayTime=3000)
+        else:
+            pm.inViewMessage(amg='Build Finished', pos='topCenter', fade=True)
 
     def onCancel(self):
         """
