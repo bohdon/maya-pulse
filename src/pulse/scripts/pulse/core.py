@@ -244,7 +244,7 @@ class BuildItem(object):
         raise NotImplementedError
 
     def __init__(self):
-        pass
+        self.parent = None
 
     def __repr__(self):
         return "<{0} '{1}'>".format(self.__class__.__name__, self.getDisplayName())
@@ -333,8 +333,12 @@ class BuildGroup(BuildItem):
         super(BuildGroup, self).deserialize(data)
         self.displayName = data['displayName']
         self.children = [BuildItem.create(c) for c in data['children']]
+        for item in self.children:
+            item.parent = self
 
     def clearChildren(self):
+        for item in self.children:
+            item.parent = None
         self.children = []
 
     def addChild(self, item):
@@ -343,21 +347,25 @@ class BuildGroup(BuildItem):
         if not isinstance(item, BuildItem):
             raise ValueError('{0} is not a valid BuildItem type'.format(type(item).__name__))
         self.children.append(item)
+        item.parent = self
 
     def removeChild(self, item):
         if item in self.children:
             self.children.remove(item)
+            item.parent = None
 
     def removeChildAt(self, index):
         if index < 0 or index >= len(self.children):
             return
 
+        self.children[index].parent = None
         del self.children[index]
 
     def insertChild(self, index, item):
         if not isinstance(item, BuildItem):
             raise ValueError('{0} is not a valid BuildItem type'.format(type(item).__name__))
         self.children.insert(index, item)
+        item.parent = self
 
     def getChildCount(self):
         return len(self.children)
@@ -799,13 +807,6 @@ class Blueprint(object):
     and all nodes are organized into rig groups based on the nodes purpose.
     """
 
-    # list of valid node types when adding to a blueprint
-    validNodeTypes = (
-        pm.nt.Transform,
-        pm.nt.Network
-    )
-
-
     @staticmethod
     def fromData(data):
         """
@@ -875,22 +876,25 @@ class Blueprint(object):
         self.rigName = 'newRig'
         # the version of this blueprint
         self.version = BLUEPRINT_VERSION
-        # the root BuildGroup of this blueprint
-        self.rootGroup = BuildGroup(displayName='')
+        # the root BuildItem of this blueprint (a group with no name)
+        self.rootItem = BuildGroup(displayName='')
+    
+    @property
+    def rootGroup(self):
+        print('rootGroup is deprecated, use rootItem')
+        return self.rootItem
 
     def serialize(self):
         data = {}
         data['rigName'] = self.rigName
         data['version'] = self.version
-        data['buildItems'] = self.rootGroup.serialize()
+        data['buildItems'] = self.rootItem.serialize()
         return data
 
     def deserialize(self, data):
         self.rigName = data['rigName']
         self.version = data['version']
-        self.rootGroup = BuildItem.create(data['buildItems'])
-        # ignore whatever display name was serialized for root group
-        self.rootGroup.displayName = ''
+        self.rootItem = BuildItem.create(data['buildItems'])
 
     def saveToNode(self, node, create=False):
         """
@@ -930,7 +934,7 @@ class Blueprint(object):
         """
         Return the action iterator of the Blueprints root BuildGroup
         """
-        return self.rootGroup.actionIterator()
+        return self.rootItem.actionIterator()
 
     def initializeDefaultActions(self):
         """
@@ -946,7 +950,7 @@ class Blueprint(object):
         mainGroup = BuildGroup(displayName='Main')
         saveAction = getActionClass('SaveBuiltRig')()
         optimizeAction = getActionClass('OptimizeScene')()
-        self.rootGroup.children = [
+        self.rootItem.children = [
             importAction,
             hierAction,
             mainGroup,
@@ -966,7 +970,7 @@ class Blueprint(object):
         groupNames = []
         if groupPath and groupPath != '/':
             groupNames = groupPath.split('/')
-        currentGroup = self.rootGroup
+        currentGroup = self.rootItem
         for name in groupNames:
             currentGroup = currentGroup.getChildGroupByName(name)
             if not currentGroup:
