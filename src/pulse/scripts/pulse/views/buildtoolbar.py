@@ -26,8 +26,12 @@ class BuildToolbarWidget(QtWidgets.QWidget, pulse.events.BlueprintEventsMixin, p
     def __init__(self, parent=None):
         super(BuildToolbarWidget, self).__init__(parent=parent)
 
-        self.blueprintExists = False
-        self.rigExists = False
+        # TODO: simplify overall ui functionality for visible-based
+        #   state changes and events that can be reused for other widgets
+
+        self.enableBlueprintChangeEvents(pulse.BLUEPRINT_NODENAME)
+        self.blueprintExists = pulse.Blueprint.doesDefaultNodeExist()
+        self.rigExists = len(pulse.getAllRigs()) > 0
         self.isStateDirty = False
 
         self.model = ActionTreeItemModel.getSharedModel()
@@ -78,6 +82,7 @@ class BuildToolbarWidget(QtWidgets.QWidget, pulse.events.BlueprintEventsMixin, p
 
     def onPulseNodesChanged(self):
         self.isStateDirty = False
+        self.setEnabled(True)
         self.createBtn.setVisible(not (self.blueprintExists or self.rigExists))
         self.checkBtn.setVisible(self.blueprintExists and not self.rigExists)
         self.buildBtn.setVisible(self.blueprintExists and not self.rigExists)
@@ -86,7 +91,8 @@ class BuildToolbarWidget(QtWidgets.QWidget, pulse.events.BlueprintEventsMixin, p
     def onStateDirty(self):
         if not self.isStateDirty:
             self.isStateDirty = True
-            cmds.evalDeferred(self.onPulseNodesChanged, lp=True)
+            self.setEnabled(False)
+            cmds.evalDeferred(self.onPulseNodesChanged)
 
     def onBlueprintCreated(self, node):
         self.blueprintExists = True
