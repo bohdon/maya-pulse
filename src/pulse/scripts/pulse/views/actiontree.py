@@ -273,7 +273,6 @@ class ActionTreeSelectionModel(QtCore.QItemSelectionModel):
     def getSharedModel(cls):
         if not cls.INSTANCE:
             cls.INSTANCE = cls(ActionTreeItemModel.getSharedModel())
-            cls.INSTANCE.asdf = 1234
         return cls.INSTANCE
 
     def getSelectedGroups(self):
