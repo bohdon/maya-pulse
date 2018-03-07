@@ -17,6 +17,8 @@ from . import cameras
 __all__ = [
     'BatchBuildAction',
     'BLUEPRINT_METACLASS',
+    'BLUEPRINT_NODENAME',
+    'BLUEPRINT_VERSION',
     'Blueprint',
     'BlueprintBuilder',
     'BuildAction',

@@ -1,8 +1,9 @@
 
-
+import logging
 from functools import partial
 import maya.cmds as cmds
 import maya.OpenMaya as api
+import pymel.core as pm
 import pymetanode as meta
 
 import pulse.core
@@ -14,6 +15,9 @@ __all__ = [
     'Event',
     'MayaCallbackEvents',
 ]
+
+LOG = logging.getLogger('pulse.events')
+LOG.level = logging.INFO
 
 
 class Event(list):
@@ -59,6 +63,7 @@ class MayaCallbackEvents(object):
         if not self._areMayaCallbacksRegistered:
             self._areMayaCallbacksRegistered = True
             self._callbackIDs = list(self._addMayaCallbacks())
+            LOG.debug('{0}._registerMayaCallbacks'.format(self.__class__.__name__))
 
     def _addMayaCallbacks(self):
         """
@@ -77,6 +82,7 @@ class MayaCallbackEvents(object):
             for cbId in self._callbackIDs:
                 api.MMessage.removeCallback(cbId)
             self._callbackIDs = []
+            LOG.debug('{0}._unregisterMayaCallbacks'.format(self.__class__.__name__))
     
     def notifySubscriberAdded(self, subscriber):
         """
@@ -107,12 +113,12 @@ class BlueprintLifecycleEvents(MayaCallbackEvents):
     Blueprint creation and deletion events.
 
     Events:
-        onBlueprintCreated(blueprintNode):
+        onBlueprintCreated(node):
             Called when any Blueprint is created. Passes
-            the newly created Blueprint node (MObject).
-        onBlueprintDeleted(blueprintNode):
+            the newly created Blueprint node.
+        onBlueprintDeleted(node):
             Called when any Blueprint is deleted. Passes
-            the Blueprint node (MObject) that is being deleted.
+            the Blueprint node that is being deleted.
     """
 
     # the shared events instance
@@ -139,15 +145,17 @@ class BlueprintLifecycleEvents(MayaCallbackEvents):
     def _onNodeAdded(self, node, *args):
         # no way to know if it's a Blueprint yet,
         # defer until later and check the node again
-        cmds.evalDeferred(partial(self._onNodeAddedDeferred, node, *args))
+        # TODO: do this more precisely, don't use deferred
+        cmds.evalDeferred(partial(self._onNodeAddedDeferred, pm.PyNode(node)))
 
-    def _onNodeAddedDeferred(self, node, *args):
+    def _onNodeAddedDeferred(self, node):
+        # node is already a PyNode here
         if pulse.core.Blueprint.isBlueprintNode(node):
             self.onBlueprintCreated(node)
 
     def _onNodeRemoved(self, node, *args):
         if pulse.core.Blueprint.isBlueprintNode(node):
-            self.onBlueprintDeleted(node)
+            self.onBlueprintDeleted(pm.PyNode(node))
 
 
 class BlueprintChangeEvents(MayaCallbackEvents):
@@ -156,9 +164,9 @@ class BlueprintChangeEvents(MayaCallbackEvents):
     scene. Fires events whenever the Blueprint node is modified.
 
     Events:
-        onBlueprintChanged(blueprintNode):
+        onBlueprintChanged(node):
             Called when the blueprint changes, passes the Blueprint
-            node (MObject) that was modified.
+            node that was modified.
     """
 
     # shared event instances, mapped by blueprint node names
@@ -194,7 +202,7 @@ class BlueprintChangeEvents(MayaCallbackEvents):
 
     def _onBlueprintAttrChanged(self, changeType, srcPlug, dstPlug, clientData):
         if srcPlug.partialName() == 'pyMetaData':
-            self.onBlueprintChanged(srcPlug.node())
+            self.onBlueprintChanged(pm.PyNode(srcPlug.node()))
 
 
 
@@ -254,13 +262,13 @@ class BlueprintEventsMixin(object):
                 changeEvents.onBlueprintChanged.remove(self.onBlueprintChanged)
             changeEvents.notifySubscriberRemoved(self)
 
-    def onBlueprintCreated(self, blueprintNode):
+    def onBlueprintCreated(self, node):
         pass
 
-    def onBlueprintChanged(self, blueprintNode):
+    def onBlueprintChanged(self, node):
         pass
 
-    def onBlueprintDeleted(self, blueprintNode):
+    def onBlueprintDeleted(self, node):
         pass
 
 
@@ -271,12 +279,12 @@ class RigLifecycleEvents(MayaCallbackEvents):
     Rig creation and deletion events.
 
     Events:
-        onRigCreated(rigNode):
+        onRigCreated(node):
             Called when any rig is created. Passes
-            the newly created rig node (MObject).
-        onRigDeleted(rigNode):
+            the newly created rig node.
+        onRigDeleted(node):
             Called when any rig is deleted. Passes
-            the rig node (MObject) that is being deleted.
+            the rig node that is being deleted.
     """
 
     # the shared events instance
@@ -303,7 +311,8 @@ class RigLifecycleEvents(MayaCallbackEvents):
     def _onNodeAdded(self, node, *args):
         # no way to know if it's a Rig yet,
         # defer until later and check the node again
-        cmds.evalDeferred(partial(self._onNodeAddedDeferred, node, *args))
+        # TODO: do this more precisely, don't use deferred
+        cmds.evalDeferred(partial(self._onNodeAddedDeferred, pm.PyNode(node)))
 
     def _onNodeAddedDeferred(self, node, *args):
         if pulse.core.isRig(node):
@@ -311,7 +320,7 @@ class RigLifecycleEvents(MayaCallbackEvents):
 
     def _onNodeRemoved(self, node, *args):
         if pulse.core.isRig(node):
-            self.onRigDeleted(node)
+            self.onRigDeleted(pm.PyNode(node))
 
 
 class RigEventsMixin(object):
@@ -342,9 +351,9 @@ class RigEventsMixin(object):
             lifeEvents.onRigDeleted.remove(self.onRigDeleted)
         lifeEvents.notifySubscriberRemoved(self)
 
-    def onRigCreated(self, rigNode):
+    def onRigCreated(self, node):
         pass
 
-    def onRigDeleted(self, rigNode):
+    def onRigDeleted(self, node):
         pass
 

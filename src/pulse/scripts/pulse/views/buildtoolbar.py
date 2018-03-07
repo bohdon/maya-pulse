@@ -1,12 +1,14 @@
 
+import logging
 from pulse.vendor.Qt import QtCore, QtWidgets, QtGui
+import maya.cmds as cmds
 import maya.OpenMaya as om
 import pymel.core as pm
 import pymetanode as meta
 
 import pulse
+import pulse.events
 from .core import PulseWindow
-from .core import UIEventMixin
 from .actiontree import ActionTreeItemModel
 
 
@@ -15,26 +17,33 @@ __all__ = [
     'BuildToolbarWindow',
 ]
 
+LOG = logging.getLogger('pulse.views.buildtoolbar')
+LOG.level = logging.INFO
 
-class BuildToolbarWidget(QtWidgets.QWidget, UIEventMixin):
+
+class BuildToolbarWidget(QtWidgets.QWidget, pulse.events.BlueprintEventsMixin, pulse.events.RigEventsMixin):
 
     def __init__(self, parent=None):
         super(BuildToolbarWidget, self).__init__(parent=parent)
 
-        self.initUIEventMixin()
+        self.blueprintExists = False
+        self.rigExists = False
+        self.isStateDirty = False
 
         self.model = ActionTreeItemModel.getSharedModel()
         self.model.modelReset.connect(self.onBlueprintLoaded)
 
         self.setupUi(self)
-    
+
     def showEvent(self, event):
         super(BuildToolbarWidget, self).showEvent(event)
-        self.enableUIMixinEvents()
-    
+        self.enableBlueprintEvents()
+        self.enableRigEvents()
+
     def hideEvent(self, event):
         super(BuildToolbarWidget, self).hideEvent(event)
-        self.disableUIMixinEvents()
+        self.disableBlueprintEvents()
+        self.disableRigEvents()
 
     def setupUi(self, parent):
         layout = QtWidgets.QHBoxLayout(parent)
@@ -66,12 +75,37 @@ class BuildToolbarWidget(QtWidgets.QWidget, UIEventMixin):
         layout.addWidget(self.openBPBtn)
 
         self.onPulseNodesChanged()
-    
+
     def onPulseNodesChanged(self):
+        self.isStateDirty = False
         self.createBtn.setVisible(not (self.blueprintExists or self.rigExists))
         self.checkBtn.setVisible(self.blueprintExists and not self.rigExists)
         self.buildBtn.setVisible(self.blueprintExists and not self.rigExists)
         self.openBPBtn.setVisible(self.rigExists)
+    
+    def onStateDirty(self):
+        if not self.isStateDirty:
+            self.isStateDirty = True
+            cmds.evalDeferred(self.onPulseNodesChanged, lp=True)
+
+    def onBlueprintCreated(self, node):
+        self.blueprintExists = True
+        self.onStateDirty()
+
+    def onBlueprintDeleted(self, node):
+        if node.nodeName() == pulse.BLUEPRINT_NODENAME:
+            self.blueprintExists = False
+            self.onStateDirty()
+
+    def onRigCreated(self, node):
+        self.rigExists = len(pulse.getAllRigs()) > 0
+        self.onStateDirty()
+
+    def onRigDeleted(self, node):
+        # node will be deleted, is not yet, so there must be
+        # more than one left for any rigs to exist afterwards
+        self.rigExists = len(pulse.getAllRigs()) > 1
+        self.onStateDirty()
 
     @property
     def blueprint(self):
@@ -79,7 +113,7 @@ class BuildToolbarWidget(QtWidgets.QWidget, UIEventMixin):
 
     def onBlueprintLoaded(self):
         self.rigNameLabel.setText(self.blueprint.rigName)
-    
+
     def createBlueprint(self):
         pulse.Blueprint.createDefaultBlueprint()
         self.model.reloadBlueprint()
