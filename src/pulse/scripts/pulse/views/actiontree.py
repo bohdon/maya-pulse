@@ -4,6 +4,7 @@ import pymetanode as meta
 
 import pulse
 from .core import PulseWindow
+from .core import UIEventMixin
 
 
 __all__ = [
@@ -298,10 +299,13 @@ class ActionTreeSelectionModel(QtCore.QItemSelectionModel):
 
 
 
-class ActionTreeWidget(QtWidgets.QWidget):
+class ActionTreeWidget(QtWidgets.QWidget, UIEventMixin):
     
     def __init__(self, parent=None):
         super(ActionTreeWidget, self).__init__(parent=parent)
+
+        self.initUIEventMixin()
+
         # get shared models
         self.model = ActionTreeItemModel.getSharedModel()
         self.selectionModel = ActionTreeSelectionModel.getSharedModel()
@@ -309,6 +313,23 @@ class ActionTreeWidget(QtWidgets.QWidget):
         self.setupUi(self)
         # connect signals
         self.model.modelReset.connect(self.onBlueprintLoaded)
+    
+    def showEvent(self, event):
+        super(ActionTreeWidget, self).showEvent(event)
+        self.enableUIMixinEvents()
+    
+    def hideEvent(self, event):
+        super(ActionTreeWidget, self).hideEvent(event)
+        self.disableUIMixinEvents()
+    
+    def onBlueprintCreated(self):
+        self.model.reloadBlueprint()
+    
+    def onBlueprintChanged(self):
+        self.model.reloadBlueprint()
+    
+    def onBlueprintDeleted(self):
+        self.model.reloadBlueprint()
 
     def onBlueprintLoaded(self):
         self.treeView.expandAll()
