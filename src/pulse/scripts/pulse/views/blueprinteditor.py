@@ -22,13 +22,11 @@ class BlueprintEditorWidget(QtWidgets.QWidget):
 
         self.blueprintModel = BlueprintUIModel.getDefaultModel()
         self.model = self.blueprintModel.buildItemTreeModel
-        # TODO: change out for new change signals from blueprint model
-        self.model.modelReset.connect(self.onBlueprintLoaded)
 
         layout = QtWidgets.QVBoxLayout(self)
 
         self.rigNameText = QtWidgets.QLineEdit(self)
-        self.rigNameText.setText(self.blueprint.rigName)
+        self.rigNameText.setText(self.blueprintModel.getRigName())
         self.rigNameText.textChanged.connect(self.rigNameTextChanged)
         layout.addWidget(self.rigNameText)
 
@@ -36,11 +34,6 @@ class BlueprintEditorWidget(QtWidgets.QWidget):
         createBtn.setText("Create Default Blueprint")
         createBtn.clicked.connect(pulse.Blueprint.createDefaultBlueprint)
         layout.addWidget(createBtn)
-
-        saveBtn = QtWidgets.QPushButton(self)
-        saveBtn.setText("Debug Save Blueprint")
-        saveBtn.clicked.connect(self.debugSaveBlueprint)
-        layout.addWidget(saveBtn)
 
         debugPrintBtn = QtWidgets.QPushButton(self)
         debugPrintBtn.setText("Debug Print Serialized")
@@ -61,33 +54,21 @@ class BlueprintEditorWidget(QtWidgets.QWidget):
         spacer = QtWidgets.QSpacerItem(0, 0, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
         layout.addItem(spacer)
 
-    @property
-    def blueprint(self):
-        return self.blueprintModel.getBlueprint()
-
-    def onBlueprintLoaded(self):
-        self.rigNameText.setText(self.blueprint.rigName)
-
     def rigNameTextChanged(self):
-        self.blueprint.rigName = self.rigNameText.text()
-        self.blueprint.saveToDefaultNode()
+        self.blueprintModel.setRigName(self.rigNameText.text())
 
     def createDefaultBlueprint(self):
         pulse.Blueprint.createDefaultBlueprint()
-        # TODO: shouldn't be necessary!
-        self.blueprintModel = BlueprintUIModel.getDefaultModel()
     
     def deleteBlueprint(self):
         pulse.Blueprint.deleteDefaultNode()
 
-    def debugSaveBlueprint(self):
-        self.blueprint.saveToDefaultNode()
-
     def debugPrintSerialized(self):
         import pprint
-        blueprint = pulse.Blueprint.fromDefaultNode()
-        if blueprint:
-            pprint.pprint(blueprint.serialize())
+        if self.blueprintModel.blueprint:
+            pprint.pprint(self.blueprintModel.blueprint.serialize())
+        else:
+            print('No Blueprint')
 
 
 

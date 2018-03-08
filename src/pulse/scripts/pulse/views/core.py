@@ -7,6 +7,7 @@ from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
 import pymetanode as meta
 
 import pulse
+from pulse.events import BlueprintLifecycleEvents
 
 __all__ = [
     'BlueprintUIModel',
@@ -291,6 +292,15 @@ class BlueprintUIModel(QtCore.QObject):
     The owner and manager of various models representing a Blueprint
     in the scene. All reading and writing for the Blueprint through
     the UI should be done using this model.
+
+    BlueprintUIModels can exist without the Blueprint node in the
+    scene. In this case the model won't be functional, but will
+    automatically update if the matching Blueprint node is created.
+
+    The model uses subscription notify calls to properly manage
+    and cleanup Maya callbacks, so any QWidgets should call
+    notifySubscriberAdded / notifySubscriberRemoved on the model
+    during show and hide events (or similar).
     """
 
     # shared instances, mapped by blueprint node name
@@ -304,23 +314,17 @@ class BlueprintUIModel(QtCore.QObject):
     def getSharedModel(cls, blueprintNodeName):
         """
         Return a shared model for a specific Blueprint node,
-        creating a new model if necessary.
-        
-        Returns None if the blueprint node does not exist.
+        creating a new model if necessary. Will always return
+        a valid BlueprintUIModel.
         """
-        # perform instance cleanup
-        cls.cleanupSharedInstances()
-        if not cmds.objExists(blueprintNodeName):
-            return
         if blueprintNodeName not in cls.INSTANCES:
             cls.INSTANCES[blueprintNodeName] = cls(blueprintNodeName)
         return cls.INSTANCES[blueprintNodeName]
 
     @classmethod
-    def cleanupSharedInstances(cls):
-        for nodeName in cls.INSTANCES.keys():
-            if not cmds.objExists(nodeName):
-                del cls.INSTANCES[nodeName]
+    def deleteSharedModel(cls, blueprintNodeName):
+        if blueprintNodeName in cls.INSTANCES:
+            del cls.INSTANCES[blueprintNodeName]
 
 
     def __init__(self, blueprintNodeName, parent=None):
@@ -328,29 +332,88 @@ class BlueprintUIModel(QtCore.QObject):
 
         # the blueprint node this model is associated with
         self.blueprintNodeName = blueprintNodeName
+
         # the blueprint of this model
-        self._blueprint = pulse.Blueprint.fromNode(self.blueprintNodeName)
-        self.buildItemTreeModel = BuildItemTreeModel(self._blueprint)
+        self.blueprint = None
+        if cmds.objExists(self.blueprintNodeName):
+            # load from existing node
+            self.blueprint = pulse.Blueprint.fromNode(self.blueprintNodeName)
+        
+        # the tree item model and selection model for BuildItems
+        self.buildItemTreeModel = BuildItemTreeModel(self.blueprint)
         self.buildItemSelectionModel = BuildItemSelectionModel()
+
+        lifeEvents = BlueprintLifecycleEvents.getShared()
+        lifeEvents.onBlueprintCreated.appendUnique(self._onBlueprintCreated)
+        lifeEvents.onBlueprintDeleted.appendUnique(self._onBlueprintDeleted)
+    
+    def __del__(self):
+        super(BlueprintUIModel, self).__del__()
+        lifeEvents = BlueprintLifecycleEvents.getShared()
+        lifeEvents.onBlueprintCreated.removeAll(self._onBlueprintCreated)
+        lifeEvents.onBlueprintDeleted.removeAll(self._onBlueprintDeleted)
+    
+    def _setBlueprint(self, newBlueprint):
+        self.blueprint = newBlueprint
+        self.buildItemTreeModel.setBlueprint(self.blueprint)
+    
+    def notifySubscriberAdded(self, subscriber):
+        # pass through to the events dispatchers
+        lifeEvents = BlueprintLifecycleEvents.getShared()
+        lifeEvents.notifySubscriberAdded(subscriber)
+        # we may have missed events since last subscribed,
+        # so make sure blueprint exists == node exists
+        if cmds.objExists(self.blueprintNodeName):
+            if self.blueprint is None:
+                self._setBlueprint(pulse.Blueprint.fromNode(self.blueprintNodeName))
+        else:
+            if self.blueprint is not None:
+                self._setBlueprint(None)
+
+    def notifySubscriberRemoved(self, subscriber):
+        # pass through to the events dispatchers
+        lifeEvents = BlueprintLifecycleEvents.getShared()
+        lifeEvents.notifySubscriberRemoved(subscriber)
+    
+    def _onBlueprintCreated(self, node):
+        if node.nodeName() == self.blueprintNodeName:
+            self._setBlueprint(pulse.Blueprint.fromNode(self.blueprintNodeName))
+    
+    def _onBlueprintDeleted(self, node):
+        if node.nodeName() == self.blueprintNodeName:
+            self._setBlueprint(None)
+    
+    def isReadOnly(self):
+        return self.blueprint is None
     
     def getBlueprint(self):
         """
         Return the Blueprint represented by this model.
         """
-        return self._blueprint
+        return self.blueprint
+    
+    def getRigName(self):
+        # TODO: better solve for blueprint meta data
+        if self.blueprint:
+            return self.blueprint.rigName
+    
+    def setRigName(self, newRigName):
+        if not self.isReadOnly():
+            self.blueprint.rigName = newRigName
+            self.save()
     
     def save(self):
         """
         Save the Blueprint data to the blueprint node
         """
-        self._blueprint.saveToNode(self.blueprintNodeName)
+        self.blueprint.saveToNode(self.blueprintNodeName)
         # TODO: fire a signal
     
     def load(self):
         """
         Load the Blueprint data from the blueprint node
         """
-        self._blueprint.loadFromNode(self.blueprintNodeName)
+        self.blueprint.loadFromNode(self.blueprintNodeName)
         self.buildItemTreeModel.modelReset.emit()
 
 
@@ -464,6 +527,12 @@ class BuildItemTreeModel(QtCore.QAbstractItemModel):
             self.blueprint = blueprint
         else:
             self.blueprint = pulse.Blueprint()
+    
+    def setBlueprint(self, newBlueprint):
+        if not newBlueprint:
+            newBlueprint = pulse.Blueprint()
+        self.blueprint = newBlueprint
+        self.modelReset.emit()
 
     def item(self, index):
         """
