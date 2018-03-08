@@ -16,8 +16,7 @@ __all__ = [
     'MayaCallbackEvents',
 ]
 
-LOG = logging.getLogger('pulse.events')
-LOG.level = logging.INFO
+LOG = logging.getLogger(__name__)
 
 
 class Event(list):

@@ -17,8 +17,7 @@ __all__ = [
     'BuildToolbarWindow',
 ]
 
-LOG = logging.getLogger('pulse.views.buildtoolbar')
-LOG.level = logging.INFO
+LOG = logging.getLogger(__name__)
 
 
 class BuildToolbarWidget(QtWidgets.QWidget, RigEventsMixin):

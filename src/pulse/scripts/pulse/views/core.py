@@ -20,8 +20,7 @@ __all__ = [
     'TreeModelBuildItem',
 ]
 
-LOG = logging.getLogger('pulse.views.core')
-LOG.level = logging.INFO
+LOG = logging.getLogger(__name__)
 
 
 def buttonCommand(func, *args, **kwargs):
