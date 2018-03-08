@@ -4,6 +4,7 @@ from pulse.vendor.Qt import QtCore, QtWidgets, QtGui
 import maya.cmds as cmds
 import maya.OpenMaya as om
 from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
+import pymetanode as meta
 
 import pulse
 
@@ -328,9 +329,9 @@ class BlueprintUIModel(QtCore.QObject):
         # the blueprint node this model is associated with
         self.blueprintNodeName = blueprintNodeName
         # the blueprint of this model
-        self._blueprint = pulse.Blueprint()
-        self.buildItemTreeModel = BuildItemTreeModel(self._blueprint, parent=self)
-        self.buildItemSelectionModel = BuildItemSelectionModel(parent=self)
+        self._blueprint = pulse.Blueprint.fromNode(self.blueprintNodeName)
+        self.buildItemTreeModel = BuildItemTreeModel(self._blueprint)
+        self.buildItemSelectionModel = BuildItemSelectionModel()
     
     def getBlueprint(self):
         """
@@ -338,19 +339,19 @@ class BlueprintUIModel(QtCore.QObject):
         """
         return self._blueprint
     
-    def saveToNode(self):
+    def save(self):
         """
         Save the Blueprint data to the blueprint node
         """
         self._blueprint.saveToNode(self.blueprintNodeName)
         # TODO: fire a signal
     
-    def loadFromNode(self):
+    def load(self):
         """
         Load the Blueprint data from the blueprint node
         """
         self._blueprint.loadFromNode(self.blueprintNodeName)
-        # TODO: update other sub-models
+        self.buildItemTreeModel.modelReset.emit()
 
 
 
@@ -386,8 +387,8 @@ class TreeModelBuildItem(object):
         return self.children()[row]
 
     def parent(self):
-        # TODO: add way to get parent BuildItem!!
-        return TreeModelBuildItem(self.buildItem.parent)
+        if self.buildItem.parent:
+            return TreeModelBuildItem(self.buildItem.parent)
 
     def row(self):
         if self.buildItem.parent:
@@ -463,7 +464,6 @@ class BuildItemTreeModel(QtCore.QAbstractItemModel):
             self.blueprint = blueprint
         else:
             self.blueprint = pulse.Blueprint()
-        # TODO: setBlueprint method?
 
     def item(self, index):
         """
@@ -471,14 +471,16 @@ class BuildItemTreeModel(QtCore.QAbstractItemModel):
         """
         if index.isValid():
             return TreeModelBuildItem(index.internalPointer())
+        else:
+            return TreeModelBuildItem(self.blueprint.rootItem)
 
-    def index(self, row, column, parent): # override
+    def index(self, row, column, parent=QtCore.QModelIndex()): # override
         """
         Create a QModelIndex for a row, column, and parent index
         """
         if not self.hasIndex(row, column, parent):
             return QtCore.QModelIndex()
-
+        
         childItem = self.item(parent).child(row)
         if childItem:
             return self.createIndex(row, column, childItem.buildItem)
@@ -497,7 +499,7 @@ class BuildItemTreeModel(QtCore.QAbstractItemModel):
     def supportedDropActions(self):
         return QtCore.Qt.CopyAction | QtCore.Qt.MoveAction
 
-    def columnCount(self, parent): # override
+    def columnCount(self, parent=QtCore.QModelIndex()): # override
         return self.item(parent).columnCount()
 
     def rowCount(self, parent=QtCore.QModelIndex()): # override
@@ -533,6 +535,9 @@ class BuildItemTreeModel(QtCore.QAbstractItemModel):
             return self.item(index).data(index.column(), role)
 
     def setData(self, index, value, role=QtCore.Qt.EditRole):
+        if not index.isValid():
+            return False
+        
         if role != QtCore.Qt.EditRole:
             return False
 

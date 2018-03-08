@@ -5,8 +5,8 @@ import pymetanode as meta
 
 import pulse
 from .core import PulseWindow
+from .core import BlueprintUIModel, BuildItemTreeModel
 from .style import UIColors
-from .actiontree import ActionTreeItemModel
 
 
 __all__ = [
@@ -20,7 +20,9 @@ class BlueprintEditorWidget(QtWidgets.QWidget):
     def __init__(self, parent=None):
         super(BlueprintEditorWidget, self).__init__(parent=parent)
 
-        self.model = ActionTreeItemModel.getSharedModel()
+        self.blueprintModel = BlueprintUIModel.getDefaultModel()
+        self.model = self.blueprintModel.buildItemTreeModel
+        # TODO: change out for new change signals from blueprint model
         self.model.modelReset.connect(self.onBlueprintLoaded)
 
         layout = QtWidgets.QVBoxLayout(self)
@@ -61,7 +63,7 @@ class BlueprintEditorWidget(QtWidgets.QWidget):
 
     @property
     def blueprint(self):
-        return self.model.blueprint
+        return self.blueprintModel.getBlueprint()
 
     def onBlueprintLoaded(self):
         self.rigNameText.setText(self.blueprint.rigName)
@@ -72,7 +74,8 @@ class BlueprintEditorWidget(QtWidgets.QWidget):
 
     def createDefaultBlueprint(self):
         pulse.Blueprint.createDefaultBlueprint()
-        self.model.reloadBlueprint()
+        # TODO: shouldn't be necessary!
+        self.blueprintModel = BlueprintUIModel.getDefaultModel()
     
     def deleteBlueprint(self):
         pulse.Blueprint.deleteDefaultNode()

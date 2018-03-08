@@ -7,8 +7,8 @@ import pymetanode as meta
 import pulse
 import pulse.names
 from .core import PulseWindow
+from .core import BlueprintUIModel, BuildItemTreeModel, BuildItemSelectionModel
 from . import utils as viewutils
-from .actiontree import ActionTreeItemModel, ActionTreeSelectionModel
 from .actionattrform import ActionAttrForm, BatchAttrForm
 
 
@@ -369,8 +369,9 @@ class ActionEditorWidget(QtWidgets.QWidget):
 
         self.setupUi(self)
 
-        self.model = ActionTreeItemModel.getSharedModel()
-        self.selectionModel = ActionTreeSelectionModel.getSharedModel()
+        self.blueprintModel = BlueprintUIModel.getDefaultModel()
+        self.model = self.blueprintModel.buildItemTreeModel
+        self.selectionModel = self.blueprintModel.buildItemSelectionModel
         self.selectionModel.selectionChanged.connect(self.selectionChanged)
 
         self.setupItemsUiForSelection()
@@ -432,7 +433,7 @@ class ActionEditorWidget(QtWidgets.QWidget):
         self.setupItemsUi(self.selectionModel.selectedIndexes(), self.scrollWidget)
 
     def buildItemChanged(self, itemWidget):
-        self.model.blueprint.saveToDefaultNode()
+        self.blueprintModel.save()
 
     def convertActionToBatch(self, itemModelIndex):
         # create new BatchBuildAction
@@ -443,7 +444,6 @@ class ActionEditorWidget(QtWidgets.QWidget):
         row = itemModelIndex.row()
         self.model.removeRows(row, 1, parentIndex)
         self.model.insertBuildItems(row, [newAction], parentIndex)
-        self.model.blueprint.saveToDefaultNode()
         # select new item
         self.selectionModel.select(self.model.index(row, 0, parentIndex), QtCore.QItemSelectionModel.Select)
 
@@ -456,7 +456,6 @@ class ActionEditorWidget(QtWidgets.QWidget):
         row = itemModelIndex.row()
         self.model.removeRows(row, 1, parentIndex)
         self.model.insertBuildItems(row, [newAction], parentIndex)
-        self.model.blueprint.saveToDefaultNode()
         # select new item
         self.selectionModel.select(self.model.index(row, 0, parentIndex), QtCore.QItemSelectionModel.Select)
 

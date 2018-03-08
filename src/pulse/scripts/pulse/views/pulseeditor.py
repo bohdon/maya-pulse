@@ -5,7 +5,7 @@ import pulse
 from .core import PulseWindow
 from .blueprinteditor import BlueprintEditorWidget
 from .buildtoolbar import BuildToolbarWidget
-from .actiontree import ActionTreeItemModel, ActionTreeWidget, ActionButtonsWidget
+from .actiontree import ActionTreeWidget, ActionButtonsWidget
 from .actioneditor import ActionEditorWidget, ActionEditorWindow
 from .designview import DesignViewWidget
 
@@ -77,13 +77,6 @@ class PulseEditorWindow(PulseWindow):
 
 
         layout.addWidget(tabWidget)
-
-        # debug controls
-        refreshBtn = QtWidgets.QPushButton(parent)
-        refreshBtn.setText('Refresh')
-        model = ActionTreeItemModel.getSharedModel()
-        refreshBtn.clicked.connect(model.reloadBlueprint)
-        layout.addWidget(refreshBtn)
     
     def showActionEditor(self):
         ActionEditorWindow.createAndShow()

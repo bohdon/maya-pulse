@@ -878,11 +878,6 @@ class Blueprint(object):
         self.version = BLUEPRINT_VERSION
         # the root BuildItem of this blueprint (a group with no name)
         self.rootItem = BuildGroup(displayName='')
-    
-    @property
-    def rootGroup(self):
-        print('rootGroup is deprecated, use rootItem')
-        return self.rootItem
 
     def serialize(self):
         data = {}

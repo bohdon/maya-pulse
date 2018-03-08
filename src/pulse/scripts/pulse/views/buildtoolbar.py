@@ -9,7 +9,7 @@ import pymetanode as meta
 import pulse
 import pulse.events
 from .core import PulseWindow
-from .actiontree import ActionTreeItemModel
+from .core import BlueprintUIModel, BuildItemTreeModel
 
 
 __all__ = [
@@ -34,7 +34,8 @@ class BuildToolbarWidget(QtWidgets.QWidget, pulse.events.BlueprintEventsMixin, p
         self.rigExists = len(pulse.getAllRigs()) > 0
         self.isStateDirty = False
 
-        self.model = ActionTreeItemModel.getSharedModel()
+        self.blueprintModel = BlueprintUIModel.getDefaultModel()
+        self.model = self.blueprintModel.buildItemTreeModel
         self.model.modelReset.connect(self.onBlueprintLoaded)
 
         self.setupUi(self)
@@ -122,17 +123,17 @@ class BuildToolbarWidget(QtWidgets.QWidget, pulse.events.BlueprintEventsMixin, p
 
     def createBlueprint(self):
         pulse.Blueprint.createDefaultBlueprint()
-        self.model.reloadBlueprint()
+        # self.model.reloadBlueprint()
 
     def runCheck(self):
         pass
 
     def runBuild(self):
-        self.model.reloadBlueprint()
+        # self.model.reloadBlueprint()
         blueprintFile = str(pm.sceneName())
         builder = pulse.BlueprintBuilder(self.blueprint, blueprintFile=blueprintFile, debug=True)
         builder.start()
-        self.model.reloadBlueprint()
+        # self.model.reloadBlueprint()
 
 
 class BuildToolbarWindow(PulseWindow):
