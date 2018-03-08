@@ -345,7 +345,7 @@ class BlueprintUIModel(QtCore.QObject):
         
         # the tree item model and selection model for BuildItems
         self.buildItemTreeModel = BuildItemTreeModel(self.blueprint)
-        self.buildItemSelectionModel = BuildItemSelectionModel()
+        self.buildItemSelectionModel = BuildItemSelectionModel(self.buildItemTreeModel)
 
         lifeEvents = BlueprintLifecycleEvents.getShared()
         lifeEvents.onBlueprintCreated.appendUnique(self._onBlueprintCreated)
@@ -667,8 +667,8 @@ class BuildItemSelectionModel(QtCore.QItemSelectionModel):
         indexes = self.selectedIndexes()
         grps = []
         for index in indexes:
-            item = index.internalPointer()
-            if item.isGroup():
+            buildItem = index.internalPointer()
+            if isinstance(buildItem, pulse.BuildGroup):
                 grps.append(index)
             else:
                 grps.append(index.parent())

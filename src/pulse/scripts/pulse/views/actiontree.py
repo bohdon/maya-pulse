@@ -171,7 +171,7 @@ class ActionButtonsWidget(QtWidgets.QWidget):
         self.clicked.emit(typeName)
 
     def createBuildGroup(self):
-        if not self.model.blueprint:
+        if self.blueprintModel.isReadOnly():
             return
 
         grpIndexes = self.selectionModel.getSelectedGroups()
@@ -182,7 +182,7 @@ class ActionButtonsWidget(QtWidgets.QWidget):
         self.blueprintModel.save()
 
     def createBuildAction(self, typeName):
-        if not self.model.blueprint:
+        if self.blueprintModel.isReadOnly():
             return
 
         grpIndexes = self.selectionModel.getSelectedGroups()
