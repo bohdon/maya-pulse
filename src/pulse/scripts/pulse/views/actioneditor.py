@@ -420,7 +420,7 @@ class ActionEditorWidget(QtWidgets.QWidget):
         self.clearItemsUi()
 
         for index in itemIndexes:
-            buildItem = index.internalPointer().buildItem
+            buildItem = index.internalPointer()
             itemWidget = BuildItemForm.createItemWidget(buildItem, parent=parent)
             itemWidget.buildItemChanged.connect(partial(self.buildItemChanged, itemWidget))
             if isinstance(itemWidget, ActionForm):
@@ -437,7 +437,7 @@ class ActionEditorWidget(QtWidgets.QWidget):
 
     def convertActionToBatch(self, itemModelIndex):
         # create new BatchBuildAction
-        oldAction = itemModelIndex.internalPointer().buildItem
+        oldAction = itemModelIndex.internalPointer()
         newAction = pulse.BatchBuildAction.fromAction(oldAction)
         # replace the item in the model
         parentIndex = itemModelIndex.parent()
@@ -449,7 +449,7 @@ class ActionEditorWidget(QtWidgets.QWidget):
 
     def convertBatchToAction(self, itemModelIndex):
         # create new BuildAction
-        oldAction = itemModelIndex.internalPointer().buildItem
+        oldAction = itemModelIndex.internalPointer()
         newAction = pulse.BuildAction.fromBatchAction(oldAction)
         # replace the item in the model
         parentIndex = itemModelIndex.parent()
