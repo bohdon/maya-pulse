@@ -1,4 +1,5 @@
 
+import logging
 from functools import partial
 from pulse.vendor.Qt import QtCore, QtWidgets, QtGui
 import maya.cmds as cmds
@@ -7,7 +8,7 @@ from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
 import pymetanode as meta
 
 import pulse
-from pulse.events import BlueprintLifecycleEvents
+from pulse.events import BlueprintLifecycleEvents, BlueprintChangeEvents
 
 __all__ = [
     'BlueprintUIModel',
@@ -17,8 +18,11 @@ __all__ = [
     'CollapsibleFrame',
     'PulseWindow',
     'TreeModelBuildItem',
-    'UIEventMixin',
 ]
+
+LOG = logging.getLogger('pulse.views.core')
+LOG.level = logging.INFO
+
 
 def buttonCommand(func, *args, **kwargs):
     """
@@ -58,172 +62,6 @@ class CollapsibleFrame(QtWidgets.QFrame):
     
     def isCollapsed(self):
         return self._isCollapsed
-
-
-class UIEventMixin(object):
-    """
-    A mixin for listening to shared events related
-    to pulse scene changes, such as the creation or
-    deletion of a Blueprint.
-    """
-
-    # the list of currently active ui objects listening for events
-    _LISTENERS = []
-    # is the mixin globally registered with maya callbacks?
-    _IS_REGISTERED = False
-    # the MCallbackIDs of registered messages
-    _MSGIDS = []
-    # flags for preventing redundant deferred event calls
-    _NODES_DIRTY = False
-    _BLUEPRINT_DIRTY = False
-    # MCallbackID for the blueprint attribute change message
-    _MSGID_BLUEPRINTCHANGE = None
-    
-    @staticmethod
-    def _registerUIEventCallbacks():
-        """
-        Add MMessage callbacks for necessary Maya events
-        """
-        if not UIEventMixin._IS_REGISTERED:
-            UIEventMixin._IS_REGISTERED = True
-            msgIds = []
-            msgIds.append(om.MDGMessage.addNodeAddedCallback(UIEventMixin._onNodesChanged, 'network'))
-            msgIds.append(om.MDGMessage.addNodeRemovedCallback(UIEventMixin._onNodesChanged, 'network'))
-            msgIds.append(om.MDGMessage.addNodeAddedCallback(UIEventMixin._onNodesChanged, 'transform'))
-            msgIds.append(om.MDGMessage.addNodeRemovedCallback(UIEventMixin._onNodesChanged, 'transform'))
-            UIEventMixin._MSGIDS = msgIds
-    
-    @staticmethod
-    def _unregisterUIEventCallbacks():
-        """
-        Remove all registered MMessage callbacks
-        """
-        if UIEventMixin._IS_REGISTERED:
-            UIEventMixin._IS_REGISTERED = False
-            if UIEventMixin._MSGIDS:
-                for id in UIEventMixin._MSGIDS:
-                    om.MMessage.removeCallback(id)
-                UIEventMixin._MSGIDS = []
-
-    @staticmethod
-    def _nodeAdded(node, *args):
-        UIEventMixin._onNodesChanged()
-
-    @staticmethod
-    def _onNodesChanged(node, *args):
-        # queue deferred change event only once per scene changes
-        if not UIEventMixin._NODES_DIRTY:
-            UIEventMixin._NODES_DIRTY = True
-            cmds.evalDeferred(UIEventMixin._onNodesChangedDeferred)
-    
-    @staticmethod
-    def _onNodesChangedDeferred():
-        """
-        Called when relevant nodes are added or removed.
-        Used to check for changes in blueprints or rigs.
-        """
-        UIEventMixin._NODES_DIRTY = False
-        blueprintExists = pulse.Blueprint.doesDefaultNodeExist()
-        if blueprintExists:
-            UIEventMixin._registerBlueprintChangeCallbacks()
-        else:
-            UIEventMixin._unregisterBlueprintChangeCallbacks()
-        rigExists = len(pulse.getAllRigs()) > 0
-        for listener in UIEventMixin._LISTENERS:
-            listener.setBlueprintExists(blueprintExists)
-            listener.setRigExists(rigExists)
-    
-    @staticmethod
-    def _registerBlueprintChangeCallbacks():
-        blueprintNode = pulse.Blueprint.getDefaultNode()
-        if (UIEventMixin._MSGID_BLUEPRINTCHANGE is None) and blueprintNode:
-            msgId = om.MNodeMessage.addAttributeChangedCallback(blueprintNode.__apimobject__(), UIEventMixin._onBlueprintAttrChanged)
-            UIEventMixin._MSGID_BLUEPRINTCHANGE = msgId
-    
-    @staticmethod
-    def _unregisterBlueprintChangeCallbacks():
-        if not (UIEventMixin._MSGID_BLUEPRINTCHANGE is None):
-            om.MMessage.removeCallback(UIEventMixin._MSGID_BLUEPRINTCHANGE)
-            UIEventMixin._MSGID_BLUEPRINTCHANGE = None
-    
-    @staticmethod
-    def _onBlueprintAttrChanged(changeType, srcPlug, dstPlug, clientData):
-        if srcPlug.partialName() == 'pyMetaData' and not UIEventMixin._BLUEPRINT_DIRTY:
-            UIEventMixin._BLUEPRINT_DIRTY = True
-            cmds.evalDeferred(UIEventMixin._onBlueprintChangedDeferred)
-    
-    @staticmethod
-    def _onBlueprintChangedDeferred():
-        UIEventMixin._BLUEPRINT_DIRTY = False
-        for listener in UIEventMixin._LISTENERS:
-            listener.onBlueprintChanged()
-    
-    def initUIEventMixin(self):
-        self.blueprintExists = pulse.Blueprint.doesDefaultNodeExist()
-        self.rigExists = len(pulse.getAllRigs()) > 0
-    
-    def enableUIMixinEvents(self):
-        """
-        Enable events on this object
-        """
-        if self not in UIEventMixin._LISTENERS:
-            UIEventMixin._LISTENERS.append(self)
-        UIEventMixin._registerUIEventCallbacks()
-        UIEventMixin._registerBlueprintChangeCallbacks()
-    
-    def disableUIMixinEvents(self):
-        """
-        Disable events on this object
-        """
-        if self in UIEventMixin._LISTENERS:
-            UIEventMixin._LISTENERS.remove(self)
-        if not UIEventMixin._LISTENERS:
-            UIEventMixin._unregisterUIEventCallbacks()
-            UIEventMixin._unregisterBlueprintChangeCallbacks()
-    
-    def setBlueprintExists(self, newExists):
-        if newExists != self.blueprintExists:
-            self.blueprintExists = newExists
-            if self.blueprintExists:
-                self.onBlueprintCreated()
-            else:
-                self.onBlueprintDeleted()
-            self.onPulseNodesChanged()
-    
-    def setRigExists(self, newExists):
-        if newExists != self.rigExists:
-            self.rigExists = newExists
-            if self.rigExists:
-                self.onRigCreated()
-            else:
-                self.onRigDeleted()
-            self.onPulseNodesChanged()
-    
-    def onPulseNodesChanged(self):
-        """
-        Called whenever a blueprint or rig is created or deleted.
-        """
-        pass
-    
-    def onBlueprintCreated(self):
-        pass
-    
-    def onBlueprintChanged(self):
-        """
-        Called whenever the serialized Blueprint has changed.
-        This may not be as granular as expected depending on how
-        the attr form reports and applies Blueprint edits.
-        """
-        pass
-    
-    def onBlueprintDeleted(self):
-        pass
-    
-    def onRigCreated(self):
-        pass
-    
-    def onRigDeleted(self):
-        pass
 
 
 class PulseWindow(MayaQWidgetDockableMixin, QtWidgets.QMainWindow):
@@ -297,10 +135,9 @@ class BlueprintUIModel(QtCore.QObject):
     scene. In this case the model won't be functional, but will
     automatically update if the matching Blueprint node is created.
 
-    The model uses subscription notify calls to properly manage
-    and cleanup Maya callbacks, so any QWidgets should call
-    notifySubscriberAdded / notifySubscriberRemoved on the model
-    during show and hide events (or similar).
+    The model maintains a list of subscribers used to properly manage
+    and cleanup Maya callbacks, so any QWidgets should call addSubscriber
+    and removeSubscriber on the model during show and hide events (or similar).
     """
 
     # shared instances, mapped by blueprint node name
@@ -329,6 +166,7 @@ class BlueprintUIModel(QtCore.QObject):
 
     blueprintCreated = QtCore.Signal()
     blueprintDeleted = QtCore.Signal()
+    blueprintNodeChanged = QtCore.Signal()
     rigNameChanged = QtCore.Signal(str)
 
     def __init__(self, blueprintNodeName, parent=None):
@@ -347,6 +185,8 @@ class BlueprintUIModel(QtCore.QObject):
         self.buildItemTreeModel = BuildItemTreeModel(self.blueprint)
         self.buildItemSelectionModel = BuildItemSelectionModel(self.buildItemTreeModel)
 
+        self._modelSubscribers = []
+
         lifeEvents = BlueprintLifecycleEvents.getShared()
         lifeEvents.onBlueprintCreated.appendUnique(self._onBlueprintCreated)
         lifeEvents.onBlueprintDeleted.appendUnique(self._onBlueprintDeleted)
@@ -356,16 +196,34 @@ class BlueprintUIModel(QtCore.QObject):
         lifeEvents = BlueprintLifecycleEvents.getShared()
         lifeEvents.onBlueprintCreated.removeAll(self._onBlueprintCreated)
         lifeEvents.onBlueprintDeleted.removeAll(self._onBlueprintDeleted)
+
+    def _subscribeToBlueprintNodeChanges(self):
+        changeEvents = BlueprintChangeEvents.getShared(self.blueprintNodeName)
+        if changeEvents:
+            changeEvents.onBlueprintNodeChanged.appendUnique(self._onBlueprintNodeChanged)
+            changeEvents.addSubscriber(self)
+            LOG.debug('subscribed to blueprint node changes')
     
     def _setBlueprint(self, newBlueprint):
         self.blueprint = newBlueprint
         self.buildItemTreeModel.setBlueprint(self.blueprint)
         self.rigNameChanged.emit(self.getRigName())
-    
-    def notifySubscriberAdded(self, subscriber):
-        # pass through to the events dispatchers
-        lifeEvents = BlueprintLifecycleEvents.getShared()
-        lifeEvents.notifySubscriberAdded(subscriber)
+        
+    def addSubscriber(self, subscriber):
+        """
+        Add a subscriber to this model. Will enable Maya callbacks
+        if this is the first subscriber.
+        """
+        if subscriber not in self._modelSubscribers:
+            self._modelSubscribers.append(subscriber)
+        # if any subscribers, subscribe to maya callbacks
+        if self._modelSubscribers:
+            lifeEvents = BlueprintLifecycleEvents.getShared()
+            lifeEvents.addSubscriber(self)
+            changeEvents = BlueprintChangeEvents.getShared(self.blueprintNodeName)
+            if changeEvents:
+                changeEvents.addSubscriber(self)
+
         # we may have missed events since last subscribed,
         # so make sure blueprint exists == node exists
         if cmds.objExists(self.blueprintNodeName):
@@ -374,27 +232,44 @@ class BlueprintUIModel(QtCore.QObject):
         else:
             if self.blueprint is not None:
                 self._setBlueprint(None)
-
-    def notifySubscriberRemoved(self, subscriber):
-        # pass through to the events dispatchers
-        lifeEvents = BlueprintLifecycleEvents.getShared()
-        lifeEvents.notifySubscriberRemoved(subscriber)
+    
+    def removeSubscriber(self, subscriber):
+        """
+        Remove a subscriber from this model. Will disable
+        Maya callbacks if no subscribers remain.
+        """
+        if subscriber in self._modelSubscribers:
+            self._modelSubscribers.remove(subscriber)
+        # if no subscribers, unsubscribe from maya callbacks
+        if not self._modelSubscribers:
+            lifeEvents = BlueprintLifecycleEvents.getShared()
+            lifeEvents.removeSubscriber(self)
+            changeEvents = BlueprintChangeEvents.getShared(self.blueprintNodeName)
+            if changeEvents:
+                changeEvents.removeSubscriber(self)
     
     def _onBlueprintCreated(self, node):
         if node.nodeName() == self.blueprintNodeName:
             self._setBlueprint(pulse.Blueprint.fromNode(self.blueprintNodeName))
+            self._subscribeToBlueprintNodeChanges()
             self.blueprintCreated.emit()
     
     def _onBlueprintDeleted(self, node):
         if node.nodeName() == self.blueprintNodeName:
             self._setBlueprint(None)
+            # doing some cleanup since we can here
+            BlueprintChangeEvents.cleanupSharedInstances()
             self.blueprintDeleted.emit()
+    
+    def _onBlueprintNodeChanged(self, node):
+        """
+        The blueprint node has changed, reload its data
+        """
+        self.load()
+        self.blueprintNodeChanged.emit()
     
     def isReadOnly(self):
         return self.blueprint is None
-    
-    def exists(self):
-        return self.blueprint is not None
     
     def getBlueprint(self):
         """
@@ -417,14 +292,18 @@ class BlueprintUIModel(QtCore.QObject):
         """
         Save the Blueprint data to the blueprint node
         """
+        LOG.debug('saving...')
         self.blueprint.saveToNode(self.blueprintNodeName)
+        LOG.debug('save finished.')
         # TODO: fire a signal
     
     def load(self):
         """
         Load the Blueprint data from the blueprint node
         """
+        LOG.debug('loading...')
         self.blueprint.loadFromNode(self.blueprintNodeName)
+        LOG.debug('load finished.')
         self.buildItemTreeModel.modelReset.emit()
 
 

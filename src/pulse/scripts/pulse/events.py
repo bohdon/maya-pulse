@@ -92,20 +92,18 @@ class MayaCallbackEvents(object):
             self._callbackIDs = []
             LOG.debug('{0}._unregisterMayaCallbacks'.format(self.__class__.__name__))
     
-    def notifySubscriberAdded(self, subscriber):
+    def addSubscriber(self, subscriber):
         """
-        Notify this event dispatcher that an object has subscribed
-        to one or more events.
+        Add a subscriber to this event dispatcher
         """
         if subscriber not in self._subscribers:
             self._subscribers.append(subscriber)
         if self._subscribers:
             self._registerMayaCallbacks()
     
-    def notifySubscriberRemoved(self, subscriber):
+    def removeSubscriber(self, subscriber):
         """
-        Notify this event dispatcher that an object has
-        unsubscribed to all events.
+        Remove a subscriber from this event dispatcher
         """
         if subscriber in self._subscribers:
             self._subscribers.remove(subscriber)
@@ -172,7 +170,7 @@ class BlueprintChangeEvents(MayaCallbackEvents):
     scene. Fires events whenever the Blueprint node is modified.
 
     Events:
-        onBlueprintChanged(node):
+        onBlueprintNodeChanged(node):
             Called when the blueprint changes, passes the Blueprint
             node that was modified.
     """
@@ -194,18 +192,39 @@ class BlueprintChangeEvents(MayaCallbackEvents):
             return
         if blueprintNodeName not in cls.INSTANCES:
             cls.INSTANCES[blueprintNodeName] = cls(blueprintNodeName)
+        else:
+            cls.INSTANCES[blueprintNodeName].refreshMayaCallbacks()
         return cls.INSTANCES[blueprintNodeName]
 
     @classmethod
     def cleanupSharedInstances(cls):
-        for nodeName in cls.INSTANCES.keys():
-            if not cmds.objExists(nodeName):
+        for nodeName, inst in cls.INSTANCES.iteritems():
+            if not inst.nodeExists():
                 del cls.INSTANCES[nodeName]
 
     def __init__(self, blueprintNodeName):
         super(BlueprintChangeEvents, self).__init__()
         self.blueprintNodeName = blueprintNodeName
-        self.onBlueprintChanged = Event()
+        self.lastUUID = None
+        self.onBlueprintNodeChanged = Event()
+    
+    def nodeExists(self):
+        """
+        Return True if the Blueprint node exists
+        """
+        return cmds.objExists(self.blueprintNodeName)
+    
+    def refreshMayaCallbacks(self):
+        """
+        Check if the node that was originally used in the callback has changed,
+        and if so, recreate the callback using the new node.
+        """
+        if self._areMayaCallbacksRegistered:
+            uuid = meta.getUUID(self.blueprintNodeName)
+            if self.lastUUID != uuid:
+                LOG.debug('uuid changed, refreshing callbacks')
+                self._unregisterMayaCallbacks()
+                self._registerMayaCallbacks()
 
     # override
     def _addMayaCallbacks(self):
@@ -213,11 +232,13 @@ class BlueprintChangeEvents(MayaCallbackEvents):
         if not mobject:
             return []
         changeId = api.MNodeMessage.addAttributeChangedCallback(mobject, self._onBlueprintAttrChanged)
+        # record node uuid at the time of adding the callback
+        self.lastUUID = meta.getUUID(self.blueprintNodeName)
         return (changeId,)
 
     def _onBlueprintAttrChanged(self, changeType, srcPlug, dstPlug, clientData):
         if srcPlug.partialName() == 'pyMetaData':
-            self.onBlueprintChanged(pm.PyNode(srcPlug.node()))
+            self.onBlueprintNodeChanged(pm.PyNode(srcPlug.node()))
 
 
 
@@ -235,7 +256,7 @@ class BlueprintEventsMixin(object):
         lifeEvents = BlueprintLifecycleEvents.getShared()
         lifeEvents.onBlueprintCreated.appendUnique(self._onBlueprintCreatedInternal)
         lifeEvents.onBlueprintDeleted.appendUnique(self.onBlueprintDeleted)
-        lifeEvents.notifySubscriberAdded(self)
+        lifeEvents.addSubscriber(self)
 
     def disableBlueprintEvents(self):
         """
@@ -244,7 +265,7 @@ class BlueprintEventsMixin(object):
         lifeEvents = BlueprintLifecycleEvents.getShared()
         lifeEvents.onBlueprintCreated.removeAll(self._onBlueprintCreatedInternal)
         lifeEvents.onBlueprintDeleted.removeAll(self.onBlueprintDeleted)
-        lifeEvents.notifySubscriberRemoved(self)
+        lifeEvents.removeSubscriber(self)
 
     def enableBlueprintChangeEvents(self, blueprintNodeName):
         """
@@ -280,8 +301,8 @@ class BlueprintEventsMixin(object):
         if self._getSubscribedBlueprintName() is not None:
             changeEvents = BlueprintChangeEvents.getShared(self.subscribeToBlueprint)
             if changeEvents:
-                changeEvents.onBlueprintChanged.appendUnique(self.onBlueprintChanged)
-                changeEvents.notifySubscriberAdded(self)
+                changeEvents.onBlueprintNodeChanged.appendUnique(self.onBlueprintNodeChanged)
+                changeEvents.addSubscriber(self)
                 LOG.debug("Subscribed to blueprint change events for: " + self.subscribeToBlueprint)
 
 
@@ -289,8 +310,8 @@ class BlueprintEventsMixin(object):
         if self._getSubscribedBlueprintName() is not None:
             changeEvents = BlueprintChangeEvents.getShared(self.subscribeToBlueprint)
             if changeEvents:
-                changeEvents.onBlueprintChanged.removeAll(self.onBlueprintChanged)
-                changeEvents.notifySubscriberRemoved(self)
+                changeEvents.onBlueprintNodeChanged.removeAll(self.onBlueprintNodeChanged)
+                changeEvents.removeSubscriber(self)
                 LOG.debug("Unsubscribed from blueprint change events for: " + self.subscribeToBlueprint)
     
     def _getSubscribedBlueprintName(self):
@@ -306,7 +327,7 @@ class BlueprintEventsMixin(object):
     def onBlueprintCreated(self, node):
         pass
 
-    def onBlueprintChanged(self, node):
+    def onBlueprintNodeChanged(self, node):
         pass
 
     def onBlueprintDeleted(self, node):
@@ -377,7 +398,7 @@ class RigEventsMixin(object):
         lifeEvents = RigLifecycleEvents.getShared()
         lifeEvents.onRigCreated.appendUnique(self.onRigCreated)
         lifeEvents.onRigDeleted.appendUnique(self.onRigDeleted)
-        lifeEvents.notifySubscriberAdded(self)
+        lifeEvents.addSubscriber(self)
 
     def disableRigEvents(self):
         """
@@ -386,7 +407,7 @@ class RigEventsMixin(object):
         lifeEvents = RigLifecycleEvents.getShared()
         lifeEvents.onRigCreated.removeAll(self.onRigCreated)
         lifeEvents.onRigDeleted.removeAll(self.onRigDeleted)
-        lifeEvents.notifySubscriberRemoved(self)
+        lifeEvents.removeSubscriber(self)
 
     def onRigCreated(self, node):
         pass

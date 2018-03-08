@@ -29,6 +29,14 @@ class BlueprintEditorWidget(QtWidgets.QWidget):
         self.blueprintModel.blueprintDeleted.connect(self.refreshState)
         self.blueprintModel.rigNameChanged.connect(self.onRigNameChanged)
     
+    def showEvent(self, event):
+        super(BlueprintEditorWidget, self).showEvent(event)
+        self.blueprintModel.addSubscriber(self)
+
+    def hideEvent(self, event):
+        super(BlueprintEditorWidget, self).hideEvent(event)
+        self.blueprintModel.removeSubscriber(self)
+    
     def setupUi(self, parent):
         layout = QtWidgets.QVBoxLayout(self)
 

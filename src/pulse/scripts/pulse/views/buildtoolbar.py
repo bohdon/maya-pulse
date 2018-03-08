@@ -7,7 +7,7 @@ import pymel.core as pm
 import pymetanode as meta
 
 import pulse
-import pulse.events
+from pulse.events import RigEventsMixin
 from .core import PulseWindow
 from .core import BlueprintUIModel, BuildItemTreeModel
 
@@ -21,16 +21,11 @@ LOG = logging.getLogger('pulse.views.buildtoolbar')
 LOG.level = logging.INFO
 
 
-class BuildToolbarWidget(QtWidgets.QWidget, pulse.events.BlueprintEventsMixin, pulse.events.RigEventsMixin):
+class BuildToolbarWidget(QtWidgets.QWidget, RigEventsMixin):
 
     def __init__(self, parent=None):
         super(BuildToolbarWidget, self).__init__(parent=parent)
 
-        # TODO: simplify overall ui functionality for visible-based
-        #   state changes and events that can be reused for other widgets
-
-        self.enableBlueprintChangeEvents(pulse.BLUEPRINT_NODENAME)
-        self.blueprintExists = pulse.Blueprint.doesDefaultNodeExist()
         self.rigExists = len(pulse.getAllRigs()) > 0
         self.isStateDirty = False
 
@@ -39,17 +34,18 @@ class BuildToolbarWidget(QtWidgets.QWidget, pulse.events.BlueprintEventsMixin, p
         self.setupUi(self)
 
         # connect signals
+        self.blueprintModel.blueprintCreated.connect(self.onStateDirty)
+        self.blueprintModel.blueprintDeleted.connect(self.onStateDirty)
         self.blueprintModel.rigNameChanged.connect(self.rigNameChanged)
-
 
     def showEvent(self, event):
         super(BuildToolbarWidget, self).showEvent(event)
-        self.enableBlueprintEvents()
+        self.blueprintModel.addSubscriber(self)
         self.enableRigEvents()
 
     def hideEvent(self, event):
         super(BuildToolbarWidget, self).hideEvent(event)
-        self.disableBlueprintEvents()
+        self.blueprintModel.removeSubscriber(self)
         self.disableRigEvents()
 
     def setupUi(self, parent):
@@ -61,7 +57,7 @@ class BuildToolbarWidget(QtWidgets.QWidget, pulse.events.BlueprintEventsMixin, p
 
         self.createBtn = QtWidgets.QPushButton(parent)
         self.createBtn.setText("Create Blueprint")
-        self.createBtn.clicked.connect(self.createBlueprint)
+        self.createBtn.clicked.connect(pulse.Blueprint.createDefaultBlueprint)
         layout.addWidget(self.createBtn)
 
         self.checkBtn = QtWidgets.QPushButton(parent)
@@ -81,33 +77,25 @@ class BuildToolbarWidget(QtWidgets.QWidget, pulse.events.BlueprintEventsMixin, p
         self.openBPBtn.clicked.connect(pulse.openFirstRigBlueprint)
         layout.addWidget(self.openBPBtn)
 
-        self.onPulseNodesChanged()
+        self.cleanState()
     
     def rigNameChanged(self, name):
         self.rigNameLabel.setText(self.blueprintModel.getRigName())
 
-    def onPulseNodesChanged(self):
+    def cleanState(self):
+        bpExists = self.blueprintModel.blueprint is not None
         self.isStateDirty = False
         self.setEnabled(True)
-        self.createBtn.setVisible(not (self.blueprintExists or self.rigExists))
-        self.checkBtn.setVisible(self.blueprintExists and not self.rigExists)
-        self.buildBtn.setVisible(self.blueprintExists and not self.rigExists)
+        self.createBtn.setVisible(not (bpExists or self.rigExists))
+        self.checkBtn.setVisible(bpExists and not self.rigExists)
+        self.buildBtn.setVisible(bpExists and not self.rigExists)
         self.openBPBtn.setVisible(self.rigExists)
     
     def onStateDirty(self):
         if not self.isStateDirty:
             self.isStateDirty = True
             self.setEnabled(False)
-            cmds.evalDeferred(self.onPulseNodesChanged)
-
-    def onBlueprintCreated(self, node):
-        self.blueprintExists = True
-        self.onStateDirty()
-
-    def onBlueprintDeleted(self, node):
-        if node.nodeName() == pulse.BLUEPRINT_NODENAME:
-            self.blueprintExists = False
-            self.onStateDirty()
+            cmds.evalDeferred(self.cleanState)
 
     def onRigCreated(self, node):
         self.rigExists = len(pulse.getAllRigs()) > 0
@@ -118,10 +106,6 @@ class BuildToolbarWidget(QtWidgets.QWidget, pulse.events.BlueprintEventsMixin, p
         # more than one left for any rigs to exist afterwards
         self.rigExists = len(pulse.getAllRigs()) > 1
         self.onStateDirty()
-
-    def createBlueprint(self):
-        pulse.Blueprint.createDefaultBlueprint()
-        # self.model.reloadBlueprint()
 
     def runCheck(self):
         if self.blueprintModel.blueprint is not None:

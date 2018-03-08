@@ -4,7 +4,6 @@ from pulse.vendor.Qt import QtCore, QtWidgets, QtGui
 import pulse
 from .core import PulseWindow
 from .core import BlueprintUIModel, BuildItemTreeModel, BuildItemSelectionModel
-from .core import UIEventMixin
 
 
 __all__ = [
@@ -15,12 +14,10 @@ __all__ = [
 
 
 
-class ActionTreeWidget(QtWidgets.QWidget, UIEventMixin):
+class ActionTreeWidget(QtWidgets.QWidget):
     
     def __init__(self, parent=None):
         super(ActionTreeWidget, self).__init__(parent=parent)
-
-        self.initUIEventMixin()
 
         # get shared models
         self.blueprintModel = BlueprintUIModel.getDefaultModel()
@@ -28,24 +25,14 @@ class ActionTreeWidget(QtWidgets.QWidget, UIEventMixin):
         self.selectionModel = self.blueprintModel.buildItemSelectionModel
         # build the ui
         self.setupUi(self)
-        # connect signals
     
     def showEvent(self, event):
         super(ActionTreeWidget, self).showEvent(event)
-        self.enableUIMixinEvents()
-    
+        self.blueprintModel.addSubscriber(self)
+
     def hideEvent(self, event):
         super(ActionTreeWidget, self).hideEvent(event)
-        self.disableUIMixinEvents()
-    
-    def onBlueprintCreated(self):
-        pass
-    
-    def onBlueprintChanged(self):
-        pass
-    
-    def onBlueprintDeleted(self):
-        pass
+        self.blueprintModel.removeSubscriber(self)
 
     def eventFilter(self, widget, event):
         if widget is self.treeView:
