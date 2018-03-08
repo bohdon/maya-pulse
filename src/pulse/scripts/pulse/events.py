@@ -154,13 +154,17 @@ class BlueprintLifecycleEvents(MayaCallbackEvents):
         cmds.evalDeferred(partial(self._onNodeAddedDeferred, pm.PyNode(node)), evaluateNext=True)
 
     def _onNodeAddedDeferred(self, node):
-        # node is already a PyNode here
-        if pulse.core.Blueprint.isBlueprintNode(node):
-            self.onBlueprintCreated(node)
+        # make sure node still exists
+        if node.exists():
+            if pulse.core.Blueprint.isBlueprintNode(node):
+                LOG.debug("onBlueprintCreated('{0}')".format(node))
+                self.onBlueprintCreated(node)
 
     def _onNodeRemoved(self, node, *args):
         if pulse.core.Blueprint.isBlueprintNode(node):
-            self.onBlueprintDeleted(pm.PyNode(node))
+            pnode = pm.PyNode(node)
+            LOG.debug("onBlueprintDeleted('{0}')".format(pnode))
+            self.onBlueprintDeleted(pnode)
 
 
 class BlueprintChangeEvents(MayaCallbackEvents):
@@ -197,7 +201,7 @@ class BlueprintChangeEvents(MayaCallbackEvents):
 
     @classmethod
     def cleanupSharedInstances(cls):
-        for nodeName, inst in cls.INSTANCES.iteritems():
+        for nodeName, inst in cls.INSTANCES.items():
             if not inst.nodeExists():
                 del cls.INSTANCES[nodeName]
 

@@ -301,9 +301,16 @@ class BlueprintUIModel(QtCore.QObject):
         Load the Blueprint data from the blueprint node
         """
         LOG.debug('loading...')
-        self.blueprint.loadFromNode(self.blueprintNodeName)
-        LOG.debug('load finished.')
-        self.buildItemTreeModel.modelReset.emit()
+        if cmds.objExists(self.blueprintNodeName) and pulse.Blueprint.isBlueprintNode(self.blueprintNodeName):
+            if self.blueprint is None:
+                self._setBlueprint(pulse.Blueprint.fromNode(self.blueprintNodeName))
+            else:
+                self.blueprint.loadFromNode(self.blueprintNodeName)
+                self.buildItemTreeModel.modelReset.emit()
+            LOG.debug('load finished.')
+        else:
+            self._setBlueprint(None)
+            LOG.debug('load failed.')
 
 
 

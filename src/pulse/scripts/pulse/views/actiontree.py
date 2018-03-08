@@ -23,8 +23,11 @@ class ActionTreeWidget(QtWidgets.QWidget):
         self.blueprintModel = BlueprintUIModel.getDefaultModel()
         self.model = self.blueprintModel.buildItemTreeModel
         self.selectionModel = self.blueprintModel.buildItemSelectionModel
-        # build the ui
+        
         self.setupUi(self)
+
+        # connect signals
+        self.model.modelReset.connect(self.onModelReset)
     
     def showEvent(self, event):
         super(ActionTreeWidget, self).showEvent(event)
@@ -58,6 +61,9 @@ class ActionTreeWidget(QtWidgets.QWidget):
         self.treeView.setSelectionModel(self.selectionModel)
         self.treeView.expandAll()
         layout.addWidget(self.treeView)
+    
+    def onModelReset(self):
+        self.treeView.expandAll()
 
     def deleteSelectedItems(self):
         wasChanged = False
