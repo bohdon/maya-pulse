@@ -327,6 +327,10 @@ class BlueprintUIModel(QtCore.QObject):
             del cls.INSTANCES[blueprintNodeName]
 
 
+    blueprintCreated = QtCore.Signal()
+    blueprintDeleted = QtCore.Signal()
+    rigNameChanged = QtCore.Signal(str)
+
     def __init__(self, blueprintNodeName, parent=None):
         super(BlueprintUIModel, self).__init__(parent=parent)
 
@@ -356,6 +360,7 @@ class BlueprintUIModel(QtCore.QObject):
     def _setBlueprint(self, newBlueprint):
         self.blueprint = newBlueprint
         self.buildItemTreeModel.setBlueprint(self.blueprint)
+        self.rigNameChanged.emit(self.getRigName())
     
     def notifySubscriberAdded(self, subscriber):
         # pass through to the events dispatchers
@@ -378,13 +383,18 @@ class BlueprintUIModel(QtCore.QObject):
     def _onBlueprintCreated(self, node):
         if node.nodeName() == self.blueprintNodeName:
             self._setBlueprint(pulse.Blueprint.fromNode(self.blueprintNodeName))
+            self.blueprintCreated.emit()
     
     def _onBlueprintDeleted(self, node):
         if node.nodeName() == self.blueprintNodeName:
             self._setBlueprint(None)
+            self.blueprintDeleted.emit()
     
     def isReadOnly(self):
         return self.blueprint is None
+    
+    def exists(self):
+        return self.blueprint is not None
     
     def getBlueprint(self):
         """
@@ -400,6 +410,7 @@ class BlueprintUIModel(QtCore.QObject):
     def setRigName(self, newRigName):
         if not self.isReadOnly():
             self.blueprint.rigName = newRigName
+            self.rigNameChanged.emit(self.blueprint.rigName)
             self.save()
     
     def save(self):

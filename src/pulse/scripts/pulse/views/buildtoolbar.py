@@ -35,10 +35,12 @@ class BuildToolbarWidget(QtWidgets.QWidget, pulse.events.BlueprintEventsMixin, p
         self.isStateDirty = False
 
         self.blueprintModel = BlueprintUIModel.getDefaultModel()
-        self.model = self.blueprintModel.buildItemTreeModel
-        self.model.modelReset.connect(self.onBlueprintLoaded)
 
         self.setupUi(self)
+
+        # connect signals
+        self.blueprintModel.rigNameChanged.connect(self.rigNameChanged)
+
 
     def showEvent(self, event):
         super(BuildToolbarWidget, self).showEvent(event)
@@ -54,7 +56,7 @@ class BuildToolbarWidget(QtWidgets.QWidget, pulse.events.BlueprintEventsMixin, p
         layout = QtWidgets.QHBoxLayout(parent)
 
         self.rigNameLabel = QtWidgets.QLabel(parent)
-        self.rigNameLabel.setText(self.blueprint.rigName)
+        self.rigNameLabel.setText(self.blueprintModel.getRigName())
         layout.addWidget(self.rigNameLabel)
 
         self.createBtn = QtWidgets.QPushButton(parent)
@@ -80,6 +82,9 @@ class BuildToolbarWidget(QtWidgets.QWidget, pulse.events.BlueprintEventsMixin, p
         layout.addWidget(self.openBPBtn)
 
         self.onPulseNodesChanged()
+    
+    def rigNameChanged(self, name):
+        self.rigNameLabel.setText(self.blueprintModel.getRigName())
 
     def onPulseNodesChanged(self):
         self.isStateDirty = False
@@ -114,26 +119,21 @@ class BuildToolbarWidget(QtWidgets.QWidget, pulse.events.BlueprintEventsMixin, p
         self.rigExists = len(pulse.getAllRigs()) > 1
         self.onStateDirty()
 
-    @property
-    def blueprint(self):
-        return self.model.blueprint
-
-    def onBlueprintLoaded(self):
-        self.rigNameLabel.setText(self.blueprint.rigName)
-
     def createBlueprint(self):
         pulse.Blueprint.createDefaultBlueprint()
         # self.model.reloadBlueprint()
 
     def runCheck(self):
-        pass
+        if self.blueprintModel.blueprint is not None:
+            pass
 
     def runBuild(self):
-        # self.model.reloadBlueprint()
-        blueprintFile = str(pm.sceneName())
-        builder = pulse.BlueprintBuilder(self.blueprint, blueprintFile=blueprintFile, debug=True)
-        builder.start()
-        # self.model.reloadBlueprint()
+        if self.blueprintModel.blueprint is not None:
+            # self.model.reloadBlueprint()
+            blueprintFile = str(pm.sceneName())
+            builder = pulse.BlueprintBuilder(self.blueprintModel.blueprint, blueprintFile=blueprintFile, debug=True)
+            builder.start()
+            # self.model.reloadBlueprint()
 
 
 class BuildToolbarWindow(PulseWindow):

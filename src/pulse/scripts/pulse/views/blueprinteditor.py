@@ -23,6 +23,13 @@ class BlueprintEditorWidget(QtWidgets.QWidget):
         self.blueprintModel = BlueprintUIModel.getDefaultModel()
         self.model = self.blueprintModel.buildItemTreeModel
 
+        self.setupUi(self)
+
+        self.blueprintModel.blueprintCreated.connect(self.refreshState)
+        self.blueprintModel.blueprintDeleted.connect(self.refreshState)
+        self.blueprintModel.rigNameChanged.connect(self.onRigNameChanged)
+    
+    def setupUi(self, parent):
         layout = QtWidgets.QVBoxLayout(self)
 
         self.rigNameText = QtWidgets.QLineEdit(self)
@@ -30,38 +37,34 @@ class BlueprintEditorWidget(QtWidgets.QWidget):
         self.rigNameText.textChanged.connect(self.rigNameTextChanged)
         layout.addWidget(self.rigNameText)
 
-        createBtn = QtWidgets.QPushButton(self)
-        createBtn.setText("Create Default Blueprint")
-        createBtn.clicked.connect(pulse.Blueprint.createDefaultBlueprint)
-        layout.addWidget(createBtn)
-
         debugPrintBtn = QtWidgets.QPushButton(self)
         debugPrintBtn.setText("Debug Print Serialized")
         debugPrintBtn.clicked.connect(self.debugPrintSerialized)
         layout.addWidget(debugPrintBtn)
 
-        debugOpenBpBtn = QtWidgets.QPushButton(self)
-        debugOpenBpBtn.setText("Debug Open Blueprint Scene")
-        debugOpenBpBtn.clicked.connect(pulse.openFirstRigBlueprint)
-        layout.addWidget(debugOpenBpBtn)
-
-        deleteBlueprintBtn = QtWidgets.QPushButton(self)
-        deleteBlueprintBtn.setText("Delete Blueprint")
-        deleteBlueprintBtn.setStyleSheet(UIColors.asBGColor(UIColors.RED))
-        deleteBlueprintBtn.clicked.connect(self.deleteBlueprint)
-        layout.addWidget(deleteBlueprintBtn)
+        self.deleteBtn = QtWidgets.QPushButton(self)
+        self.deleteBtn.setText("Delete Blueprint")
+        self.deleteBtn.clicked.connect(pulse.Blueprint.deleteDefaultNode)
+        layout.addWidget(self.deleteBtn)
 
         spacer = QtWidgets.QSpacerItem(0, 0, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
         layout.addItem(spacer)
 
+        self.refreshState()
+    
+    def refreshState(self):
+        self.rigNameText.setEnabled(not self.blueprintModel.isReadOnly())
+        self.deleteBtn.setEnabled(not self.blueprintModel.isReadOnly())
+        if self.deleteBtn.isEnabled():
+            self.deleteBtn.setStyleSheet(UIColors.asBGColor(UIColors.RED))
+        else:
+            self.deleteBtn.setStyleSheet('')
+    
+    def onRigNameChanged(self, name):
+        self.rigNameText.setText(name)
+
     def rigNameTextChanged(self):
         self.blueprintModel.setRigName(self.rigNameText.text())
-
-    def createDefaultBlueprint(self):
-        pulse.Blueprint.createDefaultBlueprint()
-    
-    def deleteBlueprint(self):
-        pulse.Blueprint.deleteDefaultNode()
 
     def debugPrintSerialized(self):
         import pprint
