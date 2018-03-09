@@ -280,6 +280,10 @@ class BlueprintUIModel(QtCore.QObject):
         self.blueprintNodeChanged.emit()
 
     def isReadOnly(self):
+        """
+        Return True if the Blueprint is not able to be modified.
+        This will be True if the Blueprint doesn't exist.
+        """
         return self.blueprint is None
 
     def getBlueprint(self):
@@ -313,7 +317,9 @@ class BlueprintUIModel(QtCore.QObject):
         Load the Blueprint data from the blueprint node
         """
         LOG.debug('loading...')
-        if cmds.objExists(self.blueprintNodeName) and pulse.Blueprint.isBlueprintNode(self.blueprintNodeName):
+        if (cmds.objExists(self.blueprintNodeName) and
+                pulse.Blueprint.isBlueprintNode(self.blueprintNodeName)):
+            # node exists and is a valid blueprint
             if self.blueprint is None:
                 self._setBlueprint(pulse.Blueprint.fromNode(self.blueprintNodeName))
             else:
@@ -321,6 +327,7 @@ class BlueprintUIModel(QtCore.QObject):
                 self.buildItemTreeModel.modelReset.emit()
             LOG.debug('load finished.')
         else:
+            # attempted to load from non-existent or invalid node
             self._setBlueprint(None)
             LOG.debug('load failed.')
 
@@ -417,7 +424,7 @@ class TreeModelBuildItem(object):
         if position < 0 or position + count > self.childCount():
             return False
 
-        for row in range(count):
+        for _ in range(count):
             self.buildItem.removeChildAt(position)
 
         return True
@@ -441,9 +448,13 @@ class TreeModelBuildItem(object):
         """
         if role == QtCore.Qt.DisplayRole:
             if isinstance(self.buildItem, pulse.BuildGroup):
-                return '{0} ({1})'.format(self.buildItem.getDisplayName(), self.buildItem.getChildCount())
+                return '{0} ({1})'.format(
+                    self.buildItem.getDisplayName(),
+                    self.buildItem.getChildCount())
             elif isinstance(self.buildItem, pulse.BatchBuildAction):
-                return '{0} (x{1})'.format(self.buildItem.getDisplayName(), self.buildItem.getActionCount())
+                return '{0} (x{1})'.format(
+                    self.buildItem.getDisplayName(),
+                    self.buildItem.getActionCount())
             else:
                 return self.buildItem.getDisplayName()
 
