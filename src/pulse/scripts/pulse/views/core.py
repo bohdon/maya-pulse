@@ -534,7 +534,7 @@ class BuildItemTreeModel(QtCore.QAbstractItemModel):
             return QtCore.QModelIndex()
 
         parentItem = self.item(index).parent()
-        if parentItem.buildItem == self.blueprint.rootItem:
+        if (not parentItem) or (parentItem.buildItem == self.blueprint.rootItem):
             return QtCore.QModelIndex()
 
         return self.createIndex(parentItem.row(), 0, parentItem.buildItem)
