@@ -40,6 +40,9 @@ def buttonCommand(func, *args, **kwargs):
 
 
 class CollapsibleFrame(QtWidgets.QFrame):
+    """
+    A QFrame that can be collapsed when clicked.
+    """
 
     collapsedChanged = QtCore.Signal(bool)
 
@@ -54,14 +57,25 @@ class CollapsibleFrame(QtWidgets.QFrame):
             return super(CollapsibleFrame, self).mouseReleaseEvent(QMouseEvent)
 
     def setIsCollapsed(self, newCollapsed):
+        """
+        Set the collapsed state of this frame.
+        """
         self._isCollapsed = newCollapsed
         self.collapsedChanged.emit(self._isCollapsed)
 
     def isCollapsed(self):
+        """
+        Return True if the frame is currently collapsed.
+        """
         return self._isCollapsed
 
 
 class PulseWindow(MayaQWidgetDockableMixin, QtWidgets.QMainWindow):
+    """
+    A base class for any standalone window in the Pulse UI. Integrates
+    the Maya builtin dockable mixin, and prevents multiple instances
+    of the window.
+    """
 
     OBJECT_NAME = None
 
@@ -326,33 +340,61 @@ class TreeModelBuildItem(object):
         self.buildItem = buildItem
 
     def children(self):
+        """
+        Return the children of this BuildItem if it is a group,
+        otherwise return an empty list. Children are returned
+        as TreeModelBuildItem instances.
+        """
         if self.isGroup():
             return [TreeModelBuildItem(c) for c in self.buildItem.children]
         else:
             return []
 
     def isGroup(self):
+        """
+        Return True if the BuildItem is a BuildGroup
+        """
         return isinstance(self.buildItem, pulse.BuildGroup)
 
     def columnCount(self):
+        """
+        Return how many columns of data this BuildItem
+        """
         return 1
 
     def childCount(self):
+        """
+        Return how many children this BuildItem has
+        """
         return len(self.children())
 
     def child(self, row):
+        """
+        Return the child of this BuildItem at the given row (index).
+        Returns a TreeModelBuildItem instance.
+        """
         return self.children()[row]
 
     def parent(self):
+        """
+        Return the parent of this BuildItem, as a TreeModelBuildItem
+        """
         if self.buildItem.parent:
             return TreeModelBuildItem(self.buildItem.parent)
 
     def row(self):
+        """
+        Return the row index of this item.
+        """
         if self.buildItem.parent:
             return self.buildItem.parent.children.index(self.buildItem)
         return 0
 
     def insertChildren(self, position, childBuildItems):
+        """
+        Insert an array of children into this item starting
+        at a specified position.
+        """
         if not self.isGroup():
             return False
 
@@ -365,6 +407,10 @@ class TreeModelBuildItem(object):
         return True
 
     def removeChildren(self, position, count):
+        """
+        Remove one or more children from thie item starting
+        at a specified position.
+        """
         if not self.isGroup():
             return False
 
@@ -377,6 +423,10 @@ class TreeModelBuildItem(object):
         return True
 
     def setData(self, column, value):
+        """
+        Set data for this build item. Only supports setting
+        the display name for BuildGroups.
+        """
         if not self.isGroup():
             return False
 
@@ -386,6 +436,9 @@ class TreeModelBuildItem(object):
 
 
     def data(self, column, role=QtCore.Qt.DisplayRole):
+        """
+        Return data for this item, for a specific Qt display role.
+        """
         if role == QtCore.Qt.DisplayRole:
             if isinstance(self.buildItem, pulse.BuildGroup):
                 return '{0} ({1})'.format(self.buildItem.getDisplayName(), self.buildItem.getChildCount())
@@ -414,6 +467,11 @@ class TreeModelBuildItem(object):
 
 
 class BuildItemTreeModel(QtCore.QAbstractItemModel):
+    """
+    A Qt tree model for the BuildItems of a Blueprint.
+    Operates on a Blueprint directly, and can modify the
+    Blueprint and its BuildItems.
+    """
 
     def __init__(self, blueprint=None, parent=None):
         super(BuildItemTreeModel, self).__init__(parent=parent)
@@ -423,6 +481,9 @@ class BuildItemTreeModel(QtCore.QAbstractItemModel):
             self.blueprint = pulse.Blueprint()
 
     def setBlueprint(self, newBlueprint):
+        """
+        Set a new Blueprint for this model, causing a full full model reset.
+        """
         if not newBlueprint:
             newBlueprint = pulse.Blueprint()
         self.blueprint = newBlueprint

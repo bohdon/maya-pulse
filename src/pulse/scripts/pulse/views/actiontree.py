@@ -14,6 +14,12 @@ __all__ = [
 
 
 class ActionTreeWidget(QtWidgets.QWidget):
+    """
+    A tree view that displays all BuildActions in a Blueprint.
+    Items can be selected, and the shared selection model
+    can then be used to display info about selected BuildActions
+    in other UI.
+    """
 
     def __init__(self, parent=None):
         super(ActionTreeWidget, self).__init__(parent=parent)
@@ -80,6 +86,11 @@ class ActionTreeWidget(QtWidgets.QWidget):
 
 
 class ActionButtonsWidget(QtWidgets.QWidget):
+    """
+    Provides UI for creating any BuildAction. One button is created
+    for each BuildAction, and they are grouped by category. Also
+    includes a search field for filtering the list of actions.
+    """
 
     def __init__(self, parent=None):
         super(ActionButtonsWidget, self).__init__(parent=parent)
@@ -90,6 +101,7 @@ class ActionButtonsWidget(QtWidgets.QWidget):
         self.setupUi(self)
 
     def setupUi(self, parent):
+        """ Build the UI """
         layout = QtWidgets.QVBoxLayout(parent)
 
         grpBtn = QtWidgets.QPushButton(parent)
@@ -112,6 +124,7 @@ class ActionButtonsWidget(QtWidgets.QWidget):
         layout.addWidget(tabScroll)
 
     def setupContentUi(self, parent):
+        """ Build the action buttons UI """
         layout = QtWidgets.QVBoxLayout(parent)
 
         # make button for each action
@@ -141,7 +154,9 @@ class ActionButtonsWidget(QtWidgets.QWidget):
             btn.clicked.connect(cmd)
             categoryLayouts[cat].addWidget(btn)
 
-        spacer = QtWidgets.QSpacerItem(0, 0, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
+        spacer = QtWidgets.QSpacerItem(0, 0,
+            QtWidgets.QSizePolicy.Minimum,
+            QtWidgets.QSizePolicy.Expanding)
         layout.addItem(spacer)
 
     def createLabel(self, parent, text):
@@ -194,6 +209,10 @@ class ActionButtonsWidget(QtWidgets.QWidget):
 
 
 class ActionTreeWindow(PulseWindow):
+    """
+    A standalone window that contains an ActionTreeWidget
+    and an ActionButtonsWidget.
+    """
 
     OBJECT_NAME = 'pulseActionTreeWindow'
 
@@ -216,4 +235,3 @@ class ActionTreeWindow(PulseWindow):
 
         layout.setStretch(layout.indexOf(self.actionTree), 2)
         layout.setStretch(layout.indexOf(self.actionButtons), 1)
-
