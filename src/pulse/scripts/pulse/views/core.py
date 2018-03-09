@@ -1,13 +1,11 @@
 
 import logging
-from functools import partial
-from pulse.vendor.Qt import QtCore, QtWidgets, QtGui
 import maya.cmds as cmds
-import maya.OpenMaya as om
 from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
 import pymetanode as meta
 
 import pulse
+from pulse.vendor.Qt import QtCore, QtWidgets, QtGui
 from pulse.events import BlueprintLifecycleEvents, BlueprintChangeEvents
 
 __all__ = [
@@ -37,7 +35,7 @@ def buttonCommand(func, *args, **kwargs):
             print(e)
         finally:
             cmds.undoInfo(closeChunk=True)
-    
+
     return wrapper
 
 
@@ -48,17 +46,17 @@ class CollapsibleFrame(QtWidgets.QFrame):
     def __init__(self, parent):
         super(CollapsibleFrame, self).__init__(parent)
         self._isCollapsed = False
-    
+
     def mouseReleaseEvent(self, QMouseEvent):
         if QMouseEvent.button() == QtCore.Qt.MouseButton.LeftButton:
             self.setIsCollapsed(not self._isCollapsed)
         else:
             return super(CollapsibleFrame, self).mouseReleaseEvent(QMouseEvent)
-    
+
     def setIsCollapsed(self, newCollapsed):
         self._isCollapsed = newCollapsed
         self.collapsedChanged.emit(self._isCollapsed)
-    
+
     def isCollapsed(self):
         return self._isCollapsed
 
@@ -73,7 +71,7 @@ class PulseWindow(MayaQWidgetDockableMixin, QtWidgets.QMainWindow):
         window = cls()
         window.show()
         return window
-    
+
     @classmethod
     def exists(cls):
         """
@@ -145,7 +143,7 @@ class BlueprintUIModel(QtCore.QObject):
     @classmethod
     def getDefaultModel(cls):
         return cls.getSharedModel(pulse.BLUEPRINT_NODENAME)
-    
+
     @classmethod
     def getSharedModel(cls, blueprintNodeName):
         """
@@ -179,7 +177,7 @@ class BlueprintUIModel(QtCore.QObject):
         if cmds.objExists(self.blueprintNodeName):
             # load from existing node
             self.blueprint = pulse.Blueprint.fromNode(self.blueprintNodeName)
-        
+
         # the tree item model and selection model for BuildItems
         self.buildItemTreeModel = BuildItemTreeModel(self.blueprint)
         self.buildItemSelectionModel = BuildItemSelectionModel(self.buildItemTreeModel)
@@ -189,7 +187,7 @@ class BlueprintUIModel(QtCore.QObject):
         lifeEvents = BlueprintLifecycleEvents.getShared()
         lifeEvents.onBlueprintCreated.appendUnique(self._onBlueprintCreated)
         lifeEvents.onBlueprintDeleted.appendUnique(self._onBlueprintDeleted)
-    
+
     def __del__(self):
         super(BlueprintUIModel, self).__del__()
         lifeEvents = BlueprintLifecycleEvents.getShared()
@@ -202,12 +200,12 @@ class BlueprintUIModel(QtCore.QObject):
             changeEvents.onBlueprintNodeChanged.appendUnique(self._onBlueprintNodeChanged)
             changeEvents.addSubscriber(self)
             LOG.debug('subscribed to blueprint node changes')
-    
+
     def _setBlueprint(self, newBlueprint):
         self.blueprint = newBlueprint
         self.buildItemTreeModel.setBlueprint(self.blueprint)
         self.rigNameChanged.emit(self.getRigName())
-        
+
     def addSubscriber(self, subscriber):
         """
         Add a subscriber to this model. Will enable Maya callbacks
@@ -231,7 +229,7 @@ class BlueprintUIModel(QtCore.QObject):
         else:
             if self.blueprint is not None:
                 self._setBlueprint(None)
-    
+
     def removeSubscriber(self, subscriber):
         """
         Remove a subscriber from this model. Will disable
@@ -246,47 +244,47 @@ class BlueprintUIModel(QtCore.QObject):
             changeEvents = BlueprintChangeEvents.getShared(self.blueprintNodeName)
             if changeEvents:
                 changeEvents.removeSubscriber(self)
-    
+
     def _onBlueprintCreated(self, node):
         if node.nodeName() == self.blueprintNodeName:
             self._setBlueprint(pulse.Blueprint.fromNode(self.blueprintNodeName))
             self._subscribeToBlueprintNodeChanges()
             self.blueprintCreated.emit()
-    
+
     def _onBlueprintDeleted(self, node):
         if node.nodeName() == self.blueprintNodeName:
             self._setBlueprint(None)
             # doing some cleanup since we can here
             BlueprintChangeEvents.cleanupSharedInstances()
             self.blueprintDeleted.emit()
-    
+
     def _onBlueprintNodeChanged(self, node):
         """
         The blueprint node has changed, reload its data
         """
         self.load()
         self.blueprintNodeChanged.emit()
-    
+
     def isReadOnly(self):
         return self.blueprint is None
-    
+
     def getBlueprint(self):
         """
         Return the Blueprint represented by this model.
         """
         return self.blueprint
-    
+
     def getRigName(self):
         # TODO: better solve for blueprint meta data
         if self.blueprint:
             return self.blueprint.rigName
-    
+
     def setRigName(self, newRigName):
         if not self.isReadOnly():
             self.blueprint.rigName = newRigName
             self.rigNameChanged.emit(self.blueprint.rigName)
             self.save()
-    
+
     def save(self):
         """
         Save the Blueprint data to the blueprint node
@@ -295,7 +293,7 @@ class BlueprintUIModel(QtCore.QObject):
         self.blueprint.saveToNode(self.blueprintNodeName)
         LOG.debug('save finished.')
         # TODO: fire a signal
-    
+
     def load(self):
         """
         Load the Blueprint data from the blueprint node
@@ -423,7 +421,7 @@ class BuildItemTreeModel(QtCore.QAbstractItemModel):
             self.blueprint = blueprint
         else:
             self.blueprint = pulse.Blueprint()
-    
+
     def setBlueprint(self, newBlueprint):
         if not newBlueprint:
             newBlueprint = pulse.Blueprint()
@@ -445,7 +443,7 @@ class BuildItemTreeModel(QtCore.QAbstractItemModel):
         """
         if not self.hasIndex(row, column, parent):
             return QtCore.QModelIndex()
-        
+
         childItem = self.item(parent).child(row)
         if childItem:
             return self.createIndex(row, column, childItem.buildItem)
@@ -502,7 +500,7 @@ class BuildItemTreeModel(QtCore.QAbstractItemModel):
     def setData(self, index, value, role=QtCore.Qt.EditRole):
         if not index.isValid():
             return False
-        
+
         if role != QtCore.Qt.EditRole:
             return False
 

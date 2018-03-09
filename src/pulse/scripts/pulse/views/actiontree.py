@@ -1,9 +1,8 @@
 
-from pulse.vendor.Qt import QtCore, QtWidgets, QtGui
-
 import pulse
+from pulse.vendor.Qt import QtCore, QtWidgets
 from .core import PulseWindow
-from .core import BlueprintUIModel, BuildItemTreeModel, BuildItemSelectionModel
+from .core import BlueprintUIModel
 
 
 __all__ = [
@@ -15,7 +14,7 @@ __all__ = [
 
 
 class ActionTreeWidget(QtWidgets.QWidget):
-    
+
     def __init__(self, parent=None):
         super(ActionTreeWidget, self).__init__(parent=parent)
 
@@ -23,12 +22,12 @@ class ActionTreeWidget(QtWidgets.QWidget):
         self.blueprintModel = BlueprintUIModel.getDefaultModel()
         self.model = self.blueprintModel.buildItemTreeModel
         self.selectionModel = self.blueprintModel.buildItemSelectionModel
-        
+
         self.setupUi(self)
 
         # connect signals
         self.model.modelReset.connect(self.onModelReset)
-    
+
     def showEvent(self, event):
         super(ActionTreeWidget, self).showEvent(event)
         self.blueprintModel.addSubscriber(self)
@@ -61,7 +60,7 @@ class ActionTreeWidget(QtWidgets.QWidget):
         self.treeView.setSelectionModel(self.selectionModel)
         self.treeView.expandAll()
         layout.addWidget(self.treeView)
-    
+
     def onModelReset(self):
         self.treeView.expandAll()
 
@@ -89,10 +88,10 @@ class ActionButtonsWidget(QtWidgets.QWidget):
         self.model = self.blueprintModel.buildItemTreeModel
         self.selectionModel = self.blueprintModel.buildItemSelectionModel
         self.setupUi(self)
-    
+
     def setupUi(self, parent):
         layout = QtWidgets.QVBoxLayout(parent)
-    
+
         grpBtn = QtWidgets.QPushButton(parent)
         grpBtn.setText("New Group")
         grpBtn.clicked.connect(self.createBuildGroup)
@@ -114,7 +113,7 @@ class ActionButtonsWidget(QtWidgets.QWidget):
 
     def setupContentUi(self, parent):
         layout = QtWidgets.QVBoxLayout(parent)
-        
+
         # make button for each action
         registeredActions = pulse.getRegisteredActions().values()
         categories = list(set([ac.config.get('category', 'Default') for ac in registeredActions]))
@@ -144,7 +143,7 @@ class ActionButtonsWidget(QtWidgets.QWidget):
 
         spacer = QtWidgets.QSpacerItem(0, 0, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
         layout.addItem(spacer)
-    
+
     def createLabel(self, parent, text):
         label = QtWidgets.QLabel(parent)
         label.setText(text)
@@ -152,7 +151,7 @@ class ActionButtonsWidget(QtWidgets.QWidget):
         label.setContentsMargins(10, 2, 2, 2)
         label.setStyleSheet('background-color: rgba(0, 0, 0, 40); border-radius: 2px')
         return label
-    
+
     def getActionColor(self, actionClass):
         color = actionClass.config.get('color', [1, 1, 1])
         if color:

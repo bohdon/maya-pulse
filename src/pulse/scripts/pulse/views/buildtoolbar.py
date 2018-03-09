@@ -1,15 +1,13 @@
 
 import logging
-from pulse.vendor.Qt import QtCore, QtWidgets, QtGui
 import maya.cmds as cmds
-import maya.OpenMaya as om
 import pymel.core as pm
-import pymetanode as meta
 
 import pulse
+from pulse.vendor.Qt import QtWidgets
 from pulse.events import RigEventsMixin
 from .core import PulseWindow
-from .core import BlueprintUIModel, BuildItemTreeModel
+from .core import BlueprintUIModel
 
 
 __all__ = [
@@ -77,7 +75,7 @@ class BuildToolbarWidget(QtWidgets.QWidget, RigEventsMixin):
         layout.addWidget(self.openBPBtn)
 
         self.cleanState()
-    
+
     def rigNameChanged(self, name):
         self.rigNameLabel.setText(self.blueprintModel.getRigName())
 
@@ -89,7 +87,7 @@ class BuildToolbarWidget(QtWidgets.QWidget, RigEventsMixin):
         self.checkBtn.setVisible(bpExists and not self.rigExists)
         self.buildBtn.setVisible(bpExists and not self.rigExists)
         self.openBPBtn.setVisible(self.rigExists)
-    
+
     def onStateDirty(self):
         if not self.isStateDirty:
             self.isStateDirty = True

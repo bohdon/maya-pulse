@@ -1,11 +1,8 @@
 
-from pulse.vendor.Qt import QtCore, QtWidgets, QtGui
-import pymel.core as pm
-import pymetanode as meta
-
 import pulse
+from pulse.vendor.Qt import QtWidgets
 from .core import PulseWindow
-from .core import BlueprintUIModel, BuildItemTreeModel
+from .core import BlueprintUIModel
 from .style import UIColors
 
 
@@ -28,7 +25,7 @@ class BlueprintEditorWidget(QtWidgets.QWidget):
         self.blueprintModel.blueprintCreated.connect(self.refreshState)
         self.blueprintModel.blueprintDeleted.connect(self.refreshState)
         self.blueprintModel.rigNameChanged.connect(self.onRigNameChanged)
-    
+
     def showEvent(self, event):
         super(BlueprintEditorWidget, self).showEvent(event)
         self.blueprintModel.addSubscriber(self)
@@ -36,7 +33,7 @@ class BlueprintEditorWidget(QtWidgets.QWidget):
     def hideEvent(self, event):
         super(BlueprintEditorWidget, self).hideEvent(event)
         self.blueprintModel.removeSubscriber(self)
-    
+
     def setupUi(self, parent):
         layout = QtWidgets.QVBoxLayout(self)
 
@@ -59,7 +56,7 @@ class BlueprintEditorWidget(QtWidgets.QWidget):
         layout.addItem(spacer)
 
         self.refreshState()
-    
+
     def refreshState(self):
         self.rigNameText.setEnabled(not self.blueprintModel.isReadOnly())
         self.deleteBtn.setEnabled(not self.blueprintModel.isReadOnly())
@@ -67,7 +64,7 @@ class BlueprintEditorWidget(QtWidgets.QWidget):
             self.deleteBtn.setStyleSheet(UIColors.asBGColor(UIColors.RED))
         else:
             self.deleteBtn.setStyleSheet('')
-    
+
     def onRigNameChanged(self, name):
         self.rigNameText.setText(name)
 

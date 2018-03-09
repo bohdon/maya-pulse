@@ -30,11 +30,11 @@ class Event(list):
 
     def __repr__(self):
         return "Event(%s)" % list.__repr__(self)
-    
+
     def appendUnique(self, item):
         if item not in self:
             self.append(item)
-    
+
     def removeAll(self, item):
         while item in self:
             self.remove(item)
@@ -90,7 +90,7 @@ class MayaCallbackEvents(object):
                 api.MMessage.removeCallback(cbId)
             self._callbackIDs = []
             LOG.debug('{0}._unregisterMayaCallbacks'.format(self.__class__.__name__))
-    
+
     def addSubscriber(self, subscriber):
         """
         Add a subscriber to this event dispatcher
@@ -99,7 +99,7 @@ class MayaCallbackEvents(object):
             self._subscribers.append(subscriber)
         if self._subscribers:
             self._registerMayaCallbacks()
-    
+
     def removeSubscriber(self, subscriber):
         """
         Remove a subscriber from this event dispatcher
@@ -186,7 +186,7 @@ class BlueprintChangeEvents(MayaCallbackEvents):
         """
         Return a shared BlueprintChangeEvents instance for a specific
         Blueprint node, creating a new instance if necessary.
-        
+
         Returns None if the node does not exist.
         """
         # perform instance cleanup
@@ -210,13 +210,13 @@ class BlueprintChangeEvents(MayaCallbackEvents):
         self.blueprintNodeName = blueprintNodeName
         self.lastUUID = None
         self.onBlueprintNodeChanged = Event()
-    
+
     def nodeExists(self):
         """
         Return True if the Blueprint node exists
         """
         return cmds.objExists(self.blueprintNodeName)
-    
+
     def refreshMayaCallbacks(self):
         """
         Check if the node that was originally used in the callback has changed,
@@ -294,7 +294,7 @@ class BlueprintEventsMixin(object):
         if self._getSubscribedBlueprintName() is not None:
             self._unsubscribeToBlueprintChanges()
             self.subscribeToBlueprint = None
-    
+
     def _subscribeToBlueprintChanges(self):
         """
         Attempt to subscribe to any changes for the current blueprint.
@@ -316,7 +316,7 @@ class BlueprintEventsMixin(object):
                 changeEvents.onBlueprintNodeChanged.removeAll(self.onBlueprintNodeChanged)
                 changeEvents.removeSubscriber(self)
                 LOG.debug("Unsubscribed from blueprint change events for: " + self.subscribeToBlueprint)
-    
+
     def _getSubscribedBlueprintName(self):
         if not hasattr(self, 'subscribeToBlueprint'):
             self.subscribeToBlueprint = None
@@ -326,7 +326,7 @@ class BlueprintEventsMixin(object):
         if self._getSubscribedBlueprintName() == node.nodeName():
             self._subscribeToBlueprintChanges()
         self.onBlueprintCreated(node)
-    
+
     def onBlueprintCreated(self, node):
         pass
 

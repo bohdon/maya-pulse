@@ -1,9 +1,9 @@
 
-from pulse.vendor.Qt import QtCore, QtWidgets, QtGui
 import pymel.core as pm
 import pymetanode as meta
 
 import pulse.names
+from pulse.vendor.Qt import QtCore, QtWidgets
 from . import utils as viewutils
 
 __all__ = [
@@ -198,7 +198,7 @@ class BatchAttrForm(QtWidgets.QWidget):
     bulk edit all variants of an attribute on a batch action.
     This appears where the default attr form usually appears
     when the attribute is marked as variant.
-    
+
     BatchAttrForms should only exist if they provide an
     easy way to bulk set different values for all variants,
     as its pointless to provide functionality for setting all
@@ -206,7 +206,7 @@ class BatchAttrForm(QtWidgets.QWidget):
     """
 
     TYPEMAP = {}
-    
+
     valuesChanged = QtCore.Signal()
     variantCountChanged = QtCore.Signal()
 
@@ -442,7 +442,7 @@ class NodeAttrForm(ActionAttrForm):
 
         hlayout = QtWidgets.QHBoxLayout(parent)
         hlayout.setSpacing(4)
-        
+
         self.listWidget = QtWidgets.QListWidget(parent)
         self.listWidget.setFixedHeight(20)
         self.listWidget.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
@@ -545,7 +545,7 @@ class NodeListAttrForm(ActionAttrForm):
 
         hlayout = QtWidgets.QHBoxLayout(parent)
         hlayout.setSpacing(4)
-        
+
         self.listWidget = QtWidgets.QListWidget(parent)
         self.listWidget.setSortingEnabled(True)
         self.listWidget.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)

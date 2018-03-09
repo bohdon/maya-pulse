@@ -1,7 +1,6 @@
 
-from pulse.vendor.Qt import QtCore, QtWidgets, QtGui
 
-from .core import PulseWindow
+from pulse.vendor.Qt import QtWidgets
 from .designviews.general import GeneralPanel
 from .designviews.controls import ControlsPanel
 from .designviews.joints import JointsPanel

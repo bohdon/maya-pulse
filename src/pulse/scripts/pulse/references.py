@@ -1,7 +1,6 @@
 
-
-import pymel.core as pm
 import logging
+import pymel.core as pm
 
 
 LOG = logging.getLogger(__name__)

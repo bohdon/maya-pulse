@@ -1,12 +1,10 @@
 
-
 import os
 import logging
 import time
 import tempfile
 import traceback
 from datetime import datetime
-import pulse.vendor.yaml as yaml
 import pymel.core as pm
 import pymetanode as meta
 
@@ -222,7 +220,7 @@ class BuildItem(object):
         """
         Create and return a BuildItem based
         on the given serialized data.
-        
+
         This is a factory method that automatically
         determines the instance type from the data.
 
@@ -308,7 +306,7 @@ class BuildGroup(BuildItem):
     @classmethod
     def getTypeName(cls):
         return 'BuildGroup'
-    
+
     def __init__(self, displayName='NewGroup'):
         super(BuildGroup, self).__init__()
         # the display name of this group
@@ -420,7 +418,7 @@ class BuildActionError(Exception):
 class BuildAction(BuildItem):
     """
     A BuildItem that provides extended functionality.
-    This should be used as the base class for all 
+    This should be used as the base class for all
     actual rigging operations.
     """
 
@@ -737,7 +735,7 @@ class BatchBuildAction(BuildItem):
             attr = self.actionClass.getAttrConfig(attrName)
             variant[attrName] = self.actionClass.getDefaultValue(attr)
         return variant
-    
+
     def addVariant(self):
         """
         Add a variant of attribute values.
@@ -841,7 +839,7 @@ class Blueprint(object):
                 return blueprint
         else:
             return Blueprint.fromNode(BLUEPRINT_NODENAME)
-    
+
     @staticmethod
     def createDefaultBlueprint():
         pm.cmds.undoInfo(openChunk=True, chunkName='Create Pulse Blueprint')
@@ -849,17 +847,17 @@ class Blueprint(object):
         blueprint.initializeDefaultActions()
         blueprint.saveToDefaultNode()
         pm.cmds.undoInfo(closeChunk=True)
-    
+
     @staticmethod
     def getDefaultNode():
         if pm.cmds.objExists(BLUEPRINT_NODENAME):
             return pm.PyNode(BLUEPRINT_NODENAME)
-    
+
     @staticmethod
     def deleteDefaultNode():
         if pm.cmds.objExists(BLUEPRINT_NODENAME):
             pm.cmds.delete(BLUEPRINT_NODENAME)
-    
+
     @staticmethod
     def doesDefaultNodeExist():
         return pm.cmds.objExists(BLUEPRINT_NODENAME)
@@ -910,7 +908,7 @@ class Blueprint(object):
     def loadFromNode(self, node):
         """
         Load Blueprint data from a node.
-        
+
         Args:
             node: A PyNode or node name
         """
@@ -1025,7 +1023,7 @@ class BlueprintBuilder(object):
     def start(self, run=True):
         """
         Start the build for the current blueprint
-        
+
         Args:
             run: A bool, whether to automatically run the build once it
                 is started or wait for `run` to be called manually
@@ -1127,7 +1125,7 @@ class BlueprintBuilder(object):
         """
         Called after every step of the build.
         Override this in subclasses to monitor progress.
-        
+
         Args:
             current: An int representing the current build step
             total: An int representing the total number of build steps
@@ -1151,7 +1149,7 @@ class BlueprintBuilder(object):
             scenePath=self.blueprintFile,
         ))
         self.fileHandler.close()
-        
+
         # show results with in view message
         if errorCount:
             pm.inViewMessage(amg='Build Finished with {0} error(s)'.format(errorCount),

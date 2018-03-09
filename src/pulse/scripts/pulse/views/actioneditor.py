@@ -1,13 +1,11 @@
 
 from functools import partial
-from pulse.vendor.Qt import QtCore, QtWidgets, QtGui
-import pymel.core as pm
-import pymetanode as meta
 
 import pulse
 import pulse.names
+from pulse.vendor.Qt import QtCore, QtWidgets, QtGui
 from .core import PulseWindow
-from .core import BlueprintUIModel, BuildItemTreeModel, BuildItemSelectionModel
+from .core import BlueprintUIModel
 from . import utils as viewutils
 from .actionattrform import ActionAttrForm, BatchAttrForm
 
@@ -203,7 +201,7 @@ class BatchActionForm(BuildItemForm):
 
         spacer = QtWidgets.QSpacerItem(20, 4, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
         self.mainLayout.addItem(spacer)
-        
+
         # add variant button
         addVariantBtn = QtWidgets.QPushButton(variantHeader)
         addVariantBtn.setText('+')
@@ -276,7 +274,7 @@ class BatchActionForm(BuildItemForm):
         self.variantsLabel.setText("Variants: {0}".format(len(self.buildItem.variantValues)))
         for i, variant in enumerate(self.buildItem.variantValues):
 
-            if i > 0:        
+            if i > 0:
                 # divider line
                 dividerLine = QtWidgets.QFrame(parent)
                 dividerLine.setStyleSheet(".QFrame{ background-color: rgb(0, 0, 0, 15); border-radius: 2px }")
@@ -313,7 +311,7 @@ class BatchActionForm(BuildItemForm):
                 noAttrsLabel.setContentsMargins(10, 0, 0, 0)
                 noAttrsLabel.setEnabled(False)
                 variantVLayout.addWidget(noAttrsLabel)
-            
+
             self.variantLayout.addLayout(variantHLayout)
 
 
@@ -328,7 +326,7 @@ class BatchActionForm(BuildItemForm):
     def addVariant(self):
         self.buildItem.addVariant()
         self.setupVariantsUi(self)
-    
+
     def removeVariantAtIndex(self, index):
         self.buildItem.removeVariantAt(index)
         self.setupVariantsUi(self)
@@ -436,7 +434,7 @@ class ActionEditorWidget(QtWidgets.QWidget):
             elif isinstance(itemWidget, BatchActionForm):
                 itemWidget.convertToActionClicked.connect(partial(self.convertBatchToAction, index))
             self.mainLayout.addWidget(itemWidget)
-    
+
     def setupItemsUiForSelection(self):
         self.setupItemsUi(self.selectionModel.selectedIndexes(), self.scrollWidget)
 

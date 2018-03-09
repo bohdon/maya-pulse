@@ -79,7 +79,7 @@ def getAssemblies(nodes):
     """
     Return any top-level nodes (assemblies) that
     contain a list of nodes
-    
+
     Args:
         nodes: A list of node long-names. Does not support
             short names or PyNodes.
@@ -107,14 +107,14 @@ def getTransformHierarchy(transform, includeParent=True):
     result = []
     if includeParent:
         result.append((transform.getParent(), [transform]))
-    
+
     descendents = transform.listRelatives(ad=True, type='transform')
 
     for t in [transform] + descendents:
         children = t.getChildren(type='transform')
         if children:
             result.append((t, children))
-    
+
     return result
 
 
@@ -165,7 +165,7 @@ def setParent(children, parent):
 def parentSelected():
     """
     Parent the selected nodes. Select a leader then followers.
-    
+
     [A, B, C] -> A|B, A|C
     """
     sel = pm.selected()

@@ -1,12 +1,12 @@
 
-from pulse.vendor.Qt import QtCore, QtWidgets, QtGui
 
 import pulse
+from pulse.vendor.Qt import QtCore, QtWidgets
 from .core import PulseWindow
 from .blueprinteditor import BlueprintEditorWidget
 from .buildtoolbar import BuildToolbarWidget
 from .actiontree import ActionTreeWidget, ActionButtonsWidget
-from .actioneditor import ActionEditorWidget, ActionEditorWindow
+from .actioneditor import ActionEditorWindow
 from .designview import DesignViewWidget
 
 
@@ -30,7 +30,7 @@ class PulseEditorWindow(PulseWindow):
         pulse.loadBuiltinActions()
 
         self.setupUi(self)
-    
+
     def setupUi(self, parent):
         widget = QtWidgets.QWidget(parent)
         widget.setMinimumWidth(300)
@@ -77,6 +77,6 @@ class PulseEditorWindow(PulseWindow):
 
 
         layout.addWidget(tabWidget)
-    
+
     def showActionEditor(self):
         ActionEditorWindow.createAndShow()
