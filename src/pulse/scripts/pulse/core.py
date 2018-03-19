@@ -6,8 +6,10 @@ import tempfile
 import traceback
 from datetime import datetime
 import pymel.core as pm
+import maya.cmds as cmds
 import pymetanode as meta
 
+from pulse.vendor import yaml
 from . import version
 from . import cameras
 
@@ -876,6 +878,11 @@ class Blueprint(object):
         self.version = BLUEPRINT_VERSION
         # the root BuildItem of this blueprint (a group with no name)
         self.rootItem = BuildGroup(displayName='')
+        # the config file to use when designing this Blueprint
+        # can be absolute, or relative to any python sys path
+        pulseDir = os.path.dirname(os.path.join(__file__))
+        self.configFile = os.path.realpath(
+            os.path.join(pulseDir, 'config/default_blueprint_config.yaml'))
 
     def serialize(self):
         data = {}
@@ -969,8 +976,17 @@ class Blueprint(object):
             if not currentGroup:
                 return
         return currentGroup
-
-
+    
+    def loadBlueprintConfig(self):
+        """
+        Load and return the config for this Blueprint.
+        """
+        if not os.path.isfile(self.configFile):
+            cmds.warning("Config file not found: {0}".format(self.configFile))
+            return
+        
+        with open(self.configFile, 'rb') as fp:
+            return yaml.load(fp)
 
 
 class BlueprintBuilder(object):

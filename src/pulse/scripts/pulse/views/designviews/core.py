@@ -1,7 +1,5 @@
 
-from pulse.vendor.Qt import QtCore, QtWidgets, QtGui
-from maya import cmds
-
+from pulse.vendor.Qt import QtWidgets, QtGui
 from pulse.views.core import CollapsibleFrame
 
 __all__ = [
@@ -65,16 +63,16 @@ class DesignViewPanel(QtWidgets.QWidget):
 
         self.panelWidget = QtWidgets.QWidget(parent)
         self.mainLayout.addWidget(self.panelWidget)
-    
+
     def setupPanelUi(self, parent):
         """
         Setup the ui for the contents of the panel
         """
         raise NotImplementedError
-    
+
     def onCollapsedChanged(self, isCollapsed):
         self.panelWidget.setVisible(not isCollapsed)
-    
+
     @staticmethod
     def createPanelFrame(parent):
         """

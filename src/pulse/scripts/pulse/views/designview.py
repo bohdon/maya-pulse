@@ -1,9 +1,10 @@
 
 
 from pulse.vendor.Qt import QtWidgets
-from .designviews.general import GeneralPanel
 from .designviews.controls import ControlsPanel
+from .designviews.general import GeneralPanel
 from .designviews.joints import JointsPanel
+from .designviews.names import NamesPanel
 
 __all__ = [
     "DesignViewWidget",
@@ -45,11 +46,14 @@ class DesignViewWidget(QtWidgets.QWidget):
 
     def setupPanelsUi(self, layout, parent):
 
+        controls = ControlsPanel(parent)
+        layout.addWidget(controls)
+
         general = GeneralPanel(parent)
         layout.addWidget(general)
 
-        controls = ControlsPanel(parent)
-        layout.addWidget(controls)
+        names = NamesPanel(parent)
+        layout.addWidget(names)
 
         joints = JointsPanel(parent)
         layout.addWidget(joints)

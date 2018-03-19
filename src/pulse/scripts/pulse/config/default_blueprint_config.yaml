@@ -1,0 +1,68 @@
+names:
+  keywords:
+    general:
+    - main
+    - root
+    - world
+    body:
+    - chest
+    - spine
+    - torso
+    arms:
+    - clavicle
+    - shoulder
+    - elbow
+    - hand
+    - wrist
+    - pointfinger
+    - middlefinger
+    - ringfinger
+    - pinky
+    - thumb
+    legs:
+    - hip
+    - leg
+    - knee
+    - foot
+    - toe
+    - toes
+    - ankle
+    - ball
+    head:
+    - head
+    - eye
+    - eyes
+    - ear
+    - nose
+    - mouth
+    - hair
+    - jaw
+    - teeth
+    - tongue
+    - cheek
+  prefixes:
+  - name: l
+    sort: 0
+  - name: r
+    sort: 0
+  - name: top
+    sort: 1
+  - name: bot
+    sort: 1
+  - name: frn
+    sort: 2
+  - name: bck
+    sort: 2
+  suffixes:
+  - name: jnt
+    sort: 10
+  - name: ctl
+    sort: 10
+  - name: sub
+    sort: 9
+  - name: twist
+    sort: 8
+symmetry:
+  prefixes:
+    left: l
+    right: r
