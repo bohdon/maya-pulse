@@ -266,7 +266,20 @@ class BlueprintChangeEvents(MayaCallbackEvents):
 
     def _onBlueprintAttrChanged(self, changeType, srcPlug, dstPlug, clientData):
         if srcPlug.partialName() == 'pyMetaData':
-            self.onBlueprintNodeChanged(pm.PyNode(srcPlug.node()))
+            # we need to defer the update, because the attribute
+            # change may have occurred from an active undo or redo that
+            # could result in the blueprint no longer existing
+            cmds.evalDeferred(
+                partial(self._onBlueprintAttrChangedDeferred), evaluateNext=True)
+    
+    def _onBlueprintAttrChangedDeferred(self):
+        mobject = meta.getMObject(self.blueprintNodeName)
+        if mobject:
+            LOG.debug("onBlueprintNodeChanged({0})".format(mobject))
+            self.onBlueprintNodeChanged(pm.PyNode(mobject))
+        else:
+            LOG.debug("Blueprint data changed, but blueprint no longer exists: {0}".format(
+                self.blueprintNodeName))
 
 
 
