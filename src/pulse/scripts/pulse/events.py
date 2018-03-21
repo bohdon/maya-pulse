@@ -183,7 +183,11 @@ class BlueprintLifecycleEvents(MayaCallbackEvents):
         Args:
             node: A MObject node that is being removed
         """
-        if pulse.core.Blueprint.isBlueprintNode(node):
+        # TODO: this is a hack to identify a blueprint node being deleted
+        #       that no longer counts as a valid blueprint because its data
+        #       has been removed. needs improvement
+        if (api.MFnDependencyNode(node).name() == pulse.core.BLUEPRINT_NODENAME or
+                pulse.core.Blueprint.isBlueprintNode(node)):
             LOG.debug("onBlueprintDeleted('{0}')".format(node))
             self.onBlueprintDeleted(pm.PyNode(node))
 
