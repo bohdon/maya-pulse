@@ -148,23 +148,44 @@ class BlueprintLifecycleEvents(MayaCallbackEvents):
         return (addId, removeId)
 
     def _onNodeAdded(self, node, *args):
+        """
+        Args:
+            node: A MObject node that was just added
+        """
         # no way to know if it's a Blueprint yet,
         # defer until later and check the node again
         # TODO: do this more precisely, don't use deferred
-        cmds.evalDeferred(partial(self._onNodeAddedDeferred, pm.PyNode(node)), evaluateNext=True)
 
-    def _onNodeAddedDeferred(self, node):
-        # make sure node still exists
-        if node.exists():
+        mfn = api.MFnDependencyNode(node)
+        if mfn.typeName() != 'network':
+            # blueprints are network nodes
+            return
+        
+        cmds.evalDeferred(
+            partial(self._onNodeAddedDeferred, mfn.name()), evaluateNext=True)
+
+    def _onNodeAddedDeferred(self, fullName):
+        """
+        Args:
+            fullName: A string full name of a node that was added
+        """
+        node = meta.getMObject(fullName)
+        if node:
             if pulse.core.Blueprint.isBlueprintNode(node):
                 LOG.debug("onBlueprintCreated('{0}')".format(node))
-                self.onBlueprintCreated(node)
+                self.onBlueprintCreated(pm.PyNode(node))
+        else:
+            LOG.debug(
+                "Failed to locate node: {0}".format(fullName))
 
     def _onNodeRemoved(self, node, *args):
+        """
+        Args:
+            node: A MObject node that is being removed
+        """
         if pulse.core.Blueprint.isBlueprintNode(node):
-            pnode = pm.PyNode(node)
-            LOG.debug("onBlueprintDeleted('{0}')".format(pnode))
-            self.onBlueprintDeleted(pnode)
+            LOG.debug("onBlueprintDeleted('{0}')".format(node))
+            self.onBlueprintDeleted(pm.PyNode(node))
 
 
 class BlueprintChangeEvents(MayaCallbackEvents):
@@ -374,17 +395,44 @@ class RigLifecycleEvents(MayaCallbackEvents):
         return (addId, removeId)
 
     def _onNodeAdded(self, node, *args):
+        """
+        Args:
+            node: A MObject node that was just added
+        """
         # no way to know if it's a Rig yet,
         # defer until later and check the node again
         # TODO: do this more precisely, don't use deferred
-        cmds.evalDeferred(partial(self._onNodeAddedDeferred, pm.PyNode(node)), evaluateNext=True)
 
-    def _onNodeAddedDeferred(self, node, *args):
-        if pulse.core.isRig(node):
-            self.onRigCreated(node)
+        mfn = api.MFnDependencyNode(node)
+        if mfn.typeName() != 'transform':
+            # rig nodes must be transforms
+            return
+        
+        fullName = api.MFnDagNode(node).fullPathName()
+        cmds.evalDeferred(
+            partial(self._onNodeAddedDeferred, fullName), evaluateNext=True)
+
+    def _onNodeAddedDeferred(self, fullName, *args):
+        """
+        Args:
+            fullName: A string full name of a node that was added
+        """
+        node = meta.getMObject(fullName)
+        if node:
+            if pulse.core.isRig(node):
+                LOG.debug("onRigCreated('{0}')".format(node))
+                self.onRigCreated(pm.PyNode(node))
+        else:
+            LOG.debug(
+                "Failed to locate node: {0}".format(fullName))
 
     def _onNodeRemoved(self, node, *args):
+        """
+        Args:
+            node: A MObject node that is being removed
+        """
         if pulse.core.isRig(node):
+            LOG.debug("onRigDeleted('{0}')".format(node))
             self.onRigDeleted(pm.PyNode(node))
 
 
