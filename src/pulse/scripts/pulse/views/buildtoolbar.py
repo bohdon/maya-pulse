@@ -5,7 +5,7 @@ import pymel.core as pm
 
 import pulse
 from pulse.vendor.Qt import QtWidgets
-from pulse.events import RigEventsMixin
+from pulse.core import RigEventsMixin
 from .core import PulseWindow
 from .core import BlueprintUIModel
 

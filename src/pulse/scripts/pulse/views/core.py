@@ -6,7 +6,7 @@ import pymetanode as meta
 
 import pulse
 from pulse.vendor.Qt import QtCore, QtWidgets, QtGui
-from pulse.events import BlueprintLifecycleEvents, BlueprintChangeEvents
+from pulse.core import BlueprintLifecycleEvents, BlueprintChangeEvents
 
 __all__ = [
     'BlueprintUIModel',

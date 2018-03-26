@@ -6,7 +6,8 @@ import maya.OpenMaya as api
 import pymel.core as pm
 import pymetanode as meta
 
-import pulse.core
+from .blueprints import Blueprint, BLUEPRINT_NODENAME
+from .rigs import isRig
 
 __all__ = [
     'BlueprintChangeEvents',
@@ -14,6 +15,8 @@ __all__ = [
     'BlueprintLifecycleEvents',
     'Event',
     'MayaCallbackEvents',
+    'RigEventsMixin',
+    'RigLifecycleEvents',
 ]
 
 LOG = logging.getLogger(__name__)
@@ -171,7 +174,7 @@ class BlueprintLifecycleEvents(MayaCallbackEvents):
         """
         node = meta.getMObject(fullName)
         if node:
-            if pulse.core.Blueprint.isBlueprintNode(node):
+            if Blueprint.isBlueprintNode(node):
                 LOG.debug("onBlueprintCreated('{0}')".format(node))
                 self.onBlueprintCreated(pm.PyNode(node))
         else:
@@ -186,8 +189,8 @@ class BlueprintLifecycleEvents(MayaCallbackEvents):
         # TODO: this is a hack to identify a blueprint node being deleted
         #       that no longer counts as a valid blueprint because its data
         #       has been removed. needs improvement
-        if (api.MFnDependencyNode(node).name() == pulse.core.BLUEPRINT_NODENAME or
-                pulse.core.Blueprint.isBlueprintNode(node)):
+        if (api.MFnDependencyNode(node).name() == BLUEPRINT_NODENAME or
+                Blueprint.isBlueprintNode(node)):
             LOG.debug("onBlueprintDeleted('{0}')".format(node))
             self.onBlueprintDeleted(pm.PyNode(node))
 
@@ -436,7 +439,7 @@ class RigLifecycleEvents(MayaCallbackEvents):
         """
         node = meta.getMObject(fullName)
         if node:
-            if pulse.core.isRig(node):
+            if isRig(node):
                 LOG.debug("onRigCreated('{0}')".format(node))
                 self.onRigCreated(pm.PyNode(node))
         else:
@@ -448,7 +451,7 @@ class RigLifecycleEvents(MayaCallbackEvents):
         Args:
             node: A MObject node that is being removed
         """
-        if pulse.core.isRig(node):
+        if isRig(node):
             LOG.debug("onRigDeleted('{0}')".format(node))
             self.onRigDeleted(pm.PyNode(node))
 
