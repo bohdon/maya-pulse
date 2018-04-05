@@ -5,6 +5,7 @@ from pulse.vendor.mayacoretools import preservedSelection
 
 
 __all__ = [
+    'areNodesAligned',
     'convertScaleConstraintToWorldSpace',
     'createOffsetForSelected',
     'createOffsetGroup',
@@ -15,8 +16,15 @@ __all__ = [
     'freezeScalesForSelectedHierarchies',
     'getAllParents',
     'getAssemblies',
+    'getAxis',
+    'getAxisVector',
+    'getClosestAlignedAxes',
+    'getClosestAlignedRelativeAxis',
     'getExpandedAttrNames',
+    'getOtherAxes',
     'getParentNodes',
+    'getRotationMatrix',
+    'getScaleMatrix',
     'getTransformHierarchy',
     'getTranslationMidpoint',
     'getWorldMatrix',
@@ -509,6 +517,21 @@ def getTranslationMidpoint(a, b):
     ta = a.getTranslation(ws=True)
     tb = b.getTranslation(ws=True)
     return (ta + tb) * 0.5
+
+
+def getScaleMatrix(matrix):
+    """
+    Return a matrix representing only the scale of a TransformationMatrix
+    """
+    s = pm.dt.TransformationMatrix(matrix).getScale('world')
+    return pm.dt.Matrix((s[0], 0, 0), (0, s[1], 0), (0, 0, s[2]))
+
+
+def getRotationMatrix(matrix):
+    """
+    Return a matrix representing only the rotation of a TransformationMatrix
+    """
+    return pm.dt.TransformationMatrix(matrix).euler.asMatrix()
 
 
 # Axis Utils

@@ -6,13 +6,15 @@ from . import nodes
 __all__ = [
     'centerJoint',
     'centerSelectedJoints',
+    'disableSegmentScaleCompensateForSelected',
     'getChildJoints',
+    'getJointMatrices',
     'getParentJoint',
     'getRootJoint',
     'insertJointForSelected',
     'insertJoints',
+    'setJointMatrices',
     'setJointParent',
-    'disableSegmentScaleCompensateForSelected',
 ]
 
 
@@ -156,3 +158,33 @@ def disableSegmentScaleCompensateForSelected():
     for jnt in pm.selected():
         if jnt.nodeType() == 'joint':
             jnt.ssc.set(False)
+
+
+def getJointMatrices(jnt):
+    """
+    Return the WorldMatrix, Rotation, RotationAxis, and
+    JointOrientation matrices for a joint.
+    """
+    r = pm.dt.EulerRotation(jnt.r.get()).asMatrix()
+    ra = pm.dt.EulerRotation(jnt.ra.get()).asMatrix()
+    jo = pm.dt.EulerRotation(jnt.jo.get()).asMatrix() * jnt.pm.get()
+    return jnt.wm.get(), r, ra, jo
+
+
+def setJointMatrices(jnt, matrix, r, ra, jo, translate=True, rotate=True):
+    """
+    Set the matrices on the given joint.
+    TODO: Currently does not set scale, should probably add that
+    """
+    matrix = matrix * jnt.pim.get()
+    if rotate:
+        jo = jo * jnt.pim.get()
+        rEuler = pm.dt.TransformationMatrix(r).euler
+        raEuler = pm.dt.TransformationMatrix(ra).euler
+        joEuler = pm.dt.TransformationMatrix(jo).euler
+        rEuler.unit = raEuler.unit = joEuler.unit = 'degrees'
+        pm.cmds.setAttr(jnt + '.r', *rEuler)
+        pm.cmds.setAttr(jnt + '.ra', *raEuler)
+        pm.cmds.setAttr(jnt + '.jo', *joEuler)
+    if translate:
+        pm.cmds.setAttr(jnt + '.t', *matrix[3][:3])
