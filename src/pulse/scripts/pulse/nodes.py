@@ -509,3 +509,106 @@ def getTranslationMidpoint(a, b):
     ta = a.getTranslation(ws=True)
     tb = b.getTranslation(ws=True)
     return (ta + tb) * 0.5
+
+
+# Axis Utils
+# ----------
+
+def getAxis(value):
+    """
+    Returns a pm.dt.Vector.Axis for the given value
+
+    Args:
+        value: Any value representing an axis, accepts 0, 1, 2, 3, x, y, z, w
+            as well as pm.dt.Vector.Axis objects
+    """
+    if isinstance(value, pm.util.EnumValue) and value.enumtype == pm.dt.Vector.Axis:
+        return value
+    elif isinstance(value, int):
+        return pm.dt.Vector.Axis[value]
+    elif isinstance(value, basestring):
+        for k in pm.dt.Vector.Axis.keys():
+            if k.startswith(value):
+                return getattr(pm.dt.Vector.Axis, k)
+
+
+def getAxisVector(axis, sign=1):
+    """
+    Return a vector for a signed axis
+    """
+    i = int(axis)
+    v = [0, 0, 0]
+    v[i] = 1 * cmp(sign, 0)
+    return tuple(v)
+
+
+def getOtherAxes(value, includeW=False):
+    """
+    Return a list of all other axes other than the given axis.
+
+    Args:
+        includeW: A bool, when True, include the W axis
+    """
+    axis = getAxis(value)
+    if axis is not None:
+        skip = [axis.index] + ([] if includeW else [3])
+        return [a for a in pm.dt.Vector.Axis.values() if a.index not in skip]
+
+
+def getClosestAlignedAxis(matrix, axis=0):
+    """
+    Given a matrix, find and return the signed axis
+    that is most aligned with a specific axis.
+
+    Args:
+        matrix: A transformation matrix
+        axis: The axis to check against
+
+    Returns (axis, sign)
+    """
+    bestVal = None
+    bestAxis = None
+    for a in range(3):
+        val = matrix[a][axis]
+        if bestVal is None or abs(val) > abs(bestVal):
+            bestVal = val
+            bestAxis = a
+    return getAxis(bestAxis), cmp(bestVal, 0)
+
+
+def getClosestAlignedAxes(matrix):
+    """
+    Given a matrix, find and return signed axes closest to
+    the x, y, and z world axes.
+
+    Args:
+        matrix: A transformation matrix
+
+    Returns ((axisX, signX), (axisY, signY), (axisZ, signZ))
+    """
+    x, signX = getClosestAlignedAxis(matrix, 0)
+    y, signY = getClosestAlignedAxis(matrix, 1)
+    z, signZ = getClosestAlignedAxis(matrix, 2)
+    return (x, signX), (y, signY), (z, signZ)
+
+
+def getClosestAlignedRelativeAxis(nodeA, nodeB, axis=0):
+    """
+    Return the signed axis of nodeA that is most aligned
+    with an axis of nodeB
+
+    Returns (axis, sign)
+    """
+    return getClosestAlignedAxis(nodeA.wm.get() * nodeB.wim.get(), axis)
+
+
+def areNodesAligned(nodeA, nodeB):
+    """
+    Return True if nodeA and nodeB are roughly aligned, meaning
+    their axes point mostly in the same directions.
+    """
+    signedAxes = getClosestAlignedAxes(nodeA.wm.get() * nodeB.wim.get())
+    for i, (axis, sign) in enumerate(signedAxes):
+        if i != axis or sign != 1:
+            return False
+    return True
