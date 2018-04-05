@@ -1,7 +1,7 @@
 
 import pymel.core as pm
 
-import pulse.nodes
+from . import nodes
 
 __all__ = [
     'centerJoint',
@@ -137,7 +137,7 @@ def centerJoint(jnt, child=None):
         child = children[0]
     elif not isinstance(child, pm.nt.Joint):
         raise TypeError('child must be a joint')
-    mid = pulse.nodes.getTranslationMidpoint(parent, child)
+    mid = nodes.getTranslationMidpoint(parent, child)
     pm.move(jnt, mid, ws=True, pcp=True)
 
 
