@@ -39,7 +39,7 @@ class DesignViewPanel(QtWidgets.QWidget):
         """
         self.mainLayout = QtWidgets.QVBoxLayout(parent)
         self.mainLayout.setMargin(0)
-        self.mainLayout.setSpacing(2)
+        self.mainLayout.setSpacing(3)
 
         # header frame
         self.headerFrame = CollapsibleFrame(parent)

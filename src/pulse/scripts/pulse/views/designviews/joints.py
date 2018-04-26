@@ -28,7 +28,8 @@ class JointsPanel(DesignViewPanel):
         layout.addWidget(frame)
 
         gridLayout = QtWidgets.QGridLayout(frame)
-        gridLayout.setSpacing(4)
+        gridLayout.setMargin(0)
+        gridLayout.setSpacing(2)
 
         jointToolBtn = QtWidgets.QPushButton(frame)
         jointToolBtn.setText("Joint Tool")

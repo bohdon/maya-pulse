@@ -37,6 +37,7 @@ class PulseEditorWindow(PulseWindow):
         self.setCentralWidget(widget)
 
         layout = QtWidgets.QVBoxLayout(parent)
+        layout.setMargin(0)
         widget.setLayout(layout)
 
         buildToolbar = BuildToolbarWidget(parent)

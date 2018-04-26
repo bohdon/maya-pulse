@@ -31,7 +31,8 @@ class NamesPanel(DesignViewPanel):
         layout.addWidget(frame)
 
         btnLayout = QtWidgets.QVBoxLayout(frame)
-        btnLayout.setSpacing(4)
+        btnLayout.setMargin(0)
+        btnLayout.setSpacing(2)
 
         quickNameWindowBtn = QtWidgets.QPushButton(frame)
         quickNameWindowBtn.setText("Quick Name Editor")

@@ -28,7 +28,8 @@ class GeneralPanel(DesignViewPanel):
         layout.addWidget(frame)
 
         gridLayout = QtWidgets.QGridLayout(frame)
-        gridLayout.setSpacing(4)
+        gridLayout.setMargin(0)
+        gridLayout.setSpacing(2)
 
         freezeScaleBtn = QtWidgets.QPushButton(frame)
         freezeScaleBtn.setText("Freeze Scales")

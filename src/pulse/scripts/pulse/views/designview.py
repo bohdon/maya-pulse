@@ -5,6 +5,7 @@ from .designviews.controls import ControlsPanel
 from .designviews.general import GeneralPanel
 from .designviews.joints import JointsPanel
 from .designviews.names import NamesPanel
+from .designviews.sym import SymmetryPanel
 
 __all__ = [
     "DesignViewWidget",
@@ -36,6 +37,7 @@ class DesignViewWidget(QtWidgets.QWidget):
         # scroll layout contains the main layout and a spacer item
         self.scrollLayout = QtWidgets.QVBoxLayout(self.scrollWidget)
         self.scrollLayout.setMargin(0)
+        self.scrollLayout.setSpacing(8)
 
         self.setupPanelsUi(self.scrollLayout, self.scrollWidget)
 
@@ -57,6 +59,9 @@ class DesignViewWidget(QtWidgets.QWidget):
 
         joints = JointsPanel(parent)
         layout.addWidget(joints)
+
+        sym = SymmetryPanel(parent)
+        layout.addWidget(sym)
 
         spacer = QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
         layout.addItem(spacer)

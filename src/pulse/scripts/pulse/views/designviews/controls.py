@@ -36,6 +36,7 @@ class ControlsPanel(DesignViewPanel):
     
     def setupCreateControlsUi(self, parent):
         gridLayout = QtWidgets.QGridLayout(parent)
+        gridLayout.setMargin(0)
         gridLayout.setSpacing(2)
 
         pulse.controlshapes.loadBuiltinControlShapes()
@@ -67,6 +68,7 @@ class ControlsPanel(DesignViewPanel):
     
     def setupEditControlsUi(self, parent):
         layout = QtWidgets.QHBoxLayout(parent)
+        layout.setMargin(0)
         layout.setSpacing(2)
         
         def createRotateComponentsButton(text, color, axis, degrees):
