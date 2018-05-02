@@ -1,0 +1,28 @@
+CreateSpaceAction:
+  displayName: Create Space
+  description: Create a Space that can be used for dynamic constraints
+  color: [.4, .6, .8]
+  category: Constraints
+  attrs:
+    - name: node
+      type: node
+    - name: name
+      type: string
+
+SpaceConstrainAction:
+  displayName: Space Constrain
+  description: Creates a dynamic constraint to one or more defined spaces
+  color: [.4, .6, .8]
+  category: Constraints
+  attrs:
+    - name: node
+      type: node
+    - name: spaces
+      type: stringlist
+
+ApplySpacesAction:
+  displayName: Apply Spaces
+  description: Resolves and connects all Space Constraints in the rig
+  color: [.4, .6, .8]
+  category: Constraints
+  attrs: []
