@@ -81,8 +81,8 @@ def registerActions(actionClasses):
                 "BuildActions cannot use the reserved type `group`")
         elif typeName in BUILDITEM_TYPEMAP:
             if BUILDITEM_TYPEMAP[typeName].config.get('isBuiltin', False):
-                LOG.error(
-                    "A built-in BuildAction already exists with type name: {0}".format(typeName))
+                LOG.error("A built-in BuildAction already "
+                          "exists with type name: {0}".format(typeName))
                 continue
         BUILDITEM_TYPEMAP[typeName] = c
 
@@ -111,6 +111,9 @@ class BuildItem(object):
             item = itemClass()
             item.deserialize(data)
             return item
+        else:
+            LOG.error("Failed to find BuildItemClass "
+                        "for data type: {0}".format(data['type']))
 
     @classmethod
     def getTypeName(cls):
@@ -211,7 +214,8 @@ class BuildGroup(BuildItem):
         self.displayName = data['displayName']
         self.children = [BuildItem.create(c) for c in data['children']]
         for item in self.children:
-            item.parent = self
+            if item:
+                item.parent = self
 
     def clearChildren(self):
         for item in self.children:
