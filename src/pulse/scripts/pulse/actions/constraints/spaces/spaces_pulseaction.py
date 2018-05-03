@@ -1,8 +1,10 @@
 
 import pymel.core as pm
+import pymetanode as meta
 
 import pulse
 import pulse.spaces
+import pulse.nodes
 
 
 class CreateSpaceAction(pulse.BuildAction):
@@ -26,7 +28,9 @@ class SpaceConstrainAction(pulse.BuildAction):
             raise pulse.BuildActionError("no spaces were set")
 
     def run(self):
-        pulse.spaces.defineSpaceConstraint(self.node, self.spaces)
+        # create an offset transform to be constrained
+        follower = pulse.nodes.createOffsetGroup(self.node, '{0}_spaceConstraint')
+        pulse.spaces.prepareSpaceConstraint(self.node, follower, self.spaces)
 
 
 class ApplySpacesAction(pulse.BuildAction):
@@ -35,6 +39,6 @@ class ApplySpacesAction(pulse.BuildAction):
         pass
 
     def run(self):
+        # TODO: only gather not-yet-created constraints
         allConstraints = pulse.spaces.getAllSpaceConstraints()
-        for constraint in allConstraints:
-            pulse.spaces.applySpaceConstraint(constraint)
+        pulse.spaces.createSpaceConstraints(allConstraints)

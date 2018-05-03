@@ -9,6 +9,7 @@ __all__ = [
     'convertScaleConstraintToWorldSpace',
     'createOffsetForSelected',
     'createOffsetGroup',
+    'createUtilityNode',
     'freezePivot',
     'freezePivotsForHierarchy',
     'freezePivotsForSelectedHierarchies',
@@ -94,8 +95,7 @@ def getAssemblies(nodes):
     """
     if not isinstance(nodes, (list, tuple)):
         nodes = [nodes]
-    return list(set([n[:(n+'|').find('|', 1)] for n in nodes]))
-
+    return list(set([n[:(n + '|').find('|', 1)] for n in nodes]))
 
 
 # Transform Parenting
@@ -209,8 +209,9 @@ def parentInOrder(nodes):
     setParent(nodes, safeParent)
     # parent all nodes in order
     for i in range(len(nodes) - 1):
-        parent, child = nodes[i:i+2]
+        parent, child = nodes[i:i + 2]
         setParent(child, parent)
+
 
 def parentSelectedInOrder():
     """
@@ -244,11 +245,11 @@ def createOffsetGroup(node, name='{0}_offset'):
     # its local transformation
     offset.setParent(node)
     pm.xform(offset, objectSpace=True,
-        translation=[0,0,0],
-        rotation=[0,0,0],
-        scale=[1,1,1],
-        shear=[0,0,0],
-    )
+             translation=[0, 0, 0],
+             rotation=[0, 0, 0],
+             scale=[1, 1, 1],
+             shear=[0, 0, 0],
+             )
 
     # with transforms now absorbed, move offset to be a sibling of the node
     offset.setParent(node.getParent())
@@ -256,16 +257,17 @@ def createOffsetGroup(node, name='{0}_offset'):
     # now parent the node to the new offset, and reset its transform
     node.setParent(offset)
     pm.xform(node, objectSpace=True,
-        translation=[0,0,0],
-        rotation=[0,0,0],
-        scale=[1,1,1],
-        shear=[0,0,0],
-        # reset rotate axis since it is now part
-        # of the offset transform
-        rotateAxis=[0,0,0],
-    )
+             translation=[0, 0, 0],
+             rotation=[0, 0, 0],
+             scale=[1, 1, 1],
+             shear=[0, 0, 0],
+             # reset rotate axis since it is now part
+             # of the offset transform
+             rotateAxis=[0, 0, 0],
+             )
 
     return offset
+
 
 def createOffsetForSelected():
     """
@@ -302,7 +304,6 @@ def getExpandedAttrNames(attrs):
     return _attrs
 
 
-
 # Constraints
 # -----------
 
@@ -321,8 +322,10 @@ def setConstraintLocked(constraint, locked):
     elif isinstance(constraint, pm.nt.ParentConstraint):
         targets = constraint.target.getArrayIndices()
         for i in targets:
-            attrs.extend(['target[%d].targetOffsetTranslate%s' % (i, a) for a in 'XYZ'])
-            attrs.extend(['target[%d].targetOffsetRotate%s' % (i, a) for a in 'XYZ'])
+            attrs.extend(['target[%d].targetOffsetTranslate%s' %
+                          (i, a) for a in 'XYZ'])
+            attrs.extend(['target[%d].targetOffsetRotate%s' % (i, a)
+                          for a in 'XYZ'])
     for a in attrs:
         constraint.attr(a).setLocked(locked)
 
@@ -346,7 +349,6 @@ def convertScaleConstraintToWorldSpace(scaleConstraint):
                 # also disconnect target scale
                 scaleConstraint.target[i].targetScale.disconnect()
                 break
-
 
 
 # Transform Modification
@@ -379,6 +381,7 @@ def freezeScalesForSelectedHierarchies():
         for t in tops:
             freezeScalesForHierarchy(t)
 
+
 def freezePivot(transform):
     """
     Freeze the given transform such that its local pivot becomes zero,
@@ -391,14 +394,16 @@ def freezePivot(transform):
     # asking for worldspace translate gives different result than world space matrix
     # translate. we want the former in this situation because we will be setting
     # with the same world space translate method
-    translate = pm.dt.Vector(pm.xform(transform, q=True, t=True, worldSpace=True))
+    translate = pm.dt.Vector(
+        pm.xform(transform, q=True, t=True, worldSpace=True))
     parentTranslate = pm.dt.Vector()
     parent = transform.getParent()
     if parent:
         # we want the world space matrix translate of the parent
         # because thats the real location that zeroed out child transforms would exist.
         # note that the world space translate (not retrieving matrix) can be a different value
-        parentTranslate = pm.dt.Matrix(pm.xform(parent, q=True, m=True, worldSpace=True)).translate
+        parentTranslate = pm.dt.Matrix(
+            pm.xform(parent, q=True, m=True, worldSpace=True)).translate
     # move current pivot to the parents world space location
     pm.xform(transform, t=(translate - pivot + parentTranslate), ws=True)
     # now that the transform is at the same world space position as its parent, freeze it
@@ -429,7 +434,6 @@ def freezePivotsForSelectedHierarchies():
             freezePivotsForHierarchy(s)
 
 
-
 def getEulerRotationFromMatrix(matrix):
     """
     Return the euler rotation in degrees of a matrix
@@ -440,13 +444,15 @@ def getEulerRotationFromMatrix(matrix):
     rEuler.setDisplayUnit('degrees')
     return rEuler
 
+
 def getWorldMatrix(node, negateRotateAxis=True):
     if not isinstance(node, pm.PyNode):
         node = pm.PyNode(node)
     if isinstance(node, pm.nt.Transform):
         wm = pm.dt.TransformationMatrix(node.wm.get())
         if negateRotateAxis:
-            r = pm.dt.EulerRotation(pm.cmds.xform(node.longName(), q=True, ws=True, ro=True))
+            r = pm.dt.EulerRotation(pm.cmds.xform(
+                node.longName(), q=True, ws=True, ro=True))
             wm.setRotation(r, node.getRotationOrder())
         return wm
     else:
@@ -466,13 +472,16 @@ def setWorldMatrix(node, matrix, translate=True, rotate=True, scale=True, matchA
         matrix.reorderRotation(ro)
 
     if translate:
-        pm.cmds.xform(node.longName(), ws=True, t=matrix.getTranslation('world'))
+        pm.cmds.xform(node.longName(), ws=True,
+                      t=matrix.getTranslation('world'))
     if rotate:
         if matchAxes and any(node.ra.get()):
             # Get the source's rotation matrix
-            source_rotMtx = pm.dt.TransformationMatrix(getEulerRotationFromMatrix(matrix).asMatrix())
+            source_rotMtx = pm.dt.TransformationMatrix(
+                getEulerRotationFromMatrix(matrix).asMatrix())
             # Get the target transform's inverse rotation matrix
-            target_invRaMtx = pm.dt.EulerRotation(node.ra.get()).asMatrix().inverse()
+            target_invRaMtx = pm.dt.EulerRotation(
+                node.ra.get()).asMatrix().inverse()
             # Multiply the source's rotation matrix by the inverse of the
             # target's rotation axis to get just the difference in rotation
             target_rotMtx = target_invRaMtx * source_rotMtx
@@ -504,6 +513,7 @@ def matchWorldMatrix(leader, *followers):
         setWorldMatrix(f, m)
         pm.xform(f, t=p, ws=True)
         pm.xform(f, ro=r, ws=True)
+
 
 def getTranslationMidpoint(a, b):
     """
@@ -635,3 +645,14 @@ def areNodesAligned(nodeA, nodeB):
         if i != axis or sign != 1:
             return False
     return True
+
+
+# Utility Nodes
+# -------------
+
+def createUtilityNode(nodetype):
+    """
+    Create and return a utility node.
+    """
+    node = pm.shadingNode(nodetype, asUtility=True)
+    return node
