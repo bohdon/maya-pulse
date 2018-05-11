@@ -10,7 +10,6 @@ __all__ = [
     'convertScaleConstraintToWorldSpace',
     'createOffsetForSelected',
     'createOffsetGroup',
-    'createUtilityNode',
     'freezePivot',
     'freezePivotsForHierarchy',
     'freezePivotsForSelectedHierarchies',
@@ -707,14 +706,3 @@ def areNodesAligned(nodeA, nodeB):
         if i != axis or sign != 1:
             return False
     return True
-
-
-# Utility Nodes
-# -------------
-
-def createUtilityNode(nodetype):
-    """
-    Create and return a utility node.
-    """
-    node = pm.shadingNode(nodetype, asUtility=True)
-    return node

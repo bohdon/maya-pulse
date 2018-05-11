@@ -286,24 +286,26 @@ def average(*inputs):
 
 
 def plusMinusAverage(inputs, operation):
-    if len(inputs) == 0:
-        raise ValueError('Must have atleast one input')
-    a = pm.shadingNode('plusMinusAverage', asUtility=True)
-    a.operation.set(operation)
-    inputDim = nodes.getAttrOrValueDimension(inputs[0])
-    if inputDim == 1:
-        multiattr = a.input1D
-    elif inputDim == 2:
-        multiattr = a.input2D
-    elif inputDim == 3:
-        multiattr = a.input3D
+    node = pm.shadingNode('plusMinusAverage', asUtility=True)
+    node.operation.set(operation)
+
+    if len(inputs) > 0:
+        inputDim = nodes.getAttrOrValueDimension(inputs[0])
+        if inputDim == 1:
+            multiattr = node.input1D
+        elif inputDim == 2:
+            multiattr = node.input2D
+        elif inputDim == 3:
+            multiattr = node.input3D
+        else:
+            raise ValueError(
+                "Input dimension is not 1D, 2D, or 3D: {0}".format(inputs))
+        for i, input in enumerate(inputs):
+            # hook up inputs
+            setOrConnectAttr(multiattr[i], input)
+        return getOutputAttr(multiattr)
     else:
-        raise ValueError(
-            "Input dimension is not 1D, 2D, or 3D: {0}".format(inputs))
-    for i, input in enumerate(inputs):
-        # hook up inputs
-        setOrConnectAttr(multiattr[i], input)
-    return getOutputAttr(multiattr)
+        return getOutputAttr(node)
 
 
 def multiply(a, b):

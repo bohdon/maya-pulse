@@ -6,6 +6,7 @@ import pymel.core as pm
 import pymetanode as meta
 
 import pulse.nodes
+import pulse.utilnodes
 
 __all__ = [
     'addDynamicSpace',
@@ -134,14 +135,12 @@ def prepareSpaceConstraint(node, follower, spaceNames):
 
     for attrName, metaKey in addUtilities:
         # create addition utility
-        addNode = pulse.nodes.createUtilityNode('plusMinusAverage')
+        defaultVal = 1 if (attrName == 's') else 0
+        # create add node with first item set to defaults
+        addNode = pulse.utilnodes.add(
+            (defaultVal, defaultVal, defaultVal)).node()
         addNode.rename('{0}_add{1}'.format(
             node.nodeName(), attrName.upper()))
-        addNode.operation.set(1)
-
-        # set default input
-        defaultValue = 1 if (attrName == 's') else 0
-        addNode.input3D[0].set((defaultValue, defaultValue, defaultValue))
 
         # connect to the follower node
         addNode.output3D >> follower.attr(attrName)
@@ -232,12 +231,10 @@ def _createConstraintSwitchForSpace(node, spaceConstraintData, spaceData, spaceN
 
     # create the condition that will control whether
     # the constraints from this space are be active
-    cndNode = _createEqualConditionUtility(spaceAttr, index)
-    cndNode.rename('{0}_isSpace{1}Active'.format(nodeName, index))
-    # true, node state == 0 (active)
-    cndNode.colorIfTrueR.set(0)
-    # false, node state == 2 (inactive)
-    cndNode.colorIfFalseR.set(2)
+    # node state 0 == active, 2 == disabled
+    stateCndAttr = pulse.utilnodes.equal(spaceAttr, index, 0, 2)
+    stateCndNode = stateCndAttr.node()
+    stateCndNode.rename('{0}_isSpace{1}Active'.format(nodeName, index))
 
     # create parent and scale constraints
     follower = spaceConstraintData['constrainedNode']
@@ -247,41 +244,31 @@ def _createConstraintSwitchForSpace(node, spaceConstraintData, spaceData, spaceN
     sc = createPartialScaleConstraint(spaceNode, follower)
     sc.rename('space{0}_scaleConstraints'.format(index))
     for c in (pc, sc):
-        cndNode.outColorR >> c.nodeState
+        stateCndAttr >> c.nodeState
 
         # TODO: don't lock dynamic space constraints
         pulse.nodes.setConstraintLocked(c, True)
 
     # create value conditions for each attribute
-    valTCnd = _createEqualConditionUtility(spaceAttr, index)
-    valTCnd.rename('{0}_space{1}_TVal'.format(nodeName, index))
-    valRCnd = _createEqualConditionUtility(spaceAttr, index)
-    valRCnd.rename('{0}_space{1}_RVal'.format(nodeName, index))
-    valSCnd = _createEqualConditionUtility(spaceAttr, index)
-    valSCnd.rename('{0}_space{1}_SVal'.format(nodeName, index))
-    pc.constraintTranslate >> valTCnd.colorIfTrue
-    pc.constraintRotate >> valRCnd.colorIfTrue
-    sc.constraintScale >> valSCnd.colorIfTrue
-    for cnd in (valTCnd, valRCnd, valSCnd):
-        cnd.colorIfFalse.set((0, 0, 0))
+    valTCndAttr = pulse.utilnodes.equal(
+        spaceAttr, index, pc.constraintTranslate, (0, 0, 0))
+    valRCndAttr = pulse.utilnodes.equal(
+        spaceAttr, index, pc.constraintRotate, (0, 0, 0))
+    valSCndAttr = pulse.utilnodes.equal(
+        spaceAttr, index, sc.constraintScale, (0, 0, 0))
+    valTCndAttr.node().rename('{0}_space{1}_TVal'.format(nodeName, index))
+    valRCndAttr.node().rename('{0}_space{1}_RVal'.format(nodeName, index))
+    valSCndAttr.node().rename('{0}_space{1}_SVal'.format(nodeName, index))
 
     # connect to addition nodes
     addTNode = spaceConstraintData['translateAdd']
     addRNode = spaceConstraintData['rotateAdd']
     addSNode = spaceConstraintData['scaleAdd']
-    valTCnd.outColor >> addTNode.input3D[index]
-    valRCnd.outColor >> addRNode.input3D[index]
-    valSCnd.outColor >> addSNode.input3D[index]
+    valTCndAttr >> addTNode.input3D[index]
+    valRCndAttr >> addRNode.input3D[index]
+    valSCndAttr >> addSNode.input3D[index]
 
-    return cndNode
-
-
-def _createEqualConditionUtility(firstTermPlug, secondTermVal):
-    cndNode = pulse.nodes.createUtilityNode('condition')
-    cndNode.operation.set(0)
-    firstTermPlug >> cndNode.firstTerm
-    cndNode.secondTerm.set(secondTermVal)
-    return cndNode
+    return stateCndNode
 
 
 def _getAllSpacesInConstraint(spaceConstraintData):
