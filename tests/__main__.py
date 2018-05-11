@@ -20,8 +20,10 @@ def updateSysPaths():
 def run_tests():
     # lazy loading to wait for maya env to be initialized
     import test_core
+    import test_utilnodes
     suite = unittest.TestSuite()
     suite.addTests(unittest.TestLoader().loadTestsFromModule(test_core))
+    suite.addTests(unittest.TestLoader().loadTestsFromModule(test_utilnodes))
     unittest.TextTestRunner(verbosity=2).run(suite)
 
 

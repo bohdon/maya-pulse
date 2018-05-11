@@ -1,4 +1,5 @@
 
+import logging
 import pymel.core as pm
 
 from pulse.vendor.mayacoretools import preservedSelection
@@ -38,6 +39,9 @@ __all__ = [
     'setTransformHierarchy',
     'setWorldMatrix',
 ]
+
+
+LOG = logging.getLogger(__name__)
 
 
 # Node Retrieval
@@ -288,7 +292,7 @@ def getExpandedAttrNames(attrs):
     e.g. ['t', 'rx', 'ry'] -> ['tx', 'ty', 'tz', 'rx', 'ry']
 
     Args:
-        attrs: A list of strings representing attribute names
+        attrs (list of str): The attributes to expand
     """
     _attrs = []
     for attr in attrs:
@@ -304,9 +308,67 @@ def getExpandedAttrNames(attrs):
     return _attrs
 
 
+def safeGetAttr(node, attrName):
+    """
+    Return an attribute from a node by name.
+    Returns None if the attribute does not exist.
+
+    Args:
+        node (PyNode): The node with the attribute
+        attrName (str): The attribute name
+    """
+    if node.hasAttr(attrName):
+        return node.attr(attrName)
+
+
+def getCompoundAttrIndex(childAttr):
+    """
+    Return the index of the given compound child attribute.
+
+    Args:
+        childAttr (Attribute): An attribute that is the child of a compount attr
+    """
+    if not childAttr.isChild():
+        raise ValueError("Attribute is not a child of a "
+                         "compound attribute: {0}".format(childAttr))
+    return childAttr.getParent().getChildren().index(childAttr)
+
+
+def getAttrDimension(attr):
+    """
+    Return the dimension of an Attribute
+
+    Args:
+        attr (Attribute): The attribute to check
+    """
+    if attr.isCompound():
+        return attr.numChildren()
+    else:
+        return 1
+
+
+def getAttrOrValueDimension(attrOrValue):
+    """
+    Return the dimension of an attribute or
+    attribute value (such as a list or tuple)
+
+    Args:
+        attrOrValue: An Attribute or value that can be set on an attribute
+    """
+    if isinstance(attrOrValue, pm.Attribute):
+        return getAttrDimension(attrOrValue)
+    else:
+        # support duck-typed lists
+        if not isinstance(attrOrValue, basestring):
+            try:
+                return len(attrOrValue)
+            except:
+                pass
+    return 1
+
+
 # Constraints
 # -----------
-
 
 def setConstraintLocked(constraint, locked):
     """

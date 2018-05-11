@@ -1,28 +1,46 @@
 .DS_Store
 Thumbs.db
 
-# Byte-compiled / optimized / DLL files
-*.py[cod]
+# pyenv version file
+.python-version
+
+# Python
+*.py[co]
 
 # C extensions
 *.so
 
-# Distribution / packaging
-build/
+# Packages
+*.egg
+*.egg-info
+dist
+build
+eggs
+parts
+bin
+var
+sdist
+deb_dist
+develop-eggs
+.installed.cfg
+
+# Installer logs
+pip-log.txt
 
 # Unit test / coverage reports
-htmlcov/
-.tox/
 .coverage
 .coverage.*
+htmlcov/
+.pytest_cache/
+.tox
 .cache
 nosetests.xml
 coverage.xml
 *,cover
 .hypothesis/
 
-# Sphinx documentation
-docs/_build/
+# Translations
+*.mo
 
-# Project files
+# Editor Settings
 .vscode/
