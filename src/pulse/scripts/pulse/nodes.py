@@ -15,6 +15,7 @@ __all__ = [
     'freezePivotsForSelectedHierarchies',
     'freezeScalesForHierarchy',
     'freezeScalesForSelectedHierarchies',
+    'fullConstraint',
     'getAllParents',
     'getAssemblies',
     'getAxis',
@@ -84,6 +85,54 @@ def getParentNodes(nodes):
         if any([p in nodes for p in getAllParents(n)]):
             continue
         result.append(n)
+    return result
+
+
+def getNodeBranch(root, end):
+    """
+    Return all nodes in a transform hierarchy branch starting
+    from root and descending to end.
+
+    Returns None if the end node is not child of root.
+
+    Args:
+        root (PyNode): The top node of a branch
+        end (PyNode): The end node of a branch, must be a child of root
+    """
+    if not end.isChildOf(root):
+        return
+    nodes = getAllParents(end)
+    nodes.reverse()
+    nodes.append(end)
+    index = nodes.index(root)
+    return nodes[index:]
+
+
+def duplicateBranch(root, end, parent=None, nameFmt='{0}'):
+    """
+    Duplicate a node branch from root to end (inclusive).
+
+    Args:
+        root (PyNode): The root node of the branch
+        end (PyNode): The end node of the branch
+        parent (PyNode): The parent parent node of the new node branch
+        nameFmt (str): The naming format to use for the new nodes.
+            Will be formatted with the name of the original nodes.
+    """
+    result = []
+    allNodes = getNodeBranch(root, end)
+    if allNodes is None:
+        raise ValueError(
+            'Invalid root and end nodes: {0} {1}'.format(root, end))
+    nextParent = parent
+    for node in allNodes:
+        # duplicate only this node
+        newNode = pm.duplicate(node, parentOnly=True)[0]
+        newNode.rename(nameFmt.format(node.nodeName()))
+        newNode.setParent(nextParent)
+        # use this node as parent for the next
+        nextParent = newNode
+        result.append(newNode)
     return result
 
 
@@ -410,6 +459,26 @@ def convertScaleConstraintToWorldSpace(scaleConstraint):
                 # also disconnect target scale
                 scaleConstraint.target[i].targetScale.disconnect()
                 break
+
+def fullConstraint(leader, follower):
+    """
+    Fully constrain a follower node to a leader node.
+    Does this by creating a parent and scale constraint.
+
+    Args:
+        leader (PyNode or str): The leader node of the constraint
+        follower (PyNode or str): The follower node of the constraint
+
+    Returns:
+        A parentConstraint and a scaleConstraint node
+    """
+    pc = pm.parentConstraint(leader, follower)
+    sc = pm.scaleConstraint(leader, follower)
+    # hiding the constraints prevents camera framing
+    # issues in certain circumstances
+    pc.visibility.set(0)
+    sc.visibility.set(0)
+    return pc, sc
 
 
 # Transform Modification

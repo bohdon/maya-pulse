@@ -113,7 +113,7 @@ class BuildItem(object):
             return item
         else:
             LOG.error("Failed to find BuildItemClass "
-                        "for data type: {0}".format(data['type']))
+                      "for data type: {0}".format(data['type']))
 
     @classmethod
     def getTypeName(cls):
@@ -197,9 +197,15 @@ class BuildGroup(BuildItem):
         self.children = []
 
     def getLoggerName(self):
+        """
+        Return the name of the logger for this BuildGroup
+        """
         return 'pulse.buildgroup'
 
     def getDisplayName(self):
+        """
+        Return the display name for this group.
+        """
         return self.displayName
 
     def serialize(self):
@@ -302,9 +308,12 @@ class BuildActionError(Exception):
 
 class BuildAction(BuildItem):
     """
-    A BuildItem that provides extended functionality.
-    This should be used as the base class for all
-    actual rigging operations.
+    The base class for any rigging action that can
+    run during a build.
+
+    Both `validate` and `run` must be overridden
+    in subclasses to provide functionality when
+    checking and building the rig.
     """
 
     config = None
@@ -312,6 +321,11 @@ class BuildAction(BuildItem):
 
     @classmethod
     def getTypeName(cls):
+        """
+        Return the type name of this BuildAction.
+        This is the name of the class without the
+        Action suffix.
+        """
         result = cls.__name__
         if result.endswith('Action'):
             result = result[:-6]
@@ -397,15 +411,27 @@ class BuildAction(BuildItem):
                     setattr(self, attr['name'], self.getDefaultValue(attr))
 
     def getLoggerName(self):
+        """
+        Return the name of the logger for this BuildItem
+        """
         return 'pulse.action.' + self.getTypeName().lower()
 
     def getDisplayName(self):
+        """
+        Return the display name for this BuildAction.
+        """
         return self.config['displayName']
 
     def getColor(self):
+        """
+        Return the color of this BuildItem when represented in the UI
+        """
         return self.config.get('color')
 
     def getIconFile(self):
+        """
+        Return the full path to this build items icon
+        """
         filename = self.config.get('icon')
         if filename:
             return os.path.join(os.path.dirname(self.configFile), filename)
@@ -440,11 +466,22 @@ class BuildAction(BuildItem):
     def updateRigMetaData(self, data):
         """
         Add some meta data to the rig being built
+
+        Args:
+            data: A dict containing meta data to update on the rig
         """
         if not self.rig:
             self.log.error('Cannot update rig meta data, no rig is set')
             return
         meta.updateMetaData(self.rig, RIG_METACLASS, data)
+
+    def validate(self):
+        """
+        Validate this build action. Should be implemented
+        in subclasses to check the action's config data
+        and raise BuildActionErrors if anything is invalid.
+        """
+        raise NotImplementedError
 
     def run(self):
         """

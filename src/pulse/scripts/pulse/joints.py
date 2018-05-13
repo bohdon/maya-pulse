@@ -99,7 +99,8 @@ def insertJoints(childJnt, count=1):
     joints = [parentJnt]
     rad = parentJnt.radius.get()
     for i in range(count):
-        jointPos = (endPosition - startPosition) * (float(i+1)/float(count+1)) + startPosition
+        jointPos = (endPosition - startPosition) * \
+            (float(i+1)/float(count+1)) + startPosition
         j = pm.joint(p=jointPos)
         setJointParent(j, joints[-1])
         j.radius.set(rad)
@@ -125,17 +126,19 @@ def centerJoint(jnt, child=None):
     Center a joint between its parent and child.
 
     Args:
-        jnt: A Joint node to be centered
+        jnt (PyNode): A joint node to be centered
         child: An optional child joint, necessary if the joint has
             more than one child
     """
     parent = jnt.getParent()
     if not isinstance(parent, pm.nt.Joint):
-        raise ValueError('{0} is not a child of a joint and cannot be centered'.format(jnt))
+        raise ValueError(
+            '{0} is not a child of a joint and cannot be centered'.format(jnt))
     if child is None:
         children = jnt.getChildren(typ='joint')
         if not children:
-            raise ValueError('{0} has no child joints and cannot be centered'.format(jnt))
+            raise ValueError(
+                '{0} has no child joints and cannot be centered'.format(jnt))
         child = children[0]
     elif not isinstance(child, pm.nt.Joint):
         raise TypeError('child must be a joint')
