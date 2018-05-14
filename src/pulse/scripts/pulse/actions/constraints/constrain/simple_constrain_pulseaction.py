@@ -35,7 +35,7 @@ class SimpleConstrainAction(pulse.BuildAction):
         # scale constrain
         sc = pm.scaleConstraint(self.leader, _follower, mo=True)
         if self.worldSpaceScaling:
-            pulse.nodes.makeScaleConstraintWorldSpace(sc)
+            pulse.nodes.convertScaleConstraintToWorldSpace(sc)
 
         # lockup the constraints
         pulse.nodes.setConstraintLocked(pc, True)
