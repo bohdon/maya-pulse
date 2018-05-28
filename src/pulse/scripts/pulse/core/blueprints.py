@@ -23,6 +23,9 @@ __all__ = [
     'BlueprintBuilder',
 ]
 
+LOG = logging.getLogger(__name__)
+LOG.level = logging.DEBUG
+
 BLUEPRINT_METACLASS = 'pulse_blueprint'
 BLUEPRINT_VERSION = version.__version__
 BLUEPRINT_NODENAME = 'pulse_blueprint'
@@ -143,7 +146,11 @@ class Blueprint(object):
         if create and not pm.cmds.objExists(node):
             node = pm.cmds.createNode('network', n=node)
         data = self.serialize()
-        meta.setMetaData(node, BLUEPRINT_METACLASS, data)
+        st = time.time()
+        meta.setMetaData(node, BLUEPRINT_METACLASS, data, replace=True)
+        et = time.time()
+        LOG.debug('blueprint save time: {0}s'.format(et - st))
+
 
     def saveToDefaultNode(self):
         self.saveToNode(BLUEPRINT_NODENAME, create=True)
