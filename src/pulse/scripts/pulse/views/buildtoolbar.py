@@ -54,7 +54,7 @@ class BuildToolbarWidget(QtWidgets.QWidget, RigEventsMixin):
 
         self.createBtn = QtWidgets.QPushButton(parent)
         self.createBtn.setText("Create Blueprint")
-        self.createBtn.clicked.connect(pulse.Blueprint.createDefaultBlueprint)
+        self.createBtn.clicked.connect(self.blueprintModel.createNode)
         layout.addWidget(self.createBtn)
 
         self.checkBtn = QtWidgets.QPushButton(parent)

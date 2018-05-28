@@ -68,40 +68,22 @@ class Blueprint(object):
         return blueprint
 
     @staticmethod
-    def fromDefaultNode(create=False):
+    def createNode(nodeName):
         """
-        Return a Blueprint using the default blueprint node.
-        Creates the default node if it does not exist.
-        """
-        if not pm.cmds.objExists(BLUEPRINT_NODENAME):
-            if create:
-                blueprint = Blueprint()
-                blueprint.saveToDefaultNode()
-                return blueprint
-        else:
-            return Blueprint.fromNode(BLUEPRINT_NODENAME)
+        Create a new Blueprint and save it to a node by name.
 
-    @staticmethod
-    def createDefaultBlueprint():
+        Args:
+            nodeName (str): The name of the new blueprint node to create
+
+        Returns:
+            (Blueprint, PyNode) of the new Blueprint and node
+        """
         pm.cmds.undoInfo(openChunk=True, chunkName='Create Pulse Blueprint')
         blueprint = Blueprint()
         blueprint.initializeDefaultActions()
-        blueprint.saveToDefaultNode()
+        node = blueprint.saveToNode(nodeName, create=True)
         pm.cmds.undoInfo(closeChunk=True)
-
-    @staticmethod
-    def getDefaultNode():
-        if pm.cmds.objExists(BLUEPRINT_NODENAME):
-            return pm.PyNode(BLUEPRINT_NODENAME)
-
-    @staticmethod
-    def deleteDefaultNode():
-        if pm.cmds.objExists(BLUEPRINT_NODENAME):
-            pm.cmds.delete(BLUEPRINT_NODENAME)
-
-    @staticmethod
-    def doesDefaultNodeExist():
-        return pm.cmds.objExists(BLUEPRINT_NODENAME)
+        return blueprint, node
 
     @staticmethod
     def isBlueprintNode(node):
@@ -109,6 +91,13 @@ class Blueprint(object):
         Return whether the given node is a Blueprint node
         """
         return meta.hasMetaClass(node, BLUEPRINT_METACLASS)
+    
+    @staticmethod
+    def getAllBlueprintNodes():
+        """
+        Return all nodes in the scene with Blueprint data
+        """
+        return meta.findMetaNodes(BLUEPRINT_METACLASS)
 
     def __init__(self):
         # the name of the rig this blueprint represents
@@ -140,8 +129,11 @@ class Blueprint(object):
         Save this Blueprint to a node, creating a new node if desired.
 
         Args:
-            node: A PyNode or node name
-            create: A bool, whether to create the node if it doesn't exist
+            node (PyNode or str): A node or node name
+            create (bool): If true, create the node if necessary
+
+        Returns:
+            The node on which the blueprint was saved
         """
         if create and not pm.cmds.objExists(node):
             node = pm.cmds.createNode('network', n=node)
@@ -150,10 +142,7 @@ class Blueprint(object):
         meta.setMetaData(node, BLUEPRINT_METACLASS, data, replace=True)
         et = time.time()
         LOG.debug('blueprint save time: {0}s'.format(et - st))
-
-
-    def saveToDefaultNode(self):
-        self.saveToNode(BLUEPRINT_NODENAME, create=True)
+        return node
 
     def loadFromNode(self, node):
         """
@@ -167,12 +156,6 @@ class Blueprint(object):
                 "Node does not contain Blueprint data: {0}".format(node))
         data = meta.getMetaData(node, BLUEPRINT_METACLASS)
         self.deserialize(data)
-
-    def loadFromDefaultNode(self):
-        if pm.cmds.objExists(BLUEPRINT_NODENAME):
-            self.loadFromNode(BLUEPRINT_NODENAME)
-            return True
-        return False
 
     def actionIterator(self):
         """
@@ -487,7 +470,8 @@ class BlueprintBuilder(object):
             # return progress
             yield dict(current=currentStep, total=totalSteps)
 
-        # delete the blueprint node
-        Blueprint.deleteDefaultNode()
+        # delete all blueprint nodes
+        for node in Blueprint.getAllBlueprintNodes():
+            pm.delete(node)
 
         yield dict(current=currentStep, total=totalSteps, finish=True)

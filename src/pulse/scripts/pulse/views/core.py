@@ -331,6 +331,20 @@ class BlueprintUIModel(QtCore.QObject):
             self._setBlueprint(None)
             LOG.debug('load failed.')
 
+    def createNode(self):
+        """
+        Delete the blueprint node of this model
+        """
+        if not cmds.objExists(self.blueprintNodeName):
+            pulse.Blueprint.createNode(self.blueprintNodeName)
+
+    def deleteNode(self):
+        """
+        Delete the blueprint node of this model
+        """
+        if cmds.objExists(self.blueprintNodeName):
+            cmds.delete(self.blueprintNodeName)
+
 
 
 class TreeModelBuildItem(object):

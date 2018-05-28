@@ -49,7 +49,7 @@ class BlueprintEditorWidget(QtWidgets.QWidget):
 
         self.deleteBtn = QtWidgets.QPushButton(self)
         self.deleteBtn.setText("Delete Blueprint")
-        self.deleteBtn.clicked.connect(pulse.Blueprint.deleteDefaultNode)
+        self.deleteBtn.clicked.connect(self.blueprintModel.deleteNode)
         layout.addWidget(self.deleteBtn)
 
         spacer = QtWidgets.QSpacerItem(0, 0, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)

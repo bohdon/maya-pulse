@@ -187,8 +187,9 @@ class BlueprintLifecycleEvents(MayaCallbackEvents):
             node: A MObject node that is being removed
         """
         # TODO: this is a hack to identify a blueprint node being deleted
-        #       that no longer counts as a valid blueprint because its data
-        #       has been removed. needs improvement
+        #       by checking its name, since its blueprint data is probably
+        #       already deleted. should be checking a known list of blueprints
+        #       and see if any of them no longer exist
         if (api.MFnDependencyNode(node).name() == BLUEPRINT_NODENAME or
                 Blueprint.isBlueprintNode(node)):
             LOG.debug("onBlueprintDeleted('{0}')".format(node))
