@@ -182,6 +182,9 @@ class ActionButtonsWidget(QtWidgets.QWidget):
             return
 
         grpIndexes = self.selectionModel.getSelectedGroups()
+        if not grpIndexes:
+            return
+
         for grpIndex in grpIndexes:
             grp = pulse.BuildItem('MyGroup')
             self.model.insertBuildItems(0, [grp], grpIndex)
@@ -192,6 +195,9 @@ class ActionButtonsWidget(QtWidgets.QWidget):
             return
 
         grpIndexes = self.selectionModel.getSelectedGroups()
+        if not grpIndexes:
+            return
+
         ac = pulse.getActionClass(typeName)
         newIndexes = []
         for grpIndex in grpIndexes:
