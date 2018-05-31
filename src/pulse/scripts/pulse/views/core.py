@@ -180,9 +180,7 @@ class BlueprintUIModel(QtCore.QObject):
     # the blueprint node was deleted
     blueprintDeleted = QtCore.Signal()
 
-    # the blueprint node was modified outside
-    # of normal operations within this model
-    # (e.g. from undo or similar)
+    # the blueprint node was modified from loading
     blueprintNodeChanged = QtCore.Signal()
 
     rigNameChanged = QtCore.Signal(str)
@@ -201,9 +199,13 @@ class BlueprintUIModel(QtCore.QObject):
 
         # the tree item model and selection model for BuildItems
         self.buildItemTreeModel = BuildItemTreeModel(self.blueprint)
+        # TODO: use events instead of making tree model responsible for save
+        self.buildItemTreeModel.uiModel = self
         self.buildItemSelectionModel = BuildItemSelectionModel(self.buildItemTreeModel)
 
         self._modelSubscribers = []
+
+        self._isSaving = False
 
         lifeEvents = BlueprintLifecycleEvents.getShared()
         lifeEvents.onBlueprintCreated.appendUnique(self._onBlueprintCreated)
@@ -283,8 +285,11 @@ class BlueprintUIModel(QtCore.QObject):
         """
         The blueprint node has changed, reload its data
         """
-        self.load()
-        self.blueprintNodeChanged.emit()
+        if not self._isSaving:
+            selectedPaths = self.buildItemSelectionModel.getSelectedItemPaths()
+            self.load()
+            self.blueprintNodeChanged.emit()
+            self.buildItemSelectionModel.setSelectedItemPaths(selectedPaths)
 
     def isReadOnly(self):
         """
@@ -314,9 +319,12 @@ class BlueprintUIModel(QtCore.QObject):
         """
         Save the Blueprint data to the blueprint node
         """
-        LOG.debug('saving...')
+        self._isSaving = True
         self.blueprint.saveToNode(self.blueprintNodeName)
-        LOG.debug('save finished.')
+        cmds.evalDeferred(self._saveFinishedDeferred)
+
+    def _saveFinishedDeferred(self):
+        self._isSaving = False
         # TODO: fire a signal
 
     def load(self):
@@ -324,6 +332,7 @@ class BlueprintUIModel(QtCore.QObject):
         Load the Blueprint data from the blueprint node
         """
         LOG.debug('loading...')
+        # TODO: preserve selection by item path
         if (cmds.objExists(self.blueprintNodeName) and
                 pulse.Blueprint.isBlueprintNode(self.blueprintNodeName)):
             # node exists and is a valid blueprint
@@ -332,7 +341,9 @@ class BlueprintUIModel(QtCore.QObject):
             else:
                 self.blueprint.loadFromNode(self.blueprintNodeName)
                 self.buildItemTreeModel.modelReset.emit()
+            # attempt to preserve selection
             LOG.debug('load finished.')
+
         else:
             # attempted to load from non-existent or invalid node
             self._setBlueprint(None)
@@ -376,8 +387,8 @@ class TreeModelBuildItem(object):
         otherwise return an empty list. Children are returned
         as TreeModelBuildItem instances.
         """
-        if self.buildItem.canHaveChildren:
-            return [TreeModelBuildItem(c) for c in self.buildItem.children]
+        if self.buildItem.itemCanHaveChildren:
+            return [TreeModelBuildItem(c) for c in self.buildItem.itemChildren]
         else:
             return []
 
@@ -404,15 +415,15 @@ class TreeModelBuildItem(object):
         """
         Return the parent of this BuildItem, as a TreeModelBuildItem
         """
-        if self.buildItem.parent:
-            return TreeModelBuildItem(self.buildItem.parent)
+        if self.buildItem.itemParent:
+            return TreeModelBuildItem(self.buildItem.itemParent)
 
     def row(self):
         """
         Return the row index of this item.
         """
-        if self.buildItem.parent:
-            return self.buildItem.parent.children.index(self.buildItem)
+        if self.buildItem.itemParent:
+            return self.buildItem.itemParent.itemChildren.index(self.buildItem)
         return 0
 
     def insertChildren(self, position, childBuildItems):
@@ -420,7 +431,7 @@ class TreeModelBuildItem(object):
         Insert an array of children into this item starting
         at a specified position.
         """
-        if not self.buildItem.canHaveChildren:
+        if not self.buildItem.itemCanHaveChildren:
             return False
 
         if position < 0:
@@ -436,7 +447,7 @@ class TreeModelBuildItem(object):
         Remove one or more children from thie item starting
         at a specified position.
         """
-        if not self.buildItem.canHaveChildren:
+        if not self.buildItem.itemCanHaveChildren:
             return False
 
         if position < 0 or position + count > self.childCount():
@@ -468,7 +479,7 @@ class TreeModelBuildItem(object):
             return self.buildItem.getDisplayName()
 
         elif role == QtCore.Qt.EditRole:
-            return self.buildItem.name
+            return self.buildItem.itemName
 
         elif role == QtCore.Qt.DecorationRole:
             iconFile = self.buildItem.getIconFile()
@@ -484,7 +495,7 @@ class TreeModelBuildItem(object):
                 return QtGui.QColor(*[c * 255 for c in color])
 
     def isDropEnabled(self):
-        return self.buildItem.canHaveChildren
+        return self.buildItem.itemCanHaveChildren
 
 
 
@@ -502,6 +513,11 @@ class BuildItemTreeModel(QtCore.QAbstractItemModel):
             self.blueprint = blueprint
         else:
             self.blueprint = pulse.Blueprint()
+        self.uiModel = None
+    
+    def save(self):
+        if self.uiModel:
+            self.uiModel.save()
 
     def setBlueprint(self, newBlueprint):
         """
@@ -533,6 +549,25 @@ class BuildItemTreeModel(QtCore.QAbstractItemModel):
             return self.createIndex(row, column, childItem.buildItem)
         else:
             return QtCore.QModelIndex()
+    
+    def indexForItem(self, buildItem):
+        """
+        Create a QModelIndex for a BuildItem in the blueprint
+        """
+        # the list of items from top-most parent downward
+        # that makes the parent hierarchy of the item
+        itemHierarchy = [buildItem]
+        thisItem = buildItem
+        while thisItem.itemParent:
+            itemHierarchy.insert(0, thisItem.itemParent)
+            thisItem = thisItem.itemParent
+
+        thisIndex = QtCore.QModelIndex()
+        for item in itemHierarchy[1:]:
+            row = TreeModelBuildItem(item).row()
+            thisIndex = self.index(row, 0, thisIndex)
+        
+        return thisIndex
 
     def flags(self, index):
         if not index.isValid():
@@ -574,12 +609,14 @@ class BuildItemTreeModel(QtCore.QAbstractItemModel):
         self.beginInsertRows(parent, position, position + len(childBuildItems) - 1)
         success = self.item(parent).insertChildren(position, childBuildItems)
         self.endInsertRows()
+        self.save()
         return success
 
     def removeRows(self, position, rows, parent=QtCore.QModelIndex()):
         self.beginRemoveRows(parent, position, position + rows - 1)
         success = self.item(parent).removeChildren(position, rows)
         self.endRemoveRows()
+        self.save()
         return success
 
     def data(self, index, role=QtCore.Qt.DisplayRole): # override
@@ -596,7 +633,8 @@ class BuildItemTreeModel(QtCore.QAbstractItemModel):
         result = self.item(index).setData(index.column(), value)
 
         if result:
-            self.dataChanged.emit(index, index)
+            self.dataChanged.emit(index, index, [])
+            self.save()
 
         return result
 
@@ -632,23 +670,59 @@ class BuildItemSelectionModel(QtCore.QItemSelectionModel):
     the BlueprintUIModel for a specific Blueprint.
     """
 
+    def getSelectedItems(self):
+        """
+        Return the currently selected BuildItems
+        """
+        indexes = self.selectedIndexes()
+        items = []
+        for index in indexes:
+            if index.isValid():
+                buildItem = index.internalPointer()
+                if buildItem:
+                    items.append(buildItem)
+        return list(set(items))
+
     def getSelectedGroups(self):
         """
         Return indexes of the selected BuildItems that can have children
         """
         indexes = self.selectedIndexes()
-        grps = []
+        indeces = []
         for index in indexes:
-            buildItem = index.internalPointer()
-            if buildItem.canHaveChildren:
-                grps.append(index)
-            else:
-                grps.append(index.parent())
-        return list(set(grps))
+            if index.isValid():
+                buildItem = index.internalPointer()
+                if buildItem and buildItem.itemCanHaveChildren:
+                    indeces.append(index)
+                # TODO: get parent until we have an item that supports children
+        return list(set(indeces))
 
     def getSelectedAction(self):
         """
         Return the currently selected BuildAction, if any.
         """
-        pass
+        items = self.getSelectedItems()
+        return [i for i in items if isinstance(i, pulse.BuildAction)]
 
+    def getSelectedItemPaths(self):
+        """
+        Return the full paths of the selected BuildItems
+        """
+        items = self.getSelectedItems()
+        return [i.getFullPath() for i in items]
+
+    def setSelectedItemPaths(self, paths):
+        """
+        Set the selection using BuildItem paths
+        """
+        model = self.model()
+        if not model or not hasattr(model, 'blueprint'):
+            return
+        
+        blueprint = model.blueprint
+        items = [blueprint.getItemByPath(p) for p in paths]
+        indeces = [model.indexForItem(i) for i in items if i]
+        self.clear()
+        for index in indeces:
+            if index.isValid():
+                self.select(index, QtCore.QItemSelectionModel.Select)

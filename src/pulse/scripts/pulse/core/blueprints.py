@@ -164,6 +164,22 @@ class Blueprint(object):
             if isinstance(item, BuildAction):
                 yield item
 
+    def getItemByPath(self, path):
+        """
+        Return a BuildItem from the Blueprint by path
+
+        Args:
+            path (string): A path pointing to a BuildItem
+                e.g. Root/My/Build/Action
+        """
+        # remove first item accounting for root
+        rootName, subpath = path.split('/', 1)
+        if rootName == self.rootItem.itemName:
+            pathFromRoot = subpath
+        else:
+            pathFromRoot = path
+        return self.rootItem.getChildByPath(pathFromRoot)
+
     def initializeDefaultActions(self):
         """
         Create a set of core BuildActions that are common in most
@@ -178,7 +194,7 @@ class Blueprint(object):
         mainGroup = BuildItem(name='Main')
         saveAction = getActionClass('SaveBuiltRig')()
         optimizeAction = getActionClass('OptimizeScene')()
-        self.rootItem.children = [
+        self.rootItem.itemChildren = [
             importAction,
             hierAction,
             mainGroup,
@@ -442,7 +458,7 @@ class BlueprintBuilder(object):
         for currentStep, action in enumerate(allActions):
             path = action.getFullPath()
             # remove item name from path
-            path = path[len(self.blueprint.rootItem.name):]
+            path = path[len(self.blueprint.rootItem.itemName):]
             self.log.info('[{0}/{1}] {path}'.format(
                 currentStep + 1, totalSteps, path=path))
 

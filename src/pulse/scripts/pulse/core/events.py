@@ -204,7 +204,8 @@ class BlueprintChangeEvents(MayaCallbackEvents):
     Events:
         onBlueprintNodeChanged(node):
             Called when the blueprint changes, passes the Blueprint
-            node that was modified.
+            node that was modified. This is fired after a deferred
+            evaluation, meaning it will not occur immediately on change.
     """
 
     # shared event instances, mapped by blueprint node names

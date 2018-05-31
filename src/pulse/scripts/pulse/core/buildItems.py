@@ -134,13 +134,13 @@ class BuildItem(object):
 
     def __init__(self, name=None):
         # the parent BuildItem
-        self.parent = None
+        self.itemParent = None
         # the name of this item (unique among siblings)
-        self.name = None
+        self.itemName = None
         # is this item allowed to have children?
-        self.canHaveChildren = True
+        self.itemCanHaveChildren = True
         # list of child BuildItems
-        self.children = []
+        self.itemChildren = []
         # set given or default name
         self.setName(name if name else self.getDefaultName())
 
@@ -161,7 +161,7 @@ class BuildItem(object):
 
     def setName(self, newName):
         if newName:
-            self.name = newName
+            self.itemName = newName
         self.ensureUniqueName()
 
     def getDefaultName(self):
@@ -175,20 +175,21 @@ class BuildItem(object):
         Change this items name to ensure that
         it is unique among siblings.
         """
-        if self.parent:
-            siblings = [c for c in self.parent.children if not (c is self)]
-            siblingNames = [s.name for s in siblings]
-            while self.name in siblingNames:
-                self.name = _incrementName(self.name)
+        if self.itemParent:
+            siblings = [
+                c for c in self.itemParent.itemChildren if not (c is self)]
+            siblingNames = [s.itemName for s in siblings]
+            while self.itemName in siblingNames:
+                self.itemName = _incrementName(self.itemName)
 
     def getDisplayName(self):
         """
         Return the display name for this item.
         """
-        if self.canHaveChildren:
-            return '{0} ({1})'.format(self.name, self.getChildCount())
+        if self.itemCanHaveChildren:
+            return '{0} ({1})'.format(self.itemName, self.getChildCount())
         else:
-            return self.name
+            return self.itemName
 
     def getColor(self):
         """
@@ -210,27 +211,27 @@ class BuildItem(object):
             A string path to the item
             e.g. 'MyGroupA/MyGroupB/MyBuildItem'
         """
-        parentPath = self.parent.getFullPath() if self.parent else None
+        parentPath = self.itemParent.getFullPath() if self.itemParent else None
         if parentPath:
-            return '{0}/{1}'.format(parentPath, self.name)
+            return '{0}/{1}'.format(parentPath, self.itemName)
         else:
-            return self.name
-    
+            return self.itemName
+
     def setParent(self, newParent):
-        self.parent = newParent
-        if self.parent:
+        self.itemParent = newParent
+        if self.itemParent:
             self.ensureUniqueName()
 
     def clearChildren(self):
-        if not self.canHaveChildren:
+        if not self.itemCanHaveChildren:
             return
 
-        for item in self.children:
+        for item in self.itemChildren:
             item.setParent(None)
-        self.children = []
+        self.itemChildren = []
 
     def addChild(self, item):
-        if not self.canHaveChildren:
+        if not self.itemCanHaveChildren:
             return
 
         if item is self:
@@ -240,69 +241,69 @@ class BuildItem(object):
             raise ValueError(
                 '{0} is not a valid BuildItem type'.format(type(item).__name__))
 
-        self.children.append(item)
+        self.itemChildren.append(item)
         item.setParent(self)
 
     def removeChild(self, item):
-        if not self.canHaveChildren:
+        if not self.itemCanHaveChildren:
             return
 
-        if item in self.children:
-            self.children.remove(item)
+        if item in self.itemChildren:
+            self.itemChildren.remove(item)
             item.setParent(None)
 
     def removeChildAt(self, index):
-        if not self.canHaveChildren:
+        if not self.itemCanHaveChildren:
             return
 
-        if index < 0 or index >= len(self.children):
+        if index < 0 or index >= len(self.itemChildren):
             return
 
-        self.children[index].setParent(None)
-        del self.children[index]
+        self.itemChildren[index].setParent(None)
+        del self.itemChildren[index]
 
     def insertChild(self, index, item):
-        if not self.canHaveChildren:
+        if not self.itemCanHaveChildren:
             return
 
         if not isinstance(item, BuildItem):
             raise ValueError(
                 '{0} is not a valid BuildItem type'.format(type(item).__name__))
 
-        self.children.insert(index, item)
+        self.itemChildren.insert(index, item)
         item.setParent(self)
 
     def getChildCount(self):
-        if not self.canHaveChildren:
+        if not self.itemCanHaveChildren:
             return 0
 
-        return len(self.children)
+        return len(self.itemChildren)
 
     def getChildByName(self, name):
         """
         Return a child item by name or path
         """
-        if not self.canHaveChildren:
+        if not self.itemCanHaveChildren:
             return
 
-        for item in self.children:
-            if item.name == name:
+        for item in self.itemChildren:
+            if item.itemName == name:
                 return item
 
     def getChildByPath(self, path):
         """
         Return a child item by relative path
         """
-        if not self.canHaveChildren:
+        if not self.itemCanHaveChildren:
             return
 
-        if '.' in path:
-            childName, grandChildPath = path.split('.', 1)
+        if '/' in path:
+            childName, grandChildPath = path.split('/', 1)
             child = self.getChildByName(childName)
             if child:
                 return child.getChildByPath(grandChildPath)
         else:
-            return self.getChildByName(childName)
+            return self.getChildByName(path)
 
     def childIterator(self):
         """
@@ -312,8 +313,8 @@ class BuildItem(object):
         """
         yield self
 
-        if self.canHaveChildren:
-            for child in self.children:
+        if self.itemCanHaveChildren:
+            for child in self.itemChildren:
                 for item in child.childIterator():
                     yield item
 
@@ -323,11 +324,11 @@ class BuildItem(object):
         """
         data = {}
         data['type'] = self.getTypeName()
-        data['name'] = self.name
+        data['name'] = self.itemName
 
-        if self.canHaveChildren:
+        if self.itemCanHaveChildren:
             # TODO: make a recursion loop check
-            data['children'] = [c.serialize() for c in self.children]
+            data['children'] = [c.serialize() for c in self.itemChildren]
 
         return data
 
@@ -345,13 +346,13 @@ class BuildItem(object):
 
         self.setName(data['name'])
 
-        if self.canHaveChildren:
+        if self.itemCanHaveChildren:
             # detach any existing children
-            for child in self.children:
+            for child in self.itemChildren:
                 child.setParent(None)
             # deserialize all children, and connect them to this parent
-            self.children = [BuildItem.create(c) for c in data['children']]
-            for child in self.children:
+            self.itemChildren = [BuildItem.create(c) for c in data['children']]
+            for child in self.itemChildren:
                 if child:
                     # TODO: ensure unique name
                     child.setParent(self)
@@ -461,7 +462,7 @@ class BuildAction(BuildItem):
         super(BuildAction, self).__init__(name=name)
 
         # BuildActions cannot have children
-        self.canHaveChildren = False
+        self.itemCanHaveChildren = False
 
         # rig is only available during build
         self.rig = None
@@ -599,7 +600,7 @@ class BatchBuildAction(BuildItem):
 
         # batch actions cannot have children, even though
         # they will yield actions as if they are children
-        self.canHaveChildren = False
+        self.itemCanHaveChildren = False
         # all constant attribute values
         self.constantValues = {}
         # the list of attribute names that vary per action instance
@@ -618,8 +619,8 @@ class BatchBuildAction(BuildItem):
 
     def getDisplayName(self):
         if not self.actionClass:
-            return '{0} (unconfigured)'.format(self.name)
-        return '{0} (x{1})'.format(self.name, self.getActionCount())
+            return '{0} (unconfigured)'.format(self.itemName)
+        return '{0} (x{1})'.format(self.itemName, self.getActionCount())
 
     def getColor(self):
         if self.actionClass:
