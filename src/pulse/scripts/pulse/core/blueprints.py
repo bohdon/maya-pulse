@@ -10,7 +10,7 @@ import pymel.core as pm
 import maya.cmds as cmds
 import pymetanode as meta
 
-from .buildItems import BuildItem, BuildGroup
+from .buildItems import BuildItem, BuildAction
 from .buildItems import getActionClass
 from .rigs import RIG_METACLASS, createRigNode
 from .. import version
@@ -36,8 +36,7 @@ class Blueprint(object):
     A Blueprint contains all the information necessary to build
     a full rig.
 
-    It is made up of hierarchical BuildGroups which contained
-    ordered lists of BuildSteps that perform the actual rig building.
+    It is composed of a hierarchy of BuildItems and BuildActions.
 
     It also contains a variety of settings and configurations such
     as the rigs name, build callbacks, etc
@@ -91,7 +90,7 @@ class Blueprint(object):
         Return whether the given node is a Blueprint node
         """
         return meta.hasMetaClass(node, BLUEPRINT_METACLASS)
-    
+
     @staticmethod
     def getAllBlueprintNodes():
         """
@@ -104,8 +103,8 @@ class Blueprint(object):
         self.rigName = 'newRig'
         # the version of this blueprint
         self.version = BLUEPRINT_VERSION
-        # the root BuildItem of this blueprint (a group with no name)
-        self.rootItem = BuildGroup(displayName='')
+        # the root BuildItem of this blueprint
+        self.rootItem = BuildItem('Root')
         # the config file to use when designing this Blueprint
         # can be absolute, or relative to any python sys path
         pulseDir = os.path.dirname(os.path.join(__file__))
@@ -159,9 +158,11 @@ class Blueprint(object):
 
     def actionIterator(self):
         """
-        Return the action iterator of the Blueprints root BuildGroup
+        Generator that yiels all BuildActions in this Blueprint
         """
-        return self.rootItem.actionIterator()
+        for item in self.rootItem.childIterator():
+            if isinstance(item, BuildAction):
+                yield item
 
     def initializeDefaultActions(self):
         """
@@ -174,7 +175,7 @@ class Blueprint(object):
         importAction = getActionClass('ImportReferences')()
         hierAction = getActionClass('BuildCoreHierarchy')()
         hierAction.allNodes = True
-        mainGroup = BuildGroup(displayName='Main')
+        mainGroup = BuildItem(name='Main')
         saveAction = getActionClass('SaveBuiltRig')()
         optimizeAction = getActionClass('OptimizeScene')()
         self.rootItem.children = [
@@ -184,25 +185,6 @@ class Blueprint(object):
             saveAction,
             optimizeAction,
         ]
-
-    def getBuildGroup(self, groupPath=''):
-        """
-        Return a BuildGroup by path. If no path
-        is given, return the root BuildGroup.
-
-        Args:
-            groupPath: A string path to a BuildGroup,
-                e.g. 'Main/MyGroup/MySubGroup'
-        """
-        groupNames = []
-        if groupPath and groupPath != '/':
-            groupNames = groupPath.split('/')
-        currentGroup = self.rootItem
-        for name in groupNames:
-            currentGroup = currentGroup.getChildGroupByName(name)
-            if not currentGroup:
-                return
-        return currentGroup
 
     def loadBlueprintConfig(self):
         """
@@ -454,19 +436,23 @@ class BlueprintBuilder(object):
 
         yield dict(current=currentStep, total=totalSteps)
 
-        # recursively iterate through all build items
+        # recursively iterate through all build actions
         allActions = list(self.blueprint.actionIterator())
         totalSteps = len(allActions)
-        for currentStep, (action, path) in enumerate(allActions):
-            _path = path + ' - ' if path else ''
-            self.log.info('[{0}/{1}] {path}{name}'.format(currentStep + 1,
-                                                          totalSteps, path=_path, name=action.getDisplayName()))
+        for currentStep, action in enumerate(allActions):
+            path = action.getFullPath()
+            # remove item name from path
+            path = path[len(self.blueprint.rootItem.name):]
+            self.log.info('[{0}/{1}] {path}'.format(
+                currentStep + 1, totalSteps, path=path))
+
             # run the action
             action.rig = self.rig
             try:
                 action.run()
             except Exception as error:
                 self._onError(action, error)
+
             # return progress
             yield dict(current=currentStep, total=totalSteps)
 

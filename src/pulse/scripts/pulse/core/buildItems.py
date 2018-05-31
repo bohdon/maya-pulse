@@ -1,6 +1,7 @@
 
 import os
 import logging
+import re
 import pymetanode as meta
 
 from .rigs import RIG_METACLASS
@@ -9,7 +10,6 @@ __all__ = [
     'BatchBuildAction',
     'BuildAction',
     'BuildActionError',
-    'BuildGroup',
     'BuildItem',
     'getActionClass',
     'getBuildItemClass',
@@ -21,6 +21,15 @@ __all__ = [
 LOG = logging.getLogger(__name__)
 
 BUILDITEM_TYPEMAP = {}
+
+
+def _incrementName(name):
+    numMatch = re.match('(.*?)([0-9]+$)', name)
+    if numMatch:
+        base, num = numMatch.groups()
+        return base + str(int(num) + 1)
+    else:
+        return name + ' 1'
 
 
 def _copyData(data, refNode=None):
@@ -121,10 +130,19 @@ class BuildItem(object):
         Return the type of BuildItem this is.
         Used for factory creation of BuildItems.
         """
-        raise NotImplementedError
+        return 'BuildItem'
 
-    def __init__(self):
+    def __init__(self, name=None):
+        # the parent BuildItem
         self.parent = None
+        # the name of this item (unique among siblings)
+        self.name = None
+        # is this item allowed to have children?
+        self.canHaveChildren = True
+        # list of child BuildItems
+        self.children = []
+        # set given or default name
+        self.setName(name if name else self.getDefaultName())
 
     def __repr__(self):
         return "<{0} '{1}'>".format(self.__class__.__name__, self.getDisplayName())
@@ -139,13 +157,38 @@ class BuildItem(object):
         """
         Return the name of the logger for this BuildItem
         """
-        raise NotImplementedError
+        return 'pulse.builditem'
+
+    def setName(self, newName):
+        if newName:
+            self.name = newName
+        self.ensureUniqueName()
+
+    def getDefaultName(self):
+        """
+        Return the default name to use when this item has no name
+        """
+        return 'Build Item'
+
+    def ensureUniqueName(self):
+        """
+        Change this items name to ensure that
+        it is unique among siblings.
+        """
+        if self.parent:
+            siblings = [c for c in self.parent.children if not (c is self)]
+            siblingNames = [s.name for s in siblings]
+            while self.name in siblingNames:
+                self.name = _incrementName(self.name)
 
     def getDisplayName(self):
         """
         Return the display name for this item.
         """
-        raise NotImplementedError
+        if self.canHaveChildren:
+            return '{0} ({1})'.format(self.name, self.getChildCount())
+        else:
+            return self.name
 
     def getColor(self):
         """
@@ -159,12 +202,133 @@ class BuildItem(object):
         """
         pass
 
+    def getFullPath(self):
+        """
+        Return the full path to this BuildItem.
+
+        Returns:
+            A string path to the item
+            e.g. 'MyGroupA/MyGroupB/MyBuildItem'
+        """
+        parentPath = self.parent.getFullPath() if self.parent else None
+        if parentPath:
+            return '{0}/{1}'.format(parentPath, self.name)
+        else:
+            return self.name
+    
+    def setParent(self, newParent):
+        self.parent = newParent
+        if self.parent:
+            self.ensureUniqueName()
+
+    def clearChildren(self):
+        if not self.canHaveChildren:
+            return
+
+        for item in self.children:
+            item.setParent(None)
+        self.children = []
+
+    def addChild(self, item):
+        if not self.canHaveChildren:
+            return
+
+        if item is self:
+            raise ValueError('Cannot add item as child of itself')
+
+        if not isinstance(item, BuildItem):
+            raise ValueError(
+                '{0} is not a valid BuildItem type'.format(type(item).__name__))
+
+        self.children.append(item)
+        item.setParent(self)
+
+    def removeChild(self, item):
+        if not self.canHaveChildren:
+            return
+
+        if item in self.children:
+            self.children.remove(item)
+            item.setParent(None)
+
+    def removeChildAt(self, index):
+        if not self.canHaveChildren:
+            return
+
+        if index < 0 or index >= len(self.children):
+            return
+
+        self.children[index].setParent(None)
+        del self.children[index]
+
+    def insertChild(self, index, item):
+        if not self.canHaveChildren:
+            return
+
+        if not isinstance(item, BuildItem):
+            raise ValueError(
+                '{0} is not a valid BuildItem type'.format(type(item).__name__))
+
+        self.children.insert(index, item)
+        item.setParent(self)
+
+    def getChildCount(self):
+        if not self.canHaveChildren:
+            return 0
+
+        return len(self.children)
+
+    def getChildByName(self, name):
+        """
+        Return a child item by name or path
+        """
+        if not self.canHaveChildren:
+            return
+
+        for item in self.children:
+            if item.name == name:
+                return item
+
+    def getChildByPath(self, path):
+        """
+        Return a child item by relative path
+        """
+        if not self.canHaveChildren:
+            return
+
+        if '.' in path:
+            childName, grandChildPath = path.split('.', 1)
+            child = self.getChildByName(childName)
+            if child:
+                return child.getChildByPath(grandChildPath)
+        else:
+            return self.getChildByName(childName)
+
+    def childIterator(self):
+        """
+        Generator that yields this item and all children, recursively.
+
+        Intended for use at build time only.
+        """
+        yield self
+
+        if self.canHaveChildren:
+            for child in self.children:
+                for item in child.childIterator():
+                    yield item
+
     def serialize(self):
         """
         Return this BuildItem as a serialized dict object
         """
         data = {}
         data['type'] = self.getTypeName()
+        data['name'] = self.name
+
+        if self.canHaveChildren:
+            # TODO: make a recursion loop check
+            data['children'] = [c.serialize() for c in self.children]
+
         return data
 
     def deserialize(self, data):
@@ -175,127 +339,25 @@ class BuildItem(object):
             data: A dict containing serialized data for this item
         """
         if data['type'] != self.getTypeName():
-            raise ValueError('BuildItem type `{0}` does not match data type `{1}`'.format(
-                self.getTypeName(), data['type']))
-
-
-class BuildGroup(BuildItem):
-    """
-    Represents a group of BuildItems that will be run in order.
-    This enables hierachical structuring of build items.
-    """
-
-    @classmethod
-    def getTypeName(cls):
-        return 'BuildGroup'
-
-    def __init__(self, displayName='NewGroup'):
-        super(BuildGroup, self).__init__()
-        # the display name of this group
-        self.displayName = displayName
-        # the list of build items to perform in order
-        self.children = []
-
-    def getLoggerName(self):
-        """
-        Return the name of the logger for this BuildGroup
-        """
-        return 'pulse.buildgroup'
-
-    def getDisplayName(self):
-        """
-        Return the display name for this group.
-        """
-        return self.displayName
-
-    def serialize(self):
-        # TODO: make a recursion loop check
-        data = super(BuildGroup, self).serialize()
-        data['displayName'] = self.displayName
-        data['children'] = [c.serialize() for c in self.children]
-        return data
-
-    def deserialize(self, data):
-        super(BuildGroup, self).deserialize(data)
-        self.displayName = data['displayName']
-        self.children = [BuildItem.create(c) for c in data['children']]
-        for item in self.children:
-            if item:
-                item.parent = self
-
-    def clearChildren(self):
-        for item in self.children:
-            item.parent = None
-        self.children = []
-
-    def addChild(self, item):
-        if item is self:
-            raise ValueError('Cannot add BuildGroup as child of itself')
-        if not isinstance(item, BuildItem):
             raise ValueError(
-                '{0} is not a valid BuildItem type'.format(type(item).__name__))
-        self.children.append(item)
-        item.parent = self
+                "BuildItem type `{0}` does not match data type `{1}`".format(
+                    self.getTypeName(), data['type']))
 
-    def removeChild(self, item):
-        if item in self.children:
-            self.children.remove(item)
-            item.parent = None
+        self.setName(data['name'])
 
-    def removeChildAt(self, index):
-        if index < 0 or index >= len(self.children):
-            return
-
-        self.children[index].parent = None
-        del self.children[index]
-
-    def insertChild(self, index, item):
-        if not isinstance(item, BuildItem):
-            raise ValueError(
-                '{0} is not a valid BuildItem type'.format(type(item).__name__))
-        self.children.insert(index, item)
-        item.parent = self
-
-    def getChildCount(self):
-        return len(self.children)
-
-    def getChildGroupByName(self, name):
-        """
-        Return a child BuildGroup by name
-        """
-        for item in self.children:
-            if isinstance(item, BuildGroup) and item.displayName == name:
-                return item
-
-    def actionIterator(self, parentPath=None):
-        """
-        Yields all BuildActions in this BuildGroup,
-        recursively handling child BuildGroups as well.
-
-        Args:
-            parentPath: A string path representing the parent BuildGroup
-
-        Returns:
-            Iterator of (BuildAction, string) representing all actions and
-            the build group path leading to them.
-        """
-        thisPath = '/'.join([parentPath, self.getDisplayName()]
-                            ) if parentPath else self.getDisplayName()
-        for index, child in enumerate(self.children):
-            if thisPath:
-                pathAtIndex = '{0}[{1}]'.format(thisPath, index)
-            else:
-                pathAtIndex = None
-            if isinstance(child, (BuildGroup, BatchBuildAction)):
-                # iterate through child group or batch actions
-                for subItem, subPath in child.actionIterator(pathAtIndex):
-                    yield subItem, subPath
-            elif isinstance(child, BuildAction):
-                # return the action
-                yield child, pathAtIndex
+        if self.canHaveChildren:
+            # detach any existing children
+            for child in self.children:
+                child.setParent(None)
+            # deserialize all children, and connect them to this parent
+            self.children = [BuildItem.create(c) for c in data['children']]
+            for child in self.children:
+                if child:
+                    # TODO: ensure unique name
+                    child.setParent(self)
 
 
-BUILDITEM_TYPEMAP['BuildGroup'] = BuildGroup
+BUILDITEM_TYPEMAP['BuildItem'] = BuildItem
 
 
 class BuildActionError(Exception):
@@ -390,18 +452,20 @@ class BuildAction(BuildItem):
 
         return batchAction.actionClass(**data)
 
-    def __init__(self, **attrKwargs):
+    def __init__(self, name=None, **attrKwargs):
         """
         Args:
             attrKwargs: A dict of default values for this actions attributes.
                 Only values corresponding to a valid config attribute are used.
         """
-        super(BuildAction, self).__init__()
-        if self.config is None:
-            LOG.warning(self.__class__.__name__ + " was loaded without a config. " +
-                        "Use pulse action loading methods to ensure BuildActions are loaded properly")
+        super(BuildAction, self).__init__(name=name)
+
+        # BuildActions cannot have children
+        self.canHaveChildren = False
+
         # rig is only available during build
         self.rig = None
+
         # initialize attributes from config
         for attr in self.config['attrs']:
             if not hasattr(self, attr['name']):
@@ -416,10 +480,7 @@ class BuildAction(BuildItem):
         """
         return 'pulse.action.' + self.getTypeName().lower()
 
-    def getDisplayName(self):
-        """
-        Return the display name for this BuildAction.
-        """
+    def getDefaultName(self):
         return self.config['displayName']
 
     def getColor(self):
@@ -497,11 +558,9 @@ class BatchBuildAction(BuildItem):
     A special BuildItem that is designed to behave like
     an existing BuildAction, but allows running the action
     multiple times with different values for a subset of attributes.
-    BuildActions can be converted to and from BatchBuildAction
-    (with data loss when converting from Batch) for convenience.
-
-    BatchBuildActions are not run, instead they provide an actionIterator
-    just like BuildGroups which generates BuildAction instances at build time.
+    BuildActions can be converted to and from BatchBuildAction,
+    but will lose data when converting from a batch action to a
+    single action.
     """
 
     @classmethod
@@ -525,14 +584,22 @@ class BatchBuildAction(BuildItem):
         batch.constantValues = _copyData(data)
         return batch
 
-    def __init__(self):
+    def __init__(self, name=None):
         """
         Args:
             actionClass: The BuildAction class this batch action represents
         """
-        super(BatchBuildAction, self).__init__()
+        # declare members before super init to avoid
+        # error during default name initialization
+
         # the BuildAction class this batch represents
         self.actionClass = None
+
+        super(BatchBuildAction, self).__init__(name=name)
+
+        # batch actions cannot have children, even though
+        # they will yield actions as if they are children
+        self.canHaveChildren = False
         # all constant attribute values
         self.constantValues = {}
         # the list of attribute names that vary per action instance
@@ -543,11 +610,16 @@ class BatchBuildAction(BuildItem):
     def getLoggerName(self):
         return 'pulse.batchaction'
 
+    def getDefaultName(self):
+        if self.actionClass:
+            return self.actionClass.config['displayName']
+        else:
+            return 'BatchBuildAction'
+
     def getDisplayName(self):
         if not self.actionClass:
-            return 'BatchBuildAction (unconfigured)'
-
-        return self.actionClass.config['displayName']
+            return '{0} (unconfigured)'.format(self.name)
+        return '{0} (x{1})'.format(self.name, self.getActionCount())
 
     def getColor(self):
         if self.actionClass:
@@ -561,8 +633,10 @@ class BatchBuildAction(BuildItem):
 
     def serialize(self):
         data = super(BatchBuildAction, self).serialize()
-        data['actionClassName'] = self.actionClass.getTypeName(
-        ) if self.actionClass else None
+        if self.actionClass:
+            data['actionClassName'] = self.actionClass.getTypeName()
+        else:
+            data['actionClassName'] = None
         data['constantValues'] = self.constantValues
         data['variantAttributes'] = self.variantAttributes
         data['variantValues'] = self.variantValues
@@ -600,6 +674,7 @@ class BatchBuildAction(BuildItem):
         if self.actionClass:
             # initialize attributes from config
             self._initActionAttrs()
+            self.setName(self.getDefaultName())
 
     def _initActionAttrs(self):
         """
@@ -612,10 +687,12 @@ class BatchBuildAction(BuildItem):
         if self.actionClass:
             for attr in self.actionClass.config['attrs']:
                 if attr['name'] not in self.constantValues:
-                    self.constantValues[attr['name']
-                                        ] = self.actionClass.getDefaultValue(attr)
+                    val = self.actionClass.getDefaultValue(attr)
+                    self.constantValues[attr['name']] = val
 
     def addVariantAttr(self, attrName):
+        """
+        """
         if attrName in self.variantAttributes:
             return
 
@@ -682,26 +759,32 @@ class BatchBuildAction(BuildItem):
         """
         return len(self.variantValues)
 
-    def actionIterator(self, parentPath=None):
+    def childIterator(self):
         """
-        Return an iterator for all action instances that this batch
-        action represents, with their appropriate attribuate variations.
+        Generator that yields this item and creates all actions represented
+        by the variants of this batch action. The created actions have
+        this item set as their parent, so they will have valid paths.
 
-        Args:
-            parentPath: A string path representing the parent BuildGroup
-
-        Returns:
-            Iterator of (BuildAction, string) representing all actions and
-            the build group path leading to them.
+        Intended for use at build time only.
         """
-        _parentPath = (parentPath + '/') if parentPath else ''
-        thisPath = _parentPath + 'Batch'
-        for index, variant in enumerate(self.variantValues):
-            pathAtIndex = '{0}[{1}]'.format(thisPath, index)
-            kwargs = {k: v for k, v in self.constantValues.iteritems(
-            ) if k not in self.variantAttributes}
-            kwargs.update(variant)
-            yield self.actionClass(**kwargs), pathAtIndex
+        yield self
+
+        if self.actionClass:
+            # build constant value kwargs
+            constkwargs = {}
+            for k, v in self.constantValues.items():
+                if k not in self.variantAttributes:
+                    constkwargs[k] = v
+
+            # create and yield new build actions for each variant
+            for index, variant in enumerate(self.variantValues):
+                kwargs = {
+                    'name': '{0}{1}'.format(self.actionClass.getTypeName(), index)
+                }
+                kwargs.update(constkwargs)
+                kwargs.update(variant)
+                newAction = self.actionClass(**kwargs)
+                yield newAction
 
 
 BUILDITEM_TYPEMAP['BatchBuildAction'] = BatchBuildAction

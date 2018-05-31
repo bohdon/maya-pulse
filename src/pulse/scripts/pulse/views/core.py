@@ -144,7 +144,7 @@ class BlueprintUIModel(QtCore.QObject):
 
     BlueprintUIModels can exist without the Blueprint node in the
     scene. In this case the model won't be functional, but will
-    automatically update if the matching Blueprint node is created.
+    automatically update if the same named Blueprint node is created.
 
     The model maintains a list of subscribers used to properly manage
     and cleanup Maya callbacks, so any QWidgets should call addSubscriber
@@ -174,10 +174,17 @@ class BlueprintUIModel(QtCore.QObject):
         if blueprintNodeName in cls.INSTANCES:
             del cls.INSTANCES[blueprintNodeName]
 
-
+    # the blueprint node was created
     blueprintCreated = QtCore.Signal()
+
+    # the blueprint node was deleted
     blueprintDeleted = QtCore.Signal()
+
+    # the blueprint node was modified outside
+    # of normal operations within this model
+    # (e.g. from undo or similar)
     blueprintNodeChanged = QtCore.Signal()
+
     rigNameChanged = QtCore.Signal(str)
 
     def __init__(self, blueprintNodeName, parent=None):
@@ -358,6 +365,9 @@ class TreeModelBuildItem(object):
     """
 
     def __init__(self, buildItem):
+        if not isinstance(buildItem, pulse.BuildItem):
+            raise ValueError("Expected BuildItem, got {0}".format(
+                type(buildItem).__name__))
         self.buildItem = buildItem
 
     def children(self):
@@ -366,16 +376,10 @@ class TreeModelBuildItem(object):
         otherwise return an empty list. Children are returned
         as TreeModelBuildItem instances.
         """
-        if self.isGroup():
+        if self.buildItem.canHaveChildren:
             return [TreeModelBuildItem(c) for c in self.buildItem.children]
         else:
             return []
-
-    def isGroup(self):
-        """
-        Return True if the BuildItem is a BuildGroup
-        """
-        return isinstance(self.buildItem, pulse.BuildGroup)
 
     def columnCount(self):
         """
@@ -416,7 +420,7 @@ class TreeModelBuildItem(object):
         Insert an array of children into this item starting
         at a specified position.
         """
-        if not self.isGroup():
+        if not self.buildItem.canHaveChildren:
             return False
 
         if position < 0:
@@ -432,7 +436,7 @@ class TreeModelBuildItem(object):
         Remove one or more children from thie item starting
         at a specified position.
         """
-        if not self.isGroup():
+        if not self.buildItem.canHaveChildren:
             return False
 
         if position < 0 or position + count > self.childCount():
@@ -446,12 +450,12 @@ class TreeModelBuildItem(object):
     def setData(self, column, value):
         """
         Set data for this build item. Only supports setting
-        the display name for BuildGroups.
+        the name of BuildItems.
         """
-        if not self.isGroup():
-            return False
-
-        self.buildItem.displayName = value
+        if value:
+            self.buildItem.setName(value)
+        else:
+            self.buildItem.setName(self.buildItem.getDefaultName())
 
         return True
 
@@ -461,19 +465,10 @@ class TreeModelBuildItem(object):
         Return data for this item, for a specific Qt display role.
         """
         if role == QtCore.Qt.DisplayRole:
-            if isinstance(self.buildItem, pulse.BuildGroup):
-                return '{0} ({1})'.format(
-                    self.buildItem.getDisplayName(),
-                    self.buildItem.getChildCount())
-            elif isinstance(self.buildItem, pulse.BatchBuildAction):
-                return '{0} (x{1})'.format(
-                    self.buildItem.getDisplayName(),
-                    self.buildItem.getActionCount())
-            else:
-                return self.buildItem.getDisplayName()
+            return self.buildItem.getDisplayName()
 
         elif role == QtCore.Qt.EditRole:
-            return self.buildItem.getDisplayName()
+            return self.buildItem.name
 
         elif role == QtCore.Qt.DecorationRole:
             iconFile = self.buildItem.getIconFile()
@@ -487,6 +482,9 @@ class TreeModelBuildItem(object):
             color = self.buildItem.getColor()
             if color:
                 return QtGui.QColor(*[c * 255 for c in color])
+
+    def isDropEnabled(self):
+        return self.buildItem.canHaveChildren
 
 
 
@@ -540,9 +538,14 @@ class BuildItemTreeModel(QtCore.QAbstractItemModel):
         if not index.isValid():
             return QtCore.Qt.ItemIsDropEnabled
 
-        flags = QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsDragEnabled
-        if self.item(index).isGroup():
-            flags |= QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsDropEnabled
+        flags = QtCore.Qt.ItemIsEnabled \
+            | QtCore.Qt.ItemIsSelectable \
+            | QtCore.Qt.ItemIsDragEnabled \
+            | QtCore.Qt.ItemIsEditable
+
+        if self.item(index).isDropEnabled():
+            flags |= QtCore.Qt.ItemIsDropEnabled
+
         return flags
 
     def supportedDropActions(self):
@@ -631,13 +634,13 @@ class BuildItemSelectionModel(QtCore.QItemSelectionModel):
 
     def getSelectedGroups(self):
         """
-        Return the currently selected BuildGroup indexes
+        Return indexes of the selected BuildItems that can have children
         """
         indexes = self.selectedIndexes()
         grps = []
         for index in indexes:
             buildItem = index.internalPointer()
-            if isinstance(buildItem, pulse.BuildGroup):
+            if buildItem.canHaveChildren:
                 grps.append(index)
             else:
                 grps.append(index.parent())

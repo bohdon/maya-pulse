@@ -15,7 +15,6 @@ __all__ = [
     'ActionEditorWindow',
     'ActionForm',
     'BatchActionForm',
-    'BuildGroupForm',
     'BuildItemForm',
 ]
 
@@ -26,20 +25,22 @@ class BuildItemForm(QtWidgets.QWidget):
     Base class for a form for editing any type of BuildItem
     """
 
+    "The BuildItem of this form has been modified by the form"
     buildItemChanged = QtCore.Signal()
 
     @staticmethod
     def createItemWidget(buildItem, parent=None):
-        if isinstance(buildItem, pulse.BuildGroup):
-            return BuildGroupForm(buildItem, parent=parent)
-        elif isinstance(buildItem, pulse.BuildAction):
+        if isinstance(buildItem, pulse.BuildAction):
             return ActionForm(buildItem, parent=parent)
         elif isinstance(buildItem, pulse.BatchBuildAction):
             return BatchActionForm(buildItem, parent=parent)
+        else:
+            return BuildItemForm(buildItem, parent=parent)
         return QtWidgets.QWidget(parent=parent)
 
     def __init__(self, buildItem, parent=None):
         super(BuildItemForm, self).__init__(parent=parent)
+        self.buildItemPath = buildItem.getFullPath()
         self.buildItem = buildItem
         self.setupUi(self)
         self.setupContentUi(self)
@@ -102,14 +103,6 @@ class BuildItemForm(QtWidgets.QWidget):
         pass
 
 
-
-
-class BuildGroupForm(BuildItemForm):
-
-    def getItemDisplayName(self):
-        return '{0} ({1})'.format(self.buildItem.getDisplayName(), self.buildItem.getChildCount())
-
-
 class ActionForm(BuildItemForm):
     """
     Form for editing Actions that displays an attr form
@@ -158,9 +151,6 @@ class BatchActionForm(BuildItemForm):
     """
 
     convertToActionClicked = QtCore.Signal()
-
-    def getItemDisplayName(self):
-        return 'Batch {0} (x{1})'.format(self.buildItem.getDisplayName(), self.buildItem.getActionCount())
 
     def setupUi(self, parent):
         super(BatchActionForm, self).setupUi(parent)

@@ -182,9 +182,9 @@ class ActionButtonsWidget(QtWidgets.QWidget):
             return
 
         grpIndexes = self.selectionModel.getSelectedGroups()
-        gc = pulse.getBuildItemClass('BuildGroup')
         for grpIndex in grpIndexes:
-            grp = gc()
+            grp = pulse.BuildItem()
+            grp.name = 'MyGroup'
             self.model.insertBuildItems(0, [grp], grpIndex)
         self.blueprintModel.save()
 
