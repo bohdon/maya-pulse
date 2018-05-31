@@ -316,14 +316,17 @@ class BatchActionForm(BuildItemForm):
     def addVariant(self):
         self.buildItem.addVariant()
         self.setupVariantsUi(self)
+        self.buildItemChanged.emit()
 
     def removeVariantAtIndex(self, index):
         self.buildItem.removeVariantAt(index)
         self.setupVariantsUi(self)
+        self.buildItemChanged.emit()
 
     def removeVariantFromEnd(self):
         self.buildItem.removeVariantAt(-1)
         self.setupVariantsUi(self)
+        self.buildItemChanged.emit()
 
     def attrValueChanged(self, context, attrForm, attrValue, isValueValid):
         """
