@@ -10,7 +10,7 @@ import pymel.core as pm
 import maya.cmds as cmds
 import pymetanode as meta
 
-from .buildItems import BuildItem, BuildAction
+from .buildItems import BuildStep, BuildItem, BuildAction
 from .buildItems import getActionClass
 from .rigs import RIG_METACLASS, createRigNode
 from .. import version
@@ -34,15 +34,8 @@ BLUEPRINT_NODENAME = 'pulse_blueprint'
 class Blueprint(object):
     """
     A Blueprint contains all the information necessary to build
-    a full rig.
-
-    It is composed of a hierarchy of BuildItems and BuildActions.
-
-    It also contains a variety of settings and configurations such
-    as the rigs name, build callbacks, etc
-
-    All nodes related to the rig will be referenced by the blueprint,
-    and all nodes are organized into rig groups based on the nodes purpose.
+    a full rig. It is essentially made up of configuration settings
+    and an ordered hierarchy of BuildActions.
     """
 
     @staticmethod
@@ -104,7 +97,7 @@ class Blueprint(object):
         # the version of this blueprint
         self.version = BLUEPRINT_VERSION
         # the root BuildItem of this blueprint
-        self.rootItem = BuildItem('Root')
+        self.rootStep = BuildStep('Root')
         # the config file to use when designing this Blueprint
         # can be absolute, or relative to any python sys path
         pulseDir = os.path.dirname(os.path.join(__file__))
@@ -115,13 +108,13 @@ class Blueprint(object):
         data = {}
         data['rigName'] = self.rigName
         data['version'] = self.version
-        data['buildItems'] = self.rootItem.serialize()
+        data['steps'] = self.rootStep.serialize()
         return data
 
     def deserialize(self, data):
         self.rigName = data['rigName']
         self.version = data['version']
-        self.rootItem = BuildItem.create(data['buildItems'])
+        self.rootStep.deserialize(data['steps'])
 
     def saveToNode(self, node, create=False):
         """
@@ -160,9 +153,11 @@ class Blueprint(object):
         """
         Generator that yiels all BuildActions in this Blueprint
         """
-        for item in self.rootItem.childIterator():
-            if isinstance(item, BuildAction):
-                yield item
+        for item in self.rootStep.childIterator():
+            # TODO: allow for multiple actions to come from one step?
+            if item.isAction and item.action:
+                # TODO: warn if its supposed to have an action, but doesn't
+                yield item.action
 
     def getItemByPath(self, path):
         """
@@ -170,15 +165,9 @@ class Blueprint(object):
 
         Args:
             path (string): A path pointing to a BuildItem
-                e.g. Root/My/Build/Action
+                e.g. My/Build/Action
         """
-        # remove first item accounting for root
-        rootName, subpath = path.split('/', 1)
-        if rootName == self.rootItem.itemName:
-            pathFromRoot = subpath
-        else:
-            pathFromRoot = path
-        return self.rootItem.getChildByPath(pathFromRoot)
+        return self.rootStep.getChildByPath(path)
 
     def initializeDefaultActions(self):
         """
@@ -188,13 +177,13 @@ class Blueprint(object):
         WARNING: This clears all BuildActions and replaces them
         with the default set.
         """
-        importAction = getActionClass('ImportReferences')()
-        hierAction = getActionClass('BuildCoreHierarchy')()
-        hierAction.allNodes = True
-        mainGroup = BuildItem(name='Main')
-        saveAction = getActionClass('SaveBuiltRig')()
-        optimizeAction = getActionClass('OptimizeScene')()
-        self.rootItem.itemChildren = [
+        importAction = BuildStep.fromActionClass('ImportReferences')
+        hierAction = BuildStep.fromActionClass('BuildCoreHierarchy')
+        hierAction.action.allNodes = True
+        mainGroup = BuildStep('Main')
+        saveAction = BuildStep.fromActionClass('SaveBuiltRig')
+        optimizeAction = BuildStep.fromActionClass('OptimizeScene')
+        self.rootStep.itemChildren = [
             importAction,
             hierAction,
             mainGroup,
@@ -458,7 +447,7 @@ class BlueprintBuilder(object):
         for currentStep, action in enumerate(allActions):
             path = action.getFullPath()
             # remove item name from path
-            path = path[len(self.blueprint.rootItem.itemName):]
+            path = path[len(self.blueprint.rootStep.itemName):]
             self.log.info('[{0}/{1}] {path}'.format(
                 currentStep + 1, totalSteps, path=path))
 

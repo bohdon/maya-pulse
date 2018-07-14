@@ -11,6 +11,7 @@ __all__ = [
     'BuildAction',
     'BuildActionError',
     'BuildItem',
+    'BuildStep',
     'getActionClass',
     'getBuildItemClass',
     'getRegisteredActions',
@@ -96,12 +97,423 @@ def registerActions(actionClasses):
         BUILDITEM_TYPEMAP[typeName] = c
 
 
+class BuildStep(object):
+    """
+    Represents a step to perform when building a Blueprint.
+    Steps are hierarchical, but a BuildStep that performs a BuildAction
+    cannot have children.
+    """
+
+    @staticmethod
+    def fromData(data):
+        """
+        Return a new BuildStep instance created
+        from serialized data.
+
+        Args:
+            data (dict): Serialized BuildStep data
+        """
+        step = BuildStep()
+        step.deserialize(data)
+        return step
+
+    @staticmethod
+    def fromActionClass(actionClass):
+        """
+        Return a new BuildStep that represents a
+        new BuildAction of a specific class.
+
+        Args:
+            actionClass (str): The name of the BuildAction class
+        """
+        step = BuildStep()
+        step.setIsAction(True)
+        step.setActionClass(actionClass)
+        return step
+
+    @staticmethod
+    def fromAction(action):
+        """
+        Return a new BuildStep for an existing BuildAction instance.
+
+        Args:
+            action (BuildAction): A BuildAction. Should not already be
+                in use by another BuildStep, otherwise this may lead to
+                unpredictable behavior.
+        """
+        step = BuildStep(action.getDisplayName())
+        step.setIsAction(True)
+        step.setAction(action)
+        return step
+
+    def __init__(self, name='BuildStep'):
+        # the name of this step (unique among siblings)
+        self._name = name
+        # does this step represent a BuildAction?
+        self._isAction = False
+        # the name of the BuildAction class for this step
+        self._actionClass = None
+        # the BuildAction for this step, created
+        # automatically when the action class is set
+        self._action = None
+        # the parent BuildStep
+        self._parent = None
+        # list of child BuildSteps
+        self._children = []
+
+    @property
+    def name(self):
+        return self._name
+
+    def setName(self, newName):
+        """
+        Set the name of the BuildStep, modifying it if necessary
+        to ensure that it is unique among siblings.
+
+        Args:
+            newName (str): The new name of the step
+        """
+        if newName:
+            self._name = newName
+        self.ensureUniqueName()
+
+    @property
+    def isAction(self):
+        return self._isAction
+
+    def setIsAction(self, newIsAction):
+        """
+        Set whether or not this step represents a BuildAction.
+        If true, will clear all children. If False, will clear
+        any existing action.
+
+        Args:
+            newIsAction (bool): The new value for isAction
+        """
+        if self._isAction != newIsAction:
+            self._isAction = newIsAction
+            if not self._isAction:
+                self._actionClass = None
+                self._action = None
+
+    @property
+    def canHaveChildren(self):
+        return not self.isAction
+
+    @property
+    def actionClass(self):
+        return self._actionClass
+
+    @property
+    def action(self):
+        return self._action
+
+    def setAction(self, action):
+        """
+        Set the BuildStep's action, and set the actionClass to match.
+
+        Args:
+            action (BuildAction): A BuildAction instance. Should not
+                be in use by another BuildStep.
+        """
+        if not self.isAction:
+            raise RuntimeError(
+                'BuildStep is not an action, set isAction to True first')
+
+        if not isinstance(action, BuildAction):
+            raise TypeError(
+                'Expected BuildAction, got {0}'.format(type(action).__name__))
+
+        self._actionClass = action.getTypeName()
+        self._action = action
+
+    @property
+    def parent(self):
+        return self._parent
+
+    def setParent(self, newParent):
+        if newParent and not newParent.canHaveChildren:
+            return
+
+        if self._parent is not newParent:
+            self._parent = newParent
+            if self._parent:
+                self.ensureUniqueName()
+
+    @property
+    def children(self):
+        return self._children
+
+    def __repr__(self):
+        return "<BuildStep '{0}'>".format(self.getDisplayName())
+
+    def ensureUniqueName(self):
+        """
+        Change this step's name to ensure that
+        it is unique among siblings.
+        """
+        if self._parent:
+            siblings = [c for c in self._parent.children if not (c is self)]
+            siblingNames = [s.name for s in siblings]
+            while self._name in siblingNames:
+                self._name = _incrementName(self._name)
+
+    def setActionClass(self, name):
+        """
+        Set the BuildAction class for this step by name.
+        Rebuilds the BuildAction instance, but attempts to
+        preserve data from the previous action if applicable.
+
+        Args:
+            name (str): The name of a BuildAction class
+        """
+        if not self.isAction:
+            return
+
+        if self._actionClass != name:
+            self._actionClass = name
+            self.rebuildAction()
+
+    def rebuildAction(self, preserveData=True):
+        """
+        Rebuild the current BuildAction instance for this step
+        based on the current action class.
+
+        Args:
+            preserveData (bool): When true, data will be transferred
+                from the existing BuildAction, if one exists.
+        """
+        if not self.isAction:
+            self._actionClass = None
+            self._action = None
+            return
+
+        if not self._actionClass:
+            self._action = None
+            return
+
+        oldAction = self._action
+        self._action = BuildAction.fromTypeName(self._actionClass)
+
+        if preserveData:
+            if oldAction and self._action:
+                self._action.deserialize(oldAction)
+
+        # TODO: set name to match new action?
+
+    def getDisplayName(self):
+        """
+        Return the display name for this step.
+        """
+        if self.isAction:
+            # TODO: allow BuildAction to modify display name
+            #       based on its current state
+            return self._name
+        else:
+            return '{0} ({1})'.format(self._name, self.getChildCount())
+
+    def getColor(self):
+        """
+        Return the color of this BuildStep when represented in the UI
+        """
+        if self.isAction and self._action:
+            return self._action.getColor()
+        else:
+            pass
+
+    def getIconFile(self):
+        """
+        Return the full path to this build step's icon
+        """
+        if self.isAction and self._action:
+            return self._action.getIconFile()
+        else:
+            pass
+
+    def getFullPath(self):
+        """
+        Return the full path to this BuildStep.
+
+        Returns:
+            A string path to the step
+            e.g. 'MyGroupA/MyGroupB/MyBuildStep'
+        """
+        if self._parent:
+            parentPath = self._parent.getFullPath()
+            if parentPath:
+                return '{0}/{1}'.format(parentPath, self._name)
+            else:
+                return self._name
+        else:
+            # a root step, or step without a parent has no path
+            return None
+
+    def clearChildren(self):
+        if not self.canHaveChildren:
+            return
+
+        for step in self._children:
+            step.setParent(None)
+
+        self._children = []
+
+    def addChild(self, step):
+        if not self.canHaveChildren:
+            return
+
+        if step is self:
+            raise ValueError('Cannot add step as child of itself')
+
+        if not isinstance(step, BuildStep):
+            raise TypeError(
+                'Expected BuildStep, got {0}'.format(type(step).__name__))
+
+        self._children.append(step)
+        step.setParent(self)
+
+    def removeChild(self, step):
+        if not self.canHaveChildren:
+            return
+
+        if step in self._children:
+            self._children.remove(step)
+            step.setParent(None)
+
+    def removeChildAt(self, index):
+        if not self.canHaveChildren:
+            return
+
+        if index < 0 or index >= len(self._children):
+            return
+
+        self._children[index].setParent(None)
+        del self._children[index]
+
+    def insertChild(self, index, step):
+        if not self.canHaveChildren:
+            return
+
+        if not isinstance(step, BuildStep):
+            raise TypeError(
+                'Expected BuildStep, got {0}'.format(type(step).__name__))
+
+        self._children.insert(index, step)
+        step.setParent(self)
+
+    def getChildCount(self):
+        if not self.canHaveChildren:
+            return 0
+
+        return len(self._children)
+
+    def getChildByName(self, name):
+        """
+        Return a child step by name
+        """
+        if not self.canHaveChildren:
+            return
+
+        for step in self._children:
+            if step.name == name:
+                return step
+
+    def getChildByPath(self, path):
+        """
+        Return a child step by relative path
+        """
+        if not self.canHaveChildren:
+            return
+
+        if '/' in path:
+            childName, grandChildPath = path.split('/', 1)
+            child = self.getChildByName(childName)
+            if child:
+                return child.getChildByPath(grandChildPath)
+        else:
+            return self.getChildByName(path)
+
+    def childIterator(self):
+        """
+        Generator that yields this step and all children, recursively.
+        """
+        yield self
+
+        if self.canHaveChildren:
+            for child in self._children:
+                for step in child.childIterator():
+                    yield step
+
+    def serialize(self):
+        """
+        Return this BuildStep as a serialized dict object
+        """
+        data = {}
+        data['name'] = self._name
+        data['isAction'] = self._isAction
+        if self.isAction:
+            data['actionClass'] = self._actionClass
+            if self._action:
+                data['action'] = self._action.serialize()
+
+        if self.canHaveChildren:
+            # TODO: perform a recursion loop check
+            data['children'] = [c.serialize() for c in self._children]
+
+        return data
+
+    def deserialize(self, data):
+        """
+        Load configuration of this BuildStep from data
+
+        Args:
+            data: A dict containing serialized data for this step
+        """
+        self.setName(data['name'])
+        self.setIsAction(data['isAction'])
+        if 'actionClass' in data:
+            self.setActionClass(data['actionClass'])
+        if 'action' in data and self._action:
+            self._action.deserialize(data['action'])
+
+        if self.canHaveChildren:
+            # detach any existing children
+            self.clearChildren()
+            # deserialize all children, and connect them to this parent
+            self._children = [BuildStep.fromData(c) for c in data['children']]
+            for child in self._children:
+                if child:
+                    child.setParent(self)
+
+
+class BuildActionError(Exception):
+    """
+    A BuildAction was misconfigured or failed during build
+    """
+    pass
+
+
 class BuildItem(object):
     """
-    Represents an action that can be performed during rig building.
+    Represents an action that can be performed during a build step.
     This is a base class not intended for direct use.
     Subclass BuildAction when creating custom rigging operations.
     """
+
+    @staticmethod
+    def fromTypeName(name):
+        """
+        Create and return a BuildItem by type name.
+
+        Args:
+            name (str): The name of a registered BuildItem class
+        """
+        itemClass = getBuildItemClass(name)
+        if itemClass:
+            item = itemClass()
+            return item
+        else:
+            LOG.error("Failed to find BuildItemClass "
+                      "for data type: {0}".format(name))
 
     @staticmethod
     def create(data):
@@ -110,7 +522,7 @@ class BuildItem(object):
         on the given serialized data.
 
         This is a factory method that automatically
-        determines the instance type from the data.
+        determines the class to instance from the data type.
 
         Args:
             data: A dict object containing serialized BuildItem data
@@ -132,20 +544,11 @@ class BuildItem(object):
         """
         return 'BuildItem'
 
-    def __init__(self, name=None):
-        # the parent BuildItem
-        self.itemParent = None
-        # the name of this item (unique among siblings)
-        self.itemName = None
-        # is this item allowed to have children?
-        self.itemCanHaveChildren = True
-        # list of child BuildItems
-        self.itemChildren = []
-        # set given or default name
-        self.setName(name if name else self.getDefaultName())
+    def __init__(self):
+        pass
 
     def __repr__(self):
-        return "<{0} '{1}'>".format(self.__class__.__name__, self.getDisplayName())
+        return "<{0}>".format(self.__class__.__name__)
 
     @property
     def log(self):
@@ -159,37 +562,11 @@ class BuildItem(object):
         """
         return 'pulse.builditem'
 
-    def setName(self, newName):
-        if newName:
-            self.itemName = newName
-        self.ensureUniqueName()
-
     def getDefaultName(self):
         """
         Return the default name to use when this item has no name
         """
         return 'Build Item'
-
-    def ensureUniqueName(self):
-        """
-        Change this items name to ensure that
-        it is unique among siblings.
-        """
-        if self.itemParent:
-            siblings = [
-                c for c in self.itemParent.itemChildren if not (c is self)]
-            siblingNames = [s.itemName for s in siblings]
-            while self.itemName in siblingNames:
-                self.itemName = _incrementName(self.itemName)
-
-    def getDisplayName(self):
-        """
-        Return the display name for this item.
-        """
-        if self.itemCanHaveChildren:
-            return '{0} ({1})'.format(self.itemName, self.getChildCount())
-        else:
-            return self.itemName
 
     def getColor(self):
         """
@@ -203,133 +580,12 @@ class BuildItem(object):
         """
         pass
 
-    def getFullPath(self):
-        """
-        Return the full path to this BuildItem.
-
-        Returns:
-            A string path to the item
-            e.g. 'MyGroupA/MyGroupB/MyBuildItem'
-        """
-        parentPath = self.itemParent.getFullPath() if self.itemParent else None
-        if parentPath:
-            return '{0}/{1}'.format(parentPath, self.itemName)
-        else:
-            return self.itemName
-
-    def setParent(self, newParent):
-        self.itemParent = newParent
-        if self.itemParent:
-            self.ensureUniqueName()
-
-    def clearChildren(self):
-        if not self.itemCanHaveChildren:
-            return
-
-        for item in self.itemChildren:
-            item.setParent(None)
-        self.itemChildren = []
-
-    def addChild(self, item):
-        if not self.itemCanHaveChildren:
-            return
-
-        if item is self:
-            raise ValueError('Cannot add item as child of itself')
-
-        if not isinstance(item, BuildItem):
-            raise ValueError(
-                '{0} is not a valid BuildItem type'.format(type(item).__name__))
-
-        self.itemChildren.append(item)
-        item.setParent(self)
-
-    def removeChild(self, item):
-        if not self.itemCanHaveChildren:
-            return
-
-        if item in self.itemChildren:
-            self.itemChildren.remove(item)
-            item.setParent(None)
-
-    def removeChildAt(self, index):
-        if not self.itemCanHaveChildren:
-            return
-
-        if index < 0 or index >= len(self.itemChildren):
-            return
-
-        self.itemChildren[index].setParent(None)
-        del self.itemChildren[index]
-
-    def insertChild(self, index, item):
-        if not self.itemCanHaveChildren:
-            return
-
-        if not isinstance(item, BuildItem):
-            raise ValueError(
-                '{0} is not a valid BuildItem type'.format(type(item).__name__))
-
-        self.itemChildren.insert(index, item)
-        item.setParent(self)
-
-    def getChildCount(self):
-        if not self.itemCanHaveChildren:
-            return 0
-
-        return len(self.itemChildren)
-
-    def getChildByName(self, name):
-        """
-        Return a child item by name or path
-        """
-        if not self.itemCanHaveChildren:
-            return
-
-        for item in self.itemChildren:
-            if item.itemName == name:
-                return item
-
-    def getChildByPath(self, path):
-        """
-        Return a child item by relative path
-        """
-        if not self.itemCanHaveChildren:
-            return
-
-        if '/' in path:
-            childName, grandChildPath = path.split('/', 1)
-            child = self.getChildByName(childName)
-            if child:
-                return child.getChildByPath(grandChildPath)
-        else:
-            return self.getChildByName(path)
-
-    def childIterator(self):
-        """
-        Generator that yields this item and all children, recursively.
-
-        Intended for use at build time only.
-        """
-        yield self
-
-        if self.itemCanHaveChildren:
-            for child in self.itemChildren:
-                for item in child.childIterator():
-                    yield item
-
     def serialize(self):
         """
         Return this BuildItem as a serialized dict object
         """
         data = {}
         data['type'] = self.getTypeName()
-        data['name'] = self.itemName
-
-        if self.itemCanHaveChildren:
-            # TODO: make a recursion loop check
-            data['children'] = [c.serialize() for c in self.itemChildren]
-
         return data
 
     def deserialize(self, data):
@@ -344,29 +600,8 @@ class BuildItem(object):
                 "BuildItem type `{0}` does not match data type `{1}`".format(
                     self.getTypeName(), data['type']))
 
-        self.setName(data['name'])
-
-        if self.itemCanHaveChildren:
-            # detach any existing children
-            for child in self.itemChildren:
-                child.setParent(None)
-            # deserialize all children, and connect them to this parent
-            self.itemChildren = [BuildItem.create(c) for c in data['children']]
-            for child in self.itemChildren:
-                if child:
-                    # TODO: ensure unique name
-                    child.setParent(self)
-
 
 BUILDITEM_TYPEMAP['BuildItem'] = BuildItem
-
-
-class BuildActionError(Exception):
-    """
-    An error for reporting issues with BuildAction
-    configuration or related problems.
-    """
-    pass
 
 
 class BuildAction(BuildItem):
@@ -393,6 +628,13 @@ class BuildAction(BuildItem):
         if result.endswith('Action'):
             result = result[:-6]
         return result
+
+    @classmethod
+    def getDisplayName(self):
+        """
+        Return the display name of the BuildAction.
+        """
+        return self.config['displayName']
 
     @classmethod
     def getAttrNames(cls):
@@ -453,16 +695,13 @@ class BuildAction(BuildItem):
 
         return batchAction.actionClass(**data)
 
-    def __init__(self, name=None, **attrKwargs):
+    def __init__(self, **attrKwargs):
         """
         Args:
             attrKwargs: A dict of default values for this actions attributes.
                 Only values corresponding to a valid config attribute are used.
         """
-        super(BuildAction, self).__init__(name=name)
-
-        # BuildActions cannot have children
-        self.itemCanHaveChildren = False
+        super(BuildAction, self).__init__()
 
         # rig is only available during build
         self.rig = None
@@ -480,9 +719,6 @@ class BuildAction(BuildItem):
         Return the name of the logger for this BuildItem
         """
         return 'pulse.action.' + self.getTypeName().lower()
-
-    def getDefaultName(self):
-        return self.config['displayName']
 
     def getColor(self):
         """
@@ -564,8 +800,16 @@ class BatchBuildAction(BuildItem):
     single action.
     """
 
+    # TODO: BatchBuildAction should no longer be a BuildItem,
+    #       but instead be part of BuildStep so that it can expand
+    #       during BuildAction iteration
+
     @classmethod
     def getTypeName(cls):
+        return 'BatchBuildAction'
+
+    @classmethod
+    def getDisplayName(self):
         return 'BatchBuildAction'
 
     @staticmethod
@@ -585,22 +829,15 @@ class BatchBuildAction(BuildItem):
         batch.constantValues = _copyData(data)
         return batch
 
-    def __init__(self, name=None):
+    def __init__(self):
         """
         Args:
             actionClass: The BuildAction class this batch action represents
         """
-        # declare members before super init to avoid
-        # error during default name initialization
+        super(BatchBuildAction, self).__init__()
 
         # the BuildAction class this batch represents
         self.actionClass = None
-
-        super(BatchBuildAction, self).__init__(name=name)
-
-        # batch actions cannot have children, even though
-        # they will yield actions as if they are children
-        self.itemCanHaveChildren = False
         # all constant attribute values
         self.constantValues = {}
         # the list of attribute names that vary per action instance
@@ -610,17 +847,6 @@ class BatchBuildAction(BuildItem):
 
     def getLoggerName(self):
         return 'pulse.batchaction'
-
-    def getDefaultName(self):
-        if self.actionClass:
-            return self.actionClass.config['displayName']
-        else:
-            return 'BatchBuildAction'
-
-    def getDisplayName(self):
-        if not self.actionClass:
-            return '{0} (unconfigured)'.format(self.itemName)
-        return '{0} (x{1})'.format(self.itemName, self.getActionCount())
 
     def getColor(self):
         if self.actionClass:
@@ -675,7 +901,6 @@ class BatchBuildAction(BuildItem):
         if self.actionClass:
             # initialize attributes from config
             self._initActionAttrs()
-            self.setName(self.getDefaultName())
 
     def _initActionAttrs(self):
         """
