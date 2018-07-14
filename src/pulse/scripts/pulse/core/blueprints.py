@@ -10,8 +10,7 @@ import pymel.core as pm
 import maya.cmds as cmds
 import pymetanode as meta
 
-from .buildItems import BuildStep, BuildItem, BuildAction
-from .buildItems import getActionClass
+from .buildItems import BuildStep
 from .rigs import RIG_METACLASS, createRigNode
 from .. import version
 
@@ -96,7 +95,7 @@ class Blueprint(object):
         self.rigName = 'newRig'
         # the version of this blueprint
         self.version = BLUEPRINT_VERSION
-        # the root BuildItem of this blueprint
+        # the root step of this blueprint
         self.rootStep = BuildStep('Root')
         # the config file to use when designing this Blueprint
         # can be absolute, or relative to any python sys path
@@ -151,21 +150,23 @@ class Blueprint(object):
 
     def actionIterator(self):
         """
-        Generator that yiels all BuildActions in this Blueprint
-        """
-        for item in self.rootStep.childIterator():
-            # TODO: allow for multiple actions to come from one step?
-            if item.isAction and item.action:
-                # TODO: warn if its supposed to have an action, but doesn't
-                yield item.action
+        Generator that yields all BuildActions in this Blueprint.
 
-    def getItemByPath(self, path):
+        Returns:
+            A generator that yields a tuple of (BuildStep, BuildAction)
+            for every action in the Blueprint.
         """
-        Return a BuildItem from the Blueprint by path
+        for step in self.rootStep.childIterator():
+            for action in step.actionGenerator():
+                yield step, action
+
+    def getStepByPath(self, path):
+        """
+        Return a BuildStep from the Blueprint by path
 
         Args:
-            path (string): A path pointing to a BuildItem
-                e.g. My/Build/Action
+            path (string): A path pointing to a BuildStep
+                e.g. My/Build/Step
         """
         return self.rootStep.getChildByPath(path)
 
@@ -177,19 +178,17 @@ class Blueprint(object):
         WARNING: This clears all BuildActions and replaces them
         with the default set.
         """
-        importAction = BuildStep.fromActionClass('ImportReferences')
-        hierAction = BuildStep.fromActionClass('BuildCoreHierarchy')
+        importAction = BuildStep(actionName='ImportReferences')
+        hierAction = BuildStep(actionName='BuildCoreHierarchy')
         hierAction.action.allNodes = True
         mainGroup = BuildStep('Main')
-        saveAction = BuildStep.fromActionClass('SaveBuiltRig')
-        optimizeAction = BuildStep.fromActionClass('OptimizeScene')
-        self.rootStep.itemChildren = [
-            importAction,
-            hierAction,
-            mainGroup,
-            saveAction,
-            optimizeAction,
-        ]
+        saveAction = BuildStep(actionName='SaveBuiltRig')
+        optimizeAction = BuildStep(actionName='OptimizeScene')
+        self.rootStep.addChild(importAction)
+        self.rootStep.addChild(hierAction)
+        self.rootStep.addChild(mainGroup)
+        self.rootStep.addChild(saveAction)
+        self.rootStep.addChild(optimizeAction)
 
     def loadBlueprintConfig(self):
         """
@@ -424,12 +423,12 @@ class BlueprintBuilder(object):
     def buildGenerator(self):
         """
         This is the main iterator for performing all build operations.
-        It recursively traverses all BuildItems and runs them.
+        It runs all BuildSteps and BuildActions in order.
         """
-        currentStep = 0
-        totalSteps = 0
+        currentActionIndex = 0
+        totalActionCount = 0
 
-        yield dict(current=currentStep, total=totalSteps)
+        yield dict(index=currentActionIndex, total=totalActionCount)
 
         # create a new rig
         self.rig = createRigNode(self.blueprint.rigName)
@@ -439,17 +438,15 @@ class BlueprintBuilder(object):
             blueprintFile=self.blueprintFile,
         ))
 
-        yield dict(current=currentStep, total=totalSteps)
+        yield dict(index=currentActionIndex, total=totalActionCount)
 
         # recursively iterate through all build actions
         allActions = list(self.blueprint.actionIterator())
-        totalSteps = len(allActions)
-        for currentStep, action in enumerate(allActions):
-            path = action.getFullPath()
-            # remove item name from path
-            path = path[len(self.blueprint.rootStep.itemName):]
-            self.log.info('[{0}/{1}] {path}'.format(
-                currentStep + 1, totalSteps, path=path))
+        totalActionCount = len(allActions)
+        for currentActionIndex, (step, action) in enumerate(allActions):
+            path = step.getFullPath()
+            self.log.info(
+                '[{0}/{1}] {path}'.format(currentActionIndex + 1, totalActionCount, path=path))
 
             # run the action
             action.rig = self.rig
@@ -459,10 +456,10 @@ class BlueprintBuilder(object):
                 self._onError(action, error)
 
             # return progress
-            yield dict(current=currentStep, total=totalSteps)
+            yield dict(index=currentActionIndex, total=totalActionCount)
 
         # delete all blueprint nodes
         for node in Blueprint.getAllBlueprintNodes():
             pm.delete(node)
 
-        yield dict(current=currentStep, total=totalSteps, finish=True)
+        yield dict(index=currentActionIndex, total=totalActionCount, finish=True)

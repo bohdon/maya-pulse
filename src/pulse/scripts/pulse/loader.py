@@ -25,7 +25,8 @@ class BuildActionLoader(object):
 
     def loadConfig(self, actionClass, module):
         """
-        Load the config data for a BuildAction class.
+        Load the config data for a BuildAction class. Stores both the class
+        and its config in maps accessible via functions in pulse.buildItems
 
         Args:
             actionClass (BuildAction): The action for which to load a config
@@ -67,7 +68,7 @@ class BuildActionLoader(object):
             obj = getattr(module, name)
             if (isinstance(obj, type) and issubclass(obj, core.BuildAction) and
                     obj is not core.BuildAction):
-                # load config data onto the class
+                # load config data into config map
                 if self.loadConfig(obj, module):
                     LOG.debug('Loaded BuildAction: {0}'.format(obj.getTypeName()))
                     result.append(obj)

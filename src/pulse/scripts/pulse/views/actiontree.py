@@ -198,7 +198,7 @@ class ActionButtonsWidget(QtWidgets.QWidget):
         if not grpIndexes:
             return
 
-        ac = pulse.getActionClass(typeName)
+        ac = pulse.getBuildActionClass(typeName)
         newIndexes = []
         for grpIndex in grpIndexes:
             action = ac()

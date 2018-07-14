@@ -710,7 +710,7 @@ class BuildItemSelectionModel(QtCore.QItemSelectionModel):
             return
 
         # blueprint = model.blueprint
-        # items = [blueprint.getItemByPath(p) for p in paths]
+        # items = [blueprint.getStepByPath(p) for p in paths]
         # indeces = [model.indexForItem(i) for i in items if i]
         # self.clear()
         # for index in indeces:

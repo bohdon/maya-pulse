@@ -7,21 +7,24 @@ import pymetanode as meta
 from .rigs import RIG_METACLASS
 
 __all__ = [
-    'BatchBuildAction',
     'BuildAction',
+    'BuildActionData',
     'BuildActionError',
+    'BuildActionProxy',
+    'BuildActionProxyBatch',
     'BuildItem',
     'BuildStep',
-    'getActionClass',
-    'getBuildItemClass',
+    'getBuildActionClass',
+    'getBuildActionConfig',
+    'getRegisteredAction',
     'getRegisteredActions',
-    'registerActions',
+    'registerAction',
 ]
 
 
 LOG = logging.getLogger(__name__)
 
-BUILDITEM_TYPEMAP = {}
+BUILDACTIONMAP = {}
 
 
 def _incrementName(name):
@@ -41,60 +44,85 @@ def _copyData(data, refNode=None):
     return meta.decodeMetaData(meta.encodeMetaData(data), refNode)
 
 
-def getActionClass(typeName):
+def getRegisteredAction(name):
+    if name in BUILDACTIONMAP:
+        return BUILDACTIONMAP[name]
+
+
+def getBuildActionConfig(name):
     """
-    Return a BuildAction class by type name
+    Return a BuildAction config by action name
 
     Args:
-        typeName: A str representing the name of a BuildAction type
+        name: A str representing the name of the BuildAction
     """
-    if typeName in BUILDITEM_TYPEMAP:
-        actionClass = BUILDITEM_TYPEMAP[typeName]
-        if issubclass(actionClass, BuildAction):
-            return actionClass
+    action = getRegisteredAction(name)
+    if action:
+        return action['config']
 
 
-def getBuildItemClass(typeName):
+def _getBuildActionConfigForClass(actionClass):
     """
-    Return a BuildItem class by type name
+    Return the config that is associated with a BuildAction class.
+    Performs the search by looking for a matching class and returning
+    its paired config, instead of looking for the config by name.
 
     Args:
-        typeName: A str representing the name of the BuildItem type
+        actionClass: A BuildAction class
     """
-    if typeName in BUILDITEM_TYPEMAP:
-        return BUILDITEM_TYPEMAP[typeName]
+    for k, v in BUILDACTIONMAP.iteritems():
+        if v['class'] is actionClass:
+            return v['config']
+
+
+def getBuildActionClass(name):
+    """
+    Return a BuildAction class by action name
+
+    Args:
+        name: A str representing the name of the BuildAction
+    """
+    action = getRegisteredAction(name)
+    if action:
+        return action['class']
 
 
 def getRegisteredActions():
     """
-    Return all registered BuildAction classes organized
-    by their registered type name
+    Return all registered BuildAction classes organized by their registered action name
 
     Returns:
-        A dict of {string: BuildAction} where keys represent
-        the registered type name of the action.
+        A dict of {str: {'config': dict, 'class': BuildAction class}} where keys are
+        the registered name of the action
     """
-    return {k: v for k, v in BUILDITEM_TYPEMAP.iteritems() if issubclass(v, BuildAction)}
+    return {k: v for k, v in BUILDACTIONMAP.iteritems() if issubclass(v, BuildAction)}
 
 
-def registerActions(actionClasses):
+def registerAction(actionConfig, actionClass):
     """
     Register one or more BuildAction classes
 
     Args:
-        actionClasses: A list of BuildAction classes
+        actionClass: A BuildAction class
+        actionConfig (dict): A config dict for a BuildAction
     """
-    for c in actionClasses:
-        typeName = c.getTypeName()
-        if typeName == 'group':
-            raise ValueError(
-                "BuildActions cannot use the reserved type `group`")
-        elif typeName in BUILDITEM_TYPEMAP:
-            if BUILDITEM_TYPEMAP[typeName].config.get('isBuiltin', False):
-                LOG.error("A built-in BuildAction already "
-                          "exists with type name: {0}".format(typeName))
-                continue
-        BUILDITEM_TYPEMAP[typeName] = c
+    action = {
+        'config': actionConfig,
+        'class': actionClass,
+    }
+    actionName = actionConfig['name']
+    if actionName in BUILDACTIONMAP:
+        if BUILDACTIONMAP[actionName]['config'].get('isBuiltin', False):
+            LOG.error("A built-in BuildAction already "
+                      "exists with type name: {0}".format(actionName))
+            return
+
+    BUILDACTIONMAP[actionName] = action
+
+
+def unregisterAction(name):
+    if name in BUILDACTIONMAP:
+        del BUILDACTIONMAP[name]
 
 
 class BuildStep(object):
@@ -103,6 +131,9 @@ class BuildStep(object):
     Steps are hierarchical, but a BuildStep that performs a BuildAction
     cannot have children.
     """
+
+    # TODO (bsayre): consider adding method to change the action type of the current proxy,
+    #       whilst preserving or transferring as much attr data as possible
 
     @staticmethod
     def fromData(data):
@@ -117,49 +148,19 @@ class BuildStep(object):
         step.deserialize(data)
         return step
 
-    @staticmethod
-    def fromActionClass(actionClass):
-        """
-        Return a new BuildStep that represents a
-        new BuildAction of a specific class.
-
-        Args:
-            actionClass (str): The name of the BuildAction class
-        """
-        step = BuildStep()
-        step.setIsAction(True)
-        step.setActionClass(actionClass)
-        return step
-
-    @staticmethod
-    def fromAction(action):
-        """
-        Return a new BuildStep for an existing BuildAction instance.
-
-        Args:
-            action (BuildAction): A BuildAction. Should not already be
-                in use by another BuildStep, otherwise this may lead to
-                unpredictable behavior.
-        """
-        step = BuildStep(action.getDisplayName())
-        step.setIsAction(True)
-        step.setAction(action)
-        return step
-
-    def __init__(self, name='BuildStep'):
+    def __init__(self, name='BuildStep', actionProxy=None, actionName=None):
         # the name of this step (unique among siblings)
         self._name = name
-        # does this step represent a BuildAction?
-        self._isAction = False
-        # the name of the BuildAction class for this step
-        self._actionClass = None
-        # the BuildAction for this step, created
-        # automatically when the action class is set
-        self._action = None
         # the parent BuildStep
         self._parent = None
         # list of child BuildSteps
         self._children = []
+        # the BuildActionProxy for this step
+        self._actionProxy = actionProxy
+
+        # auto-create a basic BuildActionProxy if an actionName was given
+        if actionName:
+            self._actionProxy = BuildActionProxy(actionName=actionName)
 
     @property
     def name(self):
@@ -179,53 +180,26 @@ class BuildStep(object):
 
     @property
     def isAction(self):
-        return self._isAction
+        return self._actionProxy is not None
 
-    def setIsAction(self, newIsAction):
+    def setActionProxy(self, actionProxy):
         """
-        Set whether or not this step represents a BuildAction.
-        If true, will clear all children. If False, will clear
-        any existing action.
+        Set a BuildActionProxy for this step. Will fail if
+        the step has any children.
 
         Args:
-            newIsAction (bool): The new value for isAction
+            actionProxy (BuildActionProxy): The new action proxy
         """
-        if self._isAction != newIsAction:
-            self._isAction = newIsAction
-            if not self._isAction:
-                self._actionClass = None
-                self._action = None
+        if self._children:
+            LOG.warning("Cannot set a BuildActionProxy on a step with children. "
+                        "Clear all children first")
+            return
+
+        self._actionProxy = actionProxy
 
     @property
     def canHaveChildren(self):
         return not self.isAction
-
-    @property
-    def actionClass(self):
-        return self._actionClass
-
-    @property
-    def action(self):
-        return self._action
-
-    def setAction(self, action):
-        """
-        Set the BuildStep's action, and set the actionClass to match.
-
-        Args:
-            action (BuildAction): A BuildAction instance. Should not
-                be in use by another BuildStep.
-        """
-        if not self.isAction:
-            raise RuntimeError(
-                'BuildStep is not an action, set isAction to True first')
-
-        if not isinstance(action, BuildAction):
-            raise TypeError(
-                'Expected BuildAction, got {0}'.format(type(action).__name__))
-
-        self._actionClass = action.getTypeName()
-        self._action = action
 
     @property
     def parent(self):
@@ -258,57 +232,13 @@ class BuildStep(object):
             while self._name in siblingNames:
                 self._name = _incrementName(self._name)
 
-    def setActionClass(self, name):
-        """
-        Set the BuildAction class for this step by name.
-        Rebuilds the BuildAction instance, but attempts to
-        preserve data from the previous action if applicable.
-
-        Args:
-            name (str): The name of a BuildAction class
-        """
-        if not self.isAction:
-            return
-
-        if self._actionClass != name:
-            self._actionClass = name
-            self.rebuildAction()
-
-    def rebuildAction(self, preserveData=True):
-        """
-        Rebuild the current BuildAction instance for this step
-        based on the current action class.
-
-        Args:
-            preserveData (bool): When true, data will be transferred
-                from the existing BuildAction, if one exists.
-        """
-        if not self.isAction:
-            self._actionClass = None
-            self._action = None
-            return
-
-        if not self._actionClass:
-            self._action = None
-            return
-
-        oldAction = self._action
-        self._action = BuildAction.fromTypeName(self._actionClass)
-
-        if preserveData:
-            if oldAction and self._action:
-                self._action.deserialize(oldAction)
-
-        # TODO: set name to match new action?
-
     def getDisplayName(self):
         """
         Return the display name for this step.
         """
-        if self.isAction:
-            # TODO: allow BuildAction to modify display name
-            #       based on its current state
-            return self._name
+        if self._actionProxy:
+            # TODO: use the BuildSteps name somehow to modified the resulting name
+            return self._actionProxy.getDisplayName()
         else:
             return '{0} ({1})'.format(self._name, self.getChildCount())
 
@@ -316,8 +246,8 @@ class BuildStep(object):
         """
         Return the color of this BuildStep when represented in the UI
         """
-        if self.isAction and self._action:
-            return self._action.getColor()
+        if self._actionProxy:
+            return self._actionProxy.getColor()
         else:
             pass
 
@@ -325,8 +255,8 @@ class BuildStep(object):
         """
         Return the full path to this build step's icon
         """
-        if self.isAction and self._action:
-            return self._action.getIconFile()
+        if self._actionProxy:
+            return self._actionProxy.getIconFile()
         else:
             pass
 
@@ -443,17 +373,18 @@ class BuildStep(object):
                 for step in child.childIterator():
                     yield step
 
+    def actionGenerator(self):
+        if self._actionProxy:
+            for elem in self._actionProxy.actionGenerator():
+                yield elem
+
     def serialize(self):
         """
         Return this BuildStep as a serialized dict object
         """
         data = {}
         data['name'] = self._name
-        data['isAction'] = self._isAction
-        if self.isAction:
-            data['actionClass'] = self._actionClass
-            if self._action:
-                data['action'] = self._action.serialize()
+        data['action'] = self._actionProxy.serialize()
 
         if self.canHaveChildren:
             # TODO: perform a recursion loop check
@@ -469,12 +400,14 @@ class BuildStep(object):
             data: A dict containing serialized data for this step
         """
         self.setName(data['name'])
-        self.setIsAction(data['isAction'])
-        if 'actionClass' in data:
-            self.setActionClass(data['actionClass'])
-        if 'action' in data and self._action:
-            self._action.deserialize(data['action'])
+        # TODO: (urgent) need to reconstruct the proper BuildActionProxy class based on data type,
+        #       currently this will destroy any batch proxies on load
+        actionProxy = BuildActionProxy()
+        actionProxy.deserialize(data['action'])
+        self.setActionProxy(actionProxy)
 
+        # TODO: warn if throwing away children in a rare case that
+        #       both a proxy and children existed (maybe data was manually created).
         if self.canHaveChildren:
             # detach any existing children
             self.clearChildren()
@@ -492,172 +425,65 @@ class BuildActionError(Exception):
     pass
 
 
-class BuildItem(object):
+class BuildActionData(object):
     """
-    Represents an action that can be performed during a build step.
-    This is a base class not intended for direct use.
-    Subclass BuildAction when creating custom rigging operations.
+    Contains the configuration and data for an action that can be
+    performed during a build step.
     """
 
-    @staticmethod
-    def fromTypeName(name):
-        """
-        Create and return a BuildItem by type name.
+    def __init__(self, actionName=None):
+        self._actionName = actionName
+        self.configFile = None
+        self.config = {}
+        self._attrValues = {}
 
-        Args:
-            name (str): The name of a registered BuildItem class
-        """
-        itemClass = getBuildItemClass(name)
-        if itemClass:
-            item = itemClass()
-            return item
-        else:
-            LOG.error("Failed to find BuildItemClass "
-                      "for data type: {0}".format(name))
-
-    @staticmethod
-    def create(data):
-        """
-        Create and return a BuildItem based
-        on the given serialized data.
-
-        This is a factory method that automatically
-        determines the class to instance from the data type.
-
-        Args:
-            data: A dict object containing serialized BuildItem data
-        """
-        itemClass = getBuildItemClass(data['type'])
-        if itemClass:
-            item = itemClass()
-            item.deserialize(data)
-            return item
-        else:
-            LOG.error("Failed to find BuildItemClass "
-                      "for data type: {0}".format(data['type']))
-
-    @classmethod
-    def getTypeName(cls):
-        """
-        Return the type of BuildItem this is.
-        Used for factory creation of BuildItems.
-        """
-        return 'BuildItem'
-
-    def __init__(self):
-        pass
+        if self._actionName:
+            self.retrieveActionConfig()
 
     def __repr__(self):
-        return "<{0}>".format(self.__class__.__name__)
+        return "<BuildActionData '{0}'>".format(self.getActionName())
 
-    @property
-    def log(self):
-        if not hasattr(self, 'log'):
-            self._log = logging.getLogger(self.getLoggerName())
-        return self._log
-
-    def getLoggerName(self):
+    def hasConfig(self):
         """
-        Return the name of the logger for this BuildItem
+        Return True if this object has a valid actionName and
+        corresponding config loaded.
         """
-        return 'pulse.builditem'
+        return self._actionName and self.config
 
-    def getDefaultName(self):
+    def getActionName(self):
         """
-        Return the default name to use when this item has no name
+        Return the name of the BuildAction
         """
-        return 'Build Item'
+        return self._actionName
 
-    def getColor(self):
-        """
-        Return the color of this BuildItem when represented in the UI
-        """
-        pass
+    def retrieveActionConfig(self):
+        self.config = getBuildActionConfig(self._actionName)
 
-    def getIconFile(self):
-        """
-        Return the full path to this build items icon
-        """
-        pass
-
-    def serialize(self):
-        """
-        Return this BuildItem as a serialized dict object
-        """
-        data = {}
-        data['type'] = self.getTypeName()
-        return data
-
-    def deserialize(self, data):
-        """
-        Load configuration of this BuildItem from data
-
-        Args:
-            data: A dict containing serialized data for this item
-        """
-        if data['type'] != self.getTypeName():
-            raise ValueError(
-                "BuildItem type `{0}` does not match data type `{1}`".format(
-                    self.getTypeName(), data['type']))
-
-
-BUILDITEM_TYPEMAP['BuildItem'] = BuildItem
-
-
-class BuildAction(BuildItem):
-    """
-    The base class for any rigging action that can
-    run during a build.
-
-    Both `validate` and `run` must be overridden
-    in subclasses to provide functionality when
-    checking and building the rig.
-    """
-
-    config = None
-    configFile = None
-
-    @classmethod
-    def getTypeName(cls):
-        """
-        Return the type name of this BuildAction.
-        This is the name of the class without the
-        Action suffix.
-        """
-        result = cls.__name__
-        if result.endswith('Action'):
-            result = result[:-6]
-        return result
-
-    @classmethod
-    def getDisplayName(self):
-        """
-        Return the display name of the BuildAction.
-        """
-        return self.config['displayName']
-
-    @classmethod
-    def getAttrNames(cls):
+    def getAttrNames(self):
         """
         Return a list of attribute names for this BuildAction class
         """
-        for attr in cls.config['attrs']:
+        if not self.hasConfig():
+            return
+
+        for attr in self.config['attrs']:
             yield attr['name']
 
-    @classmethod
-    def getAttrConfig(cls, attrName):
+    def getAttrConfig(self, attrName):
         """
         Return config data for an attribute
 
         Args:
             attrName: A str name of the attribute
         """
-        for attr in cls.config['attrs']:
+        if not self.hasConfig():
+            return
+
+        for attr in self.config['attrs']:
             if attr['name'] == attrName:
                 return attr
 
-    @classmethod
-    def getDefaultValue(cls, attr):
+    def getDefaultValue(self, attr):
         """
         Return the default value for an attribute
 
@@ -665,6 +491,9 @@ class BuildAction(BuildItem):
             attr: A dict object representing the config
                 data for the attribute
         """
+        if not self.hasConfig():
+            return
+
         if 'value' in attr:
             return attr['value']
         else:
@@ -678,51 +507,83 @@ class BuildAction(BuildItem):
             elif attrType == 'string':
                 return ''
 
-    @staticmethod
-    def fromBatchAction(batchAction):
+    def serialize(self):
         """
-        Return a new BuildAction created using a BatchBuildAction
-        as reference.
+        Return this BuildActionData as a serialized dict object
         """
-        if not batchAction.actionClass:
-            raise ValueError("BatchBuildAction must have a valid actionClass")
+        data = {}
+        data['actionName'] = self._actionName
+        if self.hasConfig():
+            for attr in self.config['attrs']:
+                data[attr['name']] = self._attrValues[attr['name']]
+        return data
 
-        # copy attribute values
-        data = batchAction.constantValues
-        if batchAction.variantValues:
-            data.update(batchAction.variantValues[0])
-        data = _copyData(data)
-
-        return batchAction.actionClass(**data)
-
-    def __init__(self, **attrKwargs):
+    def deserialize(self, data):
         """
+        Set all values on this BuildActionData from data
+
         Args:
-            attrKwargs: A dict of default values for this actions attributes.
-                Only values corresponding to a valid config attribute are used.
+            data: A dict containing serialized data for this action
         """
-        super(BuildAction, self).__init__()
+        self._actionName = data['actionName']
 
-        # rig is only available during build
-        self.rig = None
+        # update config
+        if self._actionName:
+            self.retrieveActionConfig()
 
-        # initialize attributes from config
-        for attr in self.config['attrs']:
-            if not hasattr(self, attr['name']):
-                if attr['name'] in attrKwargs:
-                    setattr(self, attr['name'], attrKwargs[attr['name']])
+        # load values for all action attrs
+        # TODO: warn if failed to get config, and don't discard attr data,
+        #       just keep it in an unvalidated state
+        if self.hasConfig():
+            for attr in self.config['attrs']:
+                if attr['name'] in data:
+                    self._attrValues[attr['name']] = data[attr['name']]
                 else:
-                    setattr(self, attr['name'], self.getDefaultValue(attr))
+                    LOG.warning(
+                        'No serialized data for attribute: {0}'.format(attr['name']))
+                    self._attrValues[attr['name']] = self.getDefaultValue(attr)
 
-    def getLoggerName(self):
+
+class BuildItem(BuildActionData):
+    # TODO: deprecate and remove
+    pass
+
+
+class BuildActionProxy(BuildActionData):
+    """
+    Acts as a stand-in for a BuildAction during Blueprint editing.
+    Contains all attribute values for the configured action, which
+    are used to create a real BuildAction at build time.
+
+    This proxy provides a method `actionGenerator` which constructs
+    and yields the real BuildAction instances for use a build time.
+    Note that multiple BuildActions can come from a single proxy.
+    """
+
+    def hasAttrValue(self, name):
+        return name in self._attrValues
+
+    def getAttrValue(self, name):
+        return self._attrValues[name]
+
+    def setAttrValue(self, name, value):
+        self._attrValues[name] = value
+
+    def delAttrValue(self, name):
+        del self._attrValues[name]
+
+    def hasActionClass(self):
+        return self.getActionName() is not None
+
+    def getDisplayName(self):
         """
-        Return the name of the logger for this BuildItem
+        Return the display name of the BuildAction.
         """
-        return 'pulse.action.' + self.getTypeName().lower()
+        return self.config.get('displayName', self.getActionName())
 
     def getColor(self):
         """
-        Return the color of this BuildItem when represented in the UI
+        Return the color of this action when represented in the UI
         """
         return self.config.get('color')
 
@@ -734,83 +595,25 @@ class BuildAction(BuildItem):
         if filename:
             return os.path.join(os.path.dirname(self.configFile), filename)
 
-    def serialize(self):
-        data = super(BuildAction, self).serialize()
-        # serialize values for all attr values
-        for attr in self.config['attrs']:
-            data[attr['name']] = getattr(self, attr['name'])
-        return data
-
-    def deserialize(self, data):
-        super(BuildAction, self).deserialize(data)
-        # load values for all action attrs
-        for attr in self.config['attrs']:
-            if attr['name'] in data:
-                setattr(self, attr['name'], data[attr['name']])
-            else:
-                self.log.warning(
-                    'No serialized data for attribute: {0}'.format(attr['name']))
-                setattr(self, attr['name'], self.getDefaultValue(attr))
-
-    def getRigMetaData(self):
+    def actionGenerator(self):
         """
-        Return all meta data on the rig being built
+        Generator that yields a BuildAction for every action that this
+        proxy represents.
         """
-        if not self.rig:
-            self.log.error('Cannot get rig meta data, no rig is set')
-            return
-        return meta.getMetaData(self.rig, RIG_METACLASS)
-
-    def updateRigMetaData(self, data):
-        """
-        Add some meta data to the rig being built
-
-        Args:
-            data: A dict containing meta data to update on the rig
-        """
-        if not self.rig:
-            self.log.error('Cannot update rig meta data, no rig is set')
-            return
-        meta.updateMetaData(self.rig, RIG_METACLASS, data)
-
-    def validate(self):
-        """
-        Validate this build action. Should be implemented
-        in subclasses to check the action's config data
-        and raise BuildActionErrors if anything is invalid.
-        """
-        raise NotImplementedError
-
-    def run(self):
-        """
-        Run this build action. Should be implemented
-        in subclasses to perform the rigging operation
-        that is desired.
-        """
-        raise NotImplementedError
+        if self.hasActionClass():
+            yield BuildAction.fromData(self.serialize())
 
 
-class BatchBuildAction(BuildItem):
+class BuildActionProxyBatch(BuildActionProxy):
     """
-    A special BuildItem that is designed to behave like
-    an existing BuildAction, but allows running the action
-    multiple times with different values for a subset of attributes.
-    BuildActions can be converted to and from BatchBuildAction,
-    but will lose data when converting from a batch action to a
-    single action.
+    A BuildActionProxy that generates multiple BuildActions
+    which will be run in order, and can have different values for
+    one or more attributes.
+
+    Provides functionality for converting to and from a BuildActionProxy,
+    but note that data will be lost when converting from a batch action to a
+    single action (since variant attribute values will be discarded).
     """
-
-    # TODO: BatchBuildAction should no longer be a BuildItem,
-    #       but instead be part of BuildStep so that it can expand
-    #       during BuildAction iteration
-
-    @classmethod
-    def getTypeName(cls):
-        return 'BatchBuildAction'
-
-    @classmethod
-    def getDisplayName(self):
-        return 'BatchBuildAction'
 
     @staticmethod
     def fromAction(action):
@@ -820,7 +623,7 @@ class BatchBuildAction(BuildItem):
         Args:
             action: A BuildAction object
         """
-        batch = BatchBuildAction()
+        batch = BuildActionProxyBatch()
         batch.setActionClass(action.__class__)
 
         # copy attribute values
@@ -834,7 +637,7 @@ class BatchBuildAction(BuildItem):
         Args:
             actionClass: The BuildAction class this batch action represents
         """
-        super(BatchBuildAction, self).__init__()
+        super(BuildActionProxyBatch, self).__init__()
 
         # the BuildAction class this batch represents
         self.actionClass = None
@@ -859,7 +662,7 @@ class BatchBuildAction(BuildItem):
                 return os.path.join(os.path.dirname(self.actionClass.configFile), filename)
 
     def serialize(self):
-        data = super(BatchBuildAction, self).serialize()
+        data = super(BuildActionProxyBatch, self).serialize()
         if self.actionClass:
             data['actionClassName'] = self.actionClass.getTypeName()
         else:
@@ -870,11 +673,15 @@ class BatchBuildAction(BuildItem):
         return data
 
     def deserialize(self, data):
-        super(BatchBuildAction, self).deserialize(data)
+        if data['actionName'] != self._actionName:
+            raise ValueError("Attempted to deserialize {0} data "
+                             "into a {1}".format(data['actionName'], self._actionName))
+
+        super(BuildActionProxyBatch, self).deserialize(data)
         # retrieve action class
         actionClassName = data['actionClassName']
         if actionClassName:
-            self.setActionClass(getActionClass(actionClassName))
+            self.setActionClass(getBuildActionClass(actionClassName))
         else:
             self.setActionClass(None)
         # all attributes values
@@ -905,7 +712,7 @@ class BatchBuildAction(BuildItem):
     def _initActionAttrs(self):
         """
         Initialize all attributes for a BuildAction class
-        as members on this BatchBuildAction
+        as members on this BuildActionProxyBatch
 
         Args:
             actionClass: A BuildAction class
@@ -1013,4 +820,156 @@ class BatchBuildAction(BuildItem):
                 yield newAction
 
 
-BUILDITEM_TYPEMAP['BatchBuildAction'] = BatchBuildAction
+class BatchBuildAction(BuildActionProxyBatch):
+    # TODO: deprecate and remove
+    pass
+
+
+class BuildAction(BuildActionData):
+    """
+    The base class for any rigging action that can run during a build.
+
+    Both `validate` and `run` must be overridden in subclasses to
+    provide functionality when checking and building the rig.
+    """
+
+    @staticmethod
+    def fromActionName(name):
+        """
+        Create and return a BuildAction by class name.
+
+        Args:
+            name (str): The name of a registered BuildAction class
+        """
+        actionClass = getBuildActionClass(name)
+        if actionClass:
+            item = actionClass()
+            return item
+        else:
+            LOG.error("Failed to find BuildAction class: {0}".format(name))
+
+    @staticmethod
+    def fromData(data):
+        """
+        Create and return a BuildAction based
+        on the given serialized data.
+
+        This is a factory method that automatically
+        determines the class to instance from the data type.
+
+        Args:
+            data: A dict object containing serialized BuildAction data
+        """
+        actionClass = getBuildActionClass(data['type'])
+        if actionClass:
+            item = actionClass()
+            item.deserialize(data)
+            return item
+        else:
+            LOG.error(
+                "Failed to find BuildAction class: {0}".format(data['type']))
+
+    @staticmethod
+    def fromBatchAction(batchAction):
+        """
+        Return a new BuildAction created using a BuildActionProxyBatch
+        as reference.
+        """
+        # TODO: move to proxies
+        if not batchAction.actionClass:
+            raise ValueError(
+                "BuildActionProxyBatch must have a valid actionClass")
+
+        # copy attribute values
+        data = batchAction.constantValues
+        if batchAction.variantValues:
+            data.update(batchAction.variantValues[0])
+        data = _copyData(data)
+
+        return batchAction.actionClass(**data)
+
+    def __init__(self, **attrKwargs):
+        """
+        Args:
+            attrKwargs: A dict of default values for this actions attributes.
+                Only values corresponding to a valid config attribute are used.
+        """
+        # pull action name from the class name
+        actionName = self.__class__.__name__
+        if actionName.endswith('Action'):
+            actionName = actionName[:6]
+
+        super(BuildAction, self).__init__(actionName)
+
+        # logger is initialized the first time its accessed
+        self._log = None
+
+        # rig is only available during build
+        self.rig = None
+
+        # initialize attributes from config
+        for attr in self.config['attrs']:
+            if not hasattr(self, attr['name']):
+                if attr['name'] in attrKwargs:
+                    setattr(self, attr['name'], attrKwargs[attr['name']])
+                else:
+                    setattr(self, attr['name'], self.getDefaultValue(attr))
+
+    def __repr__(self):
+        return "<{0}>".format(self.__class__.__name__)
+
+    def retrieveActionConfig(self):
+        # get config using the class itself, not the action name.
+        # this alleviates a little bit of pressure from BuildActions
+        # requiring globally unique names, though that is still currently
+        # required during action registration.
+        self.config = _getBuildActionConfigForClass(self.__class__)
+
+    def getLoggerName(self):
+        """
+        Return the name of the logger for this BuildAction
+        """
+        return 'pulse.action.' + self.getActionName().lower()
+
+    @property
+    def log(self):
+        if not self._log:
+            self._log = logging.getLogger(self.getLoggerName())
+        return self._log
+
+    def getRigMetaData(self):
+        """
+        Return all meta data on the rig being built
+        """
+        if not self.rig:
+            self.log.error('Cannot get rig meta data, no rig is set')
+            return
+        return meta.getMetaData(self.rig, RIG_METACLASS)
+
+    def updateRigMetaData(self, data):
+        """
+        Add some meta data to the rig being built
+
+        Args:
+            data: A dict containing meta data to update on the rig
+        """
+        if not self.rig:
+            self.log.error('Cannot update rig meta data, no rig is set')
+            return
+        meta.updateMetaData(self.rig, RIG_METACLASS, data)
+
+    def validate(self):
+        """
+        Validate this build action. Should be implemented
+        in subclasses to check the action's config data
+        and raise BuildActionErrors if anything is invalid.
+        """
+        raise NotImplementedError
+
+    def run(self):
+        """
+        Run this build action. Should be implemented
+        in subclasses to perform the rigging operation
+        that is desired.
+        """
+        raise NotImplementedError
