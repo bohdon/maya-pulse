@@ -178,12 +178,12 @@ class Blueprint(object):
         WARNING: This clears all BuildActions and replaces them
         with the default set.
         """
-        importAction = BuildStep(actionName='ImportReferences')
-        hierAction = BuildStep(actionName='BuildCoreHierarchy')
-        hierAction.action.allNodes = True
+        importAction = BuildStep(actionId='ImportReferences')
+        hierAction = BuildStep(actionId='BuildCoreHierarchy')
+        hierAction.actionProxy.setAttrValue('allNodes', True)
         mainGroup = BuildStep('Main')
-        saveAction = BuildStep(actionName='SaveBuiltRig')
-        optimizeAction = BuildStep(actionName='OptimizeScene')
+        saveAction = BuildStep(actionId='SaveBuiltRig')
+        optimizeAction = BuildStep(actionId='OptimizeScene')
         self.rootStep.addChild(importAction)
         self.rootStep.addChild(hierAction)
         self.rootStep.addChild(mainGroup)
@@ -400,25 +400,27 @@ class BlueprintBuilder(object):
         """
         pass
 
-    def _onError(self, action, error):
+    def _onError(self, step, action, error):
         self.errors.append(error)
-        self.onError(action, error)
+        self.onError(step, action, error)
 
-    def onError(self, action, error):
+    def onError(self, step, action, error):
         """
         Called when an error occurs while running a BuildAction
 
         Args:
-            action: The BuildAction for which the error occurred
+            step (BuildStep): The step on which the error occurred
+            action (BuildAction): The action for which the error occurred
             error: The exception that occurred
         """
         if self.debug:
             # when debugging, show stack trace
             self.log.error('{0}'.format(
-                action.getDisplayName()), exc_info=True)
+                step.getFullPath()), exc_info=True)
             traceback.print_exc()
         else:
-            self.log.error('{0} : {1}'.format(action.getDisplayName(), error))
+            self.log.error('{0} ({1}): {2}'.format(
+                step.getFullPath(), action.getActionId(), error))
 
     def buildGenerator(self):
         """
@@ -444,6 +446,7 @@ class BlueprintBuilder(object):
         allActions = list(self.blueprint.actionIterator())
         totalActionCount = len(allActions)
         for currentActionIndex, (step, action) in enumerate(allActions):
+            # TODO: yield actions in groups so we can know how many are in each step?
             path = step.getFullPath()
             self.log.info(
                 '[{0}/{1}] {path}'.format(currentActionIndex + 1, totalActionCount, path=path))
@@ -453,7 +456,7 @@ class BlueprintBuilder(object):
             try:
                 action.run()
             except Exception as error:
-                self._onError(action, error)
+                self._onError(step, action, error)
 
             # return progress
             yield dict(index=currentActionIndex, total=totalActionCount)

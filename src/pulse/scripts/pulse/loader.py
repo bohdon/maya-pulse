@@ -42,7 +42,9 @@ class BuildActionLoader(object):
             config = yaml.load(fp.read())
 
         if config and (name in config):
-            return config[name]
+            actionConfig = config[name]
+            actionConfig['configFile'] = configFile
+            return actionConfig
 
         LOG.warning("No BuildAction config data for {0} "
                     "was found in {1}".format(name, configFile))
