@@ -6,16 +6,15 @@ import pymetanode as meta
 
 import pulse
 from pulse.vendor.Qt import QtCore, QtWidgets, QtGui
-from pulse.core import BlueprintLifecycleEvents, BlueprintChangeEvents
+from pulse.core import BlueprintLifecycleEvents, BlueprintChangeEvents, BuildStep
 
 __all__ = [
     'BlueprintUIModel',
-    'BuildItemSelectionModel',
-    'BuildItemTreeModel',
+    'BuildStepSelectionModel',
+    'BuildStepTreeModel',
     'buttonCommand',
     'CollapsibleFrame',
     'PulseWindow',
-    # 'BuildItemModelItem',
 ]
 
 LOG = logging.getLogger(__name__)
@@ -108,7 +107,8 @@ class PulseWindow(MayaQWidgetDockableMixin, QtWidgets.QMainWindow):
         result = False
         # close and delete an existing workspace control
         if cmds.workspaceControl(cls.getWorkspaceControlName(), q=True, ex=True):
-            cmds.workspaceControl(cls.getWorkspaceControlName(), e=True, close=True)
+            cmds.workspaceControl(
+                cls.getWorkspaceControlName(), e=True, close=True)
             result = True
         if cmds.workspaceControl(cls.getWorkspaceControlName(), q=True, ex=True):
             cmds.deleteUI(cls.getWorkspaceControlName(), control=True)
@@ -132,8 +132,6 @@ class PulseWindow(MayaQWidgetDockableMixin, QtWidgets.QMainWindow):
         Show the PulseWindow.
         """
         super(PulseWindow, self).show(dockable=True, retain=False)
-
-
 
 
 class BlueprintUIModel(QtCore.QObject):
@@ -184,8 +182,7 @@ class BlueprintUIModel(QtCore.QObject):
     blueprintNodeChanged = QtCore.Signal()
 
     # a config property on the blueprint changed
-    blueprintPropertyChanged = QtCore.Signal(str)
-
+    rigNameChanged = QtCore.Signal(str)
 
     def __init__(self, blueprintNodeName, parent=None):
         super(BlueprintUIModel, self).__init__(parent=parent)
@@ -200,9 +197,10 @@ class BlueprintUIModel(QtCore.QObject):
             self.blueprint = pulse.Blueprint.fromNode(self.blueprintNodeName)
 
         # the tree item model and selection model for BuildItems
-        self.buildItemTreeModel = BuildItemTreeModel(self.blueprint)
-        self.buildItemTreeModel.dataChanged.connect(self._onItemModelChanged)
-        self.buildItemSelectionModel = BuildItemSelectionModel(self.buildItemTreeModel)
+        self.buildStepTreeModel = BuildStepTreeModel(self.blueprint)
+        self.buildStepTreeModel.dataChanged.connect(self._onItemModelChanged)
+        self.buildStepSelectionModel = BuildStepSelectionModel(
+            self.buildStepTreeModel)
 
         self._modelSubscribers = []
 
@@ -221,13 +219,14 @@ class BlueprintUIModel(QtCore.QObject):
     def _subscribeToBlueprintNodeChanges(self):
         changeEvents = BlueprintChangeEvents.getShared(self.blueprintNodeName)
         if changeEvents:
-            changeEvents.onBlueprintNodeChanged.appendUnique(self._onBlueprintNodeChanged)
+            changeEvents.onBlueprintNodeChanged.appendUnique(
+                self._onBlueprintNodeChanged)
             changeEvents.addSubscriber(self)
             LOG.debug('subscribed to blueprint node changes')
 
     def _setBlueprint(self, newBlueprint):
         self.blueprint = newBlueprint
-        self.buildItemTreeModel.setBlueprint(self.blueprint)
+        self.buildStepTreeModel.setBlueprint(self.blueprint)
         self.rigNameChanged.emit(self.getRigName())
 
     def addSubscriber(self, subscriber):
@@ -241,7 +240,8 @@ class BlueprintUIModel(QtCore.QObject):
         if self._modelSubscribers:
             lifeEvents = BlueprintLifecycleEvents.getShared()
             lifeEvents.addSubscriber(self)
-            changeEvents = BlueprintChangeEvents.getShared(self.blueprintNodeName)
+            changeEvents = BlueprintChangeEvents.getShared(
+                self.blueprintNodeName)
             if changeEvents:
                 changeEvents.addSubscriber(self)
 
@@ -249,7 +249,8 @@ class BlueprintUIModel(QtCore.QObject):
         # so make sure blueprint exists == node exists
         if cmds.objExists(self.blueprintNodeName):
             if self.blueprint is None:
-                self._setBlueprint(pulse.Blueprint.fromNode(self.blueprintNodeName))
+                self._setBlueprint(
+                    pulse.Blueprint.fromNode(self.blueprintNodeName))
         else:
             if self.blueprint is not None:
                 self._setBlueprint(None)
@@ -265,13 +266,15 @@ class BlueprintUIModel(QtCore.QObject):
         if not self._modelSubscribers:
             lifeEvents = BlueprintLifecycleEvents.getShared()
             lifeEvents.removeSubscriber(self)
-            changeEvents = BlueprintChangeEvents.getShared(self.blueprintNodeName)
+            changeEvents = BlueprintChangeEvents.getShared(
+                self.blueprintNodeName)
             if changeEvents:
                 changeEvents.removeSubscriber(self)
 
     def _onBlueprintCreated(self, node):
         if node.nodeName() == self.blueprintNodeName:
-            self._setBlueprint(pulse.Blueprint.fromNode(self.blueprintNodeName))
+            self._setBlueprint(
+                pulse.Blueprint.fromNode(self.blueprintNodeName))
             self._subscribeToBlueprintNodeChanges()
             self.blueprintCreated.emit()
 
@@ -287,10 +290,10 @@ class BlueprintUIModel(QtCore.QObject):
         The blueprint node has changed, reload its data
         """
         if not self._isSaving:
-            selectedPaths = self.buildItemSelectionModel.getSelectedItemPaths()
+            selectedPaths = self.buildStepSelectionModel.getSelectedItemPaths()
             self.load()
             self.blueprintNodeChanged.emit()
-            self.buildItemSelectionModel.setSelectedItemPaths(selectedPaths)
+            self.buildStepSelectionModel.setSelectedItemPaths(selectedPaths)
 
     def _onItemModelChanged(self):
         self.save()
@@ -342,10 +345,11 @@ class BlueprintUIModel(QtCore.QObject):
                 pulse.Blueprint.isBlueprintNode(self.blueprintNodeName)):
             # node exists and is a valid blueprint
             if self.blueprint is None:
-                self._setBlueprint(pulse.Blueprint.fromNode(self.blueprintNodeName))
+                self._setBlueprint(
+                    pulse.Blueprint.fromNode(self.blueprintNodeName))
             else:
                 self.blueprint.loadFromNode(self.blueprintNodeName)
-                self.buildItemTreeModel.modelReset.emit()
+                self.buildStepTreeModel.modelReset.emit()
             # attempt to preserve selection
             LOG.debug('load finished.')
 
@@ -369,141 +373,14 @@ class BlueprintUIModel(QtCore.QObject):
             cmds.delete(self.blueprintNodeName)
 
 
-
-# class BuildItemModelItem(object):
-#     """
-#     A Qt-friendly wrapper for BuildItems that allows them
-#     to be more easily used in a Qt tree model.
-#     """
-
-#     def __init__(self, buildItem):
-#         if not isinstance(buildItem, pulse.BuildItem):
-#             raise ValueError("Expected BuildItem, got {0}".format(
-#                 type(buildItem).__name__))
-#         self._buildItem = buildItem
-
-#     def children(self):
-#         """
-#         Return the children of this BuildItem as a list of BuildItemModelItems
-#         """
-#         return [BuildItemModelItem(c) for c in self._buildItem.itemChildren]
-
-#     def columnCount(self):
-#         """
-#         Return how many columns of data this BuildItem has
-#         """
-#         return 1
-
-#     def childCount(self):
-#         """
-#         Return how many children this BuildItem has
-#         """
-#         return len(self._buildItem.itemChildren)
-
-#     def child(self, row):
-#         """
-#         Return the child of this BuildItem at the given row (index).
-#         Returns a BuildItemModelItem instance.
-#         """
-#         return self.children()[row]
-
-#     def parent(self):
-#         """
-#         Return the parent of this BuildItem, as a BuildItemModelItem
-#         """
-#         if self._buildItem.itemParent:
-#             return BuildItemModelItem(self._buildItem.itemParent)
-
-#     def row(self):
-#         """
-#         Return the row index of this item.
-#         """
-#         if self._buildItem.itemParent:
-#             return self._buildItem.itemParent.itemChildren.index(self._buildItem)
-#         return 0
-
-#     def insertChildren(self, position, childBuildItems):
-#         """
-#         Insert an array of children into this item starting
-#         at a specified position.
-#         """
-#         if not self._buildItem.itemCanHaveChildren:
-#             return False
-
-#         if position < 0:
-#             position = self.childCount()
-
-#         for childBuildItem in childBuildItems:
-#             self._buildItem.insertChild(position, childBuildItem)
-
-#         return True
-
-#     def removeChildren(self, position, count):
-#         """
-#         Remove one or more children from thie item starting
-#         at a specified position.
-#         """
-#         if not self._buildItem.itemCanHaveChildren:
-#             return False
-
-#         if position < 0 or position + count > self.childCount():
-#             return False
-
-#         for _ in range(count):
-#             self._buildItem.removeChildAt(position)
-
-#         return True
-
-#     def setData(self, column, value):
-#         """
-#         Set data for this build item. Only supports setting
-#         the name of BuildItems.
-#         """
-#         if value:
-#             self._buildItem.setName(value)
-#         else:
-#             self._buildItem.setName(self._buildItem.getDefaultName())
-
-#         return True
-
-
-#     def data(self, column, role=QtCore.Qt.DisplayRole):
-#         """
-#         Return data for this item, for a specific Qt display role.
-#         """
-#         if role == QtCore.Qt.DisplayRole:
-#             return self._buildItem.getDisplayName()
-
-#         elif role == QtCore.Qt.EditRole:
-#             return self._buildItem.itemName
-
-#         elif role == QtCore.Qt.DecorationRole:
-#             iconFile = self._buildItem.getIconFile()
-#             if iconFile:
-#                 return QtGui.QIcon(iconFile)
-
-#         elif role == QtCore.Qt.SizeHintRole:
-#             return QtCore.QSize(0, 20)
-
-#         elif role == QtCore.Qt.ForegroundRole:
-#             color = self._buildItem.getColor()
-#             if color:
-#                 return QtGui.QColor(*[c * 255 for c in color])
-
-#     def isDropEnabled(self):
-#         return self._buildItem.itemCanHaveChildren
-
-
-
-
-class BuildItemTreeModel(QtCore.QAbstractItemModel):
+class BuildStepTreeModel(QtCore.QAbstractItemModel):
     """
-    A Qt tree model for viewing and modifying the BuildItem
+    A Qt tree model for viewing and modifying the BuildStep
     hierarchy of a Blueprint.
     """
 
     def __init__(self, blueprint=None, parent=None):
-        super(BuildItemTreeModel, self).__init__(parent=parent)
+        super(BuildStepTreeModel, self).__init__(parent=parent)
         self._blueprint = blueprint
 
     def setBlueprint(self, newBlueprint):
@@ -511,55 +388,43 @@ class BuildItemTreeModel(QtCore.QAbstractItemModel):
         Set a new Blueprint for this model, causing a full full model reset.
         """
         if self._blueprint is not newBlueprint:
+            self.beginResetModel()
             self._blueprint = newBlueprint
-            self.modelReset.emit()
+            self.endResetModel()
 
-    def item(self, row, column, parent=QtCore.QModelIndex()):
+    def step(self, row, column, parent=QtCore.QModelIndex()):
         """
-        Return the BuildItem for a row, column, and parent index.
+        Return the BuildStep for a row, column, and parent index.
         """
-        return self.itemForIndex(self.index(row, column, parent))
+        return self.stepForIndex(self.index(row, column, parent))
 
-    def itemForIndex(self, index):
+    def stepForIndex(self, index):
         """
-        Return the BuildItem of a QModelIndex.
+        Return the BuildStep of a QModelIndex.
         """
         if index.isValid():
-            return index.internalPointer()
+            stepFromPtr = index.internalPointer()
+            if stepFromPtr is None:
+                import traceback
+                traceback.print_stack()
+            return stepFromPtr
         else:
-            return self.blueprint.rootItem
+            if self._blueprint:
+                return self._blueprint.rootStep
 
-    def index(self, row, column, parent=QtCore.QModelIndex()): # override
+    def index(self, row, column, parent=QtCore.QModelIndex()):
         """
         Create a QModelIndex for a row, column, and parent index
         """
         if not self.hasIndex(row, column, parent):
             return QtCore.QModelIndex()
 
-        childItem = self.itemForIndex(parent).child(row)
-        if childItem:
-            return self.createIndex(row, column, childItem.buildItem)
-        else:
-            return QtCore.QModelIndex()
+        parentStep = self.stepForIndex(parent)
+        if parentStep and parentStep.canHaveChildren:
+            step = parentStep.getChildAt(row)
+            return self.createIndex(row, column, step)
 
-    # def indexForItem(self, buildItem):
-    #     """
-    #     Create a QModelIndex for a BuildItem in the blueprint
-    #     """
-    #     # the list of items from top-most parent downward
-    #     # that makes the parent hierarchy of the item
-    #     itemHierarchy = [buildItem]
-    #     thisItem = buildItem
-    #     while thisItem.itemParent:
-    #         itemHierarchy.insert(0, thisItem.itemParent)
-    #         thisItem = thisItem.itemParent
-
-    #     thisIndex = QtCore.QModelIndex()
-    #     for item in itemHierarchy[1:]:
-    #         row = BuildItemModelItem(item).row()
-    #         thisIndex = self.index(row, 0, thisIndex)
-
-    #     return thisIndex
+        return QtCore.QModelIndex()
 
     def flags(self, index):
         if not index.isValid():
@@ -570,7 +435,7 @@ class BuildItemTreeModel(QtCore.QAbstractItemModel):
             | QtCore.Qt.ItemIsDragEnabled \
             | QtCore.Qt.ItemIsEditable
 
-        if self.itemForIndex(index).itemCanHaveChildren:
+        if self.stepForIndex(index).canHaveChildren:
             flags |= QtCore.Qt.ItemIsDropEnabled
 
         return flags
@@ -578,41 +443,62 @@ class BuildItemTreeModel(QtCore.QAbstractItemModel):
     def supportedDropActions(self):
         return QtCore.Qt.CopyAction | QtCore.Qt.MoveAction
 
-    def columnCount(self, parent=QtCore.QModelIndex()): # override
-        return self.itemForIndex(parent).columnCount()
+    def columnCount(self, parent=QtCore.QModelIndex()):
+        return 1
 
-    def rowCount(self, parent=QtCore.QModelIndex()): # override
-        return self.itemForIndex(parent).childCount()
+    def rowCount(self, parent=QtCore.QModelIndex()):
+        step = self.stepForIndex(parent)
+        return step.numChildren() if step else 0
 
-    def parent(self, index): # override
+    def parent(self, index):
         if not index.isValid():
             return QtCore.QModelIndex()
 
-        parentItem = self.itemForIndex(index).parent()
-        if (not parentItem) or (parentItem.buildItem == self.blueprint.rootItem):
+        parentStep = self.stepForIndex(index).parent
+        if not parentStep:
             return QtCore.QModelIndex()
 
-        return self.createIndex(parentItem.row(), 0, parentItem.buildItem)
+        return self.createIndex(parentStep.indexInParent(), 0, parentStep)
 
-    def insertRows(self, position, rows, parent=QtCore.QModelIndex()):
-        raise RuntimeError("Cannot insert rows without data, use insertBuildItems instead")
-
-    def insertBuildItems(self, position, childBuildItems, parent=QtCore.QModelIndex()):
-        self.beginInsertRows(parent, position, position + len(childBuildItems) - 1)
-        success = self.itemForIndex(parent).insertChildren(position, childBuildItems)
+    def insertRows(self, row, count, parent=QtCore.QModelIndex()):
+        self.beginInsertRows(parent, row, row + count - 1)
+        step = self.stepForIndex(parent)
+        for _ in range(count):
+            step.insertChild(row, BuildStep())
         self.endInsertRows()
-        return success
+        return True
 
-    def removeRows(self, position, rows, parent=QtCore.QModelIndex()):
-        self.beginRemoveRows(parent, position, position + rows - 1)
-        success = self.itemForIndex(parent).removeChildren(position, rows)
+    def removeRows(self, row, count, parent=QtCore.QModelIndex()):
+        self.beginRemoveRows(parent, row, row + count - 1)
+        step = self.stepForIndex(parent)
+        step.removeChildren(row, count)
         self.endRemoveRows()
-        return success
+        return True
 
-    def data(self, index, role=QtCore.Qt.DisplayRole): # override
-        # QtCore.Qt.ForegroundRole
-        if index.isValid():
-            return self.itemForIndex(index).data(index.column(), role)
+    def data(self, index, role=QtCore.Qt.DisplayRole):
+        if not index.isValid():
+            return
+
+        step = self.stepForIndex(index)
+
+        if role == QtCore.Qt.DisplayRole:
+            return step.getDisplayName()
+
+        elif role == QtCore.Qt.EditRole:
+            return step.name
+
+        elif role == QtCore.Qt.DecorationRole:
+            iconFile = step.getIconFile()
+            if iconFile:
+                return QtGui.QIcon(iconFile)
+
+        elif role == QtCore.Qt.SizeHintRole:
+            return QtCore.QSize(0, 20)
+
+        elif role == QtCore.Qt.ForegroundRole:
+            color = step.getColor()
+            if color:
+                return QtGui.QColor(*[c * 255 for c in color])
 
     def setData(self, index, value, role=QtCore.Qt.EditRole):
         if not index.isValid():
@@ -621,38 +507,41 @@ class BuildItemTreeModel(QtCore.QAbstractItemModel):
         if role != QtCore.Qt.EditRole:
             return False
 
-        result = self.itemForIndex(index).setData(index.column(), value)
+        step = self.stepForIndex(index)
 
-        if result:
-            self.dataChanged.emit(index, index, [])
+        step.setName(value)
+        self.dataChanged.emit(index, index, [])
 
-        return result
+        return True
 
     def mimeTypes(self):
         return ['text/plain']
 
     def mimeData(self, indexes):
-        result = QtCore.QMimeData()
-        # TODO: this is wrong because serialization will include
-        #       children and we don't want that here
-        itemDataList = [self.itemForIndex(index).buildItem.serialize() for index in indexes]
-        datastr = meta.encodeMetaData(itemDataList)
-        result.setData('text/plain', datastr)
-        return result
+        # result = QtCore.QMimeData()
+        # # TODO: this is wrong because serialization will include
+        # #       children and we don't want that here
+        # stepDataList = [self.stepForIndex(
+        #     index).buildItem.serialize() for index in indexes]
+        # datastr = meta.encodeMetaData(stepDataList)
+        # result.setData('text/plain', datastr)
+        # return result
+        pass
 
     def dropMimeData(self, data, action, row, column, parent):
-        try:
-            itemDataList = meta.decodeMetaData(str(data.data('text/plain')))
-        except Exception as e:
-            print(e)
-            return False
-        else:
-            newBuildItems = [pulse.BuildItem.create(itemData) for itemData in itemDataList]
-            return self.insertBuildItems(row, newBuildItems, parent)
+        # try:
+        #     stepDataList = meta.decodeMetaData(str(data.data('text/plain')))
+        # except Exception as e:
+        #     print(e)
+        #     return False
+        # else:
+        #     newSteps = [pulse.BuildItem.create(
+        #         itemData) for itemData in stepDataList]
+        #     return self.insertBuildItems(row, newSteps, parent)
+        pass
 
 
-
-class BuildItemSelectionModel(QtCore.QItemSelectionModel):
+class BuildStepSelectionModel(QtCore.QItemSelectionModel):
     """
     The selection model for the BuildItems of a Blueprint. Allows
     a singular selection that is shared across all UI for the Blueprint.
@@ -682,7 +571,7 @@ class BuildItemSelectionModel(QtCore.QItemSelectionModel):
         for index in indexes:
             if index.isValid():
                 buildItem = index.internalPointer()
-                if buildItem and buildItem.itemCanHaveChildren:
+                if buildItem and buildItem.canHaveChildren:
                     indeces.append(index)
                 # TODO: get parent until we have an item that supports children
         return list(set(indeces))

@@ -16,6 +16,7 @@ __all__ = [
     'getBuildActionClass',
     'getBuildActionConfig',
     'getRegisteredAction',
+    'getRegisteredActionConfigs',
     'getRegisteredActionIds',
     'getRegisteredActions',
     'registerAction',
@@ -105,12 +106,22 @@ def getRegisteredActionIds():
 
 def getRegisteredActions():
     """
-    Return all registered BuildAction classes organized by their id
+    Return all registered BuildAction configs and classes organized by their id
 
     Returns:
         A dict of {str: {'config': dict, 'class': BuildAction class}}
     """
-    return BUILDACTIONMAP.items()
+    return {k: v for k, v in BUILDACTIONMAP}
+
+
+def getRegisteredActionConfigs():
+    """
+    Return all registered BuildAction configs
+
+    Returns:
+        A dict of {str: {'config': dict, 'class': BuildAction class}}
+    """
+    return [i['config'] for i in BUILDACTIONMAP.values()]
 
 
 def registerAction(actionConfig, actionClass):
@@ -121,6 +132,7 @@ def registerAction(actionConfig, actionClass):
         actionClass: A BuildAction class
         actionConfig (dict): A config dict for a BuildAction
     """
+    # TODO: prevent registration of invalid configs
     action = {
         'config': actionConfig,
         'class': actionClass,
@@ -191,7 +203,6 @@ class BuildStep(object):
             self._name = newName
         self.ensureUniqueName()
 
-    @property
     def isAction(self):
         return self._actionProxy is not None
 
@@ -216,7 +227,7 @@ class BuildStep(object):
 
     @property
     def canHaveChildren(self):
-        return not self.isAction
+        return not self.isAction()
 
     @property
     def parent(self):
@@ -295,6 +306,15 @@ class BuildStep(object):
             # a root step, or step without a parent has no path
             return None
 
+    def indexInParent(self):
+        """
+        Return the index of this within its parent's list of children.
+        """
+        if self.parent:
+            return self.parent.getChildIndex(self)
+        else:
+            return 0
+
     def clearChildren(self):
         if not self.canHaveChildren:
             return
@@ -330,6 +350,10 @@ class BuildStep(object):
             self._children.remove(step)
             step.setParent(None)
 
+    def removeChildren(self, index, count):
+        for _ in range(count):
+            self.removeChildAt(index)
+
     def removeChildAt(self, index):
         if not self.canHaveChildren:
             return
@@ -356,6 +380,21 @@ class BuildStep(object):
             return 0
 
         return len(self._children)
+
+    def getChildAt(self, index):
+        if not self.canHaveChildren:
+            return
+
+        return self._children[index]
+
+    def getChildIndex(self, step):
+        """
+        Return the index of a BuildStep within this step's list of children
+        """
+        if not self.canHaveChildren:
+            return -1
+
+        return self._children.index(step)
 
     def getChildByName(self, name):
         """
@@ -405,9 +444,10 @@ class BuildStep(object):
         """
         data = {}
         data['name'] = self._name
-        data['action'] = self._actionProxy.serialize()
+        if self._actionProxy:
+            data['action'] = self._actionProxy.serialize()
 
-        if self.canHaveChildren:
+        if self.numChildren() > 0:
             # TODO: perform a recursion loop check
             data['children'] = [c.serialize() for c in self._children]
 
@@ -421,9 +461,12 @@ class BuildStep(object):
             data: A dict containing serialized data for this step
         """
         self.setName(data['name'])
-        newActionProxy = BuildActionProxy()
-        newActionProxy.deserialize(data['action'])
-        self.setActionProxy(newActionProxy)
+        if 'action' in data:
+            newActionProxy = BuildActionProxy()
+            newActionProxy.deserialize(data['action'])
+            self.setActionProxy(newActionProxy)
+        else:
+            self._actionProxy = None
 
         # TODO: warn if throwing away children in a rare case that
         #       both a proxy and children existed (maybe data was manually created).
@@ -431,7 +474,7 @@ class BuildStep(object):
             # detach any existing children
             self.clearChildren()
             # deserialize all children, and connect them to this parent
-            self._children = [BuildStep.fromData(c) for c in data['children']]
+            self._children = [BuildStep.fromData(c) for c in data.get('children', [])]
             for child in self._children:
                 if child:
                     child.setParent(self)
@@ -629,15 +672,23 @@ class BuildActionProxy(BuildActionData):
         Return the full path to this build items icon
         """
         filename = self.config.get('icon')
-        actiondir = os.path.dirname(self.config.get('configFile'))
-        if filename:
-            return os.path.join(actiondir, filename)
+        configFile = self.config.get('configFile')
+        if configFile:
+            actiondir = os.path.dirname(configFile)
+            if filename:
+                return os.path.join(actiondir, filename)
 
     def hasAttrValue(self, attrName):
         return attrName in self._attrValues
 
     def getAttrValue(self, attrName):
         return self._attrValues[attrName]
+
+    def getAttrValueOrDefault(self, attrName):
+        if attrName in self._attrValues:
+            return self._attrValues[attrName]
+        else:
+            return self.getAttrDefaultValue(self.getAttrConfig(attrName))
 
     def setAttrValue(self, attrName, value):
         self._attrValues[attrName] = value
@@ -774,14 +825,16 @@ class BuildActionProxy(BuildActionData):
 
     def serialize(self):
         data = super(BuildActionProxy, self).serialize()
-        data['variantAttrs'] = self._variantAttrs
-        data['variantValues'] = self._variantValues
+        if self._variantAttrs:
+            data['variantAttrs'] = self._variantAttrs
+        if self._variantValues:
+            data['variantValues'] = self._variantValues
         return data
 
     def deserialize(self, data):
         super(BuildActionProxy, self).deserialize(data)
-        self._variantAttrs = data['variantAttrs']
-        self._variantValues = data['variantValues']
+        self._variantAttrs = data.get('variantAttrs', [])
+        self._variantValues = data.get('variantValues', [])
 
     def actionGenerator(self):
         """

@@ -143,8 +143,9 @@ class Blueprint(object):
             node: A PyNode or node name
         """
         if not Blueprint.isBlueprintNode(node):
-            raise ValueError(
+            LOG.warning(
                 "Node does not contain Blueprint data: {0}".format(node))
+            return
         data = meta.getMetaData(node, BLUEPRINT_METACLASS)
         self.deserialize(data)
 
@@ -178,12 +179,12 @@ class Blueprint(object):
         WARNING: This clears all BuildActions and replaces them
         with the default set.
         """
-        importAction = BuildStep(actionId='ImportReferences')
-        hierAction = BuildStep(actionId='BuildCoreHierarchy')
+        importAction = BuildStep(actionId='Pulse.ImportReferences')
+        hierAction = BuildStep(actionId='Pulse.BuildCoreHierarchy')
         hierAction.actionProxy.setAttrValue('allNodes', True)
         mainGroup = BuildStep('Main')
-        saveAction = BuildStep(actionId='SaveBuiltRig')
-        optimizeAction = BuildStep(actionId='OptimizeScene')
+        saveAction = BuildStep(actionId='Pulse.SaveBuiltRig')
+        optimizeAction = BuildStep(actionId='Pulse.OptimizeScene')
         self.rootStep.addChildren([
             importAction,
             hierAction,

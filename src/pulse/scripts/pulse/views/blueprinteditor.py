@@ -18,7 +18,7 @@ class BlueprintEditorWidget(QtWidgets.QWidget):
         super(BlueprintEditorWidget, self).__init__(parent=parent)
 
         self.blueprintModel = BlueprintUIModel.getDefaultModel()
-        self.model = self.blueprintModel.buildItemTreeModel
+        self.model = self.blueprintModel.buildStepTreeModel
 
         self.setupUi(self)
 

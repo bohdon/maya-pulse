@@ -12,7 +12,6 @@ __all__ = [
 ]
 
 
-
 class ActionTreeWidget(QtWidgets.QWidget):
     """
     A tree view that displays all BuildActions in a Blueprint.
@@ -26,8 +25,8 @@ class ActionTreeWidget(QtWidgets.QWidget):
 
         # get shared models
         self.blueprintModel = BlueprintUIModel.getDefaultModel()
-        self.model = self.blueprintModel.buildItemTreeModel
-        self.selectionModel = self.blueprintModel.buildItemSelectionModel
+        self.model = self.blueprintModel.buildStepTreeModel
+        self.selectionModel = self.blueprintModel.buildStepSelectionModel
 
         self.setupUi(self)
 
@@ -57,9 +56,12 @@ class ActionTreeWidget(QtWidgets.QWidget):
         self.treeView = QtWidgets.QTreeView(parent)
         self.treeView.setHeaderHidden(True)
         self.treeView.setDragEnabled(True)
-        self.treeView.setDragDropMode(QtWidgets.QAbstractItemView.DragDropMode.DragDrop)
-        self.treeView.setDefaultDropAction(QtCore.Qt.DropAction.MoveAction)
-        self.treeView.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.ExtendedSelection)
+        self.treeView.setDragDropMode(
+            QtWidgets.QAbstractItemView.DragDropMode.DragDrop)
+        self.treeView.setDefaultDropAction(
+            QtCore.Qt.DropAction.MoveAction)
+        self.treeView.setSelectionMode(
+            QtWidgets.QAbstractItemView.SelectionMode.ExtendedSelection)
         self.treeView.setIndentation(14)
         self.treeView.installEventFilter(self)
         self.treeView.setModel(self.model)
@@ -79,10 +81,6 @@ class ActionTreeWidget(QtWidgets.QWidget):
             if not self.model.removeRow(indexes[0].row(), indexes[0].parent()):
                 break
             wasChanged = True
-        if wasChanged:
-            self.blueprintModel.save()
-
-
 
 
 class ActionButtonsWidget(QtWidgets.QWidget):
@@ -96,8 +94,8 @@ class ActionButtonsWidget(QtWidgets.QWidget):
         super(ActionButtonsWidget, self).__init__(parent=parent)
 
         self.blueprintModel = BlueprintUIModel.getDefaultModel()
-        self.model = self.blueprintModel.buildItemTreeModel
-        self.selectionModel = self.blueprintModel.buildItemSelectionModel
+        self.model = self.blueprintModel.buildStepTreeModel
+        self.selectionModel = self.blueprintModel.buildStepSelectionModel
         self.setupUi(self)
 
     def setupUi(self, parent):
@@ -127,13 +125,15 @@ class ActionButtonsWidget(QtWidgets.QWidget):
         """ Build the action buttons UI """
         layout = QtWidgets.QVBoxLayout(parent)
 
+        allActionConfigs = pulse.getRegisteredActionConfigs()
+
         # make button for each action
-        registeredActions = pulse.getRegisteredActions().values()
-        categories = list(set([ac.config.get('category', 'Default') for ac in registeredActions]))
+        categories = [c.get('category', 'Default') for c in allActionConfigs]
+        categories = list(set(categories))
         categoryLayouts = {}
 
         # create category layouts
-        for i, cat in enumerate(sorted(categories)):
+        for cat in sorted(categories):
             # add category layout
             catLay = QtWidgets.QVBoxLayout(parent)
             catLay.setSpacing(4)
@@ -143,20 +143,21 @@ class ActionButtonsWidget(QtWidgets.QWidget):
             label = self.createLabel(parent, cat)
             catLay.addWidget(label)
 
-        for actionClass in registeredActions:
-            cat = actionClass.config.get('category', 'Default')
-            color = self.getActionColor(actionClass)
+        for actionConfig in allActionConfigs:
+            actionId = actionConfig['id']
+            actionCategory = actionConfig.get('category', 'Default')
+            color = self.getActionColor(actionConfig)
             btn = QtWidgets.QPushButton(parent)
-            btn.setText(actionClass.config['displayName'])
-            btn.setStyleSheet('background-color:rgba({0}, {1}, {2}, 30)'.format(*color))
+            btn.setText(actionConfig['displayName'])
+            btn.setStyleSheet(
+                'background-color:rgba({0}, {1}, {2}, 30)'.format(*color))
             btn.setMinimumHeight(22)
-            cmd = lambda x=actionClass.getTypeName(): self.createBuildAction(x)
+            cmd = lambda x=actionId: self.createBuildAction(x)
             btn.clicked.connect(cmd)
-            categoryLayouts[cat].addWidget(btn)
+            categoryLayouts[actionCategory].addWidget(btn)
 
-        spacer = QtWidgets.QSpacerItem(0, 0,
-            QtWidgets.QSizePolicy.Minimum,
-            QtWidgets.QSizePolicy.Expanding)
+        spacer = QtWidgets.QSpacerItem(
+            0, 0, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
         layout.addItem(spacer)
 
     def createLabel(self, parent, text):
@@ -164,11 +165,12 @@ class ActionButtonsWidget(QtWidgets.QWidget):
         label.setText(text)
         label.setMinimumHeight(20)
         label.setContentsMargins(10, 2, 2, 2)
-        label.setStyleSheet('background-color: rgba(0, 0, 0, 40); border-radius: 2px')
+        label.setStyleSheet(
+            'background-color: rgba(0, 0, 0, 40); border-radius: 2px')
         return label
 
-    def getActionColor(self, actionClass):
-        color = actionClass.config.get('color', [1, 1, 1])
+    def getActionColor(self, actionConfig):
+        color = actionConfig.get('color', [1, 1, 1])
         if color:
             return [int(c * 255) for c in color]
         else:
@@ -186,11 +188,10 @@ class ActionButtonsWidget(QtWidgets.QWidget):
             return
 
         for grpIndex in grpIndexes:
-            grp = pulse.BuildItem('MyGroup')
-            self.model.insertBuildItems(0, [grp], grpIndex)
-        self.blueprintModel.save()
+            self.model.insertRows(0, 1, grpIndex)
+            # TODO: name the newly inserted step
 
-    def createBuildAction(self, typeName):
+    def createBuildAction(self, actionId):
         if self.blueprintModel.isReadOnly():
             return
 
@@ -198,19 +199,17 @@ class ActionButtonsWidget(QtWidgets.QWidget):
         if not grpIndexes:
             return
 
-        ac = pulse.getBuildActionClass(typeName)
         newIndexes = []
         for grpIndex in grpIndexes:
-            action = ac()
-            if self.model.insertBuildItems(0, [action], grpIndex):
+            if self.model.insertRows(0, 1, grpIndex):
                 newIndexes.append(self.model.index(0, 0, grpIndex))
+                # TODO: update new items to match action class
+
         # select new items
         self.selectionModel.clearSelection()
         for index in newIndexes:
-            self.selectionModel.select(index, QtCore.QItemSelectionModel.Select)
-        self.blueprintModel.save()
-
-
+            self.selectionModel.select(
+                index, QtCore.QItemSelectionModel.Select)
 
 
 class ActionTreeWindow(PulseWindow):
