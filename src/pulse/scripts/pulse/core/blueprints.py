@@ -184,11 +184,13 @@ class Blueprint(object):
         mainGroup = BuildStep('Main')
         saveAction = BuildStep(actionId='SaveBuiltRig')
         optimizeAction = BuildStep(actionId='OptimizeScene')
-        self.rootStep.addChild(importAction)
-        self.rootStep.addChild(hierAction)
-        self.rootStep.addChild(mainGroup)
-        self.rootStep.addChild(saveAction)
-        self.rootStep.addChild(optimizeAction)
+        self.rootStep.addChildren([
+            importAction,
+            hierAction,
+            mainGroup,
+            saveAction,
+            optimizeAction
+        ])
 
     def loadBlueprintConfig(self):
         """

@@ -11,7 +11,6 @@ __all__ = [
     'BuildActionData',
     'BuildActionError',
     'BuildActionProxy',
-    'BuildActionProxyBatch',
     'BuildItem',
     'BuildStep',
     'getBuildActionClass',
@@ -319,6 +318,10 @@ class BuildStep(object):
         self._children.append(step)
         step.setParent(self)
 
+    def addChildren(self, steps):
+        for step in steps:
+            self.addChild(step)
+
     def removeChild(self, step):
         if not self.canHaveChildren:
             return
@@ -418,8 +421,6 @@ class BuildStep(object):
             data: A dict containing serialized data for this step
         """
         self.setName(data['name'])
-        # TODO: (urgent) need to reconstruct the proper BuildActionProxy class based on data type,
-        #       currently this will destroy any batch proxies on load
         newActionProxy = BuildActionProxy()
         newActionProxy.deserialize(data['action'])
         self.setActionProxy(newActionProxy)
@@ -593,24 +594,23 @@ class BuildActionProxy(BuildActionData):
     """
     Acts as a stand-in for a BuildAction during Blueprint editing.
     Contains all attribute values for the configured action, which
-    are used to create a real BuildAction at build time.
+    are used to create real BuildActions at build time.
 
-    This proxy provides a method `actionGenerator` which constructs
-    and yields the real BuildAction instances for use a build time.
-    Note that multiple BuildActions can come from a single proxy.
+    The proxy can represent multiple BuildActions by adding 'variants'.
+    This allows the user to create multiple actions where only the
+    values that are unique per variant need to be set, and the
+    remaining attributes will be the same on all actions.
+
+    The proxy provides a method `actionGenerator` which performs the
+    actual construction of BuildActions for use at build time.
     """
 
-    def hasAttrValue(self, attrName):
-        return attrName in self._attrValues
-
-    def getAttrValue(self, attrName):
-        return self._attrValues[attrName]
-
-    def setAttrValue(self, attrName, value):
-        self._attrValues[attrName] = value
-
-    def delAttrValue(self, attrName):
-        del self._attrValues[attrName]
+    def __init__(self, actionId=None):
+        super(BuildActionProxy, self).__init__(actionId=actionId)
+        # the list of attribute names that are unique per variant
+        self._variantAttrs = []
+        # list of all variant attribute value dicts
+        self._variantValues = []
 
     def getDisplayName(self):
         """
@@ -633,68 +633,23 @@ class BuildActionProxy(BuildActionData):
         if filename:
             return os.path.join(actiondir, filename)
 
-    def actionGenerator(self):
+    def hasAttrValue(self, attrName):
+        return attrName in self._attrValues
+
+    def getAttrValue(self, attrName):
+        return self._attrValues[attrName]
+
+    def setAttrValue(self, attrName, value):
+        self._attrValues[attrName] = value
+
+    def delAttrValue(self, attrName):
+        del self._attrValues[attrName]
+
+    def isVariantAction(self):
         """
-        Generator that yields a BuildAction for every action that this
-        proxy represents.
+        Returns true of this action proxy has any variant attributes.
         """
-        if self.isActionIdValid():
-            yield BuildAction.fromData(self.serialize())
-
-
-class BuildActionProxyBatch(BuildActionProxy):
-    """
-    A BuildActionProxy that generates multiple BuildActions
-    which will be run in order, and can have different values for
-    one or more attributes.
-
-    Provides functionality for converting to and from a BuildActionProxy,
-    but note that data will be lost when converting from a batch action to a
-    single action (since variant attribute values will be discarded).
-    """
-
-    @staticmethod
-    def fromSingleAction(actionProxy):
-        """
-        Convert a single action to a batch action
-
-        Args:
-            actionProxy (BuildActionProxy): An action proxy
-        """
-        newBatch = BuildActionProxyBatch()
-        newBatch.deserialize(_copyData(actionProxy.serialize()))
-        return newBatch
-
-    @staticmethod
-    def toSingleAction(actionProxyBatch):
-        """
-        Convert a batch action to a single action
-
-        Args:
-            actionProxyBatch (BuildActionProxyBatch): An batch action proxy
-        """
-        newAction = BuildActionProxy()
-        newAction.deserialize(_copyData(actionProxyBatch.serialize()))
-        return newAction
-
-    def __init__(self, actionId=None):
-        super(BuildActionProxyBatch, self).__init__(actionId=actionId)
-        # the list of attribute names that vary per batch instance
-        self._variantAttrs = []
-        # all variant attribute values
-        self._variantValues = []
-
-    def serialize(self):
-        data = super(BuildActionProxyBatch, self).serialize()
-        data['variantAttrs'] = self._variantAttrs
-        data['variantValues'] = self._variantValues
-        return data
-
-    def deserialize(self, data):
-        super(BuildActionProxyBatch, self).deserialize(data)
-        # all attributes values
-        self._variantAttrs = data['variantAttrs']
-        self._variantValues = data['variantValues']
+        return bool(self._variantAttrs)
 
     def addVariantAttr(self, attrName):
         """
@@ -710,6 +665,7 @@ class BuildActionProxyBatch(BuildActionProxy):
 
         # add attr to variant attrs list
         self._variantAttrs.append(attrName)
+
         # update variant values with new attr, using
         # current invariant value for all variants
         if self.hasAttrValue(attrName):
@@ -721,40 +677,80 @@ class BuildActionProxyBatch(BuildActionProxy):
 
     def removeVariantAttr(self, attrName):
         """
+        Remove an attribute from the list of variant attributes,
+        copying the value from the first variant into the default set
+        of attr values if applicable.
+
+        Args:
+            attrName (str): The name of an action attribute
         """
         if attrName not in self._variantAttrs:
             return
 
         # remove from attributes list
         self._variantAttrs.remove(attrName)
+
         # transfer first variant value to the invariant values
         if len(self._variantValues):
             firstVariant = self._variantValues[0]
             if attrName in firstVariant:
                 self.setAttrValue(attrName, firstVariant[attrName])
+
         # remove all values from variant values
         for item in self._variantValues:
             del item[attrName]
 
+        # clear variant values if there are no variant attrs left
+        if not self._variantAttrs:
+            self._variantValues = []
+
+    def clearVariantAttrs(self):
+        """
+        Remove all variant attributes, copying the values
+        from the first variant into the default set of attr values
+        if applicable.
+        """
+        attrNames = self._variantAttrs[:]
+        for attrName in attrNames:
+            self.removeVariantAttr(attrName)
+
     def addVariant(self):
         """
-        Add a variant of attribute values.
+        Add a variant of attribute values. Does nothing if there
+        are no variant attributes.
         """
+        if not self.isVariantAction():
+            return
         self._variantValues.append({})
 
     def insertVariant(self, index):
         """
-        Insert a variant of attribute values.
+        Insert a variant of attribute values. Does nothing if there
+        are no variant attributes.
+
+        Args:
+            index (int): The index at which to insert the new variant
         """
+        if not self.isVariantAction():
+            return
         self._variantValues.insert(index, {})
 
     def removeVariantAt(self, index):
         """
         Remove a variant of attribute values.
+
+        Args:
+            index (int): The index at which to remove the variant
         """
         count = len(self._variantValues)
         if index >= -count and index < count:
             del self._variantValues[index]
+
+    def clearVariants(self):
+        """
+        Clear all variant values. Does not clear the list of variant attributes.
+        """
+        self._variantValues = []
 
     def hasVariantAttrValue(self, index, attrName):
         if index < 0 or index >= len(self._variantValues):
@@ -772,36 +768,45 @@ class BuildActionProxyBatch(BuildActionProxy):
 
     def numVariants(self):
         """
-        Return how many action attribute variants this batch contains
+        Return how many variants exist on this action proxy
         """
         return len(self._variantValues)
 
+    def serialize(self):
+        data = super(BuildActionProxy, self).serialize()
+        data['variantAttrs'] = self._variantAttrs
+        data['variantValues'] = self._variantValues
+        return data
+
+    def deserialize(self, data):
+        super(BuildActionProxy, self).deserialize(data)
+        self._variantAttrs = data['variantAttrs']
+        self._variantValues = data['variantValues']
+
     def actionGenerator(self):
         """
-        Generator that yields this item and creates all actions represented
-        by the variants of this batch action. The created actions have
-        this item set as their parent, so they will have valid paths.
-
-        Intended for use at build time only.
+        Generator that yields all the BuildActions represented
+        by this proxy. If variants are in use, constructs a BuildAction
+        for each set of variant attribute values.
         """
         if self.isActionIdValid():
-            # ensure there are no invariant values for variant attrs
-            for attrName in self._variantAttrs:
-                if self.hasAttrValue(attrName):
-                    LOG.warning("Found invariant value for a variant "
-                                "batch attr: {0}.{1}".format(self.getActionId(), attrName))
+            if self.isVariantAction():
+                # ensure there are no invariant values for variant attrs
+                for attrName in self._variantAttrs:
+                    if self.hasAttrValue(attrName):
+                        LOG.warning("Found invariant value for a variant attr: "
+                                    "{0}.{1}".format(self.getActionId(), attrName))
 
-            # create and yield new build actions for each variant
-            for variant in self._variantValues:
-                data = _copyData(self.serialize())
-                data.update(variant)
-                newAction = BuildAction.fromData(data)
-                yield newAction
-
-
-class BatchBuildAction(BuildActionProxyBatch):
-    # TODO: deprecate and remove
-    pass
+                # create and yield new build actions for each variant
+                mainData = self.serialize()
+                for variant in self._variantValues:
+                    data = _copyData(mainData)
+                    data.update(variant)
+                    newAction = BuildAction.fromData(data)
+                    yield newAction
+            else:
+                # no variants, just create one action
+                yield BuildAction.fromData(_copyData(self.serialize()))
 
 
 class BuildAction(BuildActionData):
