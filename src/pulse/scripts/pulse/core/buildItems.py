@@ -17,6 +17,7 @@ __all__ = [
     'getBuildActionClass',
     'getBuildActionConfig',
     'getRegisteredAction',
+    'getRegisteredActionIds',
     'getRegisteredActions',
     'registerAction',
 ]
@@ -44,19 +45,28 @@ def _copyData(data, refNode=None):
     return meta.decodeMetaData(meta.encodeMetaData(data), refNode)
 
 
-def getRegisteredAction(name):
-    if name in BUILDACTIONMAP:
-        return BUILDACTIONMAP[name]
-
-
-def getBuildActionConfig(name):
+def getRegisteredAction(actionId):
     """
-    Return a BuildAction config by action name
+    Return a BuildAction config and class by action id
 
     Args:
-        name: A str representing the name of the BuildAction
+        actionId (str): A BuildAction id
+
+    Returns:
+        A dict containing {'config':dict, 'class':class}
     """
-    action = getRegisteredAction(name)
+    if actionId in BUILDACTIONMAP:
+        return BUILDACTIONMAP[actionId]
+
+
+def getBuildActionConfig(actionId):
+    """
+    Return a BuildAction config by action id
+
+    Args:
+        actionId (str): A BuildAction id
+    """
+    action = getRegisteredAction(actionId)
     if action:
         return action['config']
 
@@ -65,37 +75,43 @@ def _getBuildActionConfigForClass(actionClass):
     """
     Return the config that is associated with a BuildAction class.
     Performs the search by looking for a matching class and returning
-    its paired config, instead of looking for the config by name.
+    its paired config, instead of looking for the config by id.
 
     Args:
         actionClass: A BuildAction class
     """
-    for k, v in BUILDACTIONMAP.iteritems():
+    for v in BUILDACTIONMAP.values():
         if v['class'] is actionClass:
             return v['config']
 
 
-def getBuildActionClass(name):
+def getBuildActionClass(actionId):
     """
-    Return a BuildAction class by action name
+    Return a BuildAction class by action id
 
     Args:
-        name: A str representing the name of the BuildAction
+        actionId (str): A BuildAction id
     """
-    action = getRegisteredAction(name)
+    action = getRegisteredAction(actionId)
     if action:
         return action['class']
 
 
+def getRegisteredActionIds():
+    """
+    Return all the ids of registered BuildActions
+    """
+    return BUILDACTIONMAP.keys()
+
+
 def getRegisteredActions():
     """
-    Return all registered BuildAction classes organized by their registered action name
+    Return all registered BuildAction classes organized by their id
 
     Returns:
-        A dict of {str: {'config': dict, 'class': BuildAction class}} where keys are
-        the registered name of the action
+        A dict of {str: {'config': dict, 'class': BuildAction class}}
     """
-    return {k: v for k, v in BUILDACTIONMAP.iteritems() if issubclass(v, BuildAction)}
+    return BUILDACTIONMAP.items()
 
 
 def registerAction(actionConfig, actionClass):
@@ -110,19 +126,17 @@ def registerAction(actionConfig, actionClass):
         'config': actionConfig,
         'class': actionClass,
     }
-    actionName = actionConfig['name']
-    if actionName in BUILDACTIONMAP:
-        if BUILDACTIONMAP[actionName]['config'].get('isBuiltin', False):
-            LOG.error("A built-in BuildAction already "
-                      "exists with type name: {0}".format(actionName))
-            return
+    actionId = actionConfig['id']
+    if actionId in BUILDACTIONMAP:
+        LOG.error("A BuildAction already exists with id: {0}".format(actionId))
+        return
 
-    BUILDACTIONMAP[actionName] = action
+    BUILDACTIONMAP[actionId] = action
 
 
-def unregisterAction(name):
-    if name in BUILDACTIONMAP:
-        del BUILDACTIONMAP[name]
+def unregisterAction(actionId):
+    if actionId in BUILDACTIONMAP:
+        del BUILDACTIONMAP[actionId]
 
 
 class BuildStep(object):
@@ -148,7 +162,7 @@ class BuildStep(object):
         step.deserialize(data)
         return step
 
-    def __init__(self, name='BuildStep', actionProxy=None, actionName=None):
+    def __init__(self, name='BuildStep', actionProxy=None, actionId=None):
         # the name of this step (unique among siblings)
         self._name = name
         # the parent BuildStep
@@ -158,9 +172,9 @@ class BuildStep(object):
         # the BuildActionProxy for this step
         self._actionProxy = actionProxy
 
-        # auto-create a basic BuildActionProxy if an actionName was given
-        if actionName:
-            self._actionProxy = BuildActionProxy(actionName=actionName)
+        # auto-create a basic BuildActionProxy if an actionId was given
+        if actionId:
+            self._actionProxy = BuildActionProxy(actionId=actionId)
 
     @property
     def name(self):
@@ -181,6 +195,10 @@ class BuildStep(object):
     @property
     def isAction(self):
         return self._actionProxy is not None
+
+    @property
+    def actionProxy(self):
+        return self._actionProxy
 
     def setActionProxy(self, actionProxy):
         """
@@ -431,33 +449,49 @@ class BuildActionData(object):
     performed during a build step.
     """
 
-    def __init__(self, actionName=None):
-        self._actionName = actionName
+    def __init__(self, actionId=None):
+        self._actionId = actionId
         self.configFile = None
-        self.config = {}
+        self._config = None
         self._attrValues = {}
 
-        if self._actionName:
+        if self._actionId:
             self.retrieveActionConfig()
 
     def __repr__(self):
-        return "<BuildActionData '{0}'>".format(self.getActionName())
+        return "<{0} '{1}'>".format(self.__class__.__name__, self.getActionId())
+
+    @property
+    def config(self):
+        if self._config is not None:
+            return self._config
+        return {}
 
     def hasConfig(self):
         """
-        Return True if this object has a valid actionName and
+        Return True if this object has a valid actionId and
         corresponding config loaded.
         """
-        return self._actionName and self.config
+        return self._actionId and (self._config is not None)
 
-    def getActionName(self):
+    def getActionId(self):
         """
-        Return the name of the BuildAction
+        Return the id of the BuildAction
         """
-        return self._actionName
+        return self._actionId
+
+    def getShortActionId(self):
+        """
+        Return the last part of the actions id, after any '.'
+        """
+        if self._actionId:
+            return self._actionId.split('.')[-1]
 
     def retrieveActionConfig(self):
-        self.config = getBuildActionConfig(self._actionName)
+        self._config = getBuildActionConfig(self._actionId)
+        if self._config is None:
+            LOG.warning(
+                "Failed to find action config for {0}".format(self._actionId))
 
     def getAttrNames(self):
         """
@@ -512,10 +546,11 @@ class BuildActionData(object):
         Return this BuildActionData as a serialized dict object
         """
         data = {}
-        data['actionName'] = self._actionName
+        data['id'] = self._actionId
         if self.hasConfig():
             for attr in self.config['attrs']:
-                data[attr['name']] = self._attrValues[attr['name']]
+                if attr['name'] in self._attrValues:
+                    data[attr['name']] = self._attrValues[attr['name']]
         return data
 
     def deserialize(self, data):
@@ -525,23 +560,26 @@ class BuildActionData(object):
         Args:
             data: A dict containing serialized data for this action
         """
-        self._actionName = data['actionName']
+        self._actionId = data['id']
 
         # update config
-        if self._actionName:
+        if self._actionId:
             self.retrieveActionConfig()
 
         # load values for all action attrs
-        # TODO: warn if failed to get config, and don't discard attr data,
-        #       just keep it in an unvalidated state
+        attrs = self.config.get('attrs', [])
         if self.hasConfig():
-            for attr in self.config['attrs']:
+            for attr in attrs:
                 if attr['name'] in data:
                     self._attrValues[attr['name']] = data[attr['name']]
                 else:
-                    LOG.warning(
-                        'No serialized data for attribute: {0}'.format(attr['name']))
                     self._attrValues[attr['name']] = self.getDefaultValue(attr)
+        elif attrs:
+            # TODO: better wording for this warning / issue
+            LOG.warning(
+                "Failed to load config for action, preserving attr values")
+            for k, v in data.items():
+                self._attrValues[k] = v
 
 
 class BuildItem(BuildActionData):
@@ -573,13 +611,13 @@ class BuildActionProxy(BuildActionData):
         del self._attrValues[name]
 
     def hasActionClass(self):
-        return self.getActionName() is not None
+        return self.getActionId() is not None
 
     def getDisplayName(self):
         """
         Return the display name of the BuildAction.
         """
-        return self.config.get('displayName', self.getActionName())
+        return self.config.get('displayName', self.getShortActionId())
 
     def getColor(self):
         """
@@ -673,10 +711,6 @@ class BuildActionProxyBatch(BuildActionProxy):
         return data
 
     def deserialize(self, data):
-        if data['actionName'] != self._actionName:
-            raise ValueError("Attempted to deserialize {0} data "
-                             "into a {1}".format(data['actionName'], self._actionName))
-
         super(BuildActionProxyBatch, self).deserialize(data)
         # retrieve action class
         actionClassName = data['actionClassName']
@@ -834,40 +868,39 @@ class BuildAction(BuildActionData):
     """
 
     @staticmethod
-    def fromActionName(name):
+    def fromActionId(actionId):
         """
-        Create and return a BuildAction by class name.
+        Create and return a BuildAction by class actionId.
 
         Args:
-            name (str): The name of a registered BuildAction class
+            actionId (str): A BuildAction id.
         """
-        actionClass = getBuildActionClass(name)
+        actionClass = getBuildActionClass(actionId)
         if actionClass:
             item = actionClass()
             return item
         else:
-            LOG.error("Failed to find BuildAction class: {0}".format(name))
+            LOG.error("Failed to find BuildAction class: {0}".format(actionId))
 
     @staticmethod
     def fromData(data):
         """
-        Create and return a BuildAction based
-        on the given serialized data.
+        Create and return a BuildAction based on the given serialized data.
 
-        This is a factory method that automatically
-        determines the class to instance from the data type.
+        This is a factory method that automatically determines
+        the class to instance using the action id in the data.
 
         Args:
             data: A dict object containing serialized BuildAction data
         """
-        actionClass = getBuildActionClass(data['type'])
+        actionClass = getBuildActionClass(data['id'])
         if actionClass:
             item = actionClass()
             item.deserialize(data)
             return item
         else:
             LOG.error(
-                "Failed to find BuildAction class: {0}".format(data['type']))
+                "Failed to find BuildAction class: {0}".format(data['id']))
 
     @staticmethod
     def fromBatchAction(batchAction):
@@ -894,18 +927,21 @@ class BuildAction(BuildActionData):
             attrKwargs: A dict of default values for this actions attributes.
                 Only values corresponding to a valid config attribute are used.
         """
-        # pull action name from the class name
-        actionName = self.__class__.__name__
-        if actionName.endswith('Action'):
-            actionName = actionName[:6]
-
-        super(BuildAction, self).__init__(actionName)
+        super(BuildAction, self).__init__()
 
         # logger is initialized the first time its accessed
         self._log = None
-
         # rig is only available during build
         self.rig = None
+
+        # pull action name from the class name
+        self._config = _getBuildActionConfigForClass(self.__class__)
+        if self._config:
+            self._actionId = self.config['id']
+        else:
+            LOG.warning("Constructed an unregistered BuildAction: {0}, "
+                        "cannot retrieve config".format(self.__class__.__name__))
+            return
 
         # initialize attributes from config
         for attr in self.config['attrs']:
@@ -917,19 +953,23 @@ class BuildAction(BuildActionData):
 
     def __repr__(self):
         return "<{0}>".format(self.__class__.__name__)
+    
+    def __getattr__(self, name):
+        if name in self._attrValues:
+            return self._attrValues[name]
+        raise AttributeError
 
     def retrieveActionConfig(self):
-        # get config using the class itself, not the action name.
-        # this alleviates a little bit of pressure from BuildActions
-        # requiring globally unique names, though that is still currently
-        # required during action registration.
-        self.config = _getBuildActionConfigForClass(self.__class__)
+        # do nothing. BuildAction classes automatically retrieve
+        # their config on init using the class itself to lookup
+        # a registered config.
+        pass
 
     def getLoggerName(self):
         """
         Return the name of the logger for this BuildAction
         """
-        return 'pulse.action.' + self.getActionName().lower()
+        return 'pulse.action.' + self.getActionId()
 
     @property
     def log(self):

@@ -1,5 +1,5 @@
 ImportReferencesAction:
-  isBuiltin: true
+  id: Pulse.ImportReferences
   displayName: Import References
   description: Import all file references into the scene
   category: Core

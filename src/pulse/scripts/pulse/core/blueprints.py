@@ -308,7 +308,7 @@ class BlueprintBuilder(object):
             if iterResult.get('finish'):
                 self.finish()
             # report progress
-            self.onProgress(iterResult['current'], iterResult['total'])
+            self.onProgress(iterResult['index'], iterResult['total'])
             # check for user cancel
             if self.checkCancel():
                 self.cancel()
@@ -356,14 +356,14 @@ class BlueprintBuilder(object):
         if self.debug:
             self.log.info("Debug is enabled")
 
-    def onProgress(self, current, total):
+    def onProgress(self, index, total):
         """
         Called after every step of the build.
         Override this in subclasses to monitor progress.
 
         Args:
-            current: An int representing the current build step
-            total: An int representing the total number of build steps
+            index: An int representing the index of the current action
+            total: An int representing the total number of actions
         """
         pass
 

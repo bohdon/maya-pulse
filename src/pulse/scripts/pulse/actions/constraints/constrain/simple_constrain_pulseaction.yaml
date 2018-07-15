@@ -1,4 +1,5 @@
 SimpleConstrainAction:
+  id: Pulse.SimpleConstrain
   displayName: Simple Constrain
   description: Create a simple full constraint between nodes
   color: [.4, .6, .8]

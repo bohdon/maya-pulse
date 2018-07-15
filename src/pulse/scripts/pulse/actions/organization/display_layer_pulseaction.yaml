@@ -1,4 +1,5 @@
 DisplayLayerAction:
+  id: Pulse.DisplayLayer
   displayName: Display Layer
   description: Creates a display layer
   color: [1.0, 1.0, 1.0]

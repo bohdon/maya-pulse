@@ -21,8 +21,8 @@ def loadActionsFromDirectory(startDir):
         startDir: A str path of the directory to search
     """
     loader = BuildActionLoader()
-    actions = loader.loadActionsFromDirectory(startDir)
-    registerActions(actions)
+    for config, action in loader.loadActionsFromDirectory(startDir):
+        registerAction(config, action)
 
 
 def loadBuiltinActions():

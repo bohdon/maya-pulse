@@ -23,23 +23,17 @@ def _isSamePythonFile(fileA, fileB):
 
 class BuildActionLoader(object):
 
-    def loadConfig(self, actionClass, module):
+    def loadActionConfig(self, name, configFile):
         """
-        Load the config data for a BuildAction class. Stores both the class
-        and its config in maps accessible via functions in pulse.buildItems
+        Load and return the config data for a BuildAction class.
 
         Args:
-            actionClass (BuildAction): The action for which to load a config
-            module (module): The module that contains the BuildAction class
+            name (str): The name of the BuildAction for which to load a config
+            configFile (str): The path to the BuildAction config file
 
         Returns:
-            True if config was loaded successfully
+            A dict representing the config data for the named BuildAction
         """
-        if actionClass.config is not None:
-            # TODO: validate the config
-            return True
-
-        configFile = os.path.splitext(module.__file__)[0] + '.yaml'
         if not os.path.isfile(configFile):
             LOG.warning("Config file not found: {0}".format(configFile))
             return False
@@ -47,31 +41,34 @@ class BuildActionLoader(object):
         with open(configFile, 'rb') as fp:
             config = yaml.load(fp.read())
 
-        # get config for the BuildAction by class name
-        if config and actionClass.__name__ in config:
-            # assign the config to the class
-            actionClass.config = config[actionClass.__name__]
-            actionClass.configFile = configFile
-            return True
-        else:
-            LOG.warning("Config data {0} not found in {1}".format(
-                actionClass.__name__, configFile))
-            return False
+        if config and (name in config):
+            return config[name]
+
+        LOG.warning("No BuildAction config data for {0} "
+                    "was found in {1}".format(name, configFile))
 
     def loadActionsFromModule(self, module):
         """
         Return BuildItem type map data for all BuildActions
         contained in the given module
+
+        Returns:
+            A list of tuples containing (dict, class) representing the
+            action's config and BuildAction class.
+
         """
         result = []
         for name in dir(module):
             obj = getattr(module, name)
             if (isinstance(obj, type) and issubclass(obj, core.BuildAction) and
                     obj is not core.BuildAction):
-                # load config data into config map
-                if self.loadConfig(obj, module):
-                    LOG.debug('Loaded BuildAction: {0}'.format(obj.getTypeName()))
-                    result.append(obj)
+                # get config for the action class
+                actionName = obj.__name__
+                configFile = os.path.splitext(module.__file__)[0] + '.yaml'
+                actionConfig = self.loadActionConfig(name, configFile)
+                if actionConfig:
+                    LOG.debug('Loaded BuildAction: {0}'.format(obj.__name__))
+                    result.append((actionConfig, obj))
                 else:
                     LOG.error('Failed to load BuildAction: {0}'.format(
                         obj.getTypeName()))
@@ -85,6 +82,10 @@ class BuildActionLoader(object):
 
         Args:
             startDir: A str path of the directory to search
+
+        Returns:
+            A list of tuples containing (dict, class) representing the
+            action's config and BuildAction class.
         """
         if '~' in startDir:
             startDir = os.path.expanduser(startDir)
