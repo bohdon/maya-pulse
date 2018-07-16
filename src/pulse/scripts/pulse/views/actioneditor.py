@@ -32,6 +32,12 @@ class BuildStepForm(QtWidgets.QWidget):
         super(BuildStepForm, self).__init__(parent=parent)
         self.index = QtCore.QPersistentModelIndex(index)
         self.setupUi(self)
+        self.index.model().dataChanged.connect(self.onModelDataChanged)
+
+    def onModelDataChanged(self):
+        # TODO: refresh displayed values
+        if not self.index.isValid():
+            self.hide()
 
     def step(self):
         """
@@ -408,6 +414,8 @@ class ActionEditorWidget(QtWidgets.QWidget):
 
         self.blueprintModel = BlueprintUIModel.getDefaultModel()
         self.model = self.blueprintModel.buildStepTreeModel
+        self.model.dataChanged.connect(self.onModelDataChanged)
+        self.model.modelReset.connect(self.onModelReset)
         self.selectionModel = self.blueprintModel.buildStepSelectionModel
         self.selectionModel.selectionChanged.connect(self.onSelectionChanged)
 
@@ -448,6 +456,13 @@ class ActionEditorWidget(QtWidgets.QWidget):
         self.scrollWidget.setLayout(self.scrollLayout)
 
     def onSelectionChanged(self, selected, deselected):
+        self.setupItemsUiForSelection()
+
+    def onModelDataChanged(self):
+        # TODO: refresh displayed build step forms if applicable
+        pass
+
+    def onModelReset(self):
         self.setupItemsUiForSelection()
 
     def clearItemsUi(self):

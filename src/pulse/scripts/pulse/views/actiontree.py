@@ -57,7 +57,7 @@ class ActionTreeWidget(QtWidgets.QWidget):
         self.treeView.setHeaderHidden(True)
         self.treeView.setDragEnabled(True)
         self.treeView.setDragDropMode(
-            QtWidgets.QAbstractItemView.DragDropMode.DragDrop)
+            QtWidgets.QAbstractItemView.DragDropMode.InternalMove)
         self.treeView.setDefaultDropAction(
             QtCore.Qt.DropAction.MoveAction)
         self.treeView.setSelectionMode(
@@ -73,14 +73,12 @@ class ActionTreeWidget(QtWidgets.QWidget):
         self.treeView.expandAll()
 
     def deleteSelectedItems(self):
-        wasChanged = False
         while True:
             indexes = self.selectionModel.selectedIndexes()
             if not indexes:
                 break
             if not self.model.removeRow(indexes[0].row(), indexes[0].parent()):
                 break
-            wasChanged = True
 
 
 class ActionButtonsWidget(QtWidgets.QWidget):
@@ -179,35 +177,71 @@ class ActionButtonsWidget(QtWidgets.QWidget):
     def onActionClicked(self, typeName):
         self.clicked.emit(typeName)
 
+    def createStepsForSelection(self):
+        """
+        Create new BuildSteps in the hierarchy at the
+        current selection and return the new model indexes.
+        """
+        if self.blueprintModel.isReadOnly():
+            return
+
+        selIndexes = self.selectionModel.selectedIndexes()
+        if not selIndexes:
+            selIndexes = [QtCore.QModelIndex()]
+
+        model = self.selectionModel.model()
+
+        def getParentAndInsertIndex(index):
+            step = model.stepForIndex(index)
+            print('step', step)
+            if step.canHaveChildren:
+                print('inserting at num children')
+                return index, step.numChildren()
+            else:
+                print('inserting at selected + 1')
+                return model.parent(index), index.row() + 1
+
+        newIndexes = []
+        for index in selIndexes:
+            parentIndex, insertIndex = getParentAndInsertIndex(index)
+            if self.model.insertRows(insertIndex, 1, parentIndex):
+                newIndex = self.model.index(insertIndex, 0, parentIndex)
+                newIndexes.append(newIndex)
+
+        return newIndexes
+
     def createBuildGroup(self):
         if self.blueprintModel.isReadOnly():
             return
 
-        grpIndexes = self.selectionModel.getSelectedGroups()
-        if not grpIndexes:
-            return
+        newIndexes = self.createStepsForSelection()
+        model = self.selectionModel.model()
 
-        for grpIndex in grpIndexes:
-            self.model.insertRows(0, 1, grpIndex)
-            # TODO: name the newly inserted step
+        # update steps with correct action id and select them
+        self.selectionModel.clearSelection()
+        for index in newIndexes:
+            step = model.stepForIndex(index)
+            if step:
+                step.setName('New Step')
+                model.dataChanged.emit(index, index, [])
+            self.selectionModel.select(
+                index, QtCore.QItemSelectionModel.Select)
 
     def createBuildAction(self, actionId):
         if self.blueprintModel.isReadOnly():
             return
 
-        grpIndexes = self.selectionModel.getSelectedGroups()
-        if not grpIndexes:
-            return
+        newIndexes = self.createStepsForSelection()
+        model = self.selectionModel.model()
 
-        newIndexes = []
-        for grpIndex in grpIndexes:
-            if self.model.insertRows(0, 1, grpIndex):
-                newIndexes.append(self.model.index(0, 0, grpIndex))
-                # TODO: update new items to match action class
-
-        # select new items
+        # update steps with correct action id and select them
         self.selectionModel.clearSelection()
         for index in newIndexes:
+            step = model.stepForIndex(index)
+            if step:
+                actionProxy = pulse.BuildActionProxy(actionId)
+                step.setActionProxy(actionProxy)
+            model.dataChanged.emit(index, index, [])
             self.selectionModel.select(
                 index, QtCore.QItemSelectionModel.Select)
 

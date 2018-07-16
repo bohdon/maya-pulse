@@ -199,6 +199,9 @@ class BlueprintUIModel(QtCore.QObject):
         # the tree item model and selection model for BuildItems
         self.buildStepTreeModel = BuildStepTreeModel(self.blueprint)
         self.buildStepTreeModel.dataChanged.connect(self._onItemModelChanged)
+        self.buildStepTreeModel.rowsInserted.connect(self._onItemModelChanged)
+        self.buildStepTreeModel.rowsMoved.connect(self._onItemModelChanged)
+        self.buildStepTreeModel.rowsRemoved.connect(self._onItemModelChanged)
         self.buildStepSelectionModel = BuildStepSelectionModel(
             self.buildStepTreeModel)
 
@@ -284,6 +287,7 @@ class BlueprintUIModel(QtCore.QObject):
             # doing some cleanup since we can here
             BlueprintChangeEvents.cleanupSharedInstances()
             self.blueprintDeleted.emit()
+            self.buildStepTreeModel.setBlueprint(None)
 
     def _onBlueprintNodeChanged(self, node):
         """
@@ -404,19 +408,19 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
         """
         if index.isValid():
             stepFromPtr = index.internalPointer()
-            if stepFromPtr is None:
+            if not isinstance(stepFromPtr, pulse.BuildStep):
                 import traceback
                 traceback.print_stack()
             return stepFromPtr
-        else:
-            if self._blueprint:
-                return self._blueprint.rootStep
+
+        if self._blueprint:
+            return self._blueprint.rootStep
 
     def index(self, row, column, parent=QtCore.QModelIndex()):
         """
         Create a QModelIndex for a row, column, and parent index
         """
-        if not self.hasIndex(row, column, parent):
+        if parent.isValid() and column != 0:
             return QtCore.QModelIndex()
 
         parentStep = self.stepForIndex(parent)
@@ -425,6 +429,16 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
             return self.createIndex(row, column, step)
 
         return QtCore.QModelIndex()
+
+    def parent(self, index):
+        if not index.isValid():
+            return QtCore.QModelIndex()
+
+        parentStep = self.stepForIndex(index).parent
+        if parentStep == self._blueprint.rootStep:
+            return QtCore.QModelIndex()
+
+        return self.createIndex(parentStep.indexInParent(), 0, parentStep)
 
     def flags(self, index):
         if not index.isValid():
@@ -449,16 +463,6 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
     def rowCount(self, parent=QtCore.QModelIndex()):
         step = self.stepForIndex(parent)
         return step.numChildren() if step else 0
-
-    def parent(self, index):
-        if not index.isValid():
-            return QtCore.QModelIndex()
-
-        parentStep = self.stepForIndex(index).parent
-        if not parentStep:
-            return QtCore.QModelIndex()
-
-        return self.createIndex(parentStep.indexInParent(), 0, parentStep)
 
     def insertRows(self, row, count, parent=QtCore.QModelIndex()):
         self.beginInsertRows(parent, row, row + count - 1)
@@ -509,8 +513,10 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
 
         step = self.stepForIndex(index)
 
+        oldName = step.name
         step.setName(value)
-        self.dataChanged.emit(index, index, [])
+        if step.name != oldName:
+            self.dataChanged.emit(index, index, [])
 
         return True
 
@@ -518,27 +524,52 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
         return ['text/plain']
 
     def mimeData(self, indexes):
-        # result = QtCore.QMimeData()
-        # # TODO: this is wrong because serialization will include
-        # #       children and we don't want that here
-        # stepDataList = [self.stepForIndex(
-        #     index).buildItem.serialize() for index in indexes]
-        # datastr = meta.encodeMetaData(stepDataList)
-        # result.setData('text/plain', datastr)
-        # return result
-        pass
+        result = QtCore.QMimeData()
+
+        def getSingleItemData(index):
+            step = self.stepForIndex(index)
+            data = step.serialize()
+            if 'children' in data:
+                del data['children']
+            return data
+
+        stepDataList = [getSingleItemData(index) for index in indexes]
+        datastr = meta.encodeMetaData(stepDataList)
+        result.setData('text/plain', datastr)
+        print(datastr)
+        return result
+
+    def canDropMimeData(self, data, action, row, column, parent):
+        try:
+            stepDataList = meta.decodeMetaData(str(data.data('text/plain')))
+        except Exception:
+            return False
+        else:
+            return isinstance(stepDataList, list)
 
     def dropMimeData(self, data, action, row, column, parent):
-        # try:
-        #     stepDataList = meta.decodeMetaData(str(data.data('text/plain')))
-        # except Exception as e:
-        #     print(e)
-        #     return False
-        # else:
-        #     newSteps = [pulse.BuildItem.create(
-        #         itemData) for itemData in stepDataList]
-        #     return self.insertBuildItems(row, newSteps, parent)
-        pass
+        result = super(BuildStepTreeModel, self).dropMimeData(
+            data, action, row, column, parent)
+
+        if not result:
+            return False
+
+        try:
+            stepDataList = meta.decodeMetaData(str(data.data('text/plain')))
+        except Exception as e:
+            print(e)
+        else:
+            print(stepDataList, data, action, row, column, parent)
+
+            count = len(stepDataList)
+            for i in range(count):
+                index = self.index(row + i, 0, parent)
+                step = self.stepForIndex(index)
+                if step:
+                    step.deserialize(stepDataList[i])
+                    # self.dataChanged.emit(index, index, [])
+
+        return True
 
 
 class BuildStepSelectionModel(QtCore.QItemSelectionModel):

@@ -185,7 +185,7 @@ class BuildStep(object):
 
         # auto-create a basic BuildActionProxy if an actionId was given
         if actionId:
-            self._actionProxy = BuildActionProxy(actionId=actionId)
+            self._actionProxy = BuildActionProxy(actionId)
 
     @property
     def name(self):
@@ -199,9 +199,12 @@ class BuildStep(object):
         Args:
             newName (str): The new name of the step
         """
-        if newName:
-            self._name = newName
-        self.ensureUniqueName()
+        if self._name != newName:
+            if not newName and self._actionProxy:
+                newName = self._actionProxy.getDisplayName()
+            if newName:
+                self._name = newName.strip()
+                self.ensureUniqueName()
 
     def isAction(self):
         return self._actionProxy is not None
@@ -224,6 +227,9 @@ class BuildStep(object):
             return
 
         self._actionProxy = actionProxy
+        if self._actionProxy:
+            self._name = self._actionProxy.getDisplayName()
+            self.ensureUniqueName()
 
     @property
     def canHaveChildren(self):
@@ -265,8 +271,7 @@ class BuildStep(object):
         Return the display name for this step.
         """
         if self._actionProxy:
-            # TODO: use the BuildSteps name somehow to modified the resulting name
-            return self._actionProxy.getDisplayName()
+            return '{0}'.format(self._name)
         else:
             return '{0} ({1})'.format(self._name, self.numChildren())
 
