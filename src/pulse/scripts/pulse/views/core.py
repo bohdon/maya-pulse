@@ -232,6 +232,9 @@ class BlueprintUIModel(QtCore.QObject):
         self.buildStepTreeModel.setBlueprint(self.blueprint)
         self.rigNameChanged.emit(self.getRigName())
 
+    def blueprintExists(self):
+        return self.blueprint is not None
+
     def addSubscriber(self, subscriber):
         """
         Add a subscriber to this model. Will enable Maya callbacks

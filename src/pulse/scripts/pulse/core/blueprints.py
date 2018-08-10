@@ -30,6 +30,34 @@ BLUEPRINT_VERSION = version.__version__
 BLUEPRINT_NODENAME = 'pulse_blueprint'
 
 
+def getDefaultConfigFile():
+    """
+    Return the path to the default blueprint config file
+    """
+    pulseDir = os.path.dirname(os.path.dirname(os.path.join(__file__)))
+    return os.path.realpath(
+        os.path.join(pulseDir, 'config/default_blueprint_config.yaml'))
+
+
+def loadDefaultConfig():
+    """
+    Load and return the default blueprint config
+    """
+    return _loadConfig(getDefaultConfigFile())
+
+
+def _loadConfig(configFile):
+    """
+    Load and return the contents of a yaml config file
+    """
+    if not os.path.isfile(configFile):
+        cmds.warning("Config file not found: {0}".format(configFile))
+        return
+
+    with open(configFile, 'rb') as fp:
+        return yaml.load(fp)
+
+
 class Blueprint(object):
     """
     A Blueprint contains all the information necessary to build
@@ -98,10 +126,9 @@ class Blueprint(object):
         # the root step of this blueprint
         self.rootStep = BuildStep('Root')
         # the config file to use when designing this Blueprint
-        # can be absolute, or relative to any python sys path
-        pulseDir = os.path.dirname(os.path.join(__file__))
-        self.configFile = os.path.realpath(
-            os.path.join(pulseDir, 'config/default_blueprint_config.yaml'))
+        self.configFile = getDefaultConfigFile()
+        # the config, automatically loaded when calling `getConfig`
+        self.config = None
 
     def serialize(self):
         data = {}
@@ -193,16 +220,22 @@ class Blueprint(object):
             optimizeAction
         ])
 
-    def loadBlueprintConfig(self):
+    def getConfig(self):
         """
-        Load and return the config for this Blueprint.
+        Return the config for this Blueprint.
+        Load the config from disk if it hasn't been loaded yet.
         """
-        if not os.path.isfile(self.configFile):
-            cmds.warning("Config file not found: {0}".format(self.configFile))
-            return
+        if self.config is None and self.configFile:
+            self.loadConfig()
+        return self.config
 
-        with open(self.configFile, 'rb') as fp:
-            return yaml.load(fp)
+    def loadConfig(self):
+        """
+        Load the config for this Blueprint from the set `configFile`.
+        Reloads the config even if it is already loaded.
+        """
+        if self.configFile:
+            self.config = _loadConfig(self.configFile)
 
 
 class BlueprintBuilder(object):
