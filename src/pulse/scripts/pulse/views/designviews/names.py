@@ -351,7 +351,7 @@ class QuickNameWidget(QtWidgets.QWidget):
                 suffixes.append(name)
         return '_'.join(suffixes)
 
-    def evaluateName(self):
+    def evaluateName(self, includeNumber=False):
         """
         Return the fully combined name, including suffixes and prefixes
         """
@@ -361,7 +361,10 @@ class QuickNameWidget(QtWidgets.QWidget):
         if prefix:
             components.append(prefix)
         # keyword
-        components.append(self.activeKeyword if self.activeKeyword else '*')
+        keyword = self.activeKeyword if self.activeKeyword else '*'
+        if includeNumber:
+            keyword += '{num}'
+        components.append(keyword)
         # suffix
         suffix = self.evaluateSuffix()
         if suffix:
@@ -396,9 +399,11 @@ class QuickNameWidget(QtWidgets.QWidget):
         active prefix, suffix, and selected keyword.
         """
         if self.activeKeyword:
-            name = self.evaluateName()
-            for s in pm.selected():
-                s.rename(name)
+            sel = pm.selected()
+            isMultipleNodes = len(sel) > 1
+            name = self.evaluateName(includeNumber=isMultipleNodes)
+            for i, s in enumerate(pm.selected()):
+                s.rename(name.format(num=i+1))
 
 
 class QuickNameEditor(PulseWindow):
