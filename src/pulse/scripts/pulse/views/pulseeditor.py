@@ -6,7 +6,7 @@ from .core import PulseWindow
 from .blueprinteditor import BlueprintEditorWidget
 from .buildtoolbar import BuildToolbarWidget
 from .actiontree import ActionTreeWidget, ActionButtonsWidget
-from .actioneditor import ActionEditorWindow
+from .actioneditor import ActionEditorWidget
 from .designview import DesignViewWidget
 
 
@@ -43,6 +43,7 @@ class PulseEditorWindow(PulseWindow):
         buildToolbar = BuildToolbarWidget(parent)
         layout.addWidget(buildToolbar)
 
+        # main tab widget (Config / Design / Actions)
         tabWidget = QtWidgets.QTabWidget(parent)
 
         # config tab
@@ -57,11 +58,6 @@ class PulseEditorWindow(PulseWindow):
         actionsTab = QtWidgets.QWidget(parent)
         actionsLayout = QtWidgets.QVBoxLayout(actionsTab)
 
-        actionEditorBtn = QtWidgets.QPushButton(actionsTab)
-        actionEditorBtn.setText("Action Editor")
-        actionEditorBtn.clicked.connect(self.showActionEditor)
-        actionsLayout.addWidget(actionEditorBtn)
-
         actionsSplitter = QtWidgets.QSplitter(parent)
         actionsSplitter.setOrientation(QtCore.Qt.Orientation.Vertical)
         actionsLayout.addWidget(actionsSplitter)
@@ -70,14 +66,19 @@ class PulseEditorWindow(PulseWindow):
         actionTree.layout().setMargin(0)
         actionsSplitter.addWidget(actionTree)
 
-        actionButtons = ActionButtonsWidget(actionsTab)
-        actionButtons.layout().setMargin(0)
-        actionsSplitter.addWidget(actionButtons)
+        # actions tab widget (Palette / Editor)
+        actionsTabWidget = QtWidgets.QTabWidget(parent)
+        actionsSplitter.addWidget(actionsTabWidget)
+
+        actionPalette = ActionButtonsWidget(actionsTab)
+        actionPalette.layout().setMargin(0)
+        actionsTabWidget.addTab(actionPalette, "Palette")
+
+        actionEditor = ActionEditorWidget(actionsTab)
+        actionEditor.layout().setMargin(0)
+        actionsTabWidget.addTab(actionEditor, "Editor")
 
         tabWidget.addTab(actionsTab, "Actions")
 
 
         layout.addWidget(tabWidget)
-
-    def showActionEditor(self):
-        ActionEditorWindow.createAndShow()
