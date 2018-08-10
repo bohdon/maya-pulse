@@ -2,16 +2,19 @@
 from functools import partial
 import pymel.core as pm
 
+import pulse.core
 import pulse.names
 from pulse.vendor.Qt import QtCore, QtWidgets, QtGui
 from pulse.views.core import buttonCommand
 from pulse.views.core import PulseWindow
 from pulse.views.core import BlueprintUIModel
-from pulse.views.style import UIColors
+from pulse.views import style
 from .core import DesignViewPanel
 
 __all__ = [
     "NamesPanel",
+    "QuickNameWidget",
+    "QuickNameEditor",
 ]
 
 
@@ -36,7 +39,8 @@ class NamesPanel(DesignViewPanel):
 
         quickNameWindowBtn = QtWidgets.QPushButton(frame)
         quickNameWindowBtn.setText("Quick Name Editor")
-        quickNameWindowBtn.clicked.connect(buttonCommand(QuickNameEditor.createAndShow))
+        quickNameWindowBtn.clicked.connect(
+            buttonCommand(QuickNameEditor.createAndShow))
         btnLayout.addWidget(quickNameWindowBtn)
 
 
@@ -46,20 +50,40 @@ class QuickNameWidget(QtWidgets.QWidget):
         super(QuickNameWidget, self).__init__(parent=parent)
 
         self.blueprintModel = BlueprintUIModel.getDefaultModel()
-        self.loadConfig()
+
+        # the blueprint config
+        self.config = self._getConfig()
+        # the section of the config that contains naming keywoards
+        self.namesConfig = self.config.get('names', {})
 
         self.activeKeyword = None
+        self.activeKeywordColor = style.UIColors.DARKGRAY
 
-        if self.config:
-            self.setupUi(self)
-            self.refreshPreviewLabel()
+        self.setupUi(self)
+        self.refreshPreviewLabel()
 
-    def loadConfig(self):
-        if self.blueprintModel.blueprint is not None:
-            self.config = self.blueprintModel.blueprint.loadBlueprintConfig()
-            print(self.blueprintModel.blueprint.configFile)
+        if self.blueprintModel.blueprintExists():
+            self.helpText.setText(
+                "Edit the Blueprint Config to modify naming keywords")
+            self.helpText.setStyleSheet(
+                style.UIColors.asFGColor(style.UIColors.HELPTEXT))
+        elif self.config:
+            self.helpText.setText(
+                "No Blueprint exists, using the default config")
+            self.helpText.setStyleSheet(
+                style.UIColors.asFGColor(style.UIColors.WARNING))
         else:
-            self.config = None
+            self.helpText.setText(
+                "No Blueprint config was found")
+            self.helpText.setStyleSheet(
+                style.UIColors.asFGColor(style.UIColors.ERROR))
+
+    def _getConfig(self):
+        if self.blueprintModel.blueprintExists():
+            config = self.blueprintModel.blueprint.getConfig()
+        else:
+            config = pulse.core.blueprints.loadDefaultConfig()
+        return config if config else {}
 
     def setupUi(self, parent):
         """
@@ -74,6 +98,9 @@ class QuickNameWidget(QtWidgets.QWidget):
         font.setWeight(75)
         font.setBold(True)
         self.namePreviewBtn.setFont(font)
+        self.namePreviewBtn.setStatusTip(
+            "The current constructed name. "
+            "Click to apply to the selected node")
         # self.namePreviewBtn.setAlignment(QtCore.Qt.AlignCenter)
         self.namePreviewBtn.setContentsMargins(10, 10, 10, 10)
         # self.namePreviewBtn.setStyleSheet(
@@ -96,6 +123,11 @@ class QuickNameWidget(QtWidgets.QWidget):
         keywordsLayout = self.setupKeywordsUi(parent)
         layout.addLayout(keywordsLayout)
 
+        # help text
+        self.helpText = QtWidgets.QLabel()
+        self.helpText.setFont(style.UIFonts.getHelpTextFont())
+        layout.addWidget(self.helpText)
+
         layout.setStretch(2, 1)
 
     def setupPrefixesUi(self, parent):
@@ -113,7 +145,7 @@ class QuickNameWidget(QtWidgets.QWidget):
 
         # create button for all prefixes
         self.prefixBtns = {}
-        prefixes = self.config['names']['prefixes']
+        prefixes = self.namesConfig.get('prefixes', {})
         x = 0
         y = 0
         for prefix in prefixes:
@@ -153,7 +185,7 @@ class QuickNameWidget(QtWidgets.QWidget):
 
         # create button for all suffixes
         self.suffixBtns = {}
-        suffixes = self.config['names']['suffixes']
+        suffixes = self.namesConfig.get('suffixes', {})
         x = 0
         y = 0
         for suffix in suffixes:
@@ -197,11 +229,12 @@ class QuickNameWidget(QtWidgets.QWidget):
 
         # create category and btn grid for all keywords
         self.keywordBtns = {}
-        keywords = self.config['names']['keywords']
+        keywords = self.namesConfig.get('keywords', {})
         categoryNames = sorted(keywords.keys())
         for catName in categoryNames:
             catKeywords = keywords[catName]
-            catLayout = self.setupKeywordCategoryUi(scrollWidget, catName, catKeywords)
+            catLayout = self.setupKeywordCategoryUi(
+                scrollWidget, catName, catKeywords)
             scrollLayout.addLayout(catLayout)
 
         keywordsSpacer = QtWidgets.QSpacerItem(
@@ -267,7 +300,8 @@ class QuickNameWidget(QtWidgets.QWidget):
             label.setFont(font)
         label.setMinimumHeight(20)
         label.setContentsMargins(10, 2, 2, 2)
-        label.setStyleSheet('background-color: rgba(0, 0, 0, 40); border-radius: 2px')
+        label.setStyleSheet(
+            'background-color: rgba(0, 0, 0, 40); border-radius: 2px')
         return label
 
     def eventFilter(self, widget, event):
@@ -283,7 +317,8 @@ class QuickNameWidget(QtWidgets.QWidget):
         # color the clicked btn
         for btnKey, btn in self.keywordBtns.iteritems():
             if btnKey == self.activeKeyword:
-                btn.setStyleSheet(UIColors.asBGColor(UIColors.GREEN))
+                btn.setStyleSheet(
+                    style.UIColors.asBGColor(self.activeKeywordColor))
             else:
                 btn.setStyleSheet('')
 

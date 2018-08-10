@@ -49,10 +49,12 @@ names:
     sort: 1
   - name: bot
     sort: 1
-  - name: frn
+  - name: f
     sort: 2
-  - name: bck
+  - name: b
     sort: 2
+  - name: c
+    sort: 3
   suffixes:
   - name: jnt
     sort: 10
