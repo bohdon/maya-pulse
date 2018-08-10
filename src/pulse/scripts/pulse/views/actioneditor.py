@@ -174,7 +174,8 @@ class BuildActionProxyForm(QtWidgets.QWidget):
 
         # TODO: set data through the model
         step.actionProxy.setAttrValue(attrForm.attr['name'], attrValue)
-        self.index.model().dataChanged.emit(self.index, self.index)
+        self.index.model().dataChanged.emit(
+            self.index, self.index, QtCore.Qt.UserRole)
 
 
 class BatchActionForm(BuildStepForm):
