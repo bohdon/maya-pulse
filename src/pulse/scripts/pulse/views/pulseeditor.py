@@ -5,7 +5,7 @@ from pulse.vendor.Qt import QtCore, QtWidgets
 from .core import PulseWindow
 from .blueprinteditor import BlueprintEditorWidget
 from .buildtoolbar import BuildToolbarWidget
-from .actiontree import ActionTreeWidget, ActionButtonsWidget
+from .actiontree import ActionTreeWidget, ActionPaletteWidget
 from .actioneditor import ActionEditorWidget
 from .designview import DesignViewWidget
 
@@ -70,7 +70,7 @@ class PulseEditorWindow(PulseWindow):
         actionsTabWidget = QtWidgets.QTabWidget(parent)
         actionsSplitter.addWidget(actionsTabWidget)
 
-        actionPalette = ActionButtonsWidget(actionsTab)
+        actionPalette = ActionPaletteWidget(actionsTab)
         actionPalette.layout().setMargin(0)
         actionsTabWidget.addTab(actionPalette, "Palette")
 

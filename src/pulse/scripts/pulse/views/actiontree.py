@@ -6,7 +6,7 @@ from .core import BlueprintUIModel
 
 
 __all__ = [
-    'ActionButtonsWidget',
+    'ActionPaletteWidget',
     'ActionTreeWidget',
     'ActionTreeWindow',
 ]
@@ -81,7 +81,7 @@ class ActionTreeWidget(QtWidgets.QWidget):
                 break
 
 
-class ActionButtonsWidget(QtWidgets.QWidget):
+class ActionPaletteWidget(QtWidgets.QWidget):
     """
     Provides UI for creating any BuildAction. One button is created
     for each BuildAction, and they are grouped by category. Also
@@ -89,7 +89,7 @@ class ActionButtonsWidget(QtWidgets.QWidget):
     """
 
     def __init__(self, parent=None):
-        super(ActionButtonsWidget, self).__init__(parent=parent)
+        super(ActionPaletteWidget, self).__init__(parent=parent)
 
         self.blueprintModel = BlueprintUIModel.getDefaultModel()
         self.model = self.blueprintModel.buildStepTreeModel
@@ -249,7 +249,7 @@ class ActionButtonsWidget(QtWidgets.QWidget):
 class ActionTreeWindow(PulseWindow):
     """
     A standalone window that contains an ActionTreeWidget
-    and an ActionButtonsWidget.
+    and an ActionPaletteWidget.
     """
 
     OBJECT_NAME = 'pulseActionTreeWindow'
@@ -268,8 +268,8 @@ class ActionTreeWindow(PulseWindow):
         self.actionTree = ActionTreeWidget(self)
         layout.addWidget(self.actionTree)
 
-        self.actionButtons = ActionButtonsWidget(self)
-        layout.addWidget(self.actionButtons)
+        self.actionPalette = ActionPaletteWidget(self)
+        layout.addWidget(self.actionPalette)
 
         layout.setStretch(layout.indexOf(self.actionTree), 2)
-        layout.setStretch(layout.indexOf(self.actionButtons), 1)
+        layout.setStretch(layout.indexOf(self.actionPalette), 1)
