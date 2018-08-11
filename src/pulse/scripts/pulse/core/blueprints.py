@@ -185,7 +185,7 @@ class Blueprint(object):
             for every action in the Blueprint.
         """
         for step in self.rootStep.childIterator():
-            for action in step.actionGenerator():
+            for action in step.actionIterator():
                 yield step, action
 
     def getStepByPath(self, path):

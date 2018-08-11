@@ -1,3 +1,4 @@
+# coding=utf-8
 
 from functools import partial
 
@@ -14,7 +15,6 @@ __all__ = [
     'ActionEditorWidget',
     'ActionEditorWindow',
     'BuildActionProxyForm',
-    'BatchActionForm',
     'BuildStepForm',
 ]
 
@@ -104,14 +104,6 @@ class BuildStepForm(QtWidgets.QWidget):
         self.displayNameLabel.setText(step.getDisplayName())
         layout.addWidget(self.displayNameLabel)
 
-        # add variant toggle button to header
-        if step.isAction():
-            toggleVariantBtn = QtWidgets.QPushButton(parent)
-            toggleVariantBtn.setIcon(
-                viewutils.getIcon("convertActionToBatch.png"))
-            toggleVariantBtn.setFixedSize(QtCore.QSize(18, 18))
-            layout.addWidget(toggleVariantBtn)
-
     def setupBodyUi(self, parent):
         step = self.step()
 
@@ -123,16 +115,12 @@ class BuildStepForm(QtWidgets.QWidget):
             self.actionForm = BuildActionProxyForm(self.index, parent)
             layout.addWidget(self.actionForm)
 
-            # TODO: connect btn to toggle command on action proxy form
-            # TODO: connect and listen to variant changes to update toggle btn
-            # toggleVariantBtn.clicked.connect(...)
-            # self.actionForm.variantStateChanged.connect(...)
-
 
 class BuildActionProxyForm(QtWidgets.QWidget):
     """
     Form for editing BuildActionProxys.
-    Displays an attr form for every attribute on the action.
+    Displays an attr form for every attribute on the action,
+    and provides UI for managing variants.
     """
 
     def __init__(self, index, parent=None):
@@ -147,99 +135,50 @@ class BuildActionProxyForm(QtWidgets.QWidget):
         if self.index.isValid():
             return self.index.model().stepForIndex(self.index)
 
-    def setupUi(self, parent):
+    def actionProxy(self):
+        """
+        Return the BuildActionProxy being edited by this form
+        """
         step = self.step()
-        if not step:
-            return
-
-        layout = QtWidgets.QVBoxLayout(parent)
-        layout.setSpacing(4)
-        layout.setMargin(0)
-
-        for attr in step.actionProxy.config['attrs']:
-            attrValue = step.actionProxy.getAttrValueOrDefault(attr['name'])
-            attrForm = ActionAttrForm.createForm(
-                attr, attrValue, parent=parent)
-            attrForm.valueChanged.connect(
-                partial(self.onAttrValueChanged, attrForm))
-            layout.addWidget(attrForm)
-
-    def onAttrValueChanged(self, attrForm, attrValue, isValueValid):
-        if not self.index.isValid():
-            return
-
-        step = self.step()
-        if not step:
-            return
-
-        # TODO: set data through the model
-        step.actionProxy.setAttrValue(attrForm.attr['name'], attrValue)
-        self.index.model().dataChanged.emit(
-            self.index, self.index, QtCore.Qt.UserRole)
-
-
-class BatchActionForm(BuildStepForm):
-    """
-    Form for editing Batch Actions. Very similar
-    to the standard BuildActionProxyForm, with a few key
-    differences.
-
-    Each attribute has a toggle that controls
-    whether the attribute is variant or not.
-
-    All variants are displayed in a list, with the ability
-    to easily add and remove variants. If a BatchAttrForm
-    exists for a variant attribute type, it will be displayed
-    in place of the normal AttrEditor form (only when that
-    attribute is marked as variant).
-    """
-
-    convertToActionClicked = QtCore.Signal()
+        if step and step.isAction():
+            return step.actionProxy
 
     def setupUi(self, parent):
-        super(BatchActionForm, self).setupUi(parent)
-
-        # add action conversion button to header
-        convertToActionBtn = QtWidgets.QPushButton(parent)
-        convertToActionBtn.setIcon(
-            viewutils.getIcon("convertBatchToAction.png"))
-        convertToActionBtn.setFixedSize(QtCore.QSize(18, 18))
-        convertToActionBtn.clicked.connect(self.convertToActionClicked.emit)
-        self.headerLayout.addWidget(convertToActionBtn)
-
-    def setupContentUi(self, parent):
         """
         Build the content ui for this BatchBuildAction.
         Creates ui to manage the array of variant attributes.
         """
 
+        layout = QtWidgets.QVBoxLayout(parent)
+        layout.setSpacing(4)
+        layout.setMargin(0)
+
         # constants main layout
         self.constantsLayout = QtWidgets.QVBoxLayout(parent)
         self.constantsLayout.setContentsMargins(0, 0, 0, 0)
-        self.mainLayout.addLayout(self.constantsLayout)
+        layout.addLayout(self.constantsLayout)
 
         spacer = QtWidgets.QSpacerItem(
             20, 4, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
-        self.mainLayout.addItem(spacer)
+        layout.addItem(spacer)
 
         # variant header
         variantHeader = QtWidgets.QFrame(parent)
         variantHeader.setStyleSheet(
             ".QFrame{ background-color: rgb(255, 255, 255, 15); border-radius: 2px }")
-        self.mainLayout.addWidget(variantHeader)
+        layout.addWidget(variantHeader)
 
         variantHeaderLayout = QtWidgets.QHBoxLayout(variantHeader)
         variantHeaderLayout.setContentsMargins(10, 4, 4, 4)
         variantHeaderLayout.setSpacing(4)
 
         self.variantsLabel = QtWidgets.QLabel(variantHeader)
-        self.variantsLabel.setText(
-            "Variants: {0}".format(len(self.buildItem.variantValues)))
+        self.variantsLabel.setText("Variants: ")
         variantHeaderLayout.addWidget(self.variantsLabel)
 
         spacer = QtWidgets.QSpacerItem(
             20, 4, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
-        self.mainLayout.addItem(spacer)
+        layout.addItem(spacer)
 
         # add variant button
         addVariantBtn = QtWidgets.QPushButton(variantHeader)
@@ -252,31 +191,46 @@ class BatchActionForm(BuildStepForm):
         self.variantLayout = QtWidgets.QVBoxLayout(parent)
         self.variantLayout.setContentsMargins(0, 0, 0, 0)
         self.variantLayout.setSpacing(4)
-        self.mainLayout.addLayout(self.variantLayout)
+        layout.addLayout(self.variantLayout)
 
         self.setupConstantsUi(parent)
         self.setupVariantsUi(parent)
 
     def setupConstantsUi(self, parent):
+        actionProxy = self.actionProxy()
+        if not actionProxy:
+            return
+
         viewutils.clearLayout(self.constantsLayout)
 
-        # create attr form all constant attributes
-        for attr in self.buildItem.actionClass.config['attrs']:
-            isConstant = (attr['name'] in self.buildItem.constantValues)
+        # create attr form all constant attributes,
+        # or batch attr forms for any variant attributes that support it
+        for attr in actionProxy.getAttrs():
+            isVariant = actionProxy.isVariantAttr(attr['name'])
             # make an HBox with a button to toggle variant state
             attrHLayout = QtWidgets.QHBoxLayout(parent)
             attrHLayout.setSpacing(10)
             attrHLayout.setMargin(0)
             self.constantsLayout.addLayout(attrHLayout)
 
-            if isConstant:
+            # button to toggle variant
+            toggleVariantBtn = QtWidgets.QPushButton(parent)
+            toggleVariantBtn.setText("⋮")
+            toggleVariantBtn.setFixedSize(QtCore.QSize(14, 20))
+            toggleVariantBtn.setCheckable(True)
+            toggleVariantBtn.setChecked(isVariant)
+            attrHLayout.addWidget(toggleVariantBtn)
+            attrHLayout.setAlignment(toggleVariantBtn, QtCore.Qt.AlignTop)
+            toggleVariantBtn.clicked.connect(
+                partial(self.setIsVariantAttr, attr['name'], not isVariant))
+
+            if not isVariant:
                 # constant value, make an attr form
-                attrValue = self.buildItem.constantValues[attr['name']]
-                context = self.buildItem.constantValues
+                attrValue = actionProxy.getAttrValueOrDefault(attr['name'])
                 attrForm = ActionAttrForm.createForm(
                     attr, attrValue, parent=parent)
                 attrForm.valueChanged.connect(
-                    partial(self.attrValueChanged, context, attrForm))
+                    partial(self.onAttrValueChanged, -1, attrForm))
                 attrHLayout.addWidget(attrForm)
             else:
                 # variant value, check for batch editor, or just display a label
@@ -291,7 +245,9 @@ class BatchActionForm(BuildStepForm):
                 attrLabel.setEnabled(False)
                 attrHLayout.addWidget(attrLabel)
 
-                if BatchAttrForm.doesFormExist(attr):
+                # TODO: replace passing of buildItem wit persistent index
+                # if BatchAttrForm.doesFormExist(attr):
+                if False:
                     batchEditor = BatchAttrForm.createForm(
                         self.buildItem, attr, parent=parent)
                     batchEditor.valuesChanged.connect(
@@ -302,99 +258,128 @@ class BatchActionForm(BuildStepForm):
                         24, 24, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
                     attrHLayout.addItem(spacer)
 
-            # not a constant value, add a line with button to make it constant
-            # button to toggle variant
-            toggleVariantBtn = QtWidgets.QPushButton(parent)
-            toggleVariantBtn.setText("v")
-            toggleVariantBtn.setFixedSize(QtCore.QSize(20, 20))
-            toggleVariantBtn.setCheckable(True)
-            toggleVariantBtn.setChecked(not isConstant)
-            attrHLayout.addWidget(toggleVariantBtn)
-            attrHLayout.setAlignment(toggleVariantBtn, QtCore.Qt.AlignTop)
-            toggleVariantBtn.clicked.connect(
-                partial(self.setIsVariantAttr, attr['name'], isConstant))
-
     def setupVariantsUi(self, parent):
+        actionProxy = self.actionProxy()
+        if not actionProxy:
+            return
+
         viewutils.clearLayout(self.variantLayout)
 
-        self.variantsLabel.setText("Variants: {0}".format(
-            len(self.buildItem.variantValues)))
-        for i, variant in enumerate(self.buildItem.variantValues):
+        self.variantsLabel.setText(
+            "Variants: {0}".format(actionProxy.numVariants()))
 
-            if i > 0:
-                # divider line
-                dividerLine = QtWidgets.QFrame(parent)
-                dividerLine.setStyleSheet(
-                    ".QFrame{ background-color: rgb(0, 0, 0, 15); border-radius: 2px }")
-                dividerLine.setMinimumHeight(2)
-                self.variantLayout.addWidget(dividerLine)
+        for i in range(actionProxy.numVariants()):
+            self._createVariantForm(parent, i, actionProxy)
 
-            variantHLayout = QtWidgets.QHBoxLayout(parent)
+    def _createVariantForm(self, parent, variantIndex, actionProxy):
+        """
+        Build a form for editing the variant attribute values
+        at the variant index.
+        """
+        if variantIndex > 0:
+            # divider line
+            dividerLine = QtWidgets.QFrame(parent)
+            dividerLine.setStyleSheet(
+                ".QFrame{ background-color: rgb(0, 0, 0, 15); border-radius: 2px }")
+            dividerLine.setMinimumHeight(2)
+            self.variantLayout.addWidget(dividerLine)
 
-            # remove variant button
-            removeVariantBtn = QtWidgets.QPushButton(parent)
-            removeVariantBtn.setText('x')
-            removeVariantBtn.setFixedSize(QtCore.QSize(20, 20))
-            removeVariantBtn.clicked.connect(
-                partial(self.removeVariantAtIndex, i))
-            variantHLayout.addWidget(removeVariantBtn)
+        variantHLayout = QtWidgets.QHBoxLayout(parent)
 
-            # create attr form for all variant attributes
-            variantVLayout = QtWidgets.QVBoxLayout(parent)
-            variantVLayout.setSpacing(0)
-            variantHLayout.addLayout(variantVLayout)
+        # remove variant button
+        removeVariantBtn = QtWidgets.QPushButton(parent)
+        removeVariantBtn.setText('x')
+        removeVariantBtn.setFixedSize(QtCore.QSize(20, 20))
+        removeVariantBtn.clicked.connect(
+            partial(self.removeVariantAtIndex, variantIndex))
+        variantHLayout.addWidget(removeVariantBtn)
 
-            if self.buildItem.variantAttributes:
-                for attr in self.buildItem.actionClass.config['attrs']:
-                    if attr['name'] not in self.buildItem.variantAttributes:
-                        continue
-                    attrValue = variant[attr['name']]
-                    # context = variant
-                    attrForm = ActionAttrForm.createForm(
-                        attr, attrValue, parent=parent)
-                    attrForm.valueChanged.connect(
-                        partial(self.attrValueChanged, variant, attrForm))
-                    variantVLayout.addWidget(attrForm)
-            else:
-                noAttrsLabel = QtWidgets.QLabel(parent)
-                noAttrsLabel.setText("No variant attributes")
-                noAttrsLabel.setMinimumHeight(24)
-                noAttrsLabel.setContentsMargins(10, 0, 0, 0)
-                noAttrsLabel.setEnabled(False)
-                variantVLayout.addWidget(noAttrsLabel)
+        # create attr form for all variant attributes
+        variantVLayout = QtWidgets.QVBoxLayout(parent)
+        variantVLayout.setSpacing(0)
+        variantHLayout.addLayout(variantVLayout)
 
-            self.variantLayout.addLayout(variantHLayout)
+        if actionProxy.isVariantAction():
+            for attr in actionProxy.getAttrs():
+                if not actionProxy.isVariantAttr(attr['name']):
+                    continue
+                attrValue = actionProxy.getVariantAttrValueOrDefault(
+                    variantIndex, attr['name'])
+                attrForm = ActionAttrForm.createForm(
+                    attr, attrValue, parent=parent)
+                attrForm.valueChanged.connect(
+                    partial(self.onAttrValueChanged, variantIndex, attrForm))
+                variantVLayout.addWidget(attrForm)
+        else:
+            noAttrsLabel = QtWidgets.QLabel(parent)
+            noAttrsLabel.setText("No variant attributes")
+            noAttrsLabel.setMinimumHeight(24)
+            noAttrsLabel.setContentsMargins(10, 0, 0, 0)
+            noAttrsLabel.setEnabled(False)
+            variantVLayout.addWidget(noAttrsLabel)
+
+        self.variantLayout.addLayout(variantHLayout)
 
     def setIsVariantAttr(self, attrName, isVariant):
+        actionProxy = self.actionProxy()
+        if not actionProxy:
+            return
+
         if isVariant:
-            self.buildItem.addVariantAttr(attrName)
+            actionProxy.addVariantAttr(attrName)
         else:
-            self.buildItem.removeVariantAttr(attrName)
+            actionProxy.removeVariantAttr(attrName)
         self.setupConstantsUi(self)
         self.setupVariantsUi(self)
 
     def addVariant(self):
-        self.buildItem.addVariant()
+        actionProxy = self.actionProxy()
+        if not actionProxy:
+            return
+
+        actionProxy.addVariant()
         self.setupVariantsUi(self)
 
     def removeVariantAtIndex(self, index):
-        self.buildItem.removeVariantAt(index)
+        actionProxy = self.actionProxy()
+        if not actionProxy:
+            return
+
+        actionProxy.removeVariantAt(index)
         self.setupVariantsUi(self)
 
     def removeVariantFromEnd(self):
-        self.buildItem.removeVariantAt(-1)
+        actionProxy = self.actionProxy()
+        if not actionProxy:
+            return
+
+        actionProxy.removeVariantAt(-1)
         self.setupVariantsUi(self)
 
-    def attrValueChanged(self, context, attrForm, attrValue, isValueValid):
+    def onAttrValueChanged(self, variantIndex, attrForm, attrValue, isValueValid):
         """
         Args:
-            context: A dict representing the either constantValues object or
-                a variant within the batch action
+            variantIndex (int): The index of the variant attribute that was modified.
+                If < 0, the attribute is not variant.
+            attrForm (ActionAttrForm): The attribute form that caused the change
         """
-        attrName = attrForm.attr['name']
-        # prevent adding new keys to the context dict
-        if attrName in context:
-            context[attrName] = attrValue
+        if not self.index.isValid():
+            return
+
+        step = self.step()
+        if not step:
+            return
+
+        # TODO: set data through the model
+        if variantIndex >= 0:
+            step.actionProxy.setVariantAttrValue(
+                variantIndex, attrForm.attr['name'], attrValue)
+        else:
+            step.actionProxy.setAttrValue(
+                attrForm.attr['name'], attrValue)
+
+        self.index.model().dataChanged.emit(
+            self.index, self.index, QtCore.Qt.UserRole)
 
     def batchEditorValuesChanged(self):
         self.setupVariantsUi(self)

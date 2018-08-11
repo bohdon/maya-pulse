@@ -271,7 +271,11 @@ class BuildStep(object):
         Return the display name for this step.
         """
         if self._actionProxy:
-            return '{0}'.format(self._name)
+            if self._actionProxy.isVariantAction():
+                return '{0} (x{1})'.format(
+                    self._name, self._actionProxy.numVariants())
+            else:
+                return '{0}'.format(self._name)
         else:
             return '{0} ({1})'.format(self._name, self.numChildren())
 
@@ -438,9 +442,9 @@ class BuildStep(object):
                 for step in child.childIterator():
                     yield step
 
-    def actionGenerator(self):
+    def actionIterator(self):
         if self._actionProxy:
-            for elem in self._actionProxy.actionGenerator():
+            for elem in self._actionProxy.actionIterator():
                 yield elem
 
     def serialize(self):
@@ -479,7 +483,8 @@ class BuildStep(object):
             # detach any existing children
             self.clearChildren()
             # deserialize all children, and connect them to this parent
-            self._children = [BuildStep.fromData(c) for c in data.get('children', [])]
+            self._children = [BuildStep.fromData(
+                c) for c in data.get('children', [])]
             for child in self._children:
                 if child:
                     child.setParent(self)
@@ -506,8 +511,6 @@ class BuildActionData(object):
 
         if self._actionId:
             self.retrieveActionConfig()
-
-        # TODO: initialize _attrValues for the attrs in the config
 
     def __repr__(self):
         return "<{0} '{1}'>".format(self.__class__.__name__, self.getActionId())
@@ -546,6 +549,15 @@ class BuildActionData(object):
         if self._config is None:
             LOG.warning(
                 "Failed to find action config for {0}".format(self._actionId))
+
+    def getAttrs(self):
+        """
+        Return all attrs for this BuildAction class
+
+        Returns:
+            A list of dict representing all attr configs
+        """
+        return self.config['attrs']
 
     def getAttrNames(self):
         """
@@ -649,7 +661,7 @@ class BuildActionProxy(BuildActionData):
     values that are unique per variant need to be set, and the
     remaining attributes will be the same on all actions.
 
-    The proxy provides a method `actionGenerator` which performs the
+    The proxy provides a method `actionIterator` which performs the
     actual construction of BuildActions for use at build time.
     """
 
@@ -674,7 +686,7 @@ class BuildActionProxy(BuildActionData):
 
     def getIconFile(self):
         """
-        Return the full path to this build items icon
+        Return the full path to icon for this build action
         """
         filename = self.config.get('icon')
         configFile = self.config.get('configFile')
@@ -701,6 +713,9 @@ class BuildActionProxy(BuildActionData):
     def delAttrValue(self, attrName):
         del self._attrValues[attrName]
 
+    def isVariantAttr(self, attrName):
+        return attrName in self._variantAttrs
+
     def isVariantAction(self):
         """
         Returns true of this action proxy has any variant attributes.
@@ -721,6 +736,10 @@ class BuildActionProxy(BuildActionData):
 
         # add attr to variant attrs list
         self._variantAttrs.append(attrName)
+
+        # if no variants exist, add one
+        if not self._variantValues:
+            self.addVariant()
 
         # update variant values with new attr, using
         # current invariant value for all variants
@@ -754,11 +773,14 @@ class BuildActionProxy(BuildActionData):
 
         # remove all values from variant values
         for item in self._variantValues:
-            del item[attrName]
+            if attrName in item:
+                del item[attrName]
 
-        # clear variant values if there are no variant attrs left
-        if not self._variantAttrs:
-            self._variantValues = []
+    def getVariantAttrNames(self):
+        """
+        Return the list of all variant attribute names
+        """
+        return self._variantAttrs
 
     def clearVariantAttrs(self):
         """
@@ -775,8 +797,6 @@ class BuildActionProxy(BuildActionData):
         Add a variant of attribute values. Does nothing if there
         are no variant attributes.
         """
-        if not self.isVariantAction():
-            return
         self._variantValues.append({})
 
     def insertVariant(self, index):
@@ -787,8 +807,6 @@ class BuildActionProxy(BuildActionData):
         Args:
             index (int): The index at which to insert the new variant
         """
-        if not self.isVariantAction():
-            return
         self._variantValues.insert(index, {})
 
     def removeVariantAt(self, index):
@@ -816,6 +834,12 @@ class BuildActionProxy(BuildActionData):
     def getVariantAttrValue(self, index, attrName):
         return self._variantValues[index][attrName]
 
+    def getVariantAttrValueOrDefault(self, index, attrName):
+        if attrName in self._variantValues[index]:
+            return self._variantValues[index][attrName]
+        else:
+            return self.getAttrDefaultValue(self.getAttrConfig(attrName))
+
     def setVariantAttrValue(self, index, attrName, value):
         self._variantValues[index][attrName] = value
 
@@ -841,7 +865,7 @@ class BuildActionProxy(BuildActionData):
         self._variantAttrs = data.get('variantAttrs', [])
         self._variantValues = data.get('variantValues', [])
 
-    def actionGenerator(self):
+    def actionIterator(self):
         """
         Generator that yields all the BuildActions represented
         by this proxy. If variants are in use, constructs a BuildAction
