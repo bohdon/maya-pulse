@@ -12,6 +12,7 @@ import pymetanode as meta
 
 from .buildItems import BuildStep
 from .rigs import RIG_METACLASS, createRigNode
+from .serializer import PulseDumper, PulseLoader, UnsortableOrderedDict
 from .. import version
 
 __all__ = [
@@ -87,6 +88,15 @@ class Blueprint(object):
         return blueprint
 
     @staticmethod
+    def fromSceneFile():
+        """
+        Load a Blueprint from a file associated with the current maya scene.
+        """
+        blueprint = Blueprint()
+        blueprint.loadFromSceneFile()
+        return blueprint
+
+    @staticmethod
     def createNode(nodeName):
         """
         Create a new Blueprint and save it to a node by name.
@@ -131,16 +141,47 @@ class Blueprint(object):
         self.config = None
 
     def serialize(self):
-        data = {}
-        data['rigName'] = self.rigName
+        data = UnsortableOrderedDict()
         data['version'] = self.version
+        data['rigName'] = self.rigName
         data['steps'] = self.rootStep.serialize()
         return data
 
     def deserialize(self, data):
-        self.rigName = data['rigName']
-        self.version = data['version']
-        self.rootStep.deserialize(data['steps'])
+        self.version = data.get('version', None)
+        self.rigName = data.get('rigName', None)
+        self.rootStep.deserialize(data.get('steps', []))
+
+    def loadFromSceneFile(self):
+        """
+        """
+        sceneName = pm.sceneName()
+        if not sceneName:
+            LOG.warning(
+                "Cannot load Blueprint from scene file, "
+                "scene is not saved")
+            return
+
+        fileName = os.path.splitext(sceneName)[0] + '.yaml'
+        with open(fileName, 'rb') as fp:
+            data = yaml.load(fp, Loader=PulseLoader)
+        self.deserialize(data)
+
+    def saveToSceneFile(self):
+        """
+        """
+        sceneName = pm.sceneName()
+        if not sceneName:
+            LOG.warning(
+                "Cannot save Blueprint to scene file, "
+                "scene is not saved")
+            return
+
+        fileName = os.path.splitext(sceneName)[0] + '.yaml'
+        data = self.serialize()
+        with open(fileName, 'wb') as fp:
+            yaml.dump(data, fp, default_flow_style=False, Dumper=PulseDumper)
+        print(fileName)
 
     def saveToNode(self, node, create=False):
         """

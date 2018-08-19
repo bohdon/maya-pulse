@@ -192,9 +192,9 @@ class BlueprintUIModel(QtCore.QObject):
 
         # the blueprint of this model
         self.blueprint = None
-        if cmds.objExists(self.blueprintNodeName):
-            # load from existing node
-            self.blueprint = pulse.Blueprint.fromNode(self.blueprintNodeName)
+        # if cmds.objExists(self.blueprintNodeName):
+        #     # load from existing node
+        #     self.blueprint = pulse.Blueprint.fromNode(self.blueprintNodeName)
 
         # the tree item model and selection model for BuildItems
         self.buildStepTreeModel = BuildStepTreeModel(self.blueprint)
@@ -233,6 +233,9 @@ class BlueprintUIModel(QtCore.QObject):
         self.rigNameChanged.emit(self.getRigName())
 
     def blueprintExists(self):
+        """
+        Return True if the Blueprint node exists for this model.
+        """
         return self.blueprint is not None
 
     def addSubscriber(self, subscriber):
@@ -251,15 +254,16 @@ class BlueprintUIModel(QtCore.QObject):
             if changeEvents:
                 changeEvents.addSubscriber(self)
 
+        return
         # we may have missed events since last subscribed,
         # so make sure blueprint exists == node exists
-        if cmds.objExists(self.blueprintNodeName):
-            if self.blueprint is None:
-                self._setBlueprint(
-                    pulse.Blueprint.fromNode(self.blueprintNodeName))
-        else:
-            if self.blueprint is not None:
-                self._setBlueprint(None)
+        # if cmds.objExists(self.blueprintNodeName):
+        #     if self.blueprint is None:
+        #         self._setBlueprint(
+        #             pulse.Blueprint.fromNode(self.blueprintNodeName))
+        # else:
+        #     if self.blueprint is not None:
+        #         self._setBlueprint(None)
 
     def removeSubscriber(self, subscriber):
         """
@@ -278,29 +282,32 @@ class BlueprintUIModel(QtCore.QObject):
                 changeEvents.removeSubscriber(self)
 
     def _onBlueprintCreated(self, node):
-        if node.nodeName() == self.blueprintNodeName:
-            self._setBlueprint(
-                pulse.Blueprint.fromNode(self.blueprintNodeName))
-            self._subscribeToBlueprintNodeChanges()
-            self.blueprintCreated.emit()
+        return
+        # if node.nodeName() == self.blueprintNodeName:
+        #     self._setBlueprint(
+        #         pulse.Blueprint.fromNode(self.blueprintNodeName))
+        #     self._subscribeToBlueprintNodeChanges()
+        #     self.blueprintCreated.emit()
 
     def _onBlueprintDeleted(self, node):
-        if node.nodeName() == self.blueprintNodeName:
-            self._setBlueprint(None)
-            # doing some cleanup since we can here
-            BlueprintChangeEvents.cleanupSharedInstances()
-            self.blueprintDeleted.emit()
-            self.buildStepTreeModel.setBlueprint(None)
+        return
+        # if node.nodeName() == self.blueprintNodeName:
+        #     self._setBlueprint(None)
+        #     # doing some cleanup since we can here
+        #     BlueprintChangeEvents.cleanupSharedInstances()
+        #     self.blueprintDeleted.emit()
+        #     self.buildStepTreeModel.setBlueprint(None)
 
     def _onBlueprintNodeChanged(self, node):
         """
         The blueprint node has changed, reload its data
         """
-        if not self._isSaving:
-            selectedPaths = self.buildStepSelectionModel.getSelectedItemPaths()
-            self.load()
-            self.blueprintNodeChanged.emit()
-            self.buildStepSelectionModel.setSelectedItemPaths(selectedPaths)
+        return
+        # if not self._isSaving:
+        #     selectedPaths = self.buildStepSelectionModel.getSelectedItemPaths()
+        #     self.load()
+        #     self.blueprintNodeChanged.emit()
+        #     self.buildStepSelectionModel.setSelectedItemPaths(selectedPaths)
 
     def _onItemModelChanged(self):
         self.save()
@@ -329,10 +336,24 @@ class BlueprintUIModel(QtCore.QObject):
             self.rigNameChanged.emit(self.blueprint.rigName)
             self.save()
 
+    def saveToSceneFile(self):
+        """
+        Save the Blueprint data to a file paired with the current scene
+        """
+        if self.blueprint:
+            self.blueprint.saveToSceneFile()
+
+    def loadFromSceneFile(self):
+        blueprint = pulse.Blueprint.fromSceneFile()
+        if blueprint:
+            self._setBlueprint(blueprint)
+            self.buildStepTreeModel.modelReset.emit()
+
     def save(self):
         """
         Save the Blueprint data to the blueprint node
         """
+        return
         self._isSaving = True
         # TODO: save after the deferred call instead of on every call?
         self.blueprint.saveToNode(self.blueprintNodeName)
@@ -346,6 +367,7 @@ class BlueprintUIModel(QtCore.QObject):
         """
         Load the Blueprint data from the blueprint node
         """
+        return
         LOG.debug('loading...')
         # TODO: preserve selection by item path
         if (cmds.objExists(self.blueprintNodeName) and

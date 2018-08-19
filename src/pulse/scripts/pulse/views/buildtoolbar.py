@@ -52,6 +52,18 @@ class BuildToolbarWidget(QtWidgets.QWidget, RigEventsMixin):
         self.rigNameLabel.setText(self.blueprintModel.getRigName())
         layout.addWidget(self.rigNameLabel)
 
+        self.saveBtn = QtWidgets.QPushButton(parent)
+        self.saveBtn.setText("Save")
+        self.saveBtn.setMaximumWidth(80)
+        self.saveBtn.clicked.connect(self.blueprintModel.saveToSceneFile)
+        layout.addWidget(self.saveBtn)
+
+        self.loadBtn = QtWidgets.QPushButton(parent)
+        self.loadBtn.setText("Load")
+        self.loadBtn.setMaximumWidth(80)
+        self.loadBtn.clicked.connect(self.blueprintModel.loadFromSceneFile)
+        layout.addWidget(self.loadBtn)
+
         self.createBtn = QtWidgets.QPushButton(parent)
         self.createBtn.setText("Create Blueprint")
         self.createBtn.clicked.connect(self.blueprintModel.createNode)

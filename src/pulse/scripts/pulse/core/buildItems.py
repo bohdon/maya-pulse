@@ -5,6 +5,7 @@ import re
 import pymetanode as meta
 
 from .rigs import RIG_METACLASS
+from .serializer import UnsortableOrderedDict
 
 __all__ = [
     'BuildAction',
@@ -451,7 +452,7 @@ class BuildStep(object):
         """
         Return this BuildStep as a serialized dict object
         """
-        data = {}
+        data = UnsortableOrderedDict()
         data['name'] = self._name
         if self._actionProxy:
             data['action'] = self._actionProxy.serialize()
@@ -611,7 +612,7 @@ class BuildActionData(object):
         """
         Return this BuildActionData as a serialized dict object
         """
-        data = {}
+        data = UnsortableOrderedDict()
         data['id'] = self._actionId
         if self.hasConfig():
             for attr in self.config['attrs']:
