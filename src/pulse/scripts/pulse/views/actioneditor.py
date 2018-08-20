@@ -38,6 +38,13 @@ class BuildStepForm(QtWidgets.QWidget):
         # TODO: refresh displayed values
         if not self.index.isValid():
             self.hide()
+            return
+
+        step = self.step()
+        if not step:
+            return
+
+        self.displayNameLabel.setText(step.getDisplayName())
 
     def step(self):
         """

@@ -369,12 +369,12 @@ class BlueprintUIModel(QtCore.QObject):
             LOG.error("moveStep: cannot move root step")
             return
 
+        index = self.buildStepTreeModel.indexByStepPath(sourcePath)
+
         # TODO: handle moving between new parents
         newName = targetPath.split('/')[-1]
         step.setName(newName)
-
-        # TODO: find index of step and emit data change instead of reset
-        self.buildStepTreeModel.modelReset.emit()
+        self.buildStepTreeModel.dataChanged.emit(index, index, [])
         return step.getFullPath()
 
     def saveToSceneFile(self):
@@ -481,6 +481,24 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
 
         if self._blueprint:
             return self._blueprint.rootStep
+
+    def indexByStepPath(self, path):
+        """
+        Return a QModelIndex for a step by path
+        """
+        if self._blueprint:
+            step = self._blueprint.getStepByPath(path)
+            if step:
+                childIndeces = []
+                while step.parent:
+                    childIndeces.append(step.indexInParent())
+                    step = step.parent
+                print(childIndeces)
+                parentIndex = QtCore.QModelIndex()
+                for childIndex in childIndeces:
+                    index = self.index(childIndex, 0, parentIndex)
+                    parentIndex = index
+                return index
 
     def index(self, row, column, parent=QtCore.QModelIndex()):
         """
