@@ -1,4 +1,5 @@
 
+import os
 import logging
 import maya.cmds as cmds
 from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
@@ -336,6 +337,46 @@ class BlueprintUIModel(QtCore.QObject):
             self.rigNameChanged.emit(self.blueprint.rigName)
             self.save()
 
+    def setBlueprintAttr(self, name, value):
+        """
+        Set the value for an attribute on the Blueprint
+        """
+        print('setattr', name, value)
+        if self.isReadOnly() or not self.blueprintExists():
+            return
+
+        step = self.blueprint.getStepByPath('Hand/Bind Skin')
+        step.actionProxy.setAttrValue('maxInfluences', value)
+        self.buildStepTreeModel.modelReset.emit()
+
+    def moveStep(self, sourcePath, targetPath):
+        """
+        Move a BuildStep from source path to target path.
+
+        Returns:
+            The new path (str) of the build step, or None if
+            the operation failed.
+        """
+        if self.isReadOnly() or not self.blueprintExists():
+            return
+
+        step = self.blueprint.getStepByPath(sourcePath)
+        if not step:
+            LOG.error("moveStep: failed to find step: {0}".format(sourcePath))
+            return
+
+        if step == self.blueprint.rootStep:
+            LOG.error("moveStep: cannot move root step")
+            return
+
+        # TODO: handle moving between new parents
+        newName = targetPath.split('/')[-1]
+        step.setName(newName)
+
+        # TODO: find index of step and emit data change instead of reset
+        self.buildStepTreeModel.modelReset.emit()
+        return step.getFullPath()
+
     def saveToSceneFile(self):
         """
         Save the Blueprint data to a file paired with the current scene
@@ -538,12 +579,15 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
 
         step = self.stepForIndex(index)
 
-        oldName = step.name
-        step.setName(value)
-        if step.name != oldName:
-            self.dataChanged.emit(index, index, [])
+        stepPath = step.getFullPath()
+        stepNewPath = os.path.dirname(stepPath) + '/' + value
+        cmds.pulseMoveStep(stepPath, stepNewPath)
+        # oldName = step.name
+        # step.setName(value)
+        # if step.name != oldName:
+        #     self.dataChanged.emit(index, index, [])
 
-        return True
+        return False
 
     def mimeTypes(self):
         return ['text/plain']
