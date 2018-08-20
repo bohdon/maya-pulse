@@ -481,6 +481,7 @@ class NodeAttrForm(ActionAttrForm):
             self.valueChanged.emit(self.attrValue, self.isValueValid)
         else:
             self.setAttrValue(None)
+            self.valueChanged.emit(self.attrValue, self.isValueValid)
 
 ActionAttrForm.TYPEMAP['node'] = NodeAttrForm
 

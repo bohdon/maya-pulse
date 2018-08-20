@@ -214,7 +214,7 @@ class BuildStep(object):
     def actionProxy(self):
         return self._actionProxy
 
-    def setActionProxy(self, actionProxy):
+    def setActionProxy(self, actionProxy, updateName=True):
         """
         Set a BuildActionProxy for this step. Will fail if
         the step has any children.
@@ -228,7 +228,7 @@ class BuildStep(object):
             return
 
         self._actionProxy = actionProxy
-        if self._actionProxy:
+        if updateName and self._actionProxy:
             self._name = self._actionProxy.getDisplayName()
             self.ensureUniqueName()
 
@@ -474,7 +474,7 @@ class BuildStep(object):
         if 'action' in data:
             newActionProxy = BuildActionProxy()
             newActionProxy.deserialize(data['action'])
-            self.setActionProxy(newActionProxy)
+            self.setActionProxy(newActionProxy, updateName=False)
         else:
             self._actionProxy = None
 
@@ -732,6 +732,19 @@ class BuildActionProxy(BuildActionData):
         Returns true of this action proxy has any variant attributes.
         """
         return bool(self._variantAttrs)
+
+    def setIsVariantAttr(self, attrName, isVariant):
+        """
+        Set whether an attr is variant or not.
+
+        Args:
+            attrName (str): The name of an action attribute
+            isVariant (bool): Whether the attribute should be variant or not
+        """
+        if isVariant:
+            self.addVariantAttr(attrName)
+        else:
+            self.removeVariantAttr(attrName)
 
     def addVariantAttr(self, attrName):
         """

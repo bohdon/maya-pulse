@@ -32,11 +32,17 @@ class CmdFlag(object):
 
 class PulseCmdBase(om.MPxCommand):
 
+    def isUndoable(self):
+        return True
+
     def getBlueprintModel(self):
         return pulse.views.BlueprintUIModel.getDefaultModel()
 
-    def isUndoable(self):
-        return True
+    def toStrData(self, data):
+        return pulse.core.serializeAttrValue(data)
+
+    def fromStrData(self, data):
+        return pulse.core.deserializeAttrValue(data)
 
 
 class PulseSetActionAttrCmd(PulseCmdBase):
@@ -93,18 +99,16 @@ class PulseSetActionAttrCmd(PulseCmdBase):
             self.variantIndex = argparser.flagArgumentInt(
                 PulseSetActionAttrCmd.variantFlag.flag, 0)
 
-        print(self.attrPath, self.newStrValue, self.variantIndex)
-
     def redoIt(self):
         blueprintModel = self.getBlueprintModel()
         if blueprintModel:
             # store old value as str
-            self.oldStrValue = pulse.core.serializeAttrValue(
+            self.oldStrValue = self.toStrData(
                 blueprintModel.getActionAttr(
                     self.attrPath, self.variantIndex))
 
             # deserialize str value into objects
-            value = pulse.core.deserializeAttrValue(self.newStrValue)
+            value = self.fromStrData(self.newStrValue)
             blueprintModel.setActionAttr(
                 self.attrPath, value, self.variantIndex)
 
@@ -112,12 +116,82 @@ class PulseSetActionAttrCmd(PulseCmdBase):
         blueprintModel = self.getBlueprintModel()
         if blueprintModel:
             # deserialize str value into objects
-            value = pulse.core.deserializeAttrValue(self.oldStrValue)
+            value = self.fromStrData(self.oldStrValue)
             blueprintModel.setActionAttr(
                 self.attrPath, value, self.variantIndex)
 
 
 CMD_CLASSES.append(PulseSetActionAttrCmd)
+
+
+class PulseSetIsVariantAttrCmd(PulseCmdBase):
+    """
+    Command to change an attribute of a Pulse BuildAction attribute
+    from being constant or variant.
+    """
+
+    cmdName = "pulseSetIsVariantAttr"
+
+    # the full path to the attribute, e.g. 'My/Build/Step.myAttr'
+    attrPathArgType = om.MSyntax.kString
+    # whether the attribute should be variant
+    valueArgType = om.MSyntax.kBoolean
+
+    @staticmethod
+    def createCmd():
+        return PulseSetIsVariantAttrCmd()
+
+    @staticmethod
+    def createSyntax():
+        syntax = om.MSyntax()
+        syntax.addArg(PulseSetIsVariantAttrCmd.attrPathArgType)
+        syntax.addArg(PulseSetIsVariantAttrCmd.valueArgType)
+        return syntax
+
+    def doIt(self, args):
+        self.parseArguments(args)
+        self.redoIt()
+
+    def parseArguments(self, args):
+        if len(args) != 2:
+            raise TypeError(
+                "pulseSetIsVariantAttr() takes exactly 2 arguments "
+                "({0} given)".format(len(args)))
+
+        try:
+            argparser = om.MArgParser(self.syntax(), args)
+        except RuntimeError:
+            om.MGlobal.displayError('Error while parsing arguments')
+            raise
+
+        # attr path
+        self.attrPath = argparser.commandArgumentString(0)
+
+        # is variant value
+        self.newValue = argparser.commandArgumentBool(1)
+
+    def redoIt(self):
+        blueprintModel = self.getBlueprintModel()
+        if blueprintModel:
+            # TODO: fail if not changing anything
+
+            # snapshot the whole action proxy, since it may change
+            # significantly when modifying variant attrs
+            self.oldStrData = self.toStrData(
+                blueprintModel.getActionDataForAttrPath(
+                    self.attrPath))
+            blueprintModel.setIsActionAttrVariant(
+                self.attrPath, self.newValue)
+
+    def undoIt(self):
+        blueprintModel = self.getBlueprintModel()
+        if blueprintModel:
+            oldData = self.fromStrData(self.oldStrData)
+            blueprintModel.setActionDataForAttrPath(
+                self.attrPath, oldData)
+
+
+CMD_CLASSES.append(PulseSetIsVariantAttrCmd)
 
 
 class PulseMoveStepCmd(PulseCmdBase):

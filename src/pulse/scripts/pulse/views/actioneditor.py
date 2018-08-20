@@ -134,8 +134,23 @@ class BuildActionProxyForm(QtWidgets.QWidget):
 
     def __init__(self, index, parent=None):
         super(BuildActionProxyForm, self).__init__(parent=parent)
-        self.index = index
+        self.index = QtCore.QPersistentModelIndex(index)
         self.setupUi(self)
+        self.index.model().dataChanged.connect(self.onModelDataChanged)
+
+    def onModelDataChanged(self):
+        if not self.index.isValid():
+            self.hide()
+            return
+
+        step = self.step()
+        if not step:
+            return
+
+        # TODO: create data changed events specific to attributes
+        #       to avoid rebuilding the whole form
+        self.setupConstantsUi(self)
+        self.setupVariantsUi(self)
 
     def step(self):
         """
@@ -334,12 +349,13 @@ class BuildActionProxyForm(QtWidgets.QWidget):
         if not actionProxy:
             return
 
-        if isVariant:
-            actionProxy.addVariantAttr(attrName)
-        else:
-            actionProxy.removeVariantAttr(attrName)
-        self.setupConstantsUi(self)
-        self.setupVariantsUi(self)
+        step = self.step()
+        if not step:
+            return
+
+        attrPath = '{0}.{1}'.format(step.getFullPath(), attrName)
+
+        cmds.pulseSetIsVariantAttr(attrPath, isVariant)
 
     def addVariant(self):
         actionProxy = self.actionProxy()

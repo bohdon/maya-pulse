@@ -337,6 +337,37 @@ class BlueprintUIModel(QtCore.QObject):
             self.rigNameChanged.emit(self.blueprint.rigName)
             self.save()
 
+    def getActionDataForAttrPath(self, attrPath):
+        """
+        Return a serialized data for an action represented
+        by an attribute path.
+        """
+        stepPath, attrName = attrPath.split('.')
+
+        step = self.blueprint.getStepByPath(stepPath)
+        if not step.isAction():
+            LOG.error('setActionAttr: {0} is not an action'.format(step))
+            return
+
+        return step.actionProxy.serialize()
+
+    def setActionDataForAttrPath(self, attrPath, data):
+        """
+        Replace all values on an action represented by an
+        attribute path by deserializng data.
+        """
+        stepPath, attrName = attrPath.split('.')
+
+        step = self.blueprint.getStepByPath(stepPath)
+        if not step.isAction():
+            LOG.error('setActionAttr: {0} is not an action'.format(step))
+            return
+
+        step.actionProxy.deserialize(data)
+
+        index = self.buildStepTreeModel.indexByStepPath(stepPath)
+        self.buildStepTreeModel.dataChanged.emit(index, index, [])
+
     def getActionAttr(self, attrPath, variantIndex=-1):
         stepPath, attrName = attrPath.split('.')
 
@@ -369,9 +400,40 @@ class BlueprintUIModel(QtCore.QObject):
             step.actionProxy.setVariantAttrValue(variantIndex, attrName, value)
         else:
             step.actionProxy.setAttrValue(attrName, value)
-            LOG.info('{0!r}: {1!r}'.format(attrPath, value))
+            # LOG.info('{0!r}: {1!r}'.format(attrPath, value))
 
-        # self.buildStepTreeModel.modelReset.emit()
+        index = self.buildStepTreeModel.indexByStepPath(stepPath)
+        self.buildStepTreeModel.dataChanged.emit(index, index, [])
+
+    def isActionAttrVariant(self, attrPath):
+        stepPath, attrName = attrPath.split('.')
+
+        step = self.blueprint.getStepByPath(stepPath)
+        if not step.isAction():
+            LOG.error(
+                "setIsActionAttrVariant: {0} is not an action".format(step))
+            return
+
+        return step.actionProxy.isVariantAttr(attrName)
+
+    def setIsActionAttrVariant(self, attrPath, isVariant):
+        """
+        """
+        if self.isReadOnly() or not self.blueprintExists():
+            return
+
+        stepPath, attrName = attrPath.split('.')
+
+        step = self.blueprint.getStepByPath(stepPath)
+        if not step.isAction():
+            LOG.error(
+                "setIsActionAttrVariant: {0} is not an action".format(step))
+            return
+
+        step.actionProxy.setIsVariantAttr(attrName, isVariant)
+
+        index = self.buildStepTreeModel.indexByStepPath(stepPath)
+        self.buildStepTreeModel.dataChanged.emit(index, index, [])
 
     def moveStep(self, sourcePath, targetPath):
         """
@@ -510,6 +572,7 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
         """
         Return a QModelIndex for a step by path
         """
+        # TODO: debug, this is not working
         if self._blueprint:
             step = self._blueprint.getStepByPath(path)
             if step:
@@ -517,7 +580,7 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
                 while step.parent:
                     childIndeces.append(step.indexInParent())
                     step = step.parent
-                print(childIndeces)
+                # print(childIndeces)
                 parentIndex = QtCore.QModelIndex()
                 for childIndex in childIndeces:
                     index = self.index(childIndex, 0, parentIndex)
