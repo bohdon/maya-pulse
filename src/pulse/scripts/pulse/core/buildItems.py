@@ -702,6 +702,12 @@ class BuildActionProxy(BuildActionData):
     def getAttrValue(self, attrName):
         return self._attrValues[attrName]
 
+    def getAttrValueOrNone(self, attrName):
+        if attrName in self._attrValues:
+            return self._attrValues[attrName]
+        else:
+            return None
+
     def getAttrValueOrDefault(self, attrName):
         if attrName in self._attrValues:
             return self._attrValues[attrName]
@@ -709,10 +715,14 @@ class BuildActionProxy(BuildActionData):
             return self.getAttrDefaultValue(self.getAttrConfig(attrName))
 
     def setAttrValue(self, attrName, value):
-        self._attrValues[attrName] = value
+        if value is None:
+            self.delAttrValue(attrName)
+        else:
+            self._attrValues[attrName] = value
 
     def delAttrValue(self, attrName):
-        del self._attrValues[attrName]
+        if attrName in self._attrValues:
+            del self._attrValues[attrName]
 
     def isVariantAttr(self, attrName):
         return attrName in self._variantAttrs
@@ -835,6 +845,12 @@ class BuildActionProxy(BuildActionData):
     def getVariantAttrValue(self, index, attrName):
         return self._variantValues[index][attrName]
 
+    def getVariantAttrValueOrNone(self, index, attrName):
+        if attrName in self._variantValues[index]:
+            return self._variantValues[index][attrName]
+        else:
+            return None
+
     def getVariantAttrValueOrDefault(self, index, attrName):
         if attrName in self._variantValues[index]:
             return self._variantValues[index][attrName]
@@ -842,10 +858,14 @@ class BuildActionProxy(BuildActionData):
             return self.getAttrDefaultValue(self.getAttrConfig(attrName))
 
     def setVariantAttrValue(self, index, attrName, value):
-        self._variantValues[index][attrName] = value
+        if value is None:
+            self.delVariantAttrValue(index, attrName)
+        else:
+            self._variantValues[index][attrName] = value
 
     def delVariantAttrValue(self, index, attrName):
-        del self._variantValues[index][attrName]
+        if attrName in self._variantValues[index]:
+            del self._variantValues[index][attrName]
 
     def numVariants(self):
         """

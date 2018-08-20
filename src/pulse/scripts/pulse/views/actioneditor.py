@@ -1,10 +1,12 @@
 # coding=utf-8
 
 from functools import partial
+import maya.cmds as cmds
+from pulse.vendor.Qt import QtCore, QtWidgets, QtGui
 
 import pulse
 import pulse.names
-from pulse.vendor.Qt import QtCore, QtWidgets, QtGui
+from pulse.core import serializeAttrValue
 from .core import PulseWindow
 from .core import BlueprintUIModel
 from . import utils as viewutils
@@ -365,10 +367,14 @@ class BuildActionProxyForm(QtWidgets.QWidget):
 
     def onAttrValueChanged(self, variantIndex, attrForm, attrValue, isValueValid):
         """
+        Called when an attr form has changed the value of an attribute.
+
         Args:
             variantIndex (int): The index of the variant attribute that was modified.
                 If < 0, the attribute is not variant.
             attrForm (ActionAttrForm): The attribute form that caused the change
+            attrValue: The new value of the attribute, can be any type
+            isValueValid (bool): Is the new value valid?
         """
         if not self.index.isValid():
             return
@@ -377,16 +383,20 @@ class BuildActionProxyForm(QtWidgets.QWidget):
         if not step:
             return
 
-        # TODO: set data through the model
-        if variantIndex >= 0:
-            step.actionProxy.setVariantAttrValue(
-                variantIndex, attrForm.attr['name'], attrValue)
-        else:
-            step.actionProxy.setAttrValue(
-                attrForm.attr['name'], attrValue)
+        attrPath = '{0}.{1}'.format(step.getFullPath(), attrForm.attr['name'])
+        strValue = serializeAttrValue(attrValue)
+        cmds.pulseSetActionAttr(attrPath, strValue, v=variantIndex)
 
-        self.index.model().dataChanged.emit(
-            self.index, self.index, QtCore.Qt.UserRole)
+        # TODO: set data through the model
+        # if variantIndex >= 0:
+        #     step.actionProxy.setVariantAttrValue(
+        #         variantIndex, attrForm.attr['name'], attrValue)
+        # else:
+        #     step.actionProxy.setAttrValue(
+        #         attrForm.attr['name'], attrValue)
+
+        # self.index.model().dataChanged.emit(
+        #     self.index, self.index, QtCore.Qt.UserRole)
 
     def batchEditorValuesChanged(self):
         self.setupVariantsUi(self)

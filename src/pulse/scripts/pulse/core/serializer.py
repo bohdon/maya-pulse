@@ -15,12 +15,14 @@ from pulse.vendor.yaml.scanner import Scanner
 from pulse.vendor.yaml.serializer import Serializer
 
 __all__ = [
-    'UnsortableList',
-    'UnsortableOrderedDict',
+    'deserializeAttrValue',
+    'PulseConstructor',
     'PulseDumper',
     'PulseLoader',
     'PulseRepresenter',
-    'PulseConstructor',
+    'serializeAttrValue',
+    'UnsortableList',
+    'UnsortableOrderedDict',
 ]
 
 
@@ -101,3 +103,11 @@ class PulseLoader(Reader, Scanner, Parser, Composer, PulseConstructor, Resolver)
         Composer.__init__(self)
         PulseConstructor.__init__(self)
         Resolver.__init__(self)
+
+
+def serializeAttrValue(value):
+    return meta.encodeMetaData(value)
+
+
+def deserializeAttrValue(value):
+    return meta.decodeMetaData(value)

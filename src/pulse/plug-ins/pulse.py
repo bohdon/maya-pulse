@@ -3,6 +3,7 @@ import sys
 import maya.api.OpenMaya as om
 
 import pulse.views
+import pulse.core
 
 # the list of all cmd classes in this plugin
 CMD_CLASSES = []
@@ -14,15 +15,6 @@ def maya_useNewAPI():
     expects to be passed, objects created using the Maya Python API 2.0.
     """
     pass
-
-
-class CmdArg(object):
-    def __init__(self, argType=None):
-        self.argType = argType
-
-    def __iter__(self):
-        if self.argType is not None:
-            yield self.argType
 
 
 class CmdFlag(object):
@@ -54,8 +46,12 @@ class PulseSetActionAttrCmd(PulseCmdBase):
 
     cmdName = "pulseSetActionAttr"
 
-    nameArgType = om.MSyntax.kString
+    # the full path to the attribute, e.g. 'My/Build/Step.myAttr'
+    attrPathArgType = om.MSyntax.kString
+    # the serialized value of the attribute, e.g. '123'
     valueArgType = om.MSyntax.kString
+    # the index of the variant to modify
+    variantFlag = CmdFlag('-v', '-variant', om.MSyntax.kLong)
 
     @staticmethod
     def createCmd():
@@ -63,12 +59,10 @@ class PulseSetActionAttrCmd(PulseCmdBase):
 
     @staticmethod
     def createSyntax():
-        """
-        Syntax docs go here
-        """
         syntax = om.MSyntax()
-        syntax.addArg(PulseSetActionAttrCmd.nameArgType)
+        syntax.addArg(PulseSetActionAttrCmd.attrPathArgType)
         syntax.addArg(PulseSetActionAttrCmd.valueArgType)
+        syntax.addFlag(*PulseSetActionAttrCmd.variantFlag)
         return syntax
 
     def doIt(self, args):
@@ -78,7 +72,7 @@ class PulseSetActionAttrCmd(PulseCmdBase):
     def parseArguments(self, args):
         if len(args) != 2:
             raise TypeError(
-                "pulseMoveStep() takes exactly 2 arguments "
+                "pulseSetActionAttr() takes exactly 2 arguments "
                 "({0} given)".format(len(args)))
 
         try:
@@ -87,25 +81,40 @@ class PulseSetActionAttrCmd(PulseCmdBase):
             om.MGlobal.displayError('Error while parsing arguments')
             raise
 
-        self.attrName = argparser.commandArgumentString(0)
-        self.newValue = argparser.commandArgumentString(1)
-        self.oldValue = "old value"
+        # attr path
+        self.attrPath = argparser.commandArgumentString(0)
 
-        # TODO: rerieve old value
-        # self.oldValue = 1
-        # print(PulseSetActionAttrCmd.valueFlag.flag)
+        # attr value
+        self.newStrValue = argparser.commandArgumentString(1)
 
-        print(self.attrName, self.newValue)
+        # variant index
+        self.variantIndex = -1
+        if argparser.isFlagSet(PulseSetActionAttrCmd.variantFlag.flag):
+            self.variantIndex = argparser.flagArgumentInt(
+                PulseSetActionAttrCmd.variantFlag.flag, 0)
+
+        print(self.attrPath, self.newStrValue, self.variantIndex)
 
     def redoIt(self):
         blueprintModel = self.getBlueprintModel()
         if blueprintModel:
-            blueprintModel.setBlueprintAttr(self.attrName, self.newValue)
+            # store old value as str
+            self.oldStrValue = pulse.core.serializeAttrValue(
+                blueprintModel.getActionAttr(
+                    self.attrPath, self.variantIndex))
+
+            # deserialize str value into objects
+            value = pulse.core.deserializeAttrValue(self.newStrValue)
+            blueprintModel.setActionAttr(
+                self.attrPath, value, self.variantIndex)
 
     def undoIt(self):
         blueprintModel = self.getBlueprintModel()
         if blueprintModel:
-            blueprintModel.setBlueprintAttr(self.attrName, self.oldValue)
+            # deserialize str value into objects
+            value = pulse.core.deserializeAttrValue(self.oldStrValue)
+            blueprintModel.setActionAttr(
+                self.attrPath, value, self.variantIndex)
 
 
 CMD_CLASSES.append(PulseSetActionAttrCmd)
@@ -113,7 +122,7 @@ CMD_CLASSES.append(PulseSetActionAttrCmd)
 
 class PulseMoveStepCmd(PulseCmdBase):
     """
-    Command to rename a Pulse BuildStep.
+    Command to move or rename a Pulse BuildStep.
     """
 
     cmdName = "pulseMoveStep"

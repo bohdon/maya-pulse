@@ -337,17 +337,41 @@ class BlueprintUIModel(QtCore.QObject):
             self.rigNameChanged.emit(self.blueprint.rigName)
             self.save()
 
-    def setBlueprintAttr(self, name, value):
+    def getActionAttr(self, attrPath, variantIndex=-1):
+        stepPath, attrName = attrPath.split('.')
+
+        step = self.blueprint.getStepByPath(stepPath)
+        if not step.isAction():
+            LOG.error('setActionAttr: {0} is not an action'.format(step))
+            return
+
+        if variantIndex >= 0:
+            return step.actionProxy.getVariantAttrValueOrNone(
+                variantIndex, attrName)
+        else:
+            return step.actionProxy.getAttrValueOrNone(attrName)
+
+    def setActionAttr(self, attrPath, value, variantIndex=-1):
         """
         Set the value for an attribute on the Blueprint
         """
-        print('setattr', name, value)
         if self.isReadOnly() or not self.blueprintExists():
             return
 
-        step = self.blueprint.getStepByPath('Hand/Bind Skin')
-        step.actionProxy.setAttrValue('maxInfluences', value)
-        self.buildStepTreeModel.modelReset.emit()
+        stepPath, attrName = attrPath.split('.')
+
+        step = self.blueprint.getStepByPath(stepPath)
+        if not step.isAction():
+            LOG.error('setActionAttr: {0} is not an action'.format(step))
+            return
+
+        if variantIndex >= 0:
+            step.actionProxy.setVariantAttrValue(variantIndex, attrName, value)
+        else:
+            step.actionProxy.setAttrValue(attrName, value)
+            LOG.info('{0!r}: {1!r}'.format(attrPath, value))
+
+        # self.buildStepTreeModel.modelReset.emit()
 
     def moveStep(self, sourcePath, targetPath):
         """
