@@ -33,14 +33,6 @@ class ActionTreeWidget(QtWidgets.QWidget):
         # connect signals
         self.model.modelReset.connect(self.onModelReset)
 
-    def showEvent(self, event):
-        super(ActionTreeWidget, self).showEvent(event)
-        self.blueprintModel.addSubscriber(self)
-
-    def hideEvent(self, event):
-        super(ActionTreeWidget, self).hideEvent(event)
-        self.blueprintModel.removeSubscriber(self)
-
     def eventFilter(self, widget, event):
         if widget is self.treeView:
             if event.type() == QtCore.QEvent.KeyPress:

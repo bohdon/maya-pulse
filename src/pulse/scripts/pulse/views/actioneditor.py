@@ -440,14 +440,6 @@ class ActionEditorWidget(QtWidgets.QWidget):
 
         self.setupItemsUiForSelection()
 
-    def showEvent(self, event):
-        super(ActionEditorWidget, self).showEvent(event)
-        self.blueprintModel.addSubscriber(self)
-
-    def hideEvent(self, event):
-        super(ActionEditorWidget, self).hideEvent(event)
-        self.blueprintModel.removeSubscriber(self)
-
     def setupUi(self, parent):
         outerLayout = QtWidgets.QVBoxLayout(parent)
 

@@ -6,13 +6,10 @@ import maya.OpenMaya as api
 import pymel.core as pm
 import pymetanode as meta
 
-from .blueprints import Blueprint, BLUEPRINT_NODENAME
+from .blueprints import Blueprint
 from .rigs import isRig
 
 __all__ = [
-    'BlueprintChangeEvents',
-    'BlueprintEventsMixin',
-    'BlueprintLifecycleEvents',
     'Event',
     'MayaCallbackEvents',
     'RigEventsMixin',
@@ -27,6 +24,7 @@ class Event(list):
     A list of callable objects. Calling an Event
     will cause a call to each item in the list in order.
     """
+
     def __call__(self, *args, **kwargs):
         for func in self:
             func(*args, **kwargs)
@@ -73,13 +71,17 @@ class MayaCallbackEvents(object):
         if not self._areMayaCallbacksRegistered:
             self._areMayaCallbacksRegistered = True
             self._callbackIDs = list(self._addMayaCallbacks())
-            LOG.debug('{0}._registerMayaCallbacks'.format(self.__class__.__name__))
+            LOG.debug('{0}._registerMayaCallbacks'.format(
+                self.__class__.__name__))
 
     def _addMayaCallbacks(self):
         """
-        Should be overridden in subclasses to register any Maya callbacks.
-        Must return a list of callback IDs for all newly added callbacks.
-        This will only be called if callbacks are not already registered.
+        Should be overridden in subclasses to register any Maya
+        message callbacks. This will only be called if callbacks
+        are not already registered.
+
+        Returns:
+            A list of callback IDs for all newly added callbacks.
         """
         return []
 
@@ -92,7 +94,8 @@ class MayaCallbackEvents(object):
             for cbId in self._callbackIDs:
                 api.MMessage.removeCallback(cbId)
             self._callbackIDs = []
-            LOG.debug('{0}._unregisterMayaCallbacks'.format(self.__class__.__name__))
+            LOG.debug('{0}._unregisterMayaCallbacks'.format(
+                self.__class__.__name__))
 
     def addSubscriber(self, subscriber):
         """
@@ -111,274 +114,6 @@ class MayaCallbackEvents(object):
             self._subscribers.remove(subscriber)
         if not self._subscribers:
             self._unregisterMayaCallbacks()
-
-
-
-
-class BlueprintLifecycleEvents(MayaCallbackEvents):
-    """
-    A singular object responsible for dispatching
-    Blueprint creation and deletion events.
-
-    Events:
-        onBlueprintCreated(node):
-            Called when any Blueprint is created. Passes
-            the newly created Blueprint node.
-        onBlueprintDeleted(node):
-            Called when any Blueprint is deleted. Passes
-            the Blueprint node that is being deleted.
-    """
-
-    # the shared events instance
-    INSTANCE = None
-
-    @classmethod
-    def getShared(cls):
-        if not cls.INSTANCE:
-            cls.INSTANCE = cls()
-        return cls.INSTANCE
-
-    def __init__(self):
-        super(BlueprintLifecycleEvents, self).__init__()
-        self.onBlueprintCreated = Event()
-        self.onBlueprintDeleted = Event()
-
-    # override
-    def _addMayaCallbacks(self):
-        # blueprint nodes are always of type 'network'
-        addId = api.MDGMessage.addNodeAddedCallback(self._onNodeAdded, 'network')
-        removeId = api.MDGMessage.addNodeRemovedCallback(self._onNodeRemoved, 'network')
-        return (addId, removeId)
-
-    def _onNodeAdded(self, node, *args):
-        """
-        Args:
-            node: A MObject node that was just added
-        """
-        # no way to know if it's a Blueprint yet,
-        # defer until later and check the node again
-        # TODO: do this more precisely, don't use deferred
-
-        mfn = api.MFnDependencyNode(node)
-        if mfn.typeName() != 'network':
-            # blueprints are network nodes
-            return
-        
-        cmds.evalDeferred(
-            partial(self._onNodeAddedDeferred, mfn.name()), evaluateNext=True)
-
-    def _onNodeAddedDeferred(self, fullName):
-        """
-        Args:
-            fullName: A string full name of a node that was added
-        """
-        node = meta.getMObject(fullName)
-        if node:
-            if Blueprint.isBlueprintNode(node):
-                LOG.debug("onBlueprintCreated('{0}')".format(node))
-                self.onBlueprintCreated(pm.PyNode(node))
-        else:
-            LOG.debug(
-                "Failed to locate node: {0}".format(fullName))
-
-    def _onNodeRemoved(self, node, *args):
-        """
-        Args:
-            node: A MObject node that is being removed
-        """
-        # TODO: this is a hack to identify a blueprint node being deleted
-        #       by checking its name, since its blueprint data is probably
-        #       already deleted. should be checking a known list of blueprints
-        #       and see if any of them no longer exist
-        if (api.MFnDependencyNode(node).name() == BLUEPRINT_NODENAME or
-                Blueprint.isBlueprintNode(node)):
-            LOG.debug("onBlueprintDeleted('{0}')".format(node))
-            self.onBlueprintDeleted(pm.PyNode(node))
-
-
-class BlueprintChangeEvents(MayaCallbackEvents):
-    """
-    An event dispatcher specific to a Blueprint node in the
-    scene. Fires events whenever the Blueprint node is modified.
-
-    Events:
-        onBlueprintNodeChanged(node):
-            Called when the blueprint changes, passes the Blueprint
-            node that was modified. This is fired after a deferred
-            evaluation, meaning it will not occur immediately on change.
-    """
-
-    # shared event instances, mapped by blueprint node names
-    INSTANCES = {}
-
-    @classmethod
-    def getShared(cls, blueprintNodeName):
-        """
-        Return a shared BlueprintChangeEvents instance for a specific
-        Blueprint node, creating a new instance if necessary.
-
-        Returns None if the node does not exist.
-        """
-        # perform instance cleanup
-        cls.cleanupSharedInstances()
-        if not cmds.objExists(blueprintNodeName):
-            return
-        if blueprintNodeName not in cls.INSTANCES:
-            cls.INSTANCES[blueprintNodeName] = cls(blueprintNodeName)
-        else:
-            cls.INSTANCES[blueprintNodeName].refreshMayaCallbacks()
-        return cls.INSTANCES[blueprintNodeName]
-
-    @classmethod
-    def cleanupSharedInstances(cls):
-        for nodeName, inst in cls.INSTANCES.items():
-            if not inst.nodeExists():
-                del cls.INSTANCES[nodeName]
-
-    def __init__(self, blueprintNodeName):
-        super(BlueprintChangeEvents, self).__init__()
-        self.blueprintNodeName = blueprintNodeName
-        self.lastUUID = None
-        self.onBlueprintNodeChanged = Event()
-
-    def nodeExists(self):
-        """
-        Return True if the Blueprint node exists
-        """
-        return cmds.objExists(self.blueprintNodeName)
-
-    def refreshMayaCallbacks(self):
-        """
-        Check if the node that was originally used in the callback has changed,
-        and if so, recreate the callback using the new node.
-        """
-        if self._areMayaCallbacksRegistered:
-            uuid = meta.getUUID(self.blueprintNodeName)
-            if self.lastUUID != uuid:
-                LOG.debug('uuid changed, refreshing callbacks')
-                self._unregisterMayaCallbacks()
-                self._registerMayaCallbacks()
-
-    # override
-    def _addMayaCallbacks(self):
-        mobject = meta.getMObject(self.blueprintNodeName)
-        if not mobject:
-            return []
-        changeId = api.MNodeMessage.addAttributeChangedCallback(mobject, self._onBlueprintAttrChanged)
-        # record node uuid at the time of adding the callback
-        self.lastUUID = meta.getUUID(self.blueprintNodeName)
-        return (changeId,)
-
-    def _onBlueprintAttrChanged(self, changeType, srcPlug, dstPlug, clientData):
-        if srcPlug.partialName() == 'pyMetaData':
-            # we need to defer the update, because the attribute
-            # change may have occurred from an active undo or redo that
-            # could result in the blueprint no longer existing
-            cmds.evalDeferred(
-                partial(self._onBlueprintAttrChangedDeferred), evaluateNext=True)
-    
-    def _onBlueprintAttrChangedDeferred(self):
-        mobject = meta.getMObject(self.blueprintNodeName)
-        if mobject:
-            LOG.debug("onBlueprintNodeChanged({0})".format(mobject))
-            self.onBlueprintNodeChanged(pm.PyNode(mobject))
-        else:
-            LOG.debug("Blueprint data changed, but blueprint no longer exists: {0}".format(
-                self.blueprintNodeName))
-
-
-
-class BlueprintEventsMixin(object):
-    """
-    A mixin for listening to shared events related
-    to Blueprint changes, including the creation or
-    deletion of a Blueprint.
-    """
-
-    def enableBlueprintEvents(self):
-        """
-        Enable Blueprint lifecycle events on this object.
-        """
-        lifeEvents = BlueprintLifecycleEvents.getShared()
-        lifeEvents.onBlueprintCreated.appendUnique(self._onBlueprintCreatedInternal)
-        lifeEvents.onBlueprintDeleted.appendUnique(self.onBlueprintDeleted)
-        lifeEvents.addSubscriber(self)
-
-    def disableBlueprintEvents(self):
-        """
-        Disable Blueprint events on this object
-        """
-        lifeEvents = BlueprintLifecycleEvents.getShared()
-        lifeEvents.onBlueprintCreated.removeAll(self._onBlueprintCreatedInternal)
-        lifeEvents.onBlueprintDeleted.removeAll(self.onBlueprintDeleted)
-        lifeEvents.removeSubscriber(self)
-
-    def enableBlueprintChangeEvents(self, blueprintNodeName):
-        """
-        Enable events for any changes made to a Blueprint node.
-
-        Args:
-            blueprintNodeName: A string name of a valid Blueprint node
-        """
-        if self._getSubscribedBlueprintName() != blueprintNodeName:
-            self.disableBlueprintChangeEvents()
-            self.subscribeToBlueprint = blueprintNodeName
-            self._subscribeToBlueprintChanges()
-
-    def disableBlueprintChangeEvents(self):
-        """
-        Disable events for any changes made to the currently subscribed Blueprint node.
-        Note that this does not need to be called for Blueprints that are deleted.
-        Does nothing if not subscribed to a Blueprint.
-
-        Args:
-            blueprintNodeName: A string name of a valid Blueprint node
-        """
-        if self._getSubscribedBlueprintName() is not None:
-            self._unsubscribeToBlueprintChanges()
-            self.subscribeToBlueprint = None
-
-    def _subscribeToBlueprintChanges(self):
-        """
-        Attempt to subscribe to any changes for the current blueprint.
-        Does nothing if the blueprint doesn't exist or no blueprint node
-        name has been set for subscription.
-        """
-        if self._getSubscribedBlueprintName() is not None:
-            changeEvents = BlueprintChangeEvents.getShared(self.subscribeToBlueprint)
-            if changeEvents:
-                changeEvents.onBlueprintNodeChanged.appendUnique(self.onBlueprintNodeChanged)
-                changeEvents.addSubscriber(self)
-                LOG.debug("Subscribed to blueprint change events for: " + self.subscribeToBlueprint)
-
-
-    def _unsubscribeToBlueprintChanges(self):
-        if self._getSubscribedBlueprintName() is not None:
-            changeEvents = BlueprintChangeEvents.getShared(self.subscribeToBlueprint)
-            if changeEvents:
-                changeEvents.onBlueprintNodeChanged.removeAll(self.onBlueprintNodeChanged)
-                changeEvents.removeSubscriber(self)
-                LOG.debug("Unsubscribed from blueprint change events for: " + self.subscribeToBlueprint)
-
-    def _getSubscribedBlueprintName(self):
-        if not hasattr(self, 'subscribeToBlueprint'):
-            self.subscribeToBlueprint = None
-        return self.subscribeToBlueprint
-
-    def _onBlueprintCreatedInternal(self, node):
-        if self._getSubscribedBlueprintName() == node.nodeName():
-            self._subscribeToBlueprintChanges()
-        self.onBlueprintCreated(node)
-
-    def onBlueprintCreated(self, node):
-        pass
-
-    def onBlueprintNodeChanged(self, node):
-        pass
-
-    def onBlueprintDeleted(self, node):
-        pass
-
 
 
 class RigLifecycleEvents(MayaCallbackEvents):
@@ -412,8 +147,10 @@ class RigLifecycleEvents(MayaCallbackEvents):
     # override
     def _addMayaCallbacks(self):
         # rig nodes are always of type 'transform'
-        addId = api.MDGMessage.addNodeAddedCallback(self._onNodeAdded, 'transform')
-        removeId = api.MDGMessage.addNodeRemovedCallback(self._onNodeRemoved, 'transform')
+        addId = api.MDGMessage.addNodeAddedCallback(
+            self._onNodeAdded, 'transform')
+        removeId = api.MDGMessage.addNodeRemovedCallback(
+            self._onNodeRemoved, 'transform')
         return (addId, removeId)
 
     def _onNodeAdded(self, node, *args):
@@ -429,7 +166,7 @@ class RigLifecycleEvents(MayaCallbackEvents):
         if mfn.typeName() != 'transform':
             # rig nodes must be transforms
             return
-        
+
         fullName = api.MFnDagNode(node).fullPathName()
         cmds.evalDeferred(
             partial(self._onNodeAddedDeferred, fullName), evaluateNext=True)
@@ -487,4 +224,3 @@ class RigEventsMixin(object):
 
     def onRigDeleted(self, node):
         pass
-

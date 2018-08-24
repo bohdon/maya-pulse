@@ -62,7 +62,7 @@ class QuickNameWidget(QtWidgets.QWidget):
         self.setupUi(self)
         self.refreshPreviewLabel()
 
-        if self.blueprintModel.blueprintExists():
+        if True: # TODO: replace with 'is blueprint initialized' or similar
             self.helpText.setText(
                 "Edit the Blueprint Config to modify naming keywords")
             self.helpText.setStyleSheet(

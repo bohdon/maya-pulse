@@ -2,12 +2,13 @@
 import os
 import logging
 import maya.cmds as cmds
+import pymel.core as pm
 from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
 import pymetanode as meta
 
 import pulse
 from pulse.vendor.Qt import QtCore, QtWidgets, QtGui
-from pulse.core import BlueprintLifecycleEvents, BlueprintChangeEvents, BuildStep
+from pulse.core import Blueprint, BuildStep
 
 __all__ = [
     'BlueprintUIModel',
@@ -140,213 +141,123 @@ class BlueprintUIModel(QtCore.QObject):
     The owner and manager of various models representing a Blueprint
     in the scene. All reading and writing for the Blueprint through
     the UI should be done using this model.
-
-    BlueprintUIModels can exist without the Blueprint node in the
-    scene. In this case the model won't be functional, but will
-    automatically update if the same named Blueprint node is created.
-
-    The model maintains a list of subscribers used to properly manage
-    and cleanup Maya callbacks, so any QWidgets should call addSubscriber
-    and removeSubscriber on the model during show and hide events (or similar).
     """
 
-    # shared instances, mapped by blueprint node name
+    # shared instances, mapped by name
     INSTANCES = {}
 
     @classmethod
     def getDefaultModel(cls):
-        return cls.getSharedModel(pulse.BLUEPRINT_NODENAME)
+        return cls.getSharedModel(None)
 
     @classmethod
-    def getSharedModel(cls, blueprintNodeName):
+    def getSharedModel(cls, name):
         """
-        Return a shared model for a specific Blueprint node,
-        creating a new model if necessary. Will always return
-        a valid BlueprintUIModel.
+        Return a shared UI model by name, creating a new
+        model if necessary. Will always return a valid
+        BlueprintUIModel.
         """
-        if blueprintNodeName not in cls.INSTANCES:
-            cls.INSTANCES[blueprintNodeName] = cls(blueprintNodeName)
-        return cls.INSTANCES[blueprintNodeName]
+        if name not in cls.INSTANCES:
+            cls.INSTANCES[name] = cls(name)
+        return cls.INSTANCES[name]
 
     @classmethod
-    def deleteSharedModel(cls, blueprintNodeName):
-        if blueprintNodeName in cls.INSTANCES:
-            del cls.INSTANCES[blueprintNodeName]
-
-    # the blueprint node was created
-    blueprintCreated = QtCore.Signal()
-
-    # the blueprint node was deleted
-    blueprintDeleted = QtCore.Signal()
-
-    # the blueprint node was modified from loading
-    blueprintNodeChanged = QtCore.Signal()
+    def deleteSharedModel(cls, name):
+        if name in cls.INSTANCES:
+            del cls.INSTANCES[name]
 
     # a config property on the blueprint changed
+    # TODO: add more generic blueprint property data model
     rigNameChanged = QtCore.Signal(str)
 
-    def __init__(self, blueprintNodeName, parent=None):
+    def __init__(self, parent=None):
         super(BlueprintUIModel, self).__init__(parent=parent)
 
-        # the blueprint node this model is associated with
-        self.blueprintNodeName = blueprintNodeName
-
         # the blueprint of this model
-        self.blueprint = None
-        # if cmds.objExists(self.blueprintNodeName):
-        #     # load from existing node
-        #     self.blueprint = pulse.Blueprint.fromNode(self.blueprintNodeName)
+        self.blueprint = Blueprint()
 
         # the tree item model and selection model for BuildItems
         self.buildStepTreeModel = BuildStepTreeModel(self.blueprint)
-        self.buildStepTreeModel.dataChanged.connect(self._onItemModelChanged)
-        self.buildStepTreeModel.rowsInserted.connect(self._onItemModelChanged)
-        self.buildStepTreeModel.rowsMoved.connect(self._onItemModelChanged)
-        self.buildStepTreeModel.rowsRemoved.connect(self._onItemModelChanged)
         self.buildStepSelectionModel = BuildStepSelectionModel(
             self.buildStepTreeModel)
 
-        self._modelSubscribers = []
-
-        self._isSaving = False
-
-        lifeEvents = BlueprintLifecycleEvents.getShared()
-        lifeEvents.onBlueprintCreated.appendUnique(self._onBlueprintCreated)
-        lifeEvents.onBlueprintDeleted.appendUnique(self._onBlueprintDeleted)
-
-    def __del__(self):
-        super(BlueprintUIModel, self).__del__()
-        lifeEvents = BlueprintLifecycleEvents.getShared()
-        lifeEvents.onBlueprintCreated.removeAll(self._onBlueprintCreated)
-        lifeEvents.onBlueprintDeleted.removeAll(self._onBlueprintDeleted)
-
-    def _subscribeToBlueprintNodeChanges(self):
-        changeEvents = BlueprintChangeEvents.getShared(self.blueprintNodeName)
-        if changeEvents:
-            changeEvents.onBlueprintNodeChanged.appendUnique(
-                self._onBlueprintNodeChanged)
-            changeEvents.addSubscriber(self)
-            LOG.debug('subscribed to blueprint node changes')
-
-    def _setBlueprint(self, newBlueprint):
-        self.blueprint = newBlueprint
-        self.buildStepTreeModel.setBlueprint(self.blueprint)
-        self.rigNameChanged.emit(self.getRigName())
-
-    def blueprintExists(self):
-        """
-        Return True if the Blueprint node exists for this model.
-        """
-        return self.blueprint is not None
-
-    def addSubscriber(self, subscriber):
-        """
-        Add a subscriber to this model. Will enable Maya callbacks
-        if this is the first subscriber.
-        """
-        if subscriber not in self._modelSubscribers:
-            self._modelSubscribers.append(subscriber)
-        # if any subscribers, subscribe to maya callbacks
-        if self._modelSubscribers:
-            lifeEvents = BlueprintLifecycleEvents.getShared()
-            lifeEvents.addSubscriber(self)
-            changeEvents = BlueprintChangeEvents.getShared(
-                self.blueprintNodeName)
-            if changeEvents:
-                changeEvents.addSubscriber(self)
-
-        return
-        # we may have missed events since last subscribed,
-        # so make sure blueprint exists == node exists
-        # if cmds.objExists(self.blueprintNodeName):
-        #     if self.blueprint is None:
-        #         self._setBlueprint(
-        #             pulse.Blueprint.fromNode(self.blueprintNodeName))
-        # else:
-        #     if self.blueprint is not None:
-        #         self._setBlueprint(None)
-
-    def removeSubscriber(self, subscriber):
-        """
-        Remove a subscriber from this model. Will disable
-        Maya callbacks if no subscribers remain.
-        """
-        if subscriber in self._modelSubscribers:
-            self._modelSubscribers.remove(subscriber)
-        # if no subscribers, unsubscribe from maya callbacks
-        if not self._modelSubscribers:
-            lifeEvents = BlueprintLifecycleEvents.getShared()
-            lifeEvents.removeSubscriber(self)
-            changeEvents = BlueprintChangeEvents.getShared(
-                self.blueprintNodeName)
-            if changeEvents:
-                changeEvents.removeSubscriber(self)
-
-    def _onBlueprintCreated(self, node):
-        return
-        # if node.nodeName() == self.blueprintNodeName:
-        #     self._setBlueprint(
-        #         pulse.Blueprint.fromNode(self.blueprintNodeName))
-        #     self._subscribeToBlueprintNodeChanges()
-        #     self.blueprintCreated.emit()
-
-    def _onBlueprintDeleted(self, node):
-        return
-        # if node.nodeName() == self.blueprintNodeName:
-        #     self._setBlueprint(None)
-        #     # doing some cleanup since we can here
-        #     BlueprintChangeEvents.cleanupSharedInstances()
-        #     self.blueprintDeleted.emit()
-        #     self.buildStepTreeModel.setBlueprint(None)
-
-    def _onBlueprintNodeChanged(self, node):
-        """
-        The blueprint node has changed, reload its data
-        """
-        return
-        # if not self._isSaving:
-        #     selectedPaths = self.buildStepSelectionModel.getSelectedItemPaths()
-        #     self.load()
-        #     self.blueprintNodeChanged.emit()
-        #     self.buildStepSelectionModel.setSelectedItemPaths(selectedPaths)
-
-    def _onItemModelChanged(self):
-        self.save()
+        # attempt to load from the scene
+        self.loadFromFile(suppressWarnings=True)
 
     def isReadOnly(self):
         """
         Return True if the Blueprint is not able to be modified.
-        This will be True if the Blueprint doesn't exist.
         """
-        return self.blueprint is None
+        return False
 
-    def getBlueprint(self):
+    def getBlueprintFilepath(self):
         """
-        Return the Blueprint represented by this model.
+        Return the filepath for the Blueprint being edited
         """
-        return self.blueprint
+        sceneName = pm.sceneName()
+        if not sceneName:
+            return None
+
+        filepath = os.path.splitext(sceneName)[0] + '.yaml'
+        return filepath
+
+    def saveToFile(self, suppressWarnings=False):
+        """
+        Save the Blueprint data to the file associated with this model
+        """
+        filepath = self.getBlueprintFilepath()
+        if not filepath:
+            if not suppressWarnings:
+                LOG.warning("Scene is not saved")
+            return
+
+        success = self.blueprint.saveToFile(filepath)
+        if not success:
+            LOG.error("Failed to save Blueprint to file: {0}".format(filepath))
+
+    def loadFromFile(self, suppressWarnings=False):
+        """
+        Load the Blueprint from the file associated with this model
+        """
+        filepath = self.getBlueprintFilepath()
+        if not filepath:
+            if not suppressWarnings:
+                LOG.warning("Scene is not saved")
+            return
+
+        success = self.blueprint.loadFromFile(filepath)
+        self.emitAllModelResets()
+
+        if not success:
+            LOG.error(
+                "Failed to load Blueprint from file: {0}".format(filepath))
+
+    def emitAllModelResets(self):
+        self.buildStepTreeModel.modelReset.emit()
+        self.rigNameChanged.emit(self.getRigName())
 
     def getRigName(self):
-        # TODO: better solve for blueprint meta data
-        if self.blueprint:
-            return self.blueprint.rigName
+        return self.blueprint.rigName
 
     def setRigName(self, newRigName):
         if not self.isReadOnly():
             self.blueprint.rigName = newRigName
             self.rigNameChanged.emit(self.blueprint.rigName)
-            self.save()
 
-    # TODO: finish creating generalized plug-in commands for undo support
-    # TODO: auto-save blueprint on scene save, auto-load on scene change
-    # TODO: make external blueprint file optional, can still save in scene
+    def initializeBlueprint(self):
+        """
+        Initialize the Blueprint to its default state.
+        """
+        self.blueprint.rootStep.clearChildren()
+        self.blueprint.initializeDefaultActions()
+        self.emitAllModelResets()
 
     def getActionDataForAttrPath(self, attrPath):
         """
-        Return a serialized data for an action represented
+        Return serialized data for an action represented
         by an attribute path.
         """
-        stepPath, attrName = attrPath.split('.')
+        stepPath, _ = attrPath.split('.')
 
         step = self.blueprint.getStepByPath(stepPath)
         if not step.isAction():
@@ -361,7 +272,7 @@ class BlueprintUIModel(QtCore.QObject):
         Replace all values on an action represented by an
         attribute path by deserializng data.
         """
-        stepPath, attrName = attrPath.split('.')
+        stepPath, _ = attrPath.split('.')
 
         step = self.blueprint.getStepByPath(stepPath)
         if not step.isAction():
@@ -392,7 +303,7 @@ class BlueprintUIModel(QtCore.QObject):
         """
         Set the value for an attribute on the Blueprint
         """
-        if self.isReadOnly() or not self.blueprintExists():
+        if self.isReadOnly():
             return
 
         stepPath, attrName = attrPath.split('.')
@@ -406,7 +317,6 @@ class BlueprintUIModel(QtCore.QObject):
             step.actionProxy.setVariantAttrValue(variantIndex, attrName, value)
         else:
             step.actionProxy.setAttrValue(attrName, value)
-            # LOG.info('{0!r}: {1!r}'.format(attrPath, value))
 
         index = self.buildStepTreeModel.indexByStepPath(stepPath)
         self.buildStepTreeModel.dataChanged.emit(index, index, [])
@@ -425,7 +335,7 @@ class BlueprintUIModel(QtCore.QObject):
     def setIsActionAttrVariant(self, attrPath, isVariant):
         """
         """
-        if self.isReadOnly() or not self.blueprintExists():
+        if self.isReadOnly():
             return
 
         stepPath, attrName = attrPath.split('.')
@@ -449,7 +359,7 @@ class BlueprintUIModel(QtCore.QObject):
             The new path (str) of the build step, or None if
             the operation failed.
         """
-        if self.isReadOnly() or not self.blueprintExists():
+        if self.isReadOnly():
             return
 
         step = self.blueprint.getStepByPath(sourcePath)
@@ -468,71 +378,6 @@ class BlueprintUIModel(QtCore.QObject):
         step.setName(newName)
         self.buildStepTreeModel.dataChanged.emit(index, index, [])
         return step.getFullPath()
-
-    def saveToSceneFile(self):
-        """
-        Save the Blueprint data to a file paired with the current scene
-        """
-        if self.blueprint:
-            self.blueprint.saveToSceneFile()
-
-    def loadFromSceneFile(self):
-        blueprint = pulse.Blueprint.fromSceneFile()
-        if blueprint:
-            self._setBlueprint(blueprint)
-            self.buildStepTreeModel.modelReset.emit()
-
-    def save(self):
-        """
-        Save the Blueprint data to the blueprint node
-        """
-        return
-        self._isSaving = True
-        # TODO: save after the deferred call instead of on every call?
-        self.blueprint.saveToNode(self.blueprintNodeName)
-        cmds.evalDeferred(self._saveFinishedDeferred)
-
-    def _saveFinishedDeferred(self):
-        self._isSaving = False
-        # TODO: fire a signal
-
-    def load(self):
-        """
-        Load the Blueprint data from the blueprint node
-        """
-        return
-        LOG.debug('loading...')
-        # TODO: preserve selection by item path
-        if (cmds.objExists(self.blueprintNodeName) and
-                pulse.Blueprint.isBlueprintNode(self.blueprintNodeName)):
-            # node exists and is a valid blueprint
-            if self.blueprint is None:
-                self._setBlueprint(
-                    pulse.Blueprint.fromNode(self.blueprintNodeName))
-            else:
-                self.blueprint.loadFromNode(self.blueprintNodeName)
-                self.buildStepTreeModel.modelReset.emit()
-            # attempt to preserve selection
-            LOG.debug('load finished.')
-
-        else:
-            # attempted to load from non-existent or invalid node
-            self._setBlueprint(None)
-            LOG.debug('load failed.')
-
-    def createNode(self):
-        """
-        Delete the blueprint node of this model
-        """
-        if not cmds.objExists(self.blueprintNodeName):
-            pulse.Blueprint.createNode(self.blueprintNodeName)
-
-    def deleteNode(self):
-        """
-        Delete the blueprint node of this model
-        """
-        if cmds.objExists(self.blueprintNodeName):
-            cmds.delete(self.blueprintNodeName)
 
 
 class BuildStepTreeModel(QtCore.QAbstractItemModel):

@@ -22,17 +22,7 @@ class BlueprintEditorWidget(QtWidgets.QWidget):
 
         self.setupUi(self)
 
-        self.blueprintModel.blueprintCreated.connect(self.refreshState)
-        self.blueprintModel.blueprintDeleted.connect(self.refreshState)
         self.blueprintModel.rigNameChanged.connect(self.onRigNameChanged)
-
-    def showEvent(self, event):
-        super(BlueprintEditorWidget, self).showEvent(event)
-        self.blueprintModel.addSubscriber(self)
-
-    def hideEvent(self, event):
-        super(BlueprintEditorWidget, self).hideEvent(event)
-        self.blueprintModel.removeSubscriber(self)
 
     def setupUi(self, parent):
         layout = QtWidgets.QVBoxLayout(self)
@@ -42,28 +32,25 @@ class BlueprintEditorWidget(QtWidgets.QWidget):
         self.rigNameText.textChanged.connect(self.rigNameTextChanged)
         layout.addWidget(self.rigNameText)
 
+        initBtn = QtWidgets.QPushButton(self)
+        initBtn.setText("Initialize Blueprint")
+        initBtn.clicked.connect(self.initBlueprint)
+        layout.addWidget(initBtn)
+
         debugPrintBtn = QtWidgets.QPushButton(self)
-        debugPrintBtn.setText("Debug Print Serialized")
+        debugPrintBtn.setText("Debug Print YAML")
         debugPrintBtn.clicked.connect(self.debugPrintSerialized)
         layout.addWidget(debugPrintBtn)
 
-        self.deleteBtn = QtWidgets.QPushButton(self)
-        self.deleteBtn.setText("Delete Blueprint")
-        self.deleteBtn.clicked.connect(self.blueprintModel.deleteNode)
-        layout.addWidget(self.deleteBtn)
-
-        spacer = QtWidgets.QSpacerItem(0, 0, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
+        spacer = QtWidgets.QSpacerItem(
+            0, 0, QtWidgets.QSizePolicy.Minimum,
+            QtWidgets.QSizePolicy.Expanding)
         layout.addItem(spacer)
 
         self.refreshState()
 
     def refreshState(self):
         self.rigNameText.setEnabled(not self.blueprintModel.isReadOnly())
-        self.deleteBtn.setEnabled(not self.blueprintModel.isReadOnly())
-        if self.deleteBtn.isEnabled():
-            self.deleteBtn.setStyleSheet(UIColors.asBGColor(UIColors.RED))
-        else:
-            self.deleteBtn.setStyleSheet('')
 
     def onRigNameChanged(self, name):
         self.rigNameText.setText(name)
@@ -71,13 +58,11 @@ class BlueprintEditorWidget(QtWidgets.QWidget):
     def rigNameTextChanged(self):
         self.blueprintModel.setRigName(self.rigNameText.text())
 
-    def debugPrintSerialized(self):
-        import pprint
-        if self.blueprintModel.blueprint:
-            pprint.pprint(self.blueprintModel.blueprint.serialize())
-        else:
-            print('No Blueprint')
+    def initBlueprint(self):
+        self.blueprintModel.initializeBlueprint()
 
+    def debugPrintSerialized(self):
+        print(self.blueprintModel.blueprint.dumpYaml())
 
 
 class BlueprintEditorWindow(PulseWindow):

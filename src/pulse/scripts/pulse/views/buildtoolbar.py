@@ -31,18 +31,14 @@ class BuildToolbarWidget(QtWidgets.QWidget, RigEventsMixin):
         self.setupUi(self)
 
         # connect signals
-        self.blueprintModel.blueprintCreated.connect(self.onStateDirty)
-        self.blueprintModel.blueprintDeleted.connect(self.onStateDirty)
         self.blueprintModel.rigNameChanged.connect(self.rigNameChanged)
 
     def showEvent(self, event):
         super(BuildToolbarWidget, self).showEvent(event)
-        self.blueprintModel.addSubscriber(self)
         self.enableRigEvents()
 
     def hideEvent(self, event):
         super(BuildToolbarWidget, self).hideEvent(event)
-        self.blueprintModel.removeSubscriber(self)
         self.disableRigEvents()
 
     def setupUi(self, parent):
@@ -55,19 +51,14 @@ class BuildToolbarWidget(QtWidgets.QWidget, RigEventsMixin):
         self.saveBtn = QtWidgets.QPushButton(parent)
         self.saveBtn.setText("Save")
         self.saveBtn.setMaximumWidth(80)
-        self.saveBtn.clicked.connect(self.blueprintModel.saveToSceneFile)
+        self.saveBtn.clicked.connect(self.blueprintModel.saveToFile)
         layout.addWidget(self.saveBtn)
 
         self.loadBtn = QtWidgets.QPushButton(parent)
         self.loadBtn.setText("Load")
         self.loadBtn.setMaximumWidth(80)
-        self.loadBtn.clicked.connect(self.blueprintModel.loadFromSceneFile)
+        self.loadBtn.clicked.connect(self.blueprintModel.loadFromFile)
         layout.addWidget(self.loadBtn)
-
-        self.createBtn = QtWidgets.QPushButton(parent)
-        self.createBtn.setText("Create Blueprint")
-        self.createBtn.clicked.connect(self.blueprintModel.createNode)
-        layout.addWidget(self.createBtn)
 
         self.checkBtn = QtWidgets.QPushButton(parent)
         self.checkBtn.setText("Check")
@@ -92,12 +83,10 @@ class BuildToolbarWidget(QtWidgets.QWidget, RigEventsMixin):
         self.rigNameLabel.setText(self.blueprintModel.getRigName())
 
     def cleanState(self):
-        bpExists = self.blueprintModel.blueprint is not None
         self.isStateDirty = False
         self.setEnabled(True)
-        self.createBtn.setVisible(not (bpExists or self.rigExists))
-        self.checkBtn.setVisible(bpExists and not self.rigExists)
-        self.buildBtn.setVisible(bpExists and not self.rigExists)
+        self.checkBtn.setVisible(not self.rigExists)
+        self.buildBtn.setVisible(not self.rigExists)
         self.openBPBtn.setVisible(self.rigExists)
 
     def onStateDirty(self):

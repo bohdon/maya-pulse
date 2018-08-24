@@ -17,7 +17,6 @@ from .. import version
 
 __all__ = [
     'BLUEPRINT_METACLASS',
-    'BLUEPRINT_NODENAME',
     'BLUEPRINT_VERSION',
     'Blueprint',
     'BlueprintBuilder',
@@ -28,7 +27,6 @@ LOG.level = logging.DEBUG
 
 BLUEPRINT_METACLASS = 'pulse_blueprint'
 BLUEPRINT_VERSION = version.__version__
-BLUEPRINT_NODENAME = 'pulse_blueprint'
 
 
 def getDefaultConfigFile():
@@ -88,15 +86,6 @@ class Blueprint(object):
         return blueprint
 
     @staticmethod
-    def fromSceneFile():
-        """
-        Load a Blueprint from a file associated with the current maya scene.
-        """
-        blueprint = Blueprint()
-        blueprint.loadFromSceneFile()
-        return blueprint
-
-    @staticmethod
     def createNode(nodeName):
         """
         Create a new Blueprint and save it to a node by name.
@@ -148,40 +137,50 @@ class Blueprint(object):
         return data
 
     def deserialize(self, data):
+        """
+        Returns:
+            True if the data was deserialized successfully
+        """
         self.version = data.get('version', None)
         self.rigName = data.get('rigName', None)
-        self.rootStep.deserialize(data.get('steps', []))
+        self.rootStep.deserialize(data.get('steps', {'name': 'Root'}))
+        return True
 
-    def loadFromSceneFile(self):
+    def loadFromFile(self, filepath):
         """
+        Returns:
+            True if the load was successful
+        """
+        LOG.debug("Loading blueprint: {0}".format(filepath))
+
+        try:
+            with open(filepath, 'rb') as fp:
+                data = yaml.load(fp, Loader=PulseLoader)
+        except IOError:
+            return False
+
+        return self.deserialize(data)
+
+    def saveToFile(self, filepath):
+        """
+        Returns:
+            True if the save was successful
         """
         sceneName = pm.sceneName()
         if not sceneName:
-            LOG.warning(
-                "Cannot load Blueprint from scene file, "
-                "scene is not saved")
-            return
+            return False
 
-        fileName = os.path.splitext(sceneName)[0] + '.yaml'
-        with open(fileName, 'rb') as fp:
-            data = yaml.load(fp, Loader=PulseLoader)
-        self.deserialize(data)
+        LOG.debug("Saving blueprint: {0}".format(filepath))
 
-    def saveToSceneFile(self):
-        """
-        """
-        sceneName = pm.sceneName()
-        if not sceneName:
-            LOG.warning(
-                "Cannot save Blueprint to scene file, "
-                "scene is not saved")
-            return
-
-        fileName = os.path.splitext(sceneName)[0] + '.yaml'
         data = self.serialize()
-        with open(fileName, 'wb') as fp:
+        with open(filepath, 'wb') as fp:
             yaml.dump(data, fp, default_flow_style=False, Dumper=PulseDumper)
-        print(fileName)
+
+        return True
+
+    def dumpYaml(self):
+        data = self.serialize()
+        return yaml.dump(data, default_flow_style=False, Dumper=PulseDumper)
 
     def saveToNode(self, node, create=False):
         """
