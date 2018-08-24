@@ -337,6 +337,10 @@ class BlueprintUIModel(QtCore.QObject):
             self.rigNameChanged.emit(self.blueprint.rigName)
             self.save()
 
+    # TODO: finish creating generalized plug-in commands for undo support
+    # TODO: auto-save blueprint on scene save, auto-load on scene change
+    # TODO: make external blueprint file optional, can still save in scene
+
     def getActionDataForAttrPath(self, attrPath):
         """
         Return a serialized data for an action represented
@@ -346,7 +350,8 @@ class BlueprintUIModel(QtCore.QObject):
 
         step = self.blueprint.getStepByPath(stepPath)
         if not step.isAction():
-            LOG.error('setActionAttr: {0} is not an action'.format(step))
+            LOG.error(
+                'getActionDataForAttrPath: {0} is not an action'.format(step))
             return
 
         return step.actionProxy.serialize()
@@ -360,7 +365,8 @@ class BlueprintUIModel(QtCore.QObject):
 
         step = self.blueprint.getStepByPath(stepPath)
         if not step.isAction():
-            LOG.error('setActionAttr: {0} is not an action'.format(step))
+            LOG.error(
+                'setActionDataForAttrPath: {0} is not an action'.format(step))
             return
 
         step.actionProxy.deserialize(data)
@@ -373,7 +379,7 @@ class BlueprintUIModel(QtCore.QObject):
 
         step = self.blueprint.getStepByPath(stepPath)
         if not step.isAction():
-            LOG.error('setActionAttr: {0} is not an action'.format(step))
+            LOG.error('getActionAttr: {0} is not an action'.format(step))
             return
 
         if variantIndex >= 0:
@@ -411,7 +417,7 @@ class BlueprintUIModel(QtCore.QObject):
         step = self.blueprint.getStepByPath(stepPath)
         if not step.isAction():
             LOG.error(
-                "setIsActionAttrVariant: {0} is not an action".format(step))
+                "isActionAttrVariant: {0} is not an action".format(step))
             return
 
         return step.actionProxy.isVariantAttr(attrName)
