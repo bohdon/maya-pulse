@@ -174,9 +174,9 @@ class BuildStep(object):
         newStep.deserialize(data)
         return newStep
 
-    def __init__(self, name='BuildStep', actionProxy=None, actionId=None):
+    def __init__(self, name=None, actionProxy=None, actionId=None):
         # the name of this step (unique among siblings)
-        self._name = name
+        self._name = None
         # the parent BuildStep
         self._parent = None
         # list of child BuildSteps
@@ -187,6 +187,9 @@ class BuildStep(object):
         # auto-create a basic BuildActionProxy if an actionId was given
         if actionId:
             self._actionProxy = BuildActionProxy(actionId)
+
+        # set the name, potentially defaulting to the action's name
+        self.setName(name)
 
     @property
     def name(self):
@@ -200,12 +203,23 @@ class BuildStep(object):
         Args:
             newName (str): The new name of the step
         """
-        if self._name != newName:
-            if not newName and self._actionProxy:
+        # ensure a non-null name
+        if not newName:
+            if self._actionProxy:
                 newName = self._actionProxy.getDisplayName()
-            if newName:
-                self._name = newName.strip()
-                self.ensureUniqueName()
+            else:
+                newName = 'BuildStep'
+        # strip name and ensure its unique among siblings
+        if self._name != newName:
+            self._name = newName.strip()
+            self.ensureUniqueName()
+
+    def setNameFromAction(self):
+        """
+        Set the name of the BuildStep to match the action it contains.
+        """
+        if self._actionProxy:
+            self.setName(self._actionProxy.getDisplayName())
 
     def isAction(self):
         return self._actionProxy is not None
@@ -550,6 +564,9 @@ class BuildActionData(object):
         if self._config is None:
             LOG.warning(
                 "Failed to find action config for {0}".format(self._actionId))
+
+    def numAttrs(self):
+        return len(self.config['attrs'])
 
     def getAttrs(self):
         """

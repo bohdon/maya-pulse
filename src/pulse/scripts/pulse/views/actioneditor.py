@@ -186,6 +186,11 @@ class BuildActionProxyForm(QtWidgets.QWidget):
             20, 4, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
         layout.addItem(spacer)
 
+        actionProxy = self.actionProxy()
+        if actionProxy and actionProxy.numAttrs() > 0:
+            self.setupVariantsHeaderUi(parent, layout)
+
+    def setupVariantsHeaderUi(self, parent, layout):
         # variant header
         variantHeader = QtWidgets.QFrame(parent)
         variantHeader.setStyleSheet(

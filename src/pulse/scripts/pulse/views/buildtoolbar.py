@@ -51,7 +51,7 @@ class BuildToolbarWidget(QtWidgets.QWidget, RigEventsMixin):
         self.saveBtn = QtWidgets.QPushButton(parent)
         self.saveBtn.setText("Save")
         self.saveBtn.setMaximumWidth(80)
-        self.saveBtn.clicked.connect(self.blueprintModel.saveToFile)
+        self.saveBtn.clicked.connect(self.saveBlueprintAndFile)
         layout.addWidget(self.saveBtn)
 
         self.loadBtn = QtWidgets.QPushButton(parent)
@@ -74,7 +74,7 @@ class BuildToolbarWidget(QtWidgets.QWidget, RigEventsMixin):
 
         self.openBPBtn = QtWidgets.QPushButton(parent)
         self.openBPBtn.setText("Open Blueprint")
-        self.openBPBtn.clicked.connect(pulse.openFirstRigBlueprint)
+        self.openBPBtn.clicked.connect(self.openBlueprintAndReload)
         layout.addWidget(self.openBPBtn)
 
         self.cleanState()
@@ -105,6 +105,14 @@ class BuildToolbarWidget(QtWidgets.QWidget, RigEventsMixin):
         self.rigExists = len(pulse.getAllRigs()) > 1
         self.onStateDirty()
 
+    def saveBlueprintAndFile(self):
+        pm.saveFile()
+        self.blueprintModel.saveToFile()
+
+    def openBlueprintAndReload(self):
+        pulse.openFirstRigBlueprint()
+        self.blueprintModel.loadFromFile()
+
     def runCheck(self):
         if self.blueprintModel.blueprint is not None:
             pass
@@ -113,7 +121,10 @@ class BuildToolbarWidget(QtWidgets.QWidget, RigEventsMixin):
         if self.blueprintModel.blueprint is not None:
             # self.model.reloadBlueprint()
             blueprintFile = str(pm.sceneName())
-            builder = pulse.BlueprintBuilder(self.blueprintModel.blueprint, blueprintFile=blueprintFile, debug=True)
+            builder = pulse.BlueprintBuilder(
+                self.blueprintModel.blueprint,
+                blueprintFile=blueprintFile,
+                debug=True)
             builder.start()
             # self.model.reloadBlueprint()
 

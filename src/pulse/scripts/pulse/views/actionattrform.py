@@ -254,7 +254,7 @@ class DefaultAttrForm(ActionAttrForm):
         self.textEdit.setStyleSheet('font: 8pt "Consolas";')
         if self._isValueTypeValid(self.attrValue):
             self._setFormValue(self.attrValue)
-        self.textEdit.textChanged.connect(self._valueChanged)
+        self.textEdit.editingFinished.connect(self._valueChanged)
 
         self.setDefaultFormWidget(self.textEdit)
 
@@ -382,7 +382,7 @@ class StringAttrForm(ActionAttrForm):
         self.lineEdit.setMinimumHeight(self.LABEL_HEIGHT)
         if self._isValueTypeValid(self.attrValue):
             self._setFormValue(self.attrValue)
-        self.lineEdit.textChanged.connect(self._valueChanged)
+        self.lineEdit.editingFinished.connect(self._valueChanged)
 
         self.setDefaultFormWidget(self.lineEdit)
 
