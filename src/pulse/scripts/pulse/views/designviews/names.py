@@ -79,7 +79,8 @@ class QuickNameWidget(QtWidgets.QWidget):
                 style.UIColors.asFGColor(style.UIColors.ERROR))
 
     def _getConfig(self):
-        if self.blueprintModel.blueprintExists():
+        # if self.blueprintModel.blueprintExists():
+        if True:
             config = self.blueprintModel.blueprint.getConfig()
         else:
             config = pulse.core.blueprints.loadDefaultConfig()

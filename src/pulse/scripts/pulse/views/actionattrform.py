@@ -1,8 +1,10 @@
 
 import pymel.core as pm
+import maya.cmds as cmds
 import pymetanode as meta
 
 import pulse.names
+from pulse.core import serializeAttrValue
 from pulse.vendor.Qt import QtCore, QtWidgets
 from . import utils as viewutils
 
@@ -34,37 +36,72 @@ class ActionAttrForm(QtWidgets.QWidget):
     LABEL_HEIGHT = 20
     FORM_WIDTH_SMALL = 80
 
-    # valueChanged(newValue, isValueValid)
-    valueChanged = QtCore.Signal(object, bool)
-
     @staticmethod
-    def createForm(attr, attrValue, parent=None):
+    def createForm(index, attr, variantIndex=-1, parent=None):
         """
         Create a new ActionAttrForm of the appropriate
         type based on a BuildAction attribute.
 
         Args:
+            index: A QModelIndex pointing to the BuildStep being edited
             attr: A dict representing the config of a BuildAction attribute
-            attrValue: The current value of the attribute
         """
         attrType = attr['type']
         if attrType in ActionAttrForm.TYPEMAP:
-            return ActionAttrForm.TYPEMAP[attrType](attr, attrValue, parent=parent)
+            return ActionAttrForm.TYPEMAP[attrType](
+                index, attr, variantIndex, parent=parent)
         # fallback to the default widget
-        return DefaultAttrForm(attr, attrValue)
+        return DefaultAttrForm(index, attr, variantIndex)
 
-    def __init__(self, attr, attrValue, parent=None):
+    def __init__(self, index, attr, variantIndex, parent=None):
         super(ActionAttrForm, self).__init__(parent=parent)
+        self.index = QtCore.QPersistentModelIndex(index)
         # the config data of the attribute being edited
         self.attr = attr
-        # the current value of the attribute
-        self.attrValue = attrValue
+        self.variantIndex = variantIndex
+        # the cached value of the attribute
+        self.attrValue = self.getAttrValue()
         # build the ui
         self.setupUi(self)
         # update valid state, check both type and value here
         # because the current value may be of an invalid type
-        self.isValueValid = self._isValueTypeValid(self.attrValue) and self._isValueValid(self.attrValue)
+        self.isValueValid = self._isValueTypeValid(
+            self.attrValue) and self._isValueValid(self.attrValue)
         self._setUiValidState(self.isValueValid)
+        # listen to model change events
+        self.index.model().dataChanged.connect(self.onModelDataChanged)
+
+    def onModelDataChanged(self):
+        """
+        """
+        # TODO: only update if the change affected this attribute
+        if not self.index.isValid():
+            self.hide()
+            return
+
+        actionProxy = self.getActionProxy()
+        if not actionProxy:
+            self.hide()
+            return
+
+        # update cached value and form
+        self.attrValue = self.getAttrValue()
+        self._setFormValue(self.attrValue)
+
+    def isVariant(self):
+        return self.variantIndex >= 0
+
+    def getAttrValue(self):
+        actionProxy = self.getActionProxy()
+        if not actionProxy:
+            return
+
+        if self.isVariant():
+            return actionProxy.getVariantAttrValueOrDefault(
+                self.variantIndex, self.attr['name'])
+        else:
+            return actionProxy.getAttrValueOrDefault(
+                self.attr['name'])
 
     def setAttrValue(self, newValue):
         """
@@ -79,15 +116,36 @@ class ActionAttrForm(QtWidgets.QWidget):
             self._setFormValue(newValue)
             self.isValueValid = self._isValueValid(newValue)
             self._setUiValidState(self.isValueValid)
-            return True
-        else:
-            return False
+
+            # TODO: clean up relationship between preview value and actual value
+            attrPath = self.getAttrPath()
+            if not attrPath:
+                return
+
+            strValue = serializeAttrValue(newValue)
+            cmds.pulseSetActionAttr(attrPath, strValue, v=self.variantIndex)
 
     def setupUi(self, parent):
         """
         Build the appropriate ui for the attribute
         """
         raise NotImplementedError
+
+    def getStep(self):
+        if self.index.isValid():
+            return self.index.model().stepForIndex(self.index)
+
+    def getActionProxy(self):
+        step = self.getStep()
+        if step and step.isAction():
+            return step.actionProxy
+
+    def getAttrPath(self):
+        step = self.getStep()
+        if not step:
+            return
+
+        return '{0}.{1}'.format(step.getFullPath(), self.attr['name'])
 
     def _setFormValue(self, attrValue):
         """
@@ -136,7 +194,7 @@ class ActionAttrForm(QtWidgets.QWidget):
             self.attrValue = self._getFormValue()
             self.isValueValid = self._isValueValid(self.attrValue)
             self._setUiValidState(self.isValueValid)
-            self.valueChanged.emit(self.attrValue, self.isValueValid)
+            self.setAttrValue(self.attrValue)
         else:
             self._setUiValidState(False)
 
@@ -145,7 +203,8 @@ class ActionAttrForm(QtWidgets.QWidget):
             if isValid:
                 self.frame.setStyleSheet('')
             else:
-                self.frame.setStyleSheet('.QFrame{ background-color: rgb(255, 0, 0, 35); }')
+                self.frame.setStyleSheet(
+                    '.QFrame{ background-color: rgb(255, 0, 0, 35); }')
 
     def setupDefaultFormUi(self, parent):
         """
@@ -163,18 +222,27 @@ class ActionAttrForm(QtWidgets.QWidget):
         # margin that will give us some visible area of
         # the frame that can change color based on valid state
         self.formLayout.setContentsMargins(2, 2, 2, 2)
-        self.formLayout.setFieldGrowthPolicy(QtWidgets.QFormLayout.ExpandingFieldsGrow)
-        self.formLayout.setLabelAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignTop|QtCore.Qt.AlignTrailing)
+        self.formLayout.setFieldGrowthPolicy(
+            QtWidgets.QFormLayout.ExpandingFieldsGrow)
+        self.formLayout.setLabelAlignment(
+            QtCore.Qt.AlignRight |
+            QtCore.Qt.AlignTop |
+            QtCore.Qt.AlignTrailing)
         self.formLayout.setHorizontalSpacing(10)
 
         # attribute name
         self.label = QtWidgets.QLabel(self.frame)
-        self.label.setMinimumSize(QtCore.QSize(self.LABEL_WIDTH, self.LABEL_HEIGHT))
-        self.label.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignTrailing|QtCore.Qt.AlignTop)
+        self.label.setMinimumSize(QtCore.QSize(
+            self.LABEL_WIDTH, self.LABEL_HEIGHT))
+        self.label.setAlignment(
+            QtCore.Qt.AlignRight |
+            QtCore.Qt.AlignTrailing |
+            QtCore.Qt.AlignTop)
         # add some space above the label so it lines up
         self.label.setMargin(2)
         self.label.setText(pulse.names.toTitle(self.attr['name']))
-        self.formLayout.setWidget(0, QtWidgets.QFormLayout.LabelRole, self.label)
+        self.formLayout.setWidget(
+            0, QtWidgets.QFormLayout.LabelRole, self.label)
 
     def setDefaultFormWidget(self, widget):
         """
@@ -191,31 +259,26 @@ class ActionAttrForm(QtWidgets.QWidget):
         self.formLayout.setLayout(0, QtWidgets.QFormLayout.FieldRole, layout)
 
 
-
 class BatchAttrForm(QtWidgets.QWidget):
     """
     The base class for an attribute form designed to
-    bulk edit all variants of an attribute on a batch action.
+    bulk edit all variants of an attribute on an action proxy.
     This appears where the default attr form usually appears
     when the attribute is marked as variant.
-
-    BatchAttrForms should only exist if they provide an
-    easy way to bulk set different values for all variants,
-    as its pointless to provide functionality for setting all
-    variants to the same value (would make the attribute constant).
     """
 
     TYPEMAP = {}
 
-    valuesChanged = QtCore.Signal()
-    variantCountChanged = QtCore.Signal()
+    LABEL_WIDTH = 150
+    LABEL_HEIGHT = 20
+    FORM_WIDTH_SMALL = 80
 
     @staticmethod
     def doesFormExist(attr):
         return attr['type'] in BatchAttrForm.TYPEMAP
 
     @staticmethod
-    def createForm(action, attr, parent=None):
+    def createForm(index, attr, parent=None):
         """
         Create a new ActionAttrForm of the appropriate
         type based on a BuildAction attribute.
@@ -225,18 +288,94 @@ class BatchAttrForm(QtWidgets.QWidget):
         """
         attrType = attr['type']
         if attrType in BatchAttrForm.TYPEMAP:
-            return BatchAttrForm.TYPEMAP[attrType](action, attr, parent=parent)
+            return BatchAttrForm.TYPEMAP[attrType](index, attr, parent=parent)
 
-    def __init__(self, batchAction, attr, parent=None):
+    def __init__(self, index, attr, parent=None):
         super(BatchAttrForm, self).__init__(parent=parent)
-        self.batchAction = batchAction
+        self.index = QtCore.QPersistentModelIndex(index)
         self.attr = attr
         self.setupUi(self)
 
     def setupUi(self, parent):
         raise NotImplementedError
 
+    # TODO: share this functionality with the main attr form
+    def setupDefaultFormUi(self, parent):
+        """
+        Optional UI setup that builds a standardized layout.
+        Includes a form layout and a label with the attributes name.
+        Should be called at the start of setupUi if desired.
+        """
+        layout = QtWidgets.QVBoxLayout(parent)
+        layout.setContentsMargins(0, 0, 0, 0)
 
+        self.frame = QtWidgets.QFrame(parent)
+        layout.addWidget(self.frame)
+
+        self.formLayout = QtWidgets.QFormLayout(self.frame)
+        # margin that will give us some visible area of
+        # the frame that can change color based on valid state
+        self.formLayout.setContentsMargins(2, 2, 2, 2)
+        self.formLayout.setFieldGrowthPolicy(
+            QtWidgets.QFormLayout.ExpandingFieldsGrow)
+        self.formLayout.setLabelAlignment(
+            QtCore.Qt.AlignRight |
+            QtCore.Qt.AlignTop |
+            QtCore.Qt.AlignTrailing)
+        self.formLayout.setHorizontalSpacing(10)
+
+        # attribute name
+        self.label = QtWidgets.QLabel(self.frame)
+        self.label.setMinimumSize(QtCore.QSize(
+            self.LABEL_WIDTH, self.LABEL_HEIGHT))
+        self.label.setAlignment(
+            QtCore.Qt.AlignRight |
+            QtCore.Qt.AlignTrailing |
+            QtCore.Qt.AlignTop)
+        # add some space above the label so it lines up
+        self.label.setMargin(2)
+        self.label.setText(pulse.names.toTitle(self.attr['name']))
+        self.formLayout.setWidget(
+            0, QtWidgets.QFormLayout.LabelRole, self.label)
+
+    def setDefaultFormWidget(self, widget):
+        """
+        Set the widget to be used as the field in the default form layout
+        Requires `setupDefaultFormUi` to be used.
+        """
+        self.formLayout.setWidget(0, QtWidgets.QFormLayout.FieldRole, widget)
+
+    def setDefaultFormLayout(self, layout):
+        """
+        Set the layout to be used as the field in the default form layout.
+        Requires `setupDefaultFormUi` to be used.
+        """
+        self.formLayout.setLayout(0, QtWidgets.QFormLayout.FieldRole, layout)
+
+    def getStep(self):
+        if self.index.isValid():
+            return self.index.model().stepForIndex(self.index)
+
+    def getActionProxy(self):
+        step = self.getStep()
+        if step and step.isAction():
+            return step.actionProxy
+
+    def getAttrPath(self):
+        step = self.getStep()
+        if not step:
+            return
+
+        return '{0}.{1}'.format(step.getFullPath(), self.attr['name'])
+
+    def setVariantValues(self, values):
+        attrPath = self.getAttrPath()
+        if not attrPath:
+            return
+
+        for i, value in enumerate(values):
+            strValue = serializeAttrValue(value)
+            cmds.pulseSetActionAttr(attrPath, strValue, v=i)
 
 
 class DefaultAttrForm(ActionAttrForm):
@@ -245,6 +384,7 @@ class DefaultAttrForm(ActionAttrForm):
     by leveraging pymetanode serialization. Provides a text field
     where values can typed representing serialized string data.
     """
+
     def setupUi(self, parent):
         self.setupDefaultFormUi(parent)
 
@@ -275,7 +415,6 @@ class DefaultAttrForm(ActionAttrForm):
             return False
 
 
-
 class BoolAttrForm(ActionAttrForm):
     """
     A simple checkbox attribute form
@@ -300,6 +439,7 @@ class BoolAttrForm(ActionAttrForm):
 
     def _isValueTypeValid(self, attrValue):
         return attrValue is True or attrValue is False
+
 
 ActionAttrForm.TYPEMAP['bool'] = BoolAttrForm
 
@@ -437,6 +577,7 @@ class NodeAttrForm(ActionAttrForm):
     """
     A special form that allows picking nodes from the scene.
     """
+
     def setupUi(self, parent):
         self.setupDefaultFormUi(parent)
 
@@ -445,9 +586,11 @@ class NodeAttrForm(ActionAttrForm):
 
         self.listWidget = QtWidgets.QListWidget(parent)
         self.listWidget.setFixedHeight(20)
-        self.listWidget.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
+        self.listWidget.setSizePolicy(
+            QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
         self.listWidget.setSortingEnabled(True)
-        self.listWidget.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.ExtendedSelection)
+        self.listWidget.setSelectionMode(
+            QtWidgets.QAbstractItemView.SelectionMode.ExtendedSelection)
         hlayout.addWidget(self.listWidget)
 
         self.pickButton = QtWidgets.QPushButton(parent)
@@ -466,7 +609,8 @@ class NodeAttrForm(ActionAttrForm):
         while self.listWidget.takeItem(0):
             pass
         if attrValue:
-            self.listWidget.addItem(QtWidgets.QListWidgetItem(attrValue.nodeName()))
+            self.listWidget.addItem(
+                QtWidgets.QListWidgetItem(attrValue.nodeName()))
 
     def _getFormValue(self):
         return self.attrValue
@@ -478,10 +622,9 @@ class NodeAttrForm(ActionAttrForm):
         sel = pm.selected()
         if sel:
             self.setAttrValue(sel[0])
-            self.valueChanged.emit(self.attrValue, self.isValueValid)
         else:
             self.setAttrValue(None)
-            self.valueChanged.emit(self.attrValue, self.isValueValid)
+
 
 ActionAttrForm.TYPEMAP['node'] = NodeAttrForm
 
@@ -501,8 +644,10 @@ class NodeBatchAttrForm(BatchAttrForm):
     """
 
     def setupUi(self, parent):
+        self.setupDefaultFormUi(parent)
+
         hlayout = QtWidgets.QHBoxLayout(parent)
-        hlayout.setContentsMargins(2, 2, 2, 2)
+        hlayout.setContentsMargins(0, 0, 0, 0)
 
         pickButton = QtWidgets.QPushButton(parent)
         pickButton.setIcon(viewutils.getIcon("select.png"))
@@ -511,8 +656,11 @@ class NodeBatchAttrForm(BatchAttrForm):
         hlayout.addWidget(pickButton)
         hlayout.setAlignment(pickButton, QtCore.Qt.AlignTop)
         # body spacer
-        spacer = QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
+        spacer = QtWidgets.QSpacerItem(
+            20, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
         hlayout.addItem(spacer)
+
+        self.setDefaultFormLayout(hlayout)
 
     def setFromSelection(self):
         """
@@ -520,18 +668,11 @@ class NodeBatchAttrForm(BatchAttrForm):
         based on the selected list of nodes. Increases the variant
         list size if necessary to match the selection.
         """
-        sel = pm.selected()
-        # resize variant list to match selection
-        didCountChange = False
-        while len(self.batchAction.variantValues) < len(sel):
-            self.batchAction.addVariant()
-            didCountChange = True
+        actionProxy = self.getActionProxy()
+        if not actionProxy:
+            return
 
-        for i, node in enumerate(sel):
-            self.batchAction.variantValues[i][self.attr['name']] = sel[i]
-        self.valuesChanged.emit()
-        if didCountChange:
-            self.variantCountChanged.emit()
+        self.setVariantValues(pm.selected())
 
 
 BatchAttrForm.TYPEMAP['node'] = NodeBatchAttrForm
@@ -541,6 +682,7 @@ class NodeListAttrForm(ActionAttrForm):
     """
     A special form that allows picking nodes from the scene.
     """
+
     def setupUi(self, parent):
         self.setupDefaultFormUi(parent)
 
@@ -549,8 +691,10 @@ class NodeListAttrForm(ActionAttrForm):
 
         self.listWidget = QtWidgets.QListWidget(parent)
         self.listWidget.setSortingEnabled(True)
-        self.listWidget.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
-        self.listWidget.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.ExtendedSelection)
+        self.listWidget.setSizePolicy(
+            QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
+        self.listWidget.setSelectionMode(
+            QtWidgets.QAbstractItemView.SelectionMode.ExtendedSelection)
         hlayout.addWidget(self.listWidget)
 
         self.pickButton = QtWidgets.QPushButton(parent)
@@ -584,6 +728,6 @@ class NodeListAttrForm(ActionAttrForm):
 
     def setFromSelection(self):
         self.setAttrValue(pm.selected())
-        self.valueChanged.emit(self.attrValue, self.isValueValid)
+
 
 ActionAttrForm.TYPEMAP['nodelist'] = NodeListAttrForm

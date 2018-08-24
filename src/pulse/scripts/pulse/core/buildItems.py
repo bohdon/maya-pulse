@@ -833,6 +833,12 @@ class BuildActionProxy(BuildActionData):
         for attrName in attrNames:
             self.removeVariantAttr(attrName)
 
+    def numVariants(self):
+        """
+        Return how many variants exist on this action proxy
+        """
+        return len(self._variantValues)
+
     def addVariant(self):
         """
         Add a variant of attribute values. Does nothing if there
@@ -876,10 +882,10 @@ class BuildActionProxy(BuildActionData):
         return self._variantValues[index][attrName]
 
     def getVariantAttrValueOrNone(self, index, attrName):
-        if attrName in self._variantValues[index]:
-            return self._variantValues[index][attrName]
-        else:
-            return None
+        if index >= 0 and index < len(self._variantValues):
+            if attrName in self._variantValues[index]:
+                return self._variantValues[index][attrName]
+        return None
 
     def getVariantAttrValueOrDefault(self, index, attrName):
         if attrName in self._variantValues[index]:
@@ -891,17 +897,13 @@ class BuildActionProxy(BuildActionData):
         if value is None:
             self.delVariantAttrValue(index, attrName)
         else:
+            while self.numVariants() <= index:
+                self.addVariant()
             self._variantValues[index][attrName] = value
 
     def delVariantAttrValue(self, index, attrName):
         if attrName in self._variantValues[index]:
             del self._variantValues[index][attrName]
-
-    def numVariants(self):
-        """
-        Return how many variants exist on this action proxy
-        """
-        return len(self._variantValues)
 
     def serialize(self):
         data = super(BuildActionProxy, self).serialize()
