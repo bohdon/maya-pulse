@@ -1,7 +1,10 @@
 
+from functools import partial
 
 import pulse
 from pulse.vendor.Qt import QtCore, QtWidgets
+from pulse.prefs import optionVarProperty
+
 from .core import PulseWindow
 from .blueprinteditor import BlueprintEditorWidget
 from .buildtoolbar import BuildToolbarWidget
@@ -22,6 +25,9 @@ class PulseEditorWindow(PulseWindow):
 
     OBJECT_NAME = 'pulseEditorWindow'
 
+    mainTabIndex = optionVarProperty('pulse.editor.mainTabIndex', 0)
+    actionsTabIndex = optionVarProperty('pulse.editor.actionsTabIndex', 0)
+
     def __init__(self, parent=None):
         super(PulseEditorWindow, self).__init__(parent=parent)
 
@@ -30,6 +36,15 @@ class PulseEditorWindow(PulseWindow):
         pulse.loadBuiltinActions()
 
         self.setupUi(self)
+
+        self.mainTabWidget.setCurrentIndex(self.mainTabIndex)
+        self.actionsTabWidget.setCurrentIndex(self.actionsTabIndex)
+
+        # connect signals
+        self.mainTabWidget.currentChanged.connect(
+            partial(setattr, self, 'mainTabIndex'))
+        self.actionsTabWidget.currentChanged.connect(
+            partial(setattr, self, 'actionsTabIndex'))
 
     def setupUi(self, parent):
         widget = QtWidgets.QWidget(parent)
@@ -80,5 +95,7 @@ class PulseEditorWindow(PulseWindow):
 
         tabWidget.addTab(actionsTab, "Actions")
 
-
         layout.addWidget(tabWidget)
+
+        self.mainTabWidget = tabWidget
+        self.actionsTabWidget = actionsTabWidget
