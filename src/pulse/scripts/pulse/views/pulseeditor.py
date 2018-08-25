@@ -28,6 +28,12 @@ class PulseEditorWindow(PulseWindow):
     mainTabIndex = optionVarProperty('pulse.editor.mainTabIndex', 0)
     actionsTabIndex = optionVarProperty('pulse.editor.actionsTabIndex', 0)
 
+    def setMainTabIndex(self, index):
+        self.mainTabIndex = index
+
+    def setActionsTabIndex(self, index):
+        self.actionsTabIndex = index
+
     def __init__(self, parent=None):
         super(PulseEditorWindow, self).__init__(parent=parent)
 
@@ -41,10 +47,8 @@ class PulseEditorWindow(PulseWindow):
         self.actionsTabWidget.setCurrentIndex(self.actionsTabIndex)
 
         # connect signals
-        self.mainTabWidget.currentChanged.connect(
-            partial(setattr, self, 'mainTabIndex'))
-        self.actionsTabWidget.currentChanged.connect(
-            partial(setattr, self, 'actionsTabIndex'))
+        self.mainTabWidget.currentChanged.connect(self.setMainTabIndex)
+        self.actionsTabWidget.currentChanged.connect(self.setActionsTabIndex)
 
     def setupUi(self, parent):
         widget = QtWidgets.QWidget(parent)
