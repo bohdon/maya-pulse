@@ -13,6 +13,7 @@ __all__ = [
     'BatchAttrForm',
     'BoolAttrForm',
     'DefaultAttrForm',
+    'DefaultBatchAttrForm',
     'FloatAttrForm',
     'IntAttrForm',
     'NodeAttrForm',
@@ -32,7 +33,7 @@ class ActionAttrForm(QtWidgets.QWidget):
 
     TYPEMAP = {}
 
-    LABEL_WIDTH = 150
+    LABEL_WIDTH = 140
     LABEL_HEIGHT = 20
     FORM_WIDTH_SMALL = 80
 
@@ -50,8 +51,15 @@ class ActionAttrForm(QtWidgets.QWidget):
         if attrType in ActionAttrForm.TYPEMAP:
             return ActionAttrForm.TYPEMAP[attrType](
                 index, attr, variantIndex, parent=parent)
-        # fallback to the default widget
-        return DefaultAttrForm(index, attr, variantIndex)
+
+        # type not found, fallback to None type
+        if None in ActionAttrForm.TYPEMAP:
+            return ActionAttrForm.TYPEMAP[None](
+                index, attr, variantIndex, parent=parent)
+
+    @classmethod
+    def addFormType(cls, typeName, formClass):
+        cls.TYPEMAP[typeName] = formClass
 
     def __init__(self, index, attr, variantIndex, parent=None):
         super(ActionAttrForm, self).__init__(parent=parent)
@@ -269,7 +277,7 @@ class BatchAttrForm(QtWidgets.QWidget):
 
     TYPEMAP = {}
 
-    LABEL_WIDTH = 150
+    LABEL_WIDTH = 140
     LABEL_HEIGHT = 20
     FORM_WIDTH_SMALL = 80
 
@@ -289,6 +297,13 @@ class BatchAttrForm(QtWidgets.QWidget):
         attrType = attr['type']
         if attrType in BatchAttrForm.TYPEMAP:
             return BatchAttrForm.TYPEMAP[attrType](index, attr, parent=parent)
+        # type not found, fallback to None type
+        if None in BatchAttrForm.TYPEMAP:
+            return BatchAttrForm.TYPEMAP[None](index, attr, parent=parent)
+
+    @classmethod
+    def addFormType(cls, typeName, formClass):
+        cls.TYPEMAP[typeName] = formClass
 
     def __init__(self, index, attr, parent=None):
         super(BatchAttrForm, self).__init__(parent=parent)
@@ -415,6 +430,9 @@ class DefaultAttrForm(ActionAttrForm):
             return False
 
 
+ActionAttrForm.addFormType(None, DefaultAttrForm)
+
+
 class BoolAttrForm(ActionAttrForm):
     """
     A simple checkbox attribute form
@@ -441,7 +459,7 @@ class BoolAttrForm(ActionAttrForm):
         return attrValue is True or attrValue is False
 
 
-ActionAttrForm.TYPEMAP['bool'] = BoolAttrForm
+ActionAttrForm.addFormType('bool', BoolAttrForm)
 
 
 class IntAttrForm(ActionAttrForm):
@@ -473,7 +491,7 @@ class IntAttrForm(ActionAttrForm):
         return isinstance(attrValue, (int, long))
 
 
-ActionAttrForm.TYPEMAP['int'] = IntAttrForm
+ActionAttrForm.addFormType('int', IntAttrForm)
 
 
 class FloatAttrForm(ActionAttrForm):
@@ -507,7 +525,7 @@ class FloatAttrForm(ActionAttrForm):
         return isinstance(attrValue, float)
 
 
-ActionAttrForm.TYPEMAP['float'] = FloatAttrForm
+ActionAttrForm.addFormType('float', FloatAttrForm)
 
 
 class StringAttrForm(ActionAttrForm):
@@ -536,7 +554,7 @@ class StringAttrForm(ActionAttrForm):
         return isinstance(attrValue, basestring)
 
 
-ActionAttrForm.TYPEMAP['string'] = StringAttrForm
+ActionAttrForm.addFormType('string', StringAttrForm)
 
 
 class OptionAttrForm(ActionAttrForm):
@@ -570,7 +588,7 @@ class OptionAttrForm(ActionAttrForm):
         return attrValue >= 0 and attrValue < len(self.attr['options'])
 
 
-ActionAttrForm.TYPEMAP['option'] = OptionAttrForm
+ActionAttrForm.addFormType('option', OptionAttrForm)
 
 
 class NodeAttrForm(ActionAttrForm):
@@ -626,56 +644,7 @@ class NodeAttrForm(ActionAttrForm):
             self.setAttrValue(None)
 
 
-ActionAttrForm.TYPEMAP['node'] = NodeAttrForm
-
-
-class NodeBatchAttrForm(BatchAttrForm):
-    """
-    A batch attr editor for node values.
-
-    Provides a button for setting the value of
-    all variants at once based on the scene selection.
-    Each variant value will be set to a single node,
-    and the order of the selection matters.
-
-    The number of variants in the batch action is
-    automatically adjusted to match the number of
-    selected nodes.
-    """
-
-    def setupUi(self, parent):
-        self.setupDefaultFormUi(parent)
-
-        hlayout = QtWidgets.QHBoxLayout(parent)
-        hlayout.setContentsMargins(0, 0, 0, 0)
-
-        pickButton = QtWidgets.QPushButton(parent)
-        pickButton.setIcon(viewutils.getIcon("select.png"))
-        pickButton.setFixedSize(QtCore.QSize(20, 20))
-        pickButton.clicked.connect(self.setFromSelection)
-        hlayout.addWidget(pickButton)
-        hlayout.setAlignment(pickButton, QtCore.Qt.AlignTop)
-        # body spacer
-        spacer = QtWidgets.QSpacerItem(
-            20, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
-        hlayout.addItem(spacer)
-
-        self.setDefaultFormLayout(hlayout)
-
-    def setFromSelection(self):
-        """
-        Set the node value for this attribute for each variant
-        based on the selected list of nodes. Increases the variant
-        list size if necessary to match the selection.
-        """
-        actionProxy = self.getActionProxy()
-        if not actionProxy:
-            return
-
-        self.setVariantValues(pm.selected())
-
-
-BatchAttrForm.TYPEMAP['node'] = NodeBatchAttrForm
+ActionAttrForm.addFormType('node', NodeAttrForm)
 
 
 class NodeListAttrForm(ActionAttrForm):
@@ -730,4 +699,62 @@ class NodeListAttrForm(ActionAttrForm):
         self.setAttrValue(pm.selected())
 
 
-ActionAttrForm.TYPEMAP['nodelist'] = NodeListAttrForm
+ActionAttrForm.addFormType('nodelist', NodeListAttrForm)
+
+
+class NodeBatchAttrForm(BatchAttrForm):
+    """
+    A batch attr editor for node values.
+
+    Provides a button for setting the value of
+    all variants at once based on the scene selection.
+    Each variant value will be set to a single node,
+    and the order of the selection matters.
+
+    The number of variants in the batch action is
+    automatically adjusted to match the number of
+    selected nodes.
+    """
+
+    def setupUi(self, parent):
+        self.setupDefaultFormUi(parent)
+
+        hlayout = QtWidgets.QHBoxLayout(parent)
+        hlayout.setContentsMargins(0, 0, 0, 0)
+
+        pickButton = QtWidgets.QPushButton(parent)
+        pickButton.setIcon(viewutils.getIcon("select.png"))
+        pickButton.setFixedSize(QtCore.QSize(20, 20))
+        pickButton.clicked.connect(self.setFromSelection)
+        hlayout.addWidget(pickButton)
+        hlayout.setAlignment(pickButton, QtCore.Qt.AlignTop)
+        # body spacer
+        spacer = QtWidgets.QSpacerItem(
+            20, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
+        hlayout.addItem(spacer)
+
+        self.setDefaultFormLayout(hlayout)
+
+    def setFromSelection(self):
+        """
+        Set the node value for this attribute for each variant
+        based on the selected list of nodes. Increases the variant
+        list size if necessary to match the selection.
+        """
+        actionProxy = self.getActionProxy()
+        if not actionProxy:
+            return
+
+        self.setVariantValues(pm.selected())
+
+
+BatchAttrForm.addFormType('node', NodeBatchAttrForm)
+
+
+class DefaultBatchAttrForm(BatchAttrForm):
+
+    def setupUi(self, parent):
+        self.setupDefaultFormUi(parent)
+
+
+BatchAttrForm.addFormType(None, DefaultBatchAttrForm)
