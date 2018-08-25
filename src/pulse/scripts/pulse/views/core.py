@@ -3,12 +3,14 @@ import os
 import logging
 import maya.cmds as cmds
 import pymel.core as pm
+import maya.OpenMayaUI as mui
 from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
 import pymetanode as meta
 
 import pulse
 from pulse.vendor.Qt import QtCore, QtWidgets, QtGui
 from pulse.core import Blueprint, BuildStep
+from .utils import dpiScale
 
 __all__ = [
     'BlueprintUIModel',
@@ -71,7 +73,7 @@ class CollapsibleFrame(QtWidgets.QFrame):
         return self._isCollapsed
 
 
-class PulseWindow(MayaQWidgetDockableMixin, QtWidgets.QMainWindow):
+class PulseWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
     """
     A base class for any standalone window in the Pulse UI. Integrates
     the Maya builtin dockable mixin, and prevents multiple instances
@@ -79,46 +81,93 @@ class PulseWindow(MayaQWidgetDockableMixin, QtWidgets.QMainWindow):
     """
 
     OBJECT_NAME = None
+    PREFERRED_SIZE = QtCore.QSize(200, 400)
+    STARTING_SIZE = QtCore.QSize(200, 400)
+    MINIMUM_SIZE = QtCore.QSize(200, 400)
+
+    # the name of the module in which this window class can be found
+    # used to build the UI_SCRIPT and CLOSE_SCRIPT
+    WINDOW_MODULE = None
+
+    # a string of python code to run when the workspace control is shown
+    UI_SCRIPT = 'from {module} import {cls}\n{cls}.createWindow(restore=True)'
+
+    # a string of python code to run when the workspace control is closed
+    CLOSE_SCRIPT = 'from {module} import {cls}\n{cls}.windowClosed()'
+
+    # reference to singleton instance
+    INSTANCE = None
 
     @classmethod
-    def createAndShow(cls):
-        cls.deleteInstances()
-        window = cls()
-        window.show()
-        return window
+    def createWindow(cls, restore=False):
+        if restore:
+            parent = mui.MQtUtil.getCurrentParent()
+
+        # create instance if it doesn't exists
+        if not cls.INSTANCE:
+            cls.INSTANCE = cls()
+
+        if restore:
+            mixinPtr = mui.MQtUtil.findControl(cls.INSTANCE.objectName())
+            mui.MQtUtil.addWidgetToMayaLayout(long(mixinPtr), long(parent))
+        else:
+            uiScript = cls.UI_SCRIPT.format(
+                module=cls.WINDOW_MODULE, cls=cls.__name__)
+            closeScript = cls.CLOSE_SCRIPT.format(
+                module=cls.WINDOW_MODULE, cls=cls.__name__)
+
+            cls.INSTANCE.show(dockable=True,
+                              uiScript=uiScript,
+                              closeCallback=closeScript)
+
+        return cls.INSTANCE
 
     @classmethod
-    def exists(cls):
+    def destroyWindow(cls):
+        if cls.windowExists():
+            cls.hideWindow()
+            cmds.deleteUI(cls.getWorkspaceControlName(), control=True)
+
+    @classmethod
+    def showWindow(cls):
+        if cls.windowExists():
+            cmds.workspaceControl(
+                cls.getWorkspaceControlName(), e=True, vis=True)
+        else:
+            cls.createWindow()
+
+    @classmethod
+    def hideWindow(cls):
+        """
+        Close the window, if it exists
+        """
+        if cls.windowExists():
+            cmds.workspaceControl(
+                cls.getWorkspaceControlName(), e=True, vis=False)
+
+    @classmethod
+    def toggleWindow(cls):
+        if cls.windowVisible():
+            cls.hideWindow()
+        else:
+            cls.showWindow()
+
+    @classmethod
+    def windowClosed(cls):
+        cls.INSTANCE = None
+
+    @classmethod
+    def windowExists(cls):
         """
         Return True if an instance of this window exists
         """
-        result = False
-        if cmds.workspaceControl(cls.getWorkspaceControlName(), q=True, ex=True):
-            result = True
-        if cmds.workspaceControl(cls.getWorkspaceControlName(), q=True, ex=True):
-            result = True
-        if cmds.window(cls.OBJECT_NAME, q=True, ex=True):
-            result = True
-        return result
+        return cmds.workspaceControl(
+            cls.getWorkspaceControlName(), q=True, ex=True)
 
     @classmethod
-    def deleteInstances(cls):
-        """
-        Delete existing instances of this window
-        """
-        result = False
-        # close and delete an existing workspace control
-        if cmds.workspaceControl(cls.getWorkspaceControlName(), q=True, ex=True):
-            cmds.workspaceControl(
-                cls.getWorkspaceControlName(), e=True, close=True)
-            result = True
-        if cmds.workspaceControl(cls.getWorkspaceControlName(), q=True, ex=True):
-            cmds.deleteUI(cls.getWorkspaceControlName(), control=True)
-            result = True
-        if cmds.window(cls.OBJECT_NAME, q=True, ex=True):
-            cmds.deleteUI(cls.OBJECT_NAME, window=True)
-            result = True
-        return result
+    def windowVisible(cls):
+        return cls.windowExists() and cmds.workspaceControl(
+            cls.getWorkspaceControlName(), q=True, vis=True)
 
     @classmethod
     def getWorkspaceControlName(cls):
@@ -126,14 +175,20 @@ class PulseWindow(MayaQWidgetDockableMixin, QtWidgets.QMainWindow):
 
     def __init__(self, parent=None):
         super(PulseWindow, self).__init__(parent=parent)
-        self.setObjectName(self.OBJECT_NAME)
-        self.setProperty('saveWindowPref', True)
 
-    def show(self):
-        """
-        Show the PulseWindow.
-        """
-        super(PulseWindow, self).show(dockable=True, retain=False)
+        self.setObjectName(self.OBJECT_NAME)
+
+        self.preferredSize = self.PREFERRED_SIZE
+        self.resize(dpiScale(self.STARTING_SIZE))
+
+    def setSizeHint(self, size):
+        self.preferredSize = size
+
+    def sizeHint(self):
+        return self.preferredSize
+
+    def minimumSizeHint(self):
+        return self.MINIMUM_SIZE
 
 
 class BlueprintUIModel(QtCore.QObject):

@@ -2,34 +2,36 @@
 import maya.cmds as cmds
 
 from .core import *
-from .blueprinteditor import *
-from .actiontree import *
-from .actioneditor import *
 from .actionattrform import *
+from .actioneditor import *
+from .actiontree import *
+from .blueprinteditor import *
+from .buildtoolbar import *
 from .pulseeditor import *
 
 
-def togglePulseUI():
+def toggleEditorUI():
+    PulseEditorWindow.toggleWindow()
+
+
+def showEditorUI():
+    PulseEditorWindow.showWindow()
+
+
+def hideEditorUI():
+    PulseEditorWindow.hideWindow()
+
+
+def destroyEditorWorkspaceControls():
     """
-    Toggle the Pulse UI on / off
+    Development util to destroy workspace controls
+    for all PulseWindows. Not intended for normal usage.
     """
-    if isPulseUIShowing():
-        hidePulseUI()
-    else:
-        showPulseUI()
+    import designviews
+    designviews.destroyEditorWorkspaceControls()
 
-def isPulseUIShowing():
-    return PulseEditorWindow.exists()
-
-def showPulseUI():
-    if isPulseUIShowing():
-        return
-    
-    PulseEditorWindow().createAndShow()
-    # cmds.workspaceControl(PulseEditorWindow.getWorkspaceControlName(), e=True, dtm=['left', False])
-
-def hidePulseUI():
-    if not isPulseUIShowing():
-        return
-    
-    PulseEditorWindow.deleteInstances()
+    ActionEditorWindow.destroyWindow()
+    ActionTreeWindow.destroyWindow()
+    BlueprintEditorWindow.destroyWindow()
+    BuildToolbarWindow.destroyWindow()
+    PulseEditorWindow.destroyWindow()

@@ -502,6 +502,11 @@ class ActionEditorWidget(QtWidgets.QWidget):
 class ActionEditorWindow(PulseWindow):
 
     OBJECT_NAME = 'pulseActionEditorWindow'
+    PREFERRED_SIZE = QtCore.QSize(400, 300)
+    STARTING_SIZE = QtCore.QSize(400, 300)
+    MINIMUM_SIZE = QtCore.QSize(400, 300)
+
+    WINDOW_MODULE = 'pulse.views.actioneditor'
 
     def __init__(self, parent=None):
         super(ActionEditorWindow, self).__init__(parent=parent)

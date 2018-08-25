@@ -24,6 +24,11 @@ class PulseEditorWindow(PulseWindow):
     """
 
     OBJECT_NAME = 'pulseEditorWindow'
+    STARTING_SIZE = QtCore.QSize(400, 600)
+    PREFERRED_SIZE = QtCore.QSize(400, 600)
+    MINIMUM_SIZE = QtCore.QSize(400, 600)
+
+    WINDOW_MODULE = 'pulse.views.pulseeditor'
 
     mainTabIndex = optionVarProperty('pulse.editor.mainTabIndex', 0)
     actionsTabIndex = optionVarProperty('pulse.editor.actionsTabIndex', 0)
@@ -51,13 +56,9 @@ class PulseEditorWindow(PulseWindow):
         self.actionsTabWidget.currentChanged.connect(self.setActionsTabIndex)
 
     def setupUi(self, parent):
-        widget = QtWidgets.QWidget(parent)
-        widget.setMinimumWidth(300)
-        self.setCentralWidget(widget)
-
         layout = QtWidgets.QVBoxLayout(parent)
         layout.setMargin(0)
-        widget.setLayout(layout)
+        self.setLayout(layout)
 
         buildToolbar = BuildToolbarWidget(parent)
         layout.addWidget(buildToolbar)

@@ -4,7 +4,7 @@ import maya.cmds as cmds
 import pymel.core as pm
 
 import pulse
-from pulse.vendor.Qt import QtWidgets
+from pulse.vendor.Qt import QtCore, QtWidgets, QtGui
 from pulse.core import RigEventsMixin
 from .core import PulseWindow
 from .core import BlueprintUIModel
@@ -132,6 +132,11 @@ class BuildToolbarWidget(QtWidgets.QWidget, RigEventsMixin):
 class BuildToolbarWindow(PulseWindow):
 
     OBJECT_NAME = 'pulseBuildToolbarWindow'
+    PREFERRED_SIZE = QtCore.QSize(400, 300)
+    STARTING_SIZE = QtCore.QSize(400, 300)
+    MINIMUM_SIZE = QtCore.QSize(400, 300)
+
+    WINDOW_MODULE = 'pulse.views.buildtoolbar'
 
     def __init__(self, parent=None):
         super(BuildToolbarWindow, self).__init__(parent=parent)

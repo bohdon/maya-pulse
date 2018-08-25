@@ -40,7 +40,7 @@ class NamesPanel(DesignViewPanel):
         quickNameWindowBtn = QtWidgets.QPushButton(frame)
         quickNameWindowBtn.setText("Quick Name Editor")
         quickNameWindowBtn.clicked.connect(
-            buttonCommand(QuickNameEditor.createAndShow))
+            buttonCommand(QuickNameEditor.toggleWindow))
         btnLayout.addWidget(quickNameWindowBtn)
 
 
@@ -62,7 +62,7 @@ class QuickNameWidget(QtWidgets.QWidget):
         self.setupUi(self)
         self.refreshPreviewLabel()
 
-        if True: # TODO: replace with 'is blueprint initialized' or similar
+        if True:  # TODO: replace with 'is blueprint initialized' or similar
             self.helpText.setText(
                 "Edit the Blueprint Config to modify naming keywords")
             self.helpText.setStyleSheet(
@@ -410,12 +410,20 @@ class QuickNameWidget(QtWidgets.QWidget):
 class QuickNameEditor(PulseWindow):
 
     OBJECT_NAME = 'pulseQuickNameEditor'
+    PREFERRED_SIZE = QtCore.QSize(400, 300)
+    STARTING_SIZE = QtCore.QSize(400, 300)
+    MINIMUM_SIZE = QtCore.QSize(400, 300)
+
+    WINDOW_MODULE = 'pulse.views.designviews.names'
 
     def __init__(self, parent=None):
         super(QuickNameEditor, self).__init__(parent=parent)
 
         self.setWindowTitle('Quick Name Editor')
 
+        layout = QtWidgets.QVBoxLayout(parent)
+        layout.setMargin(0)
+        self.setLayout(layout)
+
         widget = QuickNameWidget(self)
-        widget.setMinimumSize(400, 300)
-        self.setCentralWidget(widget)
+        layout.addWidget(widget)

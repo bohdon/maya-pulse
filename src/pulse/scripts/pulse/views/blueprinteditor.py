@@ -1,6 +1,6 @@
 
 import pulse
-from pulse.vendor.Qt import QtWidgets
+from pulse.vendor.Qt import QtCore, QtWidgets, QtGui
 from .core import PulseWindow
 from .core import BlueprintUIModel
 from .style import UIColors
@@ -68,6 +68,11 @@ class BlueprintEditorWidget(QtWidgets.QWidget):
 class BlueprintEditorWindow(PulseWindow):
 
     OBJECT_NAME = 'pulseBlueprintEditorWindow'
+    PREFERRED_SIZE = QtCore.QSize(400, 300)
+    STARTING_SIZE = QtCore.QSize(400, 300)
+    MINIMUM_SIZE = QtCore.QSize(400, 300)
+
+    WINDOW_MODULE = 'pulse.views.blueprinteditor'
 
     def __init__(self, parent=None):
         super(BlueprintEditorWindow, self).__init__(parent=parent)
