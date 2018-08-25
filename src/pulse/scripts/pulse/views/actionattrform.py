@@ -105,11 +105,10 @@ class ActionAttrForm(QtWidgets.QWidget):
             return
 
         if self.isVariant():
-            return actionProxy.getVariantAttrValueOrDefault(
-                self.variantIndex, self.attr['name'])
+            variant = actionProxy.getVariant(self.variantIndex)
+            return variant.getAttrValueOrDefault(self.attr['name'])
         else:
-            return actionProxy.getAttrValueOrDefault(
-                self.attr['name'])
+            return actionProxy.getAttrValueOrDefault(self.attr['name'])
 
     def setAttrValue(self, newValue):
         """

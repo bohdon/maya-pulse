@@ -294,10 +294,10 @@ class BlueprintUIModel(QtCore.QObject):
             return
 
         if variantIndex >= 0:
-            return step.actionProxy.getVariantAttrValueOrNone(
-                variantIndex, attrName)
+            actionData = step.actionProxy.getVariant(variantIndex)
+            return actionData.getAttrValue(attrName)
         else:
-            return step.actionProxy.getAttrValueOrNone(attrName)
+            return step.actionProxy.getAttrValue(attrName)
 
     def setActionAttr(self, attrPath, value, variantIndex=-1):
         """
@@ -314,7 +314,8 @@ class BlueprintUIModel(QtCore.QObject):
             return
 
         if variantIndex >= 0:
-            step.actionProxy.setVariantAttrValue(variantIndex, attrName, value)
+            variant = step.actionProxy.getVariant(variantIndex)
+            variant.setAttrValue(attrName, value)
         else:
             step.actionProxy.setAttrValue(attrName, value)
 

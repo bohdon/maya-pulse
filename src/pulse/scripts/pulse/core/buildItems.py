@@ -12,7 +12,6 @@ __all__ = [
     'BuildActionData',
     'BuildActionError',
     'BuildActionProxy',
-    'BuildItem',
     'BuildStep',
     'getBuildActionClass',
     'getBuildActionConfig',
@@ -514,9 +513,12 @@ class BuildActionError(Exception):
 
 class BuildActionData(object):
     """
-    Contains the configuration and data for an action that can be
-    performed during a build step.
+    Contains attribute values for an action
+    to be executed during a build step.
     """
+
+    # TODO: add another base class with less cluttered namespace
+    #       for use as the base of BuildActions
 
     def __init__(self, actionId=None):
         self._actionId = actionId
@@ -560,13 +562,19 @@ class BuildActionData(object):
             return self._actionId.split('.')[-1]
 
     def retrieveActionConfig(self):
+        """
+        Get the config for the current actionId and store it on this data
+        """
         self._config = getBuildActionConfig(self._actionId)
         if self._config is None:
             LOG.warning(
                 "Failed to find action config for {0}".format(self._actionId))
 
     def numAttrs(self):
-        return len(self.config['attrs'])
+        """
+        Return the number of attributes that this BuildAction has
+        """
+        return len(self.getAttrs())
 
     def getAttrs(self):
         """
@@ -587,12 +595,18 @@ class BuildActionData(object):
         for attr in self.config['attrs']:
             yield attr['name']
 
+    def hasAttrConfig(self, attrName):
+        """
+        Return True if this action data contains the attribute
+        """
+        return self.getAttrConfig(attrName) is not None
+
     def getAttrConfig(self, attrName):
         """
         Return config data for an attribute
 
         Args:
-            attrName: A str name of the attribute
+            attrName (str): The name of a BuildAction attribute
         """
         if not self.hasConfig():
             return
@@ -606,8 +620,7 @@ class BuildActionData(object):
         Return the default value for an attribute
 
         Args:
-            attr: A dict object representing the config
-                data for the attribute
+            attr (dict): A BuildAction attribute config object
         """
         if not self.hasConfig():
             return
@@ -625,6 +638,49 @@ class BuildActionData(object):
             elif attrType == 'string':
                 return ''
 
+    def hasAttrValue(self, attrName):
+        """
+        Return True if this action data contains a non-default value
+        for the attribute.
+
+        Args:
+            attrName (str): The name of a BuildAction attribute
+        """
+        return attrName in self._attrValues
+
+    def getAttrValue(self, attrName, default=None):
+        """
+        Return the value for an attribute, or default if its
+        value is not overridden in this action data.
+        Use `getAttrValueOrDefault` to default to the config-default
+        value for the attribute.
+
+        Args:
+            attrName (str): The name of a BuildAction attribute
+        """
+        return self._attrValues.get(attrName, default)
+
+    def getAttrValueOrDefault(self, attrName):
+        if attrName in self._attrValues:
+            return self._attrValues[attrName]
+        else:
+            config = self.getAttrConfig(attrName)
+            if config:
+                return self.getAttrDefaultValue(config)
+            else:
+                LOG.warning("BuildActionData attribute "
+                            "not found: {0}".format(attrName))
+
+    def setAttrValue(self, attrName, value):
+        if value is None:
+            self.delAttrValue(attrName)
+        else:
+            self._attrValues[attrName] = value
+
+    def delAttrValue(self, attrName):
+        if attrName in self._attrValues:
+            del self._attrValues[attrName]
+
     def serialize(self):
         """
         Return this BuildActionData as a serialized dict object
@@ -632,8 +688,8 @@ class BuildActionData(object):
         data = UnsortableOrderedDict()
         data['id'] = self._actionId
         if self.hasConfig():
-            for attr in self.config['attrs']:
-                if attr['name'] in self._attrValues:
+            for attr in self.getAttrs():
+                if self.hasAttrValue(attr['name']):
                     data[attr['name']] = self._attrValues[attr['name']]
         return data
 
@@ -651,21 +707,135 @@ class BuildActionData(object):
             self.retrieveActionConfig()
 
         # load values for all action attrs
-        attrs = self.config.get('attrs', [])
         if self.hasConfig():
-            for attr in attrs:
+            for attr in self.getAttrs():
                 if attr['name'] in data:
                     self._attrValues[attr['name']] = data[attr['name']]
-        elif attrs:
-            # TODO: better wording for this warning / issue
+
+        elif len(data) > 1:
+            # if config didn't load, don't throw away the attribute values
             LOG.warning(
-                "Failed to load config for action, preserving attr values")
+                "Failed to find BuildAction config: {0}, "
+                "preserving serialized attr values".format(self._actionId))
             for k, v in data.items():
                 self._attrValues[k] = v
 
 
-class BuildItem(BuildActionData):
-    pass
+class BuildActionDataVariant(BuildActionData):
+    """
+    Contains a partial set of attribute values.
+    """
+
+    # TODO: prevent setting an attribute thats not in the variant
+
+    def __init__(self, actionId=None):
+        super(BuildActionDataVariant, self).__init__(actionId=actionId)
+        # names of all attributes that are in this variant
+        self._variantAttrs = []
+
+    def getVariantAttrs(self):
+        """
+        Return the list of all variant attribute names
+        """
+        return self._variantAttrs
+
+    def getAttrs(self):
+        """
+        Return all attrs for this BuildAction class
+
+        Returns:
+            A list of dict representing all attr configs
+        """
+        return [a for a in self.config['attrs'] if a['name'] in self.getVariantAttrs()]
+
+    def getAttrNames(self):
+        """
+        Return a list of attribute names for this BuildAction class
+        """
+        if not self.hasConfig():
+            return
+
+        for attr in self.config['attrs']:
+            if attr['name'] in self.getVariantAttrs():
+                yield attr['name']
+
+    def isVariantAttr(self, attrName):
+        """
+        Return True if the attribute is contained in this variant.
+        This doesn't mean a non-default value is set for the attribute.
+
+        Args:
+            attrName (str): The name of a BuildAction attribute
+        """
+        return attrName in self.getVariantAttrs()
+
+    def setIsVariantAttr(self, attrName, isVariant):
+        """
+        Set whether an attr is variant or not.
+
+        Args:
+            attrName (str): The name of a BuildAction attribute
+            isVariant (bool): Whether the attribute should be variant or not
+        """
+        if isVariant:
+            self.addVariantAttr(attrName)
+        else:
+            self.removeVariantAttr(attrName)
+
+    def addVariantAttr(self, attrName):
+        """
+        Add an attribute to this variant.
+
+        Args:
+            attrName (str): The name of a BuildAction attribute
+        """
+        if attrName in self._variantAttrs:
+            return
+
+        if not self.hasAttrConfig(attrName):
+            return
+
+        self._variantAttrs.append(attrName)
+        self._variantAttrs.sort()
+
+    def removeVariantAttr(self, attrName):
+        """
+        Remove an attribute from the list of variant attributes,
+        copying the value from the first variant into the default set
+        of attr values if applicable.
+
+        Args:
+            attrName (str): The name of an action attribute
+        """
+        if attrName not in self._variantAttrs:
+            return
+
+        self._variantAttrs.remove(attrName)
+
+        if self.hasAttrValue(attrName):
+            self.delAttrValue(attrName)
+
+    def clearVariantAttrs(self):
+        """
+        Remove all variant attributes, copying the values
+        from the first variant into the default set of attr values
+        if applicable.
+        """
+        attrNames = self._variantAttrs[:]
+        for attrName in attrNames:
+            self.removeVariantAttr(attrName)
+
+    def serialize(self):
+        data = super(BuildActionDataVariant, self).serialize()
+        data['variantAttrs'] = self._variantAttrs
+        return data
+
+    def deserialize(self, data):
+        # must deserialize attrs first before attempting
+        # to set values in super deserialize
+        self._variantAttrs = data.get('variantAttrs', [])
+
+        super(BuildActionDataVariant, self).deserialize(data)
 
 
 class BuildActionProxy(BuildActionData):
@@ -685,10 +855,10 @@ class BuildActionProxy(BuildActionData):
 
     def __init__(self, actionId=None):
         super(BuildActionProxy, self).__init__(actionId=actionId)
-        # the list of attribute names that are unique per variant
+        # names of all attributes that are unique per variant
         self._variantAttrs = []
-        # list of all variant attribute value dicts
-        self._variantValues = []
+        # all BuildActionDataVariant instances in this proxy
+        self._variants = []
 
     def getDisplayName(self):
         """
@@ -713,49 +883,29 @@ class BuildActionProxy(BuildActionData):
             if filename:
                 return os.path.join(actiondir, filename)
 
-    def hasAttrValue(self, attrName):
-        return attrName in self._attrValues
-
-    def getAttrValue(self, attrName):
-        return self._attrValues[attrName]
-
-    def getAttrValueOrNone(self, attrName):
-        if attrName in self._attrValues:
-            return self._attrValues[attrName]
-        else:
-            return None
-
-    def getAttrValueOrDefault(self, attrName):
-        if attrName in self._attrValues:
-            return self._attrValues[attrName]
-        else:
-            return self.getAttrDefaultValue(self.getAttrConfig(attrName))
-
-    def setAttrValue(self, attrName, value):
-        if value is None:
-            self.delAttrValue(attrName)
-        else:
-            self._attrValues[attrName] = value
-
-    def delAttrValue(self, attrName):
-        if attrName in self._attrValues:
-            del self._attrValues[attrName]
-
-    def isVariantAttr(self, attrName):
-        return attrName in self._variantAttrs
-
     def isVariantAction(self):
         """
         Returns true of this action proxy has any variant attributes.
         """
         return bool(self._variantAttrs)
 
+    def isVariantAttr(self, attrName):
+        """
+        Return True if the attribute is variant, meaning it is unique
+        per each variant instance, and does not exist in the main
+        action data.
+
+        Args:
+            attrName (str): The name of a BuildAction attribute
+        """
+        return attrName in self._variantAttrs
+
     def setIsVariantAttr(self, attrName, isVariant):
         """
         Set whether an attr is variant or not.
 
         Args:
-            attrName (str): The name of an action attribute
+            attrName (str): The name of a BuildAction attribute
             isVariant (bool): Whether the attribute should be variant or not
         """
         if isVariant:
@@ -777,19 +927,22 @@ class BuildActionProxy(BuildActionData):
 
         # add attr to variant attrs list
         self._variantAttrs.append(attrName)
+        for variant in self._variants:
+            variant.addVariantAttr(attrName)
 
         # if no variants exist, add one
-        if not self._variantValues:
+        if self.numVariants() == 0:
             self.addVariant()
 
-        # update variant values with new attr, using
-        # current invariant value for all variants
+        # set the attribute value on all variants using
+        # current invariant value if one exists
         if self.hasAttrValue(attrName):
-            for item in self._variantValues:
-                if attrName not in item:
-                    item[attrName] = self.getAttrValue(attrName)
-            # remove attribute from invariant attr values
+            value = self.getAttrValue(attrName)
             self.delAttrValue(attrName)
+
+            for variant in self._variants:
+                if not variant.hasAttrValue(attrName):
+                    variant.setAttrValue(attrName, value)
 
     def removeVariantAttr(self, attrName):
         """
@@ -807,17 +960,17 @@ class BuildActionProxy(BuildActionData):
         self._variantAttrs.remove(attrName)
 
         # transfer first variant value to the invariant values
-        if len(self._variantValues):
-            firstVariant = self._variantValues[0]
-            if attrName in firstVariant:
-                self.setAttrValue(attrName, firstVariant[attrName])
+        if len(self._variants):
+            firstVariant = self._variants[0]
+            if firstVariant.hasAttrValue(attrName):
+                value = firstVariant.getAttrValue(attrName)
+                self.setAttrValue(attrName, value)
 
-        # remove all values from variant values
-        for item in self._variantValues:
-            if attrName in item:
-                del item[attrName]
+        # remove attr from variant instances
+        for variant in self._variants:
+            variant.removeVariantAttr(attrName)
 
-    def getVariantAttrNames(self):
+    def getVariantAttrs(self):
         """
         Return the list of all variant attribute names
         """
@@ -833,18 +986,34 @@ class BuildActionProxy(BuildActionData):
         for attrName in attrNames:
             self.removeVariantAttr(attrName)
 
+    def _createVariant(self):
+        """
+        Return a new BuildActionDataVariant instance
+        for use with this action proxy.
+        """
+        variant = BuildActionDataVariant(actionId=self._actionId)
+        for attrName in self._variantAttrs:
+            variant.addVariantAttr(attrName)
+        return variant
+
+    def getVariant(self, index):
+        """
+        Return the BuildActionDataVariant instance at an index
+        """
+        return self._variants[index]
+
     def numVariants(self):
         """
         Return how many variants exist on this action proxy
         """
-        return len(self._variantValues)
+        return len(self._variants)
 
     def addVariant(self):
         """
         Add a variant of attribute values. Does nothing if there
         are no variant attributes.
         """
-        self._variantValues.append({})
+        self._variants.append(self._createVariant())
 
     def insertVariant(self, index):
         """
@@ -854,7 +1023,7 @@ class BuildActionProxy(BuildActionData):
         Args:
             index (int): The index at which to insert the new variant
         """
-        self._variantValues.insert(index, {})
+        self._variants.insert(index, self._createVariant())
 
     def removeVariantAt(self, index):
         """
@@ -863,60 +1032,46 @@ class BuildActionProxy(BuildActionData):
         Args:
             index (int): The index at which to remove the variant
         """
-        count = len(self._variantValues)
+        count = len(self._variants)
         if index >= -count and index < count:
-            del self._variantValues[index]
+            del self._variants[index]
 
     def clearVariants(self):
         """
-        Clear all variant values. Does not clear the list of variant attributes.
+        Remove all variant instances.
+        Does not clear the list of variant attributes.
         """
-        self._variantValues = []
-
-    def hasVariantAttrValue(self, index, attrName):
-        if index < 0 or index >= len(self._variantValues):
-            return False
-        return attrName in self._variantValues[index]
-
-    def getVariantAttrValue(self, index, attrName):
-        return self._variantValues[index][attrName]
-
-    def getVariantAttrValueOrNone(self, index, attrName):
-        if index >= 0 and index < len(self._variantValues):
-            if attrName in self._variantValues[index]:
-                return self._variantValues[index][attrName]
-        return None
-
-    def getVariantAttrValueOrDefault(self, index, attrName):
-        if attrName in self._variantValues[index]:
-            return self._variantValues[index][attrName]
-        else:
-            return self.getAttrDefaultValue(self.getAttrConfig(attrName))
-
-    def setVariantAttrValue(self, index, attrName, value):
-        if value is None:
-            self.delVariantAttrValue(index, attrName)
-        else:
-            while self.numVariants() <= index:
-                self.addVariant()
-            self._variantValues[index][attrName] = value
-
-    def delVariantAttrValue(self, index, attrName):
-        if attrName in self._variantValues[index]:
-            del self._variantValues[index][attrName]
+        self._variants = []
 
     def serialize(self):
         data = super(BuildActionProxy, self).serialize()
         if self._variantAttrs:
             data['variantAttrs'] = self._variantAttrs
-        if self._variantValues:
-            data['variantValues'] = self._variantValues
+        if self._variants:
+            data['variants'] = [
+                self.serializeVariant(v) for v in self._variants]
         return data
 
     def deserialize(self, data):
         super(BuildActionProxy, self).deserialize(data)
         self._variantAttrs = data.get('variantAttrs', [])
-        self._variantValues = data.get('variantValues', [])
+        self._variants = [
+            self.deserializeVariant(v) for v in data.get('variants', [])]
+
+    def serializeVariant(self, variant):
+        data = variant.serialize()
+        # prune unnecessary data from the variant for optimization
+        del data['id']
+        del data['variantAttrs']
+        return data
+
+    def deserializeVariant(self, data):
+        variant = BuildActionDataVariant()
+        # add necessary additional data for deserializing the variant
+        data['id'] = self._actionId
+        data['variantAttrs'] = self._variantAttrs
+        variant.deserialize(data)
+        return variant
 
     def actionIterator(self):
         """
@@ -934,9 +1089,11 @@ class BuildActionProxy(BuildActionData):
 
                 # create and yield new build actions for each variant
                 mainData = self.serialize()
-                for variant in self._variantValues:
-                    data = _copyData(mainData)
-                    data.update(variant)
+                for variant in self._variants:
+                    # TODO: update serialization to ensure variants only return
+                    #       data for the attributes they're supposed to modify
+                    data = variant.serialize()
+                    data.update(_copyData(mainData))
                     newAction = BuildAction.fromData(data)
                     yield newAction
             else:
@@ -986,25 +1143,6 @@ class BuildAction(BuildActionData):
         else:
             LOG.error(
                 "Failed to find BuildAction class: {0}".format(data['id']))
-
-    @staticmethod
-    def fromBatchAction(batchAction):
-        """
-        Return a new BuildAction created using a BuildActionProxyBatch
-        as reference.
-        """
-        # TODO: move to proxies
-        if not batchAction.actionClass:
-            raise ValueError(
-                "BuildActionProxyBatch must have a valid actionClass")
-
-        # copy attribute values
-        data = batchAction.constantValues
-        if batchAction.variantValues:
-            data.update(batchAction.variantValues[0])
-        data = _copyData(data)
-
-        return batchAction.actionClass(**data)
 
     def __init__(self, **attrKwargs):
         """
