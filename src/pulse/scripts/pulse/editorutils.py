@@ -144,13 +144,14 @@ def orientToWorldForSelected(
         if node.nodeType() == 'joint':
             orientJointToWorld(node)
             if syncJointAxes:
-                matchJointRotationToOrient(node)
+                matchJointRotationToOrient(node, preserveChildren)
         else:
             pm.rotate(node, (0, 0, 0), a=True, ws=True, pcp=preserveChildren)
 
 
 def orientToJointForSelected(
-        axis,
+        axisOrder,
+        upAxisStr,
         preserveChildren=True,
         preserveShapes=True,
         syncJointAxes=True):

@@ -305,15 +305,33 @@ class JointOrientsPanel(DesignViewPanel):
         return self.AXIS_ORDER_OPTIONS[self.orientAxisOrder]
 
     def rotateSelectedOrientsAroundAxis(self, axis, degrees):
-        func = cmd(editorutils.rotateSelectedOrientsAroundAxis, axis, degrees)
+        kw = dict(
+            preserveChildren=self.orientPreserveChildren,
+            preserveShapes=self.orientPreserveShapes,
+            syncJointAxes=self.syncJointAxes,
+        )
+        func = cmd(editorutils.rotateSelectedOrientsAroundAxis,
+                   axis, degrees, **kw)
         func()
 
     def orientToWorldForSelected(self):
-        func = cmd(editorutils.orientToWorldForSelected)
+        kw = dict(
+            preserveChildren=self.orientPreserveChildren,
+            preserveShapes=self.orientPreserveShapes,
+            syncJointAxes=self.syncJointAxes,
+        )
+        func = cmd(editorutils.orientToWorldForSelected, **kw)
         func()
 
     def orientToJointForSelected(self):
-        func = cmd(editorutils.orientToJointForSelected)
+        kw = dict(
+            axisOrder=self.getOrientAxisOrderStr(),
+            upAxisStr=self.getOrientUpAxisStr(),
+            preserveChildren=self.orientPreserveChildren,
+            preserveShapes=self.orientPreserveShapes,
+            syncJointAxes=self.syncJointAxes,
+        )
+        func = cmd(editorutils.orientToJointForSelected, **kw)
         func()
 
     def matchJointRotationToOrientForSelected(self):
