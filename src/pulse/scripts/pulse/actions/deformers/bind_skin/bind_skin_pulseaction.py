@@ -1,7 +1,9 @@
 
 import pymel.core as pm
+import maya.cmds as cmds
 
 import pulse
+
 
 class BindSkinAction(pulse.BuildAction):
 
@@ -26,20 +28,26 @@ class BindSkinAction(pulse.BuildAction):
 
     def run(self):
         bindkwargs = dict(
-            omi=self.maintainMaxInfuence,
-            dr=self.dropoffRate,
-            mi=self.maxInfluences,
-            nw=self.normalizeWeights,
-            rui=self.removeUnusedInfluences,
-            bm=self.bindMethod,
-            sm=self.skinMethod,
-            wd=self.weightDistribution,
-            tsb=True,
+            toSelectedBones=(self.bindTo == 2),
+            toSkeletonAndTransforms=(self.bindTo == 1),
+            bindMethod=self.bindMethod,
+            dropoffRate=self.dropoffRate,
+            maximumInfluences=self.maxInfluences,
+            normalizeWeights=self.normalizeWeights,
+            obeyMaxInfluences=self.maintainMaxInfuence,
+            removeUnusedInfluence=self.removeUnusedInfluences,
+            skinMethod=self.skinMethod,
+            weightDistribution=self.weightDistribution,
         )
+        # TODO: work around bad binding when using toSelectedBones
+        jntNames = [j.longName() for j in self.joints]
         for m in self.meshes:
-            skin = pm.cmds.skinCluster(m.longName(), [j.longName() for j in self.joints], **bindkwargs)
+            pm.select(cl=True)
+            skin = cmds.skinCluster(m.longName(), jntNames, **bindkwargs)
             pm.rename(skin, '{0}_skcl'.format(m))
-        
+
+        # TODO: support geomBind when using geodesic voxel binding
+
         if self.isRenderGeo:
             rigData = self.getRigMetaData()
             # add meshes to renderGeo list
@@ -48,9 +56,8 @@ class BindSkinAction(pulse.BuildAction):
             # add joints to bakedJoints list
             bakeNodes = rigData.get('bakeNodes', [])
             bakeNodes = list(set(bakeNodes + self.joints))
-            
+
             self.updateRigMetaData({
                 'renderGeo': renderGeo,
                 'bakeNodes': bakeNodes,
             })
-

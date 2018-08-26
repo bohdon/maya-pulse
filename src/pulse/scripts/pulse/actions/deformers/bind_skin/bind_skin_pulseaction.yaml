@@ -19,6 +19,15 @@ BindSkinAction:
       type: bool
       value: true
 
+    - name: bindTo
+      desc: Which joints or influences should be used
+      type: option
+      value: 0
+      options:
+        - Joint Hierarchy
+        - Joint and Transform Hierarchy
+        - Listed Joints Only
+
     - name: bindMethod
       desc: Binding algorithm to use
       type: option
