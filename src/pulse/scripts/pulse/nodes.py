@@ -25,6 +25,7 @@ __all__ = [
     'getExpandedAttrNames',
     'getOtherAxes',
     'getParentNodes',
+    'getRelativeMatrix',
     'getRotationMatrix',
     'getScaleMatrix',
     'getTransformHierarchy',
@@ -36,6 +37,7 @@ __all__ = [
     'parentSelectedInOrder',
     'setConstraintLocked',
     'setParent',
+    'setRelativeMatrix',
     'setTransformHierarchy',
     'setWorldMatrix',
 ]
@@ -460,6 +462,7 @@ def convertScaleConstraintToWorldSpace(scaleConstraint):
                 scaleConstraint.target[i].targetScale.disconnect()
                 break
 
+
 def fullConstraint(leader, follower):
     """
     Fully constrain a follower node to a leader node.
@@ -643,6 +646,30 @@ def matchWorldMatrix(leader, *followers):
         setWorldMatrix(f, m)
         pm.xform(f, t=p, ws=True)
         pm.xform(f, ro=r, ws=True)
+
+
+def getRelativeMatrix(node, baseNode):
+    """
+    Return the matrix of a node relative to a base node.
+
+    Args:
+        node (PyNode): The node to retrieve the matrix from
+        baseNode (PyNode): The node to which the matrix will be relative
+    """
+    return node.wm.get() * baseNode.wm.get().inverse()
+
+
+def setRelativeMatrix(node, matrix, baseNode):
+    """
+    Set the world matrix of a node, given a matrix that
+    is relative to a different base node.
+
+    Args:
+        node (PyNode): The node to modify
+        matrix (Matrix): A matrix relative to baseNode
+        baseNode (PyNode): The node that the matrix is relative to
+    """
+    setWorldMatrix(node, matrix * baseNode.wm.get())
 
 
 def getTranslationMidpoint(a, b):
