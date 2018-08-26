@@ -12,14 +12,12 @@ from pulse import editorutils
 from .core import DesignViewPanel
 
 __all__ = [
+    "JointOrientsPanel",
     "JointsPanel",
 ]
 
 
 class JointsPanel(DesignViewPanel):
-
-    def __init__(self, parent):
-        super(JointsPanel, self).__init__(parent=parent)
 
     def getPanelDisplayName(self):
         return "Joints"
@@ -32,9 +30,6 @@ class JointsPanel(DesignViewPanel):
         layout.addWidget(frame)
 
         self.setupButtonGridUi(frame)
-
-        orientForm = JointOrientForm(parent)
-        layout.addWidget(orientForm)
 
     def setupButtonGridUi(self, parent):
         gridLayout = QtWidgets.QGridLayout(parent)
@@ -68,7 +63,7 @@ class JointsPanel(DesignViewPanel):
         gridLayout.addWidget(disableSSCBtn, 2, 0, 1, 2)
 
 
-class JointOrientForm(QtWidgets.QWidget):
+class JointOrientsPanel(DesignViewPanel):
     """
     Util widget for orienting joints.
     """
@@ -79,6 +74,10 @@ class JointOrientForm(QtWidgets.QWidget):
     orientAxisOrder = optionVarProperty('pulse.editor.orientAxisOrder', 0)
     orientUpAxis = optionVarProperty('pulse.editor.orientUpAxis', 1)
     syncJointAxes = optionVarProperty('pulse.editor.syncJointAxes', True)
+    orientPreserveChildren = optionVarProperty(
+        'pulse.editor.orientPreserveChildren', True)
+    orientPreserveShapes = optionVarProperty(
+        'pulse.editor.orientPreserveShapes', True)
 
     def setOrientAxisOrder(self, value):
         self.orientAxisOrder = value
@@ -89,11 +88,25 @@ class JointOrientForm(QtWidgets.QWidget):
     def setSyncJointAxes(self, value):
         self.syncJointAxes = value
 
-    def __init__(self, parent=None):
-        super(JointOrientForm, self).__init__(parent=parent)
-        self.setupUi(self)
+    def setOrientPreserveChildren(self, value):
+        self.orientPreserveChildren = value
 
-    def setupUi(self, parent):
+    def setOrientPreserveShapes(self, value):
+        self.orientPreserveShapes = value
+
+    def getPanelDisplayName(self):
+        return "Joint Orients"
+
+    def setupPanelUi(self, parent):
+        layout = QtWidgets.QVBoxLayout(parent)
+        layout.setMargin(0)
+
+        frame = self.createPanelFrame(parent)
+        layout.addWidget(frame)
+
+        self.setupContenUi(frame)
+
+    def setupContenUi(self, parent):
         layout = QtWidgets.QVBoxLayout(parent)
         layout.setMargin(0)
 
@@ -126,33 +139,18 @@ class JointOrientForm(QtWidgets.QWidget):
         self.keepChildPosCheck.setStatusTip(
             "Preseve the positions of child nodes when rotating "
             "or orienting a transform or joint")
+        self.keepChildPosCheck.setChecked(self.orientPreserveChildren)
+        self.keepChildPosCheck.stateChanged.connect(
+            self.setOrientPreserveChildren)
         layout.addWidget(self.keepChildPosCheck)
 
         self.keepShapeCheck = QtWidgets.QCheckBox(parent)
         self.keepShapeCheck.setText("Preserve Shapes")
         self.keepShapeCheck.setStatusTip(
             "Preseve the orientation of shapes when rotating nodes")
+        self.keepShapeCheck.setChecked(self.orientPreserveShapes)
+        self.keepShapeCheck.stateChanged.connect(self.setOrientPreserveShapes)
         layout.addWidget(self.keepShapeCheck)
-
-        rotateForm = self.createRotateAxisForm(parent)
-        layout.addWidget(rotateForm)
-
-        # joint up axis
-        self.upAxisCombo = QtWidgets.QComboBox(parent)
-        for option in self.UP_AXIS_OPTIONS:
-            self.upAxisCombo.addItem(option)
-        self.upAxisCombo.setCurrentIndex(self.orientUpAxis)
-        self.upAxisCombo.currentIndexChanged.connect(self.setOrientUpAxis)
-        layout.addWidget(self.upAxisCombo)
-
-        # joint orient order
-        self.axisOrderCombo = QtWidgets.QComboBox(parent)
-        for option in self.AXIS_ORDER_OPTIONS:
-            self.axisOrderCombo.addItem(option)
-        self.axisOrderCombo.setCurrentIndex(self.orientAxisOrder)
-        self.axisOrderCombo.currentIndexChanged.connect(
-            self.setOrientAxisOrder)
-        layout.addWidget(self.axisOrderCombo)
 
         # sync axes checkbox
         self.syncJointAxesCheck = QtWidgets.QCheckBox(parent)
@@ -173,22 +171,86 @@ class JointOrientForm(QtWidgets.QWidget):
         syncAxesBtn.clicked.connect(self.matchJointRotationToOrientForSelected)
         layout.addWidget(syncAxesBtn)
 
+        rotateForm = self.createRotateAxisForm(parent)
+        layout.addWidget(rotateForm)
+
+        # axis settings
+        axisLayout = QtWidgets.QHBoxLayout(parent)
+        axisLayout.setSpacing(8)
+
+        # joint up axis
+        comboLayout1 = QtWidgets.QFormLayout(parent)
+        comboLayout1.setFieldGrowthPolicy(
+            QtWidgets.QFormLayout.ExpandingFieldsGrow)
+        axisLayout.addLayout(comboLayout1)
+
+        upAxisLabel = QtWidgets.QLabel(parent)
+        upAxisLabel.setText("Up Axis")
+        comboLayout1.setWidget(
+            0, QtWidgets.QFormLayout.LabelRole, upAxisLabel)
+
+        self.upAxisCombo = QtWidgets.QComboBox(parent)
+        for option in self.UP_AXIS_OPTIONS:
+            self.upAxisCombo.addItem(option)
+        self.upAxisCombo.setCurrentIndex(self.orientUpAxis)
+        self.upAxisCombo.currentIndexChanged.connect(self.setOrientUpAxis)
+        comboLayout1.setWidget(
+            0, QtWidgets.QFormLayout.FieldRole, self.upAxisCombo)
+
+        # joint orient order
+        comboLayout2 = QtWidgets.QFormLayout(parent)
+        comboLayout2.setFieldGrowthPolicy(
+            QtWidgets.QFormLayout.ExpandingFieldsGrow)
+        axisLayout.addLayout(comboLayout2)
+
+        axisOrderLabel = QtWidgets.QLabel(parent)
+        axisOrderLabel.setText("Axis Order")
+        comboLayout2.setWidget(
+            0, QtWidgets.QFormLayout.LabelRole, axisOrderLabel)
+
+        self.axisOrderCombo = QtWidgets.QComboBox(parent)
+        for option in self.AXIS_ORDER_OPTIONS:
+            self.axisOrderCombo.addItem(option)
+        self.axisOrderCombo.setCurrentIndex(self.orientAxisOrder)
+        self.axisOrderCombo.currentIndexChanged.connect(
+            self.setOrientAxisOrder)
+        comboLayout2.setWidget(
+            0, QtWidgets.QFormLayout.FieldRole, self.axisOrderCombo)
+
         # include children check
+        formLayout3 = QtWidgets.QFormLayout(parent)
+        formLayout3.setFieldGrowthPolicy(
+            QtWidgets.QFormLayout.ExpandingFieldsGrow)
+        axisLayout.addLayout(formLayout3)
+
+        axisOrderLabel = QtWidgets.QLabel(parent)
+        axisOrderLabel.setText("Include Children")
+        formLayout3.setWidget(
+            0, QtWidgets.QFormLayout.LabelRole, axisOrderLabel)
+
         self.includeChildrenCheck = QtWidgets.QCheckBox(parent)
-        self.includeChildrenCheck.setText("Include Children")
-        layout.addWidget(self.includeChildrenCheck)
+        formLayout3.setWidget(
+            0, QtWidgets.QFormLayout.FieldRole, self.includeChildrenCheck)
+
+        layout.addLayout(axisLayout)
+
+        # orient buttons
+        hboxLayout2 = QtWidgets.QHBoxLayout(parent)
+        hboxLayout2.setSpacing(2)
 
         # orient to world button
         orientToWorldBtn = QtWidgets.QPushButton(parent)
         orientToWorldBtn.setText("Orient to World")
         orientToWorldBtn.clicked.connect(self.orientToWorldForSelected)
-        layout.addWidget(orientToWorldBtn)
+        hboxLayout2.addWidget(orientToWorldBtn)
 
         # orient to world button
         orientToJointBtn = QtWidgets.QPushButton(parent)
         orientToJointBtn.setText("Orient to Joint")
         orientToJointBtn.clicked.connect(self.orientToJointForSelected)
-        layout.addWidget(orientToJointBtn)
+        hboxLayout2.addWidget(orientToJointBtn)
+
+        layout.addLayout(hboxLayout2)
 
     def createRotateAxisForm(self, parent):
         widget = QtWidgets.QWidget(parent)

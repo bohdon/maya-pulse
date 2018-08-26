@@ -3,7 +3,7 @@
 from pulse.vendor.Qt import QtWidgets
 from .designviews.controls import ControlsPanel
 from .designviews.general import GeneralPanel
-from .designviews.joints import JointsPanel
+from .designviews.joints import JointsPanel, JointOrientsPanel
 from .designviews.names import NamesPanel
 from .designviews.sym import SymmetryPanel
 
@@ -41,7 +41,9 @@ class DesignViewWidget(QtWidgets.QWidget):
 
         self.setupPanelsUi(self.scrollLayout, self.scrollWidget)
 
-        spacer = QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
+        spacer = QtWidgets.QSpacerItem(
+            20, 20, QtWidgets.QSizePolicy.Minimum,
+            QtWidgets.QSizePolicy.Expanding)
         self.scrollLayout.addItem(spacer)
 
         self.scrollWidget.setLayout(self.scrollLayout)
@@ -60,8 +62,13 @@ class DesignViewWidget(QtWidgets.QWidget):
         joints = JointsPanel(parent)
         layout.addWidget(joints)
 
+        jointOrients = JointOrientsPanel(parent)
+        layout.addWidget(jointOrients)
+
         sym = SymmetryPanel(parent)
         layout.addWidget(sym)
 
-        spacer = QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
+        spacer = QtWidgets.QSpacerItem(
+            20, 20, QtWidgets.QSizePolicy.Minimum,
+            QtWidgets.QSizePolicy.Expanding)
         layout.addItem(spacer)
