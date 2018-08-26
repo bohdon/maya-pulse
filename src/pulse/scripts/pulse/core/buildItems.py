@@ -1002,6 +1002,12 @@ class BuildActionProxy(BuildActionData):
         """
         return self._variants[index]
 
+    def getOrCreateVariant(self, index):
+        if index >= 0:
+            while self.numVariants() <= index:
+                self.addVariant()
+        return self.getVariant(index)
+
     def numVariants(self):
         """
         Return how many variants exist on this action proxy

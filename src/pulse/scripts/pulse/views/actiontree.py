@@ -256,11 +256,8 @@ class ActionTreeWindow(PulseWindow):
 
         self.setWindowTitle('Pulse Action Tree')
 
-        widget = QtWidgets.QWidget(self)
-        self.setCentralWidget(widget)
-
         layout = QtWidgets.QVBoxLayout(self)
-        widget.setLayout(layout)
+        self.setLayout(layout)
 
         self.actionTree = ActionTreeWidget(self)
         layout.addWidget(self.actionTree)

@@ -421,7 +421,7 @@ class QuickNameEditor(PulseWindow):
 
         self.setWindowTitle('Quick Name Editor')
 
-        layout = QtWidgets.QVBoxLayout(parent)
+        layout = QtWidgets.QVBoxLayout(self)
         layout.setMargin(0)
         self.setLayout(layout)
 

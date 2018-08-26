@@ -95,6 +95,8 @@ class PulseWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
     # a string of python code to run when the workspace control is closed
     CLOSE_SCRIPT = 'from {module} import {cls}\n{cls}.windowClosed()'
 
+    REQUIRED_PLUGINS = ['pulse']
+
     # reference to singleton instance
     INSTANCE = None
 
@@ -105,6 +107,12 @@ class PulseWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
 
         # create instance if it doesn't exists
         if not cls.INSTANCE:
+
+            # load required plugins
+            if cls.REQUIRED_PLUGINS:
+                for plugin in cls.REQUIRED_PLUGINS:
+                    pm.loadPlugin(plugin, quiet=True)
+
             cls.INSTANCE = cls()
 
         if restore:
@@ -118,7 +126,8 @@ class PulseWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
 
             cls.INSTANCE.show(dockable=True,
                               uiScript=uiScript,
-                              closeCallback=closeScript)
+                              closeCallback=closeScript,
+                              requiredPlugin=cls.REQUIRED_PLUGINS)
 
         return cls.INSTANCE
 
@@ -349,8 +358,9 @@ class BlueprintUIModel(QtCore.QObject):
             return
 
         if variantIndex >= 0:
-            actionData = step.actionProxy.getVariant(variantIndex)
-            return actionData.getAttrValue(attrName)
+            if step.actionProxy.numVariants() > variantIndex:
+                actionData = step.actionProxy.getVariant(variantIndex)
+                return actionData.getAttrValue(attrName)
         else:
             return step.actionProxy.getAttrValue(attrName)
 
@@ -369,7 +379,7 @@ class BlueprintUIModel(QtCore.QObject):
             return
 
         if variantIndex >= 0:
-            variant = step.actionProxy.getVariant(variantIndex)
+            variant = step.actionProxy.getOrCreateVariant(variantIndex)
             variant.setAttrValue(attrName, value)
         else:
             step.actionProxy.setAttrValue(attrName, value)
@@ -468,8 +478,11 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
         if index.isValid():
             stepFromPtr = index.internalPointer()
             if not isinstance(stepFromPtr, pulse.BuildStep):
-                import traceback
-                traceback.print_stack()
+                # import traceback
+                # traceback.print_stack()
+                LOG.error("Expected BuildStep from index internal pointer, "
+                          "got {0}".format(type(stepFromPtr)))
+                return
             return stepFromPtr
 
         if self._blueprint:
@@ -512,8 +525,9 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
         if not index.isValid():
             return QtCore.QModelIndex()
 
-        parentStep = self.stepForIndex(index).parent
-        if parentStep == self._blueprint.rootStep:
+        thisStep = self.stepForIndex(index)
+        parentStep = thisStep.parent if thisStep else None
+        if not parentStep or parentStep == self._blueprint.rootStep:
             return QtCore.QModelIndex()
 
         return self.createIndex(parentStep.indexInParent(), 0, parentStep)
@@ -527,7 +541,8 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
             | QtCore.Qt.ItemIsDragEnabled \
             | QtCore.Qt.ItemIsEditable
 
-        if self.stepForIndex(index).canHaveChildren:
+        step = self.stepForIndex(index)
+        if step and step.canHaveChildren:
             flags |= QtCore.Qt.ItemIsDropEnabled
 
         return flags
@@ -562,6 +577,8 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
             return
 
         step = self.stepForIndex(index)
+        if not step:
+            return
 
         if role == QtCore.Qt.DisplayRole:
             return step.getDisplayName()

@@ -513,6 +513,8 @@ class ActionEditorWindow(PulseWindow):
 
         self.setWindowTitle('Pulse Action Editor')
 
+        layout = QtWidgets.QVBoxLayout(self)
+        self.setLayout(layout)
+
         widget = ActionEditorWidget(self)
-        widget.setMinimumSize(400, 300)
-        self.setCentralWidget(widget)
+        layout.addWidget(widget)

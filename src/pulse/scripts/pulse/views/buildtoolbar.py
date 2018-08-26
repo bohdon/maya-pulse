@@ -143,5 +143,8 @@ class BuildToolbarWindow(PulseWindow):
 
         self.setWindowTitle('Pulse Blueprint Editor')
 
+        layout = QtWidgets.QVBoxLayout(self)
+        self.setLayout(layout)
+
         widget = BuildToolbarWidget(self)
-        self.setCentralWidget(widget)
+        layout.addWidget(widget)
