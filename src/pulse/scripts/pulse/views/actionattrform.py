@@ -24,7 +24,7 @@ __all__ = [
 ]
 
 
-class ActionAttrForm(QtWidgets.QWidget):
+class ActionAttrForm(QtWidgets.QFrame):
     """
     The base class for all forms used to edit action attributes.
     Provides input validation and basic signals for keeping
@@ -63,6 +63,8 @@ class ActionAttrForm(QtWidgets.QWidget):
 
     def __init__(self, index, attr, variantIndex, parent=None):
         super(ActionAttrForm, self).__init__(parent=parent)
+        self.setObjectName('actionAttrForm')
+
         self.index = QtCore.QPersistentModelIndex(index)
         # the config data of the attribute being edited
         self.attr = attr
@@ -206,12 +208,11 @@ class ActionAttrForm(QtWidgets.QWidget):
             self._setUiValidState(False)
 
     def _setUiValidState(self, isValid):
-        if hasattr(self, 'frame'):
-            if isValid:
-                self.frame.setStyleSheet('')
-            else:
-                self.frame.setStyleSheet(
-                    '.QFrame{ background-color: rgb(255, 0, 0, 35); }')
+        if isValid:
+            self.setStyleSheet('')
+        else:
+            self.setStyleSheet(
+                'QFrame#actionAttrForm { background-color: rgb(255, 0, 0, 35); }')
 
     def setupDefaultFormUi(self, parent):
         """
@@ -219,16 +220,10 @@ class ActionAttrForm(QtWidgets.QWidget):
         Includes a form layout and a label with the attributes name.
         Should be called at the start of setupUi if desired.
         """
-        layout = QtWidgets.QVBoxLayout(parent)
-        layout.setContentsMargins(0, 0, 0, 0)
-
-        self.frame = QtWidgets.QFrame(parent)
-        layout.addWidget(self.frame)
-
-        self.formLayout = QtWidgets.QFormLayout(self.frame)
+        self.formLayout = QtWidgets.QFormLayout(parent)
         # margin that will give us some visible area of
         # the frame that can change color based on valid state
-        self.formLayout.setContentsMargins(2, 2, 2, 2)
+        self.formLayout.setMargin(2)
         self.formLayout.setFieldGrowthPolicy(
             QtWidgets.QFormLayout.ExpandingFieldsGrow)
         self.formLayout.setLabelAlignment(
@@ -238,7 +233,9 @@ class ActionAttrForm(QtWidgets.QWidget):
         self.formLayout.setHorizontalSpacing(10)
 
         # attribute name
-        self.label = QtWidgets.QLabel(self.frame)
+        self.labelLayout = QtWidgets.QHBoxLayout(parent)
+
+        self.label = QtWidgets.QLabel(parent)
         self.label.setMinimumSize(QtCore.QSize(
             self.LABEL_WIDTH, self.LABEL_HEIGHT))
         self.label.setAlignment(
@@ -248,8 +245,10 @@ class ActionAttrForm(QtWidgets.QWidget):
         # add some space above the label so it lines up
         self.label.setMargin(2)
         self.label.setText(pulse.names.toTitle(self.attr['name']))
-        self.formLayout.setWidget(
-            0, QtWidgets.QFormLayout.LabelRole, self.label)
+        self.labelLayout.addWidget(self.label)
+
+        self.formLayout.setLayout(
+            0, QtWidgets.QFormLayout.LabelRole, self.labelLayout)
 
     def setDefaultFormWidget(self, widget):
         """
@@ -266,7 +265,7 @@ class ActionAttrForm(QtWidgets.QWidget):
         self.formLayout.setLayout(0, QtWidgets.QFormLayout.FieldRole, layout)
 
 
-class BatchAttrForm(QtWidgets.QWidget):
+class BatchAttrForm(QtWidgets.QFrame):
     """
     The base class for an attribute form designed to
     bulk edit all variants of an attribute on an action proxy.
@@ -310,6 +309,9 @@ class BatchAttrForm(QtWidgets.QWidget):
         self.attr = attr
         self.setupUi(self)
 
+    def onModelDataChanged(self):
+        pass
+
     def setupUi(self, parent):
         raise NotImplementedError
 
@@ -320,16 +322,10 @@ class BatchAttrForm(QtWidgets.QWidget):
         Includes a form layout and a label with the attributes name.
         Should be called at the start of setupUi if desired.
         """
-        layout = QtWidgets.QVBoxLayout(parent)
-        layout.setContentsMargins(0, 0, 0, 0)
-
-        self.frame = QtWidgets.QFrame(parent)
-        layout.addWidget(self.frame)
-
-        self.formLayout = QtWidgets.QFormLayout(self.frame)
+        self.formLayout = QtWidgets.QFormLayout(parent)
         # margin that will give us some visible area of
         # the frame that can change color based on valid state
-        self.formLayout.setContentsMargins(2, 2, 2, 2)
+        self.formLayout.setMargin(2)
         self.formLayout.setFieldGrowthPolicy(
             QtWidgets.QFormLayout.ExpandingFieldsGrow)
         self.formLayout.setLabelAlignment(
@@ -339,7 +335,9 @@ class BatchAttrForm(QtWidgets.QWidget):
         self.formLayout.setHorizontalSpacing(10)
 
         # attribute name
-        self.label = QtWidgets.QLabel(self.frame)
+        self.labelLayout = QtWidgets.QHBoxLayout(parent)
+
+        self.label = QtWidgets.QLabel(parent)
         self.label.setMinimumSize(QtCore.QSize(
             self.LABEL_WIDTH, self.LABEL_HEIGHT))
         self.label.setAlignment(
@@ -349,8 +347,10 @@ class BatchAttrForm(QtWidgets.QWidget):
         # add some space above the label so it lines up
         self.label.setMargin(2)
         self.label.setText(pulse.names.toTitle(self.attr['name']))
-        self.formLayout.setWidget(
-            0, QtWidgets.QFormLayout.LabelRole, self.label)
+        self.labelLayout.addWidget(self.label)
+
+        self.formLayout.setLayout(
+            0, QtWidgets.QFormLayout.LabelRole, self.labelLayout)
 
     def setDefaultFormWidget(self, widget):
         """

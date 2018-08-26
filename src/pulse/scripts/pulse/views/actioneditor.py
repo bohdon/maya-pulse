@@ -16,6 +16,8 @@ from .actionattrform import ActionAttrForm, BatchAttrForm
 __all__ = [
     'ActionEditorWidget',
     'ActionEditorWindow',
+    'BuildActionDataForm',
+    'MainBuildActionDataForm',
     'BuildActionProxyForm',
     'BuildStepForm',
 ]
@@ -125,6 +127,192 @@ class BuildStepForm(QtWidgets.QWidget):
             layout.addWidget(self.actionForm)
 
 
+class BuildActionDataForm(QtWidgets.QWidget):
+    """
+    Form for editing all attributes of a BuildActionData instance.
+    """
+
+    def __init__(self, index, variantIndex=-1, parent=None):
+        super(BuildActionDataForm, self).__init__(parent=parent)
+
+        self.index = QtCore.QPersistentModelIndex(index)
+        self.variantIndex = variantIndex
+        self.setupUi(self)
+
+        # the map of all attr forms, indexed by attr name
+        self._attrForms = {}
+        self.updateAttrFormList()
+
+        self.index.model().dataChanged.connect(self.onModelDataChanged)
+
+    def onModelDataChanged(self):
+        if not self.index.isValid():
+            self.hide()
+            return
+
+        self.updateAttrFormList()
+
+    def getStep(self):
+        if self.index.isValid():
+            return self.index.model().stepForIndex(self.index)
+
+    def getActionData(self):
+        """
+        Return the BuildActionProxy being edited by this form
+        """
+        step = self.getStep()
+        if step and step.isAction():
+            actionProxy = step.actionProxy
+            if self.variantIndex >= 0:
+                if actionProxy.numVariants() > self.variantIndex:
+                    return actionProxy.getVariant(self.variantIndex)
+            else:
+                return actionProxy
+
+    def setupUi(self, parent):
+        self.layout = QtWidgets.QHBoxLayout(parent)
+        self.layout.setMargin(0)
+        self.setLayout(self.layout)
+
+        self.attrListLayout = QtWidgets.QVBoxLayout(parent)
+        self.attrListLayout.setMargin(0)
+        self.layout.addLayout(self.attrListLayout)
+
+    def updateAttrFormList(self):
+        """
+        Update the current attr forms to reflect
+        the action data. Can be called whenever the
+        action data's list of attributes changes
+        """
+        actionData = self.getActionData()
+        if not actionData:
+            return
+
+        parent = self
+
+        # remove forms for non existent attrs
+        for attrName, attrForm in self._attrForms.items():
+            if not actionData.hasAttr(attrName):
+                self.attrListLayout.removeWidget(attrForm)
+                attrForm.setParent(None)
+                del self._attrForms[attrName]
+
+        for i, attr in enumerate(actionData.getAttrs()):
+
+            # the current attr form, if any
+            attrForm = self._attrForms.get(attr['name'], None)
+
+            # the old version of the form.
+            # if set, will be replaced with a new attr form
+            oldForm = None
+            if self.shouldRecreateAttrForm(actionData, attr, attrForm):
+                oldForm = attrForm
+                attrForm = None
+
+            if not attrForm:
+                # create the attr form
+                attrForm = self.createAttrForm(actionData, attr, parent)
+
+                if oldForm:
+                    self.attrListLayout.replaceWidget(oldForm, attrForm)
+                    oldForm.setParent(None)
+                else:
+                    self.attrListLayout.insertWidget(i, attrForm)
+
+                self._attrForms[attr['name']] = attrForm
+
+            self.updateAttrForm(actionData, attr, attrForm)
+
+    def createAttrForm(self, actionData, attr, parent):
+        """
+        Create the form widget for an attribute
+        """
+        return ActionAttrForm.createForm(
+            self.index, attr, self.variantIndex, parent=parent)
+
+    def shouldRecreateAttrForm(self, actionData, attr, attrForm):
+        return False
+
+    def updateAttrForm(self, actionData, attr, attrForm):
+        """
+        Called when updating the attr form list, on an
+        attr form that already exists.
+        """
+        attrForm.onModelDataChanged()
+
+
+class MainBuildActionDataForm(BuildActionDataForm):
+    """
+    The form for the main set of BuildActionData of a
+    BuildActionProxy. Contains additional buttons for
+    toggling the variant state of attributes, and uses
+    BatchAttrForms for variant attributes.
+    """
+
+    def createAttrForm(self, actionData, attr, parent):
+        isVariant = False
+        # duck type of actionProxy
+        if hasattr(actionData, 'isVariantAttr'):
+            isVariant = actionData.isVariantAttr(attr['name'])
+
+        if isVariant:
+            attrForm = BatchAttrForm.createForm(
+                self.index, attr, parent=parent)
+        else:
+            attrForm = ActionAttrForm.createForm(
+                self.index, attr, self.variantIndex, parent=parent)
+
+        attrForm.isBatchForm = isVariant
+
+        # add toggle variant button to label layout
+        toggleVariantBtn = QtWidgets.QPushButton(parent)
+        toggleVariantBtn.setText("⋮")
+        toggleVariantBtn.setFixedSize(QtCore.QSize(14, 20))
+        toggleVariantBtn.setCheckable(True)
+        attrForm.labelLayout.insertWidget(0, toggleVariantBtn)
+        attrForm.labelLayout.setAlignment(toggleVariantBtn, QtCore.Qt.AlignTop)
+        toggleVariantBtn.clicked.connect(
+            partial(self.toggleIsVariantAttr, attr['name']))
+
+        attrForm.toggleVariantBtn = toggleVariantBtn
+        return attrForm
+
+    def shouldRecreateAttrForm(self, actionData, attr, attrForm):
+        isVariant = False
+        # duck type of actionProxy
+        if hasattr(actionData, 'isVariantAttr'):
+            isVariant = actionData.isVariantAttr(attr['name'])
+
+        return getattr(attrForm, 'isBatchForm', False) != isVariant
+
+    def updateAttrForm(self, actionData, attr, attrForm):
+        # update variant state of the attribute
+        isVariant = False
+        # duck type of actionProxy
+        if hasattr(actionData, 'isVariantAttr'):
+            isVariant = actionData.isVariantAttr(attr['name'])
+
+        attrForm.toggleVariantBtn.setChecked(isVariant)
+        # attrForm.setIsVariant(isVariant)
+
+        super(MainBuildActionDataForm, self).updateAttrForm(
+            actionData, attr, attrForm)
+
+    def toggleIsVariantAttr(self, attrName):
+        step = self.getStep()
+        if not step:
+            return
+
+        actionProxy = self.getActionData()
+        if not actionProxy:
+            return
+
+        attrPath = '{0}.{1}'.format(step.getFullPath(), attrName)
+
+        isVariant = actionProxy.isVariantAttr(attrName)
+        cmds.pulseSetIsVariantAttr(attrPath, not isVariant)
+
+
 class BuildActionProxyForm(QtWidgets.QWidget):
     """
     Form for editing BuildActionProxys.
@@ -135,7 +323,9 @@ class BuildActionProxyForm(QtWidgets.QWidget):
     def __init__(self, index, parent=None):
         super(BuildActionProxyForm, self).__init__(parent=parent)
         self.index = QtCore.QPersistentModelIndex(index)
+        self.hasVariantsUi = False
         self.setupUi(self)
+        self.updateVariantFormList()
         self.index.model().dataChanged.connect(self.onModelDataChanged)
 
     def onModelDataChanged(self):
@@ -143,29 +333,27 @@ class BuildActionProxyForm(QtWidgets.QWidget):
             self.hide()
             return
 
-        step = self.step()
-        if not step:
-            return
+        # TODO: get specific changes necessary to insert or remove indeces
+        self.updateVariantFormList()
 
-        # update attr forms to represent the current
-        # variant attr state and count
-        self.setupConstantsUi(self)
-        self.setupVariantsUi(self)
-
-    def step(self):
+    def getStep(self):
         """
         Return the BuildStep being edited by this form
         """
         if self.index.isValid():
             return self.index.model().stepForIndex(self.index)
 
-    def actionProxy(self):
+    def getActionProxy(self):
         """
         Return the BuildActionProxy being edited by this form
         """
-        step = self.step()
+        step = self.getStep()
         if step and step.isAction():
             return step.actionProxy
+
+    def shouldSetupVariantsUi(self):
+        actionProxy = self.getActionProxy()
+        return actionProxy and actionProxy.numAttrs() > 0
 
     def setupUi(self, parent):
         """
@@ -177,21 +365,20 @@ class BuildActionProxyForm(QtWidgets.QWidget):
         layout.setSpacing(4)
         layout.setMargin(0)
 
-        # constants main layout
-        self.constantAttrForms = {}
-        self.constantsLayout = QtWidgets.QVBoxLayout(parent)
-        self.constantsLayout.setContentsMargins(0, 0, 0, 0)
-        layout.addLayout(self.constantsLayout)
+        # form for all main / invariant attributes
+        mainAttrForm = MainBuildActionDataForm(self.index, parent=parent)
+        layout.addWidget(mainAttrForm)
 
         spacer = QtWidgets.QSpacerItem(
             20, 4, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
         layout.addItem(spacer)
 
-        actionProxy = self.actionProxy()
-        if actionProxy and actionProxy.numAttrs() > 0:
-            self.setupVariantsHeaderUi(parent, layout)
+        # variant form list
+        if self.shouldSetupVariantsUi():
+            self.setupVariantsUi(parent, layout)
+            self.hasVariantsUi = True
 
-    def setupVariantsHeaderUi(self, parent, layout):
+    def setupVariantsUi(self, parent, layout):
         # variant header
         variantHeader = QtWidgets.QFrame(parent)
         variantHeader.setStyleSheet(
@@ -217,203 +404,111 @@ class BuildActionProxyForm(QtWidgets.QWidget):
         addVariantBtn.clicked.connect(self.addVariant)
         variantHeaderLayout.addWidget(addVariantBtn)
 
-        # variant list main layout
-        self.variantAttrForms = []
-        self.variantLayout = QtWidgets.QVBoxLayout(parent)
-        self.variantLayout.setContentsMargins(0, 0, 0, 0)
-        self.variantLayout.setSpacing(4)
-        layout.addLayout(self.variantLayout)
+        # variant list layout
+        self.variantListLayout = QtWidgets.QVBoxLayout(parent)
+        self.variantListLayout.setContentsMargins(0, 0, 0, 0)
+        self.variantListLayout.setSpacing(4)
+        layout.addLayout(self.variantListLayout)
 
-        self.setupConstantsUi(parent)
-        self.setupVariantsUi(parent)
-
-    def setupConstantsUi(self, parent):
-        actionProxy = self.actionProxy()
-        if not actionProxy:
-            return
-
-        # create form container for all attrs
-        for attr in actionProxy.getAttrs():
-            if attr['name'] in self.constantAttrForms:
-                # form already setup
-                continue
-
-            form = {}
-
-            # make an HBox with a button to toggle variant state
-            attrHLayout = QtWidgets.QHBoxLayout(parent)
-            attrHLayout.setSpacing(10)
-            attrHLayout.setMargin(0)
-            form['layout'] = attrHLayout
-            self.constantsLayout.addLayout(attrHLayout)
-
-            # button to toggle variant
-            toggleVariantBtn = QtWidgets.QPushButton(parent)
-            toggleVariantBtn.setText("⋮")
-            toggleVariantBtn.setFixedSize(QtCore.QSize(14, 20))
-            toggleVariantBtn.setCheckable(True)
-            form['toggleVariantBtn'] = toggleVariantBtn
-            attrHLayout.addWidget(toggleVariantBtn)
-            attrHLayout.setAlignment(toggleVariantBtn, QtCore.Qt.AlignTop)
-            toggleVariantBtn.clicked.connect(
-                partial(self.toggleIsVariantAttr, attr['name']))
-
-            self.constantAttrForms[attr['name']] = form
-
-        # update all form containers to match the current variant state
-        for attr in actionProxy.getAttrs():
-            isVariant = actionProxy.isVariantAttr(attr['name'])
-
-            # update attr form variant state
-            form = self.constantAttrForms[attr['name']]
-            form['toggleVariantBtn'].setChecked(isVariant)
-
-            if not isVariant:
-                self.createOrShowConstantAttrForm(attr, form)
-                self.hideVariantMainAttrForm(form)
-            else:
-                self.createOrShowVariantMainAttrForm(attr, form)
-                self.hideConstantAttrForm(form)
-
-    def createOrShowConstantAttrForm(self, attr, form):
-        if 'constantForm' not in form:
-            newForm = self.createConstantAttrForm(self, attr)
-            if newForm:
-                form['layout'].addWidget(newForm)
-                form['constantForm'] = newForm
-        else:
-            form['constantForm'].setVisible(True)
-
-    def hideConstantAttrForm(self, form):
-        if 'constantForm' in form:
-            form['constantForm'].setVisible(False)
-
-    def createOrShowVariantMainAttrForm(self, attr, form):
-        if 'variantForm' not in form:
-            newForm = self.createVariantMainAttrForm(self, attr)
-            if newForm:
-                form['layout'].addWidget(newForm)
-                form['variantForm'] = newForm
-        else:
-            form['variantForm'].setVisible(True)
-
-    def hideVariantMainAttrForm(self, form):
-        if 'variantForm' in form:
-            form['variantForm'].setVisible(False)
-
-    def createConstantAttrForm(self, parent, attr):
-        attrForm = ActionAttrForm.createForm(
-            self.index, attr, parent=parent)
-        return attrForm
-
-    def createVariantMainAttrForm(self, parent, attr):
+    def createVariantActionDataForm(self, variantIndex, parent):
         """
-        Creates an attr form in the constant attr area,
-        but for an attribute marked as variant. By default
-        this will just show the attribute label as a
-        placeholder to accompany the variant toggle,
-        but some attributes support custom forms for
-        batch editing multiple variant values.
+        Create a widget that wraps a BuildActionDataForm widget
+        for use in the variants list. Adds a button to remove the variant.
         """
-        batchForm = BatchAttrForm.createForm(
-            self.index, attr, parent=parent)
-        return batchForm
+        dataForm = BuildActionDataForm(
+            self.index, variantIndex, parent=parent)
 
-    def setupVariantsUi(self, parent):
-        actionProxy = self.actionProxy()
-        if not actionProxy:
-            return
-
-        viewutils.clearLayout(self.variantLayout)
-
-        self.variantsLabel.setText(
-            "Variants: {0}".format(actionProxy.numVariants()))
-
-        for i in range(actionProxy.numVariants()):
-            self._createVariantForm(parent, i, actionProxy)
-
-    def _createVariantForm(self, parent, variantIndex, actionProxy):
-        """
-        Build a form for editing the variant attribute values
-        at the variant index.
-        """
-        if variantIndex > 0:
-            # divider line
-            dividerLine = QtWidgets.QFrame(parent)
-            dividerLine.setStyleSheet(
-                ".QFrame{ background-color: rgb(0, 0, 0, 15); border-radius: 2px }")
-            dividerLine.setMinimumHeight(2)
-            self.variantLayout.addWidget(dividerLine)
-
-        variantHLayout = QtWidgets.QHBoxLayout(parent)
-
-        # remove variant button
+        # add remove variant button
         removeVariantBtn = QtWidgets.QPushButton(parent)
         removeVariantBtn.setText('x')
         removeVariantBtn.setFixedSize(QtCore.QSize(20, 20))
         removeVariantBtn.clicked.connect(
             partial(self.removeVariantAtIndex, variantIndex))
-        variantHLayout.addWidget(removeVariantBtn)
+        dataForm.layout.insertWidget(0, removeVariantBtn)
 
-        # create attr form for all variant attributes
-        variantVLayout = QtWidgets.QVBoxLayout(parent)
-        variantVLayout.setSpacing(0)
-        variantHLayout.addLayout(variantVLayout)
+        return dataForm
 
-        if actionProxy.isVariantAction():
-            for attr in actionProxy.getAttrs():
-                if not actionProxy.isVariantAttr(attr['name']):
-                    continue
-                attrForm = ActionAttrForm.createForm(
-                    self.index, attr, variantIndex, parent=parent)
-                variantVLayout.addWidget(attrForm)
-        else:
-            noAttrsLabel = QtWidgets.QLabel(parent)
-            noAttrsLabel.setText("No variant attributes")
-            noAttrsLabel.setMinimumHeight(24)
-            noAttrsLabel.setContentsMargins(10, 0, 0, 0)
-            noAttrsLabel.setEnabled(False)
-            variantVLayout.addWidget(noAttrsLabel)
+    def updateVariantFormList(self):
+        if not self.hasVariantsUi:
+            return
 
-        self.variantLayout.addLayout(variantHLayout)
-
-    def toggleIsVariantAttr(self, attrName):
-        actionProxy = self.actionProxy()
+        actionProxy = self.getActionProxy()
         if not actionProxy:
             return
 
-        step = self.step()
-        if not step:
+        self.variantsLabel.setText(
+            "Variants: {0}".format(actionProxy.numVariants()))
+
+        while self.variantListLayout.count() < actionProxy.numVariants():
+            self.insertVariantForm(self.variantListLayout.count())
+
+        while self.variantListLayout.count() > actionProxy.numVariants():
+            self.removeVariantForm(-1)
+
+        for i in range(self.variantListLayout.count()):
+            item = self.variantListLayout.itemAt(i)
+            dataForm = item.widget()
+            if dataForm:
+                dataForm.variantIndex = i
+                dataForm.updateAttrFormList()
+
+    def insertVariantForm(self, index=-1):
+        """
+        Insert a new variant action data form into the variants list.
+        """
+        if not self.hasVariantsUi:
             return
 
-        attrPath = '{0}.{1}'.format(step.getFullPath(), attrName)
+        if index >= 0:
+            variantIndex = index
+        else:
+            variantIndex = self.variantListLayout.count() + index
+        attrForm = self.createVariantActionDataForm(variantIndex, parent=self)
+        self.variantListLayout.insertWidget(index, attrForm)
 
-        isVariant = actionProxy.isVariantAttr(attrName)
-        cmds.pulseSetIsVariantAttr(attrPath, not isVariant)
+    def removeVariantForm(self, index):
+        """
+        Remove a variant action data form from the variants list.
+        """
+        if not self.hasVariantsUi:
+            return
+
+        if index < 0:
+            index = self.variantListLayout.count() + index
+        if index >= 0 and index < self.variantListLayout.count():
+            attrFormItem = self.variantListLayout.takeAt(index)
+            attrForm = attrFormItem.widget()
+            if attrForm:
+                attrForm.setParent(None)
 
     def addVariant(self):
-        actionProxy = self.actionProxy()
+        actionProxy = self.getActionProxy()
         if not actionProxy:
             return
 
         actionProxy.addVariant()
-        self.setupVariantsUi(self)
+        self.updateVariantFormList()
 
     def removeVariantAtIndex(self, index):
-        actionProxy = self.actionProxy()
+        actionProxy = self.getActionProxy()
         if not actionProxy:
             return
 
+        # TODO: implement plugin command
+        # step = self.getStep()
+        # stepPath = step.getFullPath()
+        # cmds.pulseRemoveVariant(stepPath, self.variantIndex)
+
         actionProxy.removeVariantAt(index)
-        self.setupVariantsUi(self)
+        self.updateVariantFormList()
 
     def removeVariantFromEnd(self):
-        actionProxy = self.actionProxy()
+        actionProxy = self.getActionProxy()
         if not actionProxy:
             return
 
         actionProxy.removeVariantAt(-1)
-        self.setupVariantsUi(self)
+        self.updateVariantFormList()
 
 
 class ActionEditorWidget(QtWidgets.QWidget):

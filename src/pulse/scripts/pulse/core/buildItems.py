@@ -597,9 +597,17 @@ class BuildActionData(object):
 
     def hasAttrConfig(self, attrName):
         """
-        Return True if this action data contains the attribute
+        Return True if this action's config contains the attribute.
         """
         return self.getAttrConfig(attrName) is not None
+
+    def hasAttr(self, attrName):
+        """
+        Return True if this action data includes the attribute.
+        This doesn't mean it has a value for the attribute, only
+        that it can potentially.
+        """
+        return attrName in self.getAttrNames()
 
     def getAttrConfig(self, attrName):
         """
