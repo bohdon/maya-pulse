@@ -2,9 +2,8 @@
 from pulse.vendor.Qt import QtCore, QtWidgets, QtGui
 import pymel.core as pm
 
-import pulse.nodes
-
 from pulse.views.utils import undoAndRepeatPartial as cmd
+from pulse import editorutils
 from .core import DesignViewPanel
 
 __all__ = [
@@ -37,7 +36,7 @@ class GeneralPanel(DesignViewPanel):
             "Freeze the scales of the selected node and its children "
             "without affecting their pivots")
         freezeScaleBtn.clicked.connect(
-            cmd(pulse.nodes.freezeScalesForSelectedHierarchies))
+            cmd(editorutils.freezeScalesForSelectedHierarchies))
         gridLayout.addWidget(freezeScaleBtn, 0, 0, 1, 1)
 
         freezePivotBtn = QtWidgets.QPushButton(frame)
@@ -46,14 +45,14 @@ class GeneralPanel(DesignViewPanel):
             "Freeze the local pivots of the selected node and its "
             "children by baking the values into translate")
         freezePivotBtn.clicked.connect(
-            cmd(pulse.nodes.freezePivotsForSelectedHierarchies))
+            cmd(editorutils.freezePivotsForSelectedHierarchies))
         gridLayout.addWidget(freezePivotBtn, 0, 1, 1, 1)
 
         parentSelBtn = QtWidgets.QPushButton(frame)
         parentSelBtn.setText("Parent Selected")
         parentSelBtn.setStatusTip(
             "Parent the selected nodes, select one leader then followers")
-        parentSelBtn.clicked.connect(cmd(pulse.nodes.parentSelected))
+        parentSelBtn.clicked.connect(cmd(editorutils.parentSelected))
         gridLayout.addWidget(parentSelBtn, 1, 0, 1, 1)
 
         parentInOrderBtn = QtWidgets.QPushButton(frame)
@@ -61,7 +60,7 @@ class GeneralPanel(DesignViewPanel):
         parentInOrderBtn.setStatusTip(
             "Parent the selection in order, select leaders to followers")
         parentInOrderBtn.clicked.connect(
-            cmd(pulse.nodes.parentSelectedInOrder))
+            cmd(editorutils.parentSelectedInOrder))
         gridLayout.addWidget(parentInOrderBtn, 1, 1, 1, 1)
 
         createOffsetBtn = QtWidgets.QPushButton(frame)
@@ -70,7 +69,7 @@ class GeneralPanel(DesignViewPanel):
             "Group the selected transform, creating the group "
             "exactly where the transform is")
         createOffsetBtn.clicked.connect(
-            cmd(pulse.nodes.createOffsetForSelected))
+            cmd(editorutils.createOffsetForSelected))
         gridLayout.addWidget(createOffsetBtn, 2, 0, 1, 1)
 
         selectChildrenBtn = QtWidgets.QPushButton(frame)

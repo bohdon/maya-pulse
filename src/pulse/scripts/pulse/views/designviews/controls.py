@@ -1,8 +1,8 @@
 
 from pulse.vendor.Qt import QtCore, QtWidgets, QtGui
 
-import pulse.shapes
 import pulse.controlshapes
+from pulse import editorutils
 from pulse.views.style import UIColors
 from pulse.views.utils import getIcon
 from pulse.views.utils import undoAndRepeatPartial as cmd
@@ -81,7 +81,7 @@ class ControlsPanel(DesignViewPanel):
                 "{0} degrees around the {1} axis".format(degrees, _axes[axis]))
             btn.setStyleSheet(UIColors.asBGColor(color))
             btn.clicked.connect(
-                cmd(pulse.shapes.rotateSelectedComponentsAroundAxis, axis, degrees))
+                cmd(editorutils.rotateSelectedComponentsAroundAxis, axis, degrees))
             return btn
 
         btn = createRotateComponentsButton('- X', UIColors.RED, 0, -90)

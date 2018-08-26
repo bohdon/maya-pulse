@@ -1,20 +1,16 @@
 
 import logging
 import pymel.core as pm
-
-from pulse.vendor.mayacoretools import preservedSelection
+import maya.cmds as cmds
 
 
 __all__ = [
     'areNodesAligned',
     'convertScaleConstraintToWorldSpace',
-    'createOffsetForSelected',
     'createOffsetGroup',
     'freezePivot',
     'freezePivotsForHierarchy',
-    'freezePivotsForSelectedHierarchies',
     'freezeScalesForHierarchy',
-    'freezeScalesForSelectedHierarchies',
     'fullConstraint',
     'getAllParents',
     'getAssemblies',
@@ -32,9 +28,8 @@ __all__ = [
     'getTranslationMidpoint',
     'getWorldMatrix',
     'matchWorldMatrix',
+    'normalizeEulerRotations',
     'parentInOrder',
-    'parentSelected',
-    'parentSelectedInOrder',
     'setConstraintLocked',
     'setParent',
     'setRelativeMatrix',
@@ -224,20 +219,6 @@ def setParent(children, parent):
     pm.parent(*args)
 
 
-def parentSelected():
-    """
-    Parent the selected nodes. Select a leader then followers.
-
-    [A, B, C] -> A|B, A|C
-    """
-    sel = pm.selected()
-    if len(sel) < 2:
-        pm.warning('More that one node must be selected')
-        return
-    setParent(sel[1:], sel[0])
-    pm.select(sel)
-
-
 def parentInOrder(nodes):
     """
     Parent the given nodes to each other in order.
@@ -247,7 +228,7 @@ def parentInOrder(nodes):
         nodes: A list of nodes to parent to each other in order
     """
     if len(nodes) < 2:
-        pm.warning("More than one node must be given")
+        LOG.warning("More than one node must be given")
         return
     # find the first parent of our new parent that is not
     # going to be a child in the new hierarchy, this prevents
@@ -265,15 +246,6 @@ def parentInOrder(nodes):
     for i in range(len(nodes) - 1):
         parent, child = nodes[i:i + 2]
         setParent(child, parent)
-
-
-def parentSelectedInOrder():
-    """
-    Parent the selected nodes to each other in order.
-    Select from top of hierarchy downward, eg. [A, B, C] -> A|B|C
-    """
-    with preservedSelection() as sel:
-        parentInOrder(sel[:])
 
 
 # Node Creation
@@ -321,13 +293,6 @@ def createOffsetGroup(node, name='{0}_offset'):
              )
 
     return offset
-
-
-def createOffsetForSelected():
-    """
-    Create an offset group for the selected nodes
-    """
-    pm.select([createOffsetGroup(s) for s in pm.selected(type='transform')])
 
 
 # Attribute Retrieval
@@ -504,17 +469,6 @@ def freezeScalesForHierarchy(transform):
     setTransformHierarchy(hierarchy)
 
 
-def freezeScalesForSelectedHierarchies():
-    """
-    Freeze scales on the selected transforms and all their descendants.
-    See `freezeScalesForHierarchy` for more details.
-    """
-    with preservedSelection() as sel:
-        tops = getParentNodes(sel[:])
-        for t in tops:
-            freezeScalesForHierarchy(t)
-
-
 def freezePivot(transform):
     """
     Freeze the given transform such that its local pivot becomes zero,
@@ -559,12 +513,6 @@ def freezePivotsForHierarchy(transform):
     for n in [transform] + children:
         freezePivot(n)
     setTransformHierarchy(hierarchy)
-
-
-def freezePivotsForSelectedHierarchies():
-    with preservedSelection() as sel:
-        for s in sel:
-            freezePivotsForHierarchy(s)
 
 
 def getEulerRotationFromMatrix(matrix):
@@ -701,8 +649,21 @@ def getRotationMatrix(matrix):
     return pm.dt.TransformationMatrix(matrix).euler.asMatrix()
 
 
+def normalizeEulerRotations(node):
+    """
+    Modify the rotation of a transform node such that its euler
+    rotations are in the range of 0..360
+    """
+    rotation = node.r.get()
+    rotation.x %= 360
+    rotation.y %= 360
+    rotation.z %= 360
+    node.r.set(rotation)
+
+
 # Axis Utils
 # ----------
+
 
 def getAxis(value):
     """
