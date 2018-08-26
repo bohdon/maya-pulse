@@ -5,7 +5,7 @@ import pymel.core as pm
 import pulse.nodes
 import pulse.sym
 
-from pulse.views.core import buttonCommand
+from pulse.views.utils import undoAndRepeatPartial as cmd
 from .core import DesignViewPanel
 
 __all__ = [
@@ -45,42 +45,42 @@ class SymmetryPanel(DesignViewPanel):
         pairBtn.setText("Pair")
         pairBtn.setStatusTip(
             "Pair the two selected nodes as mirroring counterparts")
-        pairBtn.clicked.connect(buttonCommand(self.pairSelected))
+        pairBtn.clicked.connect(cmd(self.pairSelected))
         gridLayout.addWidget(pairBtn, 0, 0, 1, 1)
 
         unpairBtn = QtWidgets.QPushButton(frame)
         unpairBtn.setText("Unpair")
         unpairBtn.setStatusTip(
             "Unpair the selected node or nodes (can be many at once)")
-        unpairBtn.clicked.connect(buttonCommand(self.unpairSelected))
+        unpairBtn.clicked.connect(cmd(self.unpairSelected))
         gridLayout.addWidget(unpairBtn, 0, 1, 1, 1)
 
         mirrorTransformsBtn = QtWidgets.QPushButton(frame)
         mirrorTransformsBtn.setText("Mirror Transforms")
         mirrorTransformsBtn.setStatusTip(
             "Mirror transforms of the selected nodes")
-        mirrorTransformsBtn.clicked.connect(buttonCommand(self.mirrorTransforms))
+        mirrorTransformsBtn.clicked.connect(cmd(self.mirrorTransforms))
         gridLayout.addWidget(mirrorTransformsBtn, 1, 0, 1, 1)
 
         mirrorParentBtn = QtWidgets.QPushButton(frame)
         mirrorParentBtn.setText("Mirror Parenting")
         mirrorParentBtn.setStatusTip(
             "Mirror the parenting hierarchy of the selected nodes")
-        mirrorParentBtn.clicked.connect(buttonCommand(self.mirrorParenting))
+        mirrorParentBtn.clicked.connect(cmd(self.mirrorParenting))
         gridLayout.addWidget(mirrorParentBtn, 1, 1, 1, 1)
 
         mirrorAllBtn = QtWidgets.QPushButton(frame)
         mirrorAllBtn.setText("Mirror All")
         mirrorAllBtn.setStatusTip(
             "Mirror all aspects of the selected nodes")
-        mirrorAllBtn.clicked.connect(buttonCommand(self.mirrorAll))
+        mirrorAllBtn.clicked.connect(cmd(self.mirrorAll))
         gridLayout.addWidget(mirrorAllBtn, 2, 0, 1, 1)
 
         mirrorActionsBtn = QtWidgets.QPushButton(frame)
         mirrorActionsBtn.setText("Mirror Actions")
         mirrorActionsBtn.setStatusTip(
             "Mirror the Pulse Actions associated with the selected nodes")
-        mirrorActionsBtn.clicked.connect(buttonCommand(self.mirrorActions))
+        mirrorActionsBtn.clicked.connect(cmd(self.mirrorActions))
         gridLayout.addWidget(mirrorActionsBtn, 2, 1, 1, 1)
 
         self.includeChildrenCheck = QtWidgets.QCheckBox(frame)
@@ -116,4 +116,3 @@ class SymmetryPanel(DesignViewPanel):
 
     def mirrorActions(self):
         pass
-

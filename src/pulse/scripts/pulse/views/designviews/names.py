@@ -5,9 +5,8 @@ import pymel.core as pm
 import pulse.core
 import pulse.names
 from pulse.vendor.Qt import QtCore, QtWidgets, QtGui
-from pulse.views.core import buttonCommand
-from pulse.views.core import PulseWindow
-from pulse.views.core import BlueprintUIModel
+from pulse.views.core import PulseWindow, BlueprintUIModel
+from pulse.views.utils import undoAndRepeatPartial as cmd
 from pulse.views import style
 from .core import DesignViewPanel
 
@@ -40,7 +39,7 @@ class NamesPanel(DesignViewPanel):
         quickNameWindowBtn = QtWidgets.QPushButton(frame)
         quickNameWindowBtn.setText("Quick Name Editor")
         quickNameWindowBtn.clicked.connect(
-            buttonCommand(QuickNameEditor.toggleWindow))
+            cmd(QuickNameEditor.toggleWindow))
         btnLayout.addWidget(quickNameWindowBtn)
 
 

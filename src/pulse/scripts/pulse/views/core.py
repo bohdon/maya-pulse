@@ -16,30 +16,11 @@ __all__ = [
     'BlueprintUIModel',
     'BuildStepSelectionModel',
     'BuildStepTreeModel',
-    'buttonCommand',
     'CollapsibleFrame',
     'PulseWindow',
 ]
 
 LOG = logging.getLogger(__name__)
-
-
-def buttonCommand(func, *args, **kwargs):
-    """
-    Return a function that can be called which will execute
-    the given function with proper undo chunk handling.
-    """
-
-    def wrapper():
-        cmds.undoInfo(openChunk=True)
-        try:
-            func(*args, **kwargs)
-        except Exception as e:
-            cmds.error(e)
-        finally:
-            cmds.undoInfo(closeChunk=True)
-
-    return wrapper
 
 
 class CollapsibleFrame(QtWidgets.QFrame):
