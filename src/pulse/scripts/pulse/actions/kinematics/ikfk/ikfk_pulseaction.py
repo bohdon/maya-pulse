@@ -65,3 +65,10 @@ class ThreeBoneIKFKAction(pulse.BuildAction):
 
         # setup ikfk switch
         # ...
+
+        # cleanup
+        for jnt in ikjnts:
+            # TODO: lock attrs
+            jnt.v.set(False)
+
+        handle.v.set(False)
