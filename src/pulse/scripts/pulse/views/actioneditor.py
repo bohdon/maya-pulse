@@ -176,6 +176,7 @@ class BuildActionDataForm(QtWidgets.QWidget):
 
         self.attrListLayout = QtWidgets.QVBoxLayout(parent)
         self.attrListLayout.setMargin(0)
+        self.attrListLayout.setSpacing(0)
         self.layout.addLayout(self.attrListLayout)
 
     def updateAttrFormList(self):
@@ -266,9 +267,9 @@ class MainBuildActionDataForm(BuildActionDataForm):
 
         # add toggle variant button to label layout
         toggleVariantBtn = QtWidgets.QPushButton(parent)
-        toggleVariantBtn.setText("⋮")
-        toggleVariantBtn.setFixedSize(QtCore.QSize(14, 20))
         toggleVariantBtn.setCheckable(True)
+        toggleVariantBtn.setText("·")
+        toggleVariantBtn.setFixedSize(QtCore.QSize(14, 20))
         attrForm.labelLayout.insertWidget(0, toggleVariantBtn)
         attrForm.labelLayout.setAlignment(toggleVariantBtn, QtCore.Qt.AlignTop)
         toggleVariantBtn.clicked.connect(
@@ -293,7 +294,7 @@ class MainBuildActionDataForm(BuildActionDataForm):
             isVariant = actionData.isVariantAttr(attr['name'])
 
         attrForm.toggleVariantBtn.setChecked(isVariant)
-        # attrForm.setIsVariant(isVariant)
+        attrForm.toggleVariantBtn.setText("⋮" if isVariant else "·")
 
         super(MainBuildActionDataForm, self).updateAttrForm(
             actionData, attr, attrForm)
