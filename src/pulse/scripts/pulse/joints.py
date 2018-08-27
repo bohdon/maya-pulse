@@ -11,7 +11,7 @@ __all__ = [
     'getRootJoint',
     'insertJoints',
     'matchJointRotationToOrient',
-    'orientJointToBone',
+    'orientJoint',
     'orientJointToWorld',
     'rotateJointOrient',
     'setJointMatrices',
@@ -214,16 +214,23 @@ def orientJointToWorld(joint):
     setJointMatrices(joint, wm, r, ra, jo)
 
 
-def orientJointToBone(joint, axisOrder='xyz', upAxisStr='y'):
+def orientJoint(joint, axisOrder='xyz', upAxisStr='y', **kwargs):
     """
-    Orient the joint to point towards its child
+    Orient the joint to point down the bone
 
     Args:
-        axisOrder (str): The axis order for orienting, e.g. 'XYZ', 'ZYX', ...
+        axisOrder (str): The axis order for orienting, e.g. 'xyz', 'zyx', ...
         upAxisStr (str): The axis of the node that should be pointing up,
             represented as a string, e.g. 'x', 'y', 'z'
+        kwargs: Any valid kwargs for the `joint` orient command
     """
-    pass
+    if joint.numChildren() > 0:
+        # secondary axis orient is in the format 'xup', 'ydown', etc...
+        saoStr = upAxisStr + 'up'
+        pm.joint(joint, e=True, oj=axisOrder, sao=saoStr, **kwargs)
+    else:
+        # zero out rotations of end joints
+        joint.jo.set([0, 0, 0])
 
 
 def matchJointRotationToOrient(joint, preserveChildren=False):

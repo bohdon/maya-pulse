@@ -68,8 +68,8 @@ class JointOrientsPanel(DesignViewPanel):
     Util widget for orienting joints.
     """
 
-    AXIS_ORDER_OPTIONS = ['XYZ', 'YZX', 'ZXY', 'XZY', 'YXZ', 'ZYX']
-    UP_AXIS_OPTIONS = ['X', 'Y', 'Z']
+    AXIS_ORDER_OPTIONS = ['xyz', 'yzx', 'zxy', 'xzy', 'yxz', 'zyx']
+    UP_AXIS_OPTIONS = ['x', 'y', 'z']
 
     orientAxisOrder = optionVarProperty('pulse.editor.orientAxisOrder', 0)
     orientUpAxis = optionVarProperty('pulse.editor.orientUpAxis', 1)
@@ -291,8 +291,8 @@ class JointOrientsPanel(DesignViewPanel):
     def getOrientUpAxisStr(self):
         """
         Returns:
-            An int representing the up axis.
-                0 = X, 1 = Y, 2 = Z
+            An str representing the up axis
+                e.g. 'x', 'y', 'z'
         """
         return self.UP_AXIS_OPTIONS[self.orientUpAxis]
 
@@ -300,7 +300,7 @@ class JointOrientsPanel(DesignViewPanel):
         """
         Returns:
             A string representing the orient axis order,
-            e.g. 'XYZ', 'ZYX', ...
+                e.g. 'xyz', 'zyx', ...
         """
         return self.AXIS_ORDER_OPTIONS[self.orientAxisOrder]
 
@@ -335,5 +335,8 @@ class JointOrientsPanel(DesignViewPanel):
         func()
 
     def matchJointRotationToOrientForSelected(self):
-        func = cmd(editorutils.matchJointRotationToOrientForSelected)
+        kw = dict(
+            preserveChildren=self.orientPreserveChildren,
+        )
+        func = cmd(editorutils.matchJointRotationToOrientForSelected, **kw)
         func()

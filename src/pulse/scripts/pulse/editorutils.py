@@ -137,7 +137,6 @@ def orientToWorldForSelected(
     Orient the selected joints or transforms to match
     the world aligned axes
     """
-    # TODO: implement preserveChildren
     # TODO: implement preserveShapes
     sel = pm.selected()
     for node in sel:
@@ -155,7 +154,14 @@ def orientToJointForSelected(
         preserveChildren=True,
         preserveShapes=True,
         syncJointAxes=True):
-    pass
+    """
+    """
+    sel = pm.selected()
+    for node in sel:
+        if node.nodeType() == 'joint':
+            orientJoint(node, axisOrder, upAxisStr)
+            # if syncJointAxes:
+            #     matchJointRotationToOrient(node, preserveChildren)
 
 
 def rotateSelectedOrientsAroundAxis(
