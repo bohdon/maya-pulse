@@ -608,6 +608,8 @@ class NodeAttrForm(ActionAttrForm):
         self.listWidget.setSortingEnabled(True)
         self.listWidget.setSelectionMode(
             QtWidgets.QAbstractItemView.SelectionMode.ExtendedSelection)
+        self.listWidget.itemSelectionChanged.connect(
+            self.onItemSelectionChanged)
         hlayout.addWidget(self.listWidget)
 
         self.pickButton = QtWidgets.QPushButton(parent)
@@ -626,8 +628,10 @@ class NodeAttrForm(ActionAttrForm):
         while self.listWidget.takeItem(0):
             pass
         if attrValue:
-            self.listWidget.addItem(
-                QtWidgets.QListWidgetItem(attrValue.nodeName()))
+            item = QtWidgets.QListWidgetItem(attrValue.nodeName())
+            uuid = meta.getUUID(attrValue)
+            item.setData(QtCore.Qt.UserRole, uuid)
+            self.listWidget.addItem(item)
 
     def _getFormValue(self):
         return self.attrValue
@@ -641,6 +645,16 @@ class NodeAttrForm(ActionAttrForm):
             self.setAttrValue(sel[0])
         else:
             self.setAttrValue(None)
+
+    def onItemSelectionChanged(self):
+        items = self.listWidget.selectedItems()
+        nodes = []
+        for item in items:
+            node = meta.findNodeByUUID(item.data(QtCore.Qt.UserRole))
+            if node:
+                nodes.append(node)
+        if nodes:
+            pm.select(nodes)
 
 
 ActionAttrForm.addFormType('node', NodeAttrForm)
@@ -663,6 +677,8 @@ class NodeListAttrForm(ActionAttrForm):
             QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
         self.listWidget.setSelectionMode(
             QtWidgets.QAbstractItemView.SelectionMode.ExtendedSelection)
+        self.listWidget.itemSelectionChanged.connect(
+            self.onItemSelectionChanged)
         hlayout.addWidget(self.listWidget)
 
         self.pickButton = QtWidgets.QPushButton(parent)
@@ -681,7 +697,10 @@ class NodeListAttrForm(ActionAttrForm):
         while self.listWidget.takeItem(0):
             pass
         for node in attrValue:
-            self.listWidget.addItem(QtWidgets.QListWidgetItem(node.nodeName()))
+            item = QtWidgets.QListWidgetItem(node.nodeName())
+            uuid = meta.getUUID(node)
+            item.setData(QtCore.Qt.UserRole, uuid)
+            self.listWidget.addItem(item)
         # 13px line height per item, clamped in range 40..120, added 8px buffer
         newHeight = max(40, min(120, 8 + 13 * self.listWidget.count()))
         self.listWidget.setFixedHeight(newHeight)
@@ -696,6 +715,16 @@ class NodeListAttrForm(ActionAttrForm):
 
     def setFromSelection(self):
         self.setAttrValue(pm.selected())
+
+    def onItemSelectionChanged(self):
+        items = self.listWidget.selectedItems()
+        nodes = []
+        for item in items:
+            node = meta.findNodeByUUID(item.data(QtCore.Qt.UserRole))
+            if node:
+                nodes.append(node)
+        if nodes:
+            pm.select(nodes)
 
 
 ActionAttrForm.addFormType('nodelist', NodeListAttrForm)
