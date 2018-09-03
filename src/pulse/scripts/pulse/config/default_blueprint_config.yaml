@@ -64,6 +64,12 @@ names:
     sort: 9
   - name: twist
     sort: 8
+  - name: ik
+    sort: 7
+  - name: mid
+    sort: 6
+  - name: end
+    sort: 6
 symmetry:
   prefixes:
     left: l

@@ -301,6 +301,33 @@ class QuickNameWidget(QtWidgets.QWidget):
         """
         self.namePreviewBtn.setText(self.evaluateName())
 
+    def sortOrderedNames(self, names, category):
+        """
+        Sort a list of names using the defined orders in the config
+
+        Args:
+            names (list of str): A list of names
+            category (str): The name category, e.g. 'prefixes'
+        """
+        categoryItems = self.namesConfig.get(category, [])
+        if not categoryItems:
+            return names
+
+        namePairs = []
+        for name in names:
+            isFound = False
+            for item in categoryItems:
+                if item['name'] == name:
+                    namePairs.append((item['sort'], item['name']))
+                    isFound = True
+                    break
+            if not isFound:
+                # unknown name, sort order = 0
+                namePairs.append((0, name))
+        namePairs.sort()
+
+        return [p[1] for p in namePairs]
+
     def evaluatePrefix(self):
         """
         Return the combined prefix
@@ -310,6 +337,7 @@ class QuickNameWidget(QtWidgets.QWidget):
         for name, btn in self.prefixBtns.iteritems():
             if btn.isChecked():
                 prefixes.append(name)
+        prefixes = self.sortOrderedNames(prefixes, 'prefixes')
         return '_'.join(prefixes)
 
     def evaluateSuffix(self):
@@ -321,6 +349,7 @@ class QuickNameWidget(QtWidgets.QWidget):
         for name, btn in self.suffixBtns.iteritems():
             if btn.isChecked():
                 suffixes.append(name)
+        suffixes = self.sortOrderedNames(suffixes, 'suffixes')
         return '_'.join(suffixes)
 
     def evaluateName(self, includeNumber=False):
