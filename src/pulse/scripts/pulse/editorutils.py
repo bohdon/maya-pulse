@@ -14,6 +14,7 @@ from pulse.vendor.mayacoretools import preservedSelection
 from pulse.joints import *
 from pulse.nodes import *
 from pulse.shapes import *
+import pulse.links
 
 __all__ = [
     'centerSelectedJoints',
@@ -24,6 +25,7 @@ __all__ = [
     'getDetailedChannelBoxAttrs',
     'insertJointForSelected',
     'isDetailedChannelBoxEnabled',
+    'linkSelected',
     'orientToJointForSelected',
     'orientToWorldForSelected',
     'parentSelected',
@@ -31,8 +33,10 @@ __all__ = [
     'rotateSelectedComponentsAroundAxis',
     'rotateSelectedOrientsAroundAxis',
     'setDetailedChannelBoxEnabled',
+    'snapToLinkForSelected',
     'toggleDetailedChannelBoxForSelected',
     'toggleLocalRotationAxesForSelected',
+    'unlinkSelected',
 ]
 
 LOG = logging.getLogger(__name__)
@@ -310,3 +314,27 @@ def toggleLocalRotationAxesForSelected():
 
     for s in sel:
         s.dla.set(not isEnabled)
+
+
+def linkSelected():
+    sel = pm.selected()
+    if len(sel) != 2:
+        LOG.warning("Select a leader then a follower")
+        return
+
+    pulse.links.link(sel[0], sel[1])
+
+
+def unlinkSelected():
+    for s in pm.selected():
+        pulse.links.unlink(s)
+
+
+def snapToLinkForSelected():
+    nodes = pm.selected()
+    if not nodes:
+        nodes = pulse.links.getAllLinkedNodes()
+        # TODO: sort by parenting hierarchy
+
+    for node in nodes:
+        pulse.links.snapToLink(node)

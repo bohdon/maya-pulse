@@ -9,6 +9,7 @@ import maya.cmds as cmds
 
 __all__ = [
     'clearLayout',
+    'CollapsibleFrame',
     'dpiScale',
     'getIcon',
     'getIconPath',
@@ -177,3 +178,34 @@ def clearLayout(layout):
             item.widget().setParent(None)
         if item.layout():
             clearLayout(item.layout())
+
+
+class CollapsibleFrame(QtWidgets.QFrame):
+    """
+    A QFrame that can be collapsed when clicked.
+    """
+
+    collapsedChanged = QtCore.Signal(bool)
+
+    def __init__(self, parent):
+        super(CollapsibleFrame, self).__init__(parent)
+        self._isCollapsed = False
+
+    def mouseReleaseEvent(self, QMouseEvent):
+        if QMouseEvent.button() == QtCore.Qt.MouseButton.LeftButton:
+            self.setIsCollapsed(not self._isCollapsed)
+        else:
+            return super(CollapsibleFrame, self).mouseReleaseEvent(QMouseEvent)
+
+    def setIsCollapsed(self, newCollapsed):
+        """
+        Set the collapsed state of this frame.
+        """
+        self._isCollapsed = newCollapsed
+        self.collapsedChanged.emit(self._isCollapsed)
+
+    def isCollapsed(self):
+        """
+        Return True if the frame is currently collapsed.
+        """
+        return self._isCollapsed

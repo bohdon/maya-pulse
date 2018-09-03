@@ -1,6 +1,6 @@
 
 from pulse.vendor.Qt import QtWidgets, QtGui
-from pulse.views.core import CollapsibleFrame
+from pulse.views.utils import CollapsibleFrame
 
 __all__ = [
     "DesignViewPanel",

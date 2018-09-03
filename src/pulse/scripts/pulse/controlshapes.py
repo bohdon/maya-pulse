@@ -6,6 +6,7 @@ import pymel.core as pm
 import pymetanode as meta
 
 import pulse.nodes
+import pulse.links
 
 __all__ = [
     'addShapes',
@@ -34,8 +35,9 @@ def getControlShapes():
         if result == 0:
             result = cmp(a['name'], b['name'])
         return result
-    
+
     return sorted(CONTROLSHAPES.values(), sort)
+
 
 def registerControlShape(name, shape):
     """
@@ -48,6 +50,7 @@ def registerControlShape(name, shape):
     """
     global CONTROLSHAPES
     CONTROLSHAPES[name] = shape
+
 
 def unregisterControlShape(name):
     """
@@ -95,6 +98,7 @@ def loadControlShapesFromDirectory(startDir, pattern='*_control.yaml'):
 
     return result
 
+
 def loadBuiltinControlShapes():
     """
     Load all built-in pulse control shapes.
@@ -111,14 +115,17 @@ def loadBuiltinControlShapes():
 # Control Creation
 # ----------------
 
-def createControl(shapeData, name=None, targetNode=None, parent=None):
+def createControl(shapeData, name=None, targetNode=None,
+                  link=False, parent=None):
     """
     Create a control at the given target with the given shape data.
 
     Args:
         shapeData: A dict containing control shape data
         name: A string name of the control created
-        targetNode: An optional transform node to position the control at upon creation
+        targetNode: An optional transform node to position the
+            control at upon creation
+        link (bool): If true, link the control to the targetNode
         parent: An optional transform node to parent the control to
     """
     if targetNode and not isinstance(targetNode, pm.nt.Transform):
@@ -132,6 +139,8 @@ def createControl(shapeData, name=None, targetNode=None, parent=None):
         # match target node transform settings
         ctl.setAttr('rotateOrder', targetNode.getAttr('rotateOrder'))
         pulse.nodes.matchWorldMatrix(targetNode, ctl)
+        if link:
+            pulse.links.link(targetNode, ctl)
     # group to main ctls group
     if parent:
         ctl.setParent(parent)
@@ -140,12 +149,13 @@ def createControl(shapeData, name=None, targetNode=None, parent=None):
     return ctl
 
 
-def createControlsForSelected(shapeData):
+def createControlsForSelected(shapeData, link=True):
     """
     Create or update control shapes for each selected node.
-    
+
     Args:
         shapeData: A dict containing control shape data
+        link (bool): If true, link the controls to the target nodes
     """
     result = []
     sel = pm.selected()
@@ -160,7 +170,7 @@ def createControlsForSelected(shapeData):
                 result.append(node)
             else:
                 # create new control
-                ctl = createControl(shapeData, targetNode=node)
+                ctl = createControl(shapeData, targetNode=node, link=link)
                 result.append(ctl)
     pm.select(result)
     return result
@@ -172,7 +182,8 @@ def addShapes(node, shapeData):
     Returns the new shape nodes.
     """
     if not isinstance(node, pm.nt.Transform):
-        raise TypeError('Expected a Transform node, got {0}'.format(type(node).__name__))
+        raise TypeError(
+            'Expected a Transform node, got {0}'.format(type(node).__name__))
     result = []
     for curveData in shapeData['curves']:
         curve = pm.curve(**curveData)
@@ -189,7 +200,8 @@ def removeShapes(node):
     Only works for meshes, curves, and nurbs surfaces.
     """
     if not isinstance(node, pm.nt.Transform):
-        raise TypeError('Expected a Transform node, got {0}'.format(type(node).__name__))
+        raise TypeError(
+            'Expected a Transform node, got {0}'.format(type(node).__name__))
     for s in node.getShapes():
         if s.nodeType() in ('mesh', 'nurbsCurve', 'nurbsSurface'):
             pm.delete(s)
@@ -200,6 +212,7 @@ def replaceShapes(node, shapeData):
     Replace the shapes on the given control node with the given shape data.
     """
     if not isinstance(node, pm.nt.Transform):
-        raise TypeError('Expected a Transform node, got {0}'.format(type(node).__name__))
+        raise TypeError(
+            'Expected a Transform node, got {0}'.format(type(node).__name__))
     removeShapes(node)
     addShapes(node, shapeData)

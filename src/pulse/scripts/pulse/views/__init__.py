@@ -8,6 +8,9 @@ from .actiontree import *
 from .blueprinteditor import *
 from .buildtoolbar import *
 from .pulseeditor import *
+from .quickname import *
+from .quickcolor import *
+from .designviews.layout import *
 
 
 def toggleEditorUI():
@@ -35,3 +38,6 @@ def destroyEditorWorkspaceControls():
     BlueprintEditorWindow.destroyWindow()
     BuildToolbarWindow.destroyWindow()
     PulseEditorWindow.destroyWindow()
+    QuickNameWindow.destroyWindow()
+    QuickColorWindow.destroyWindow()
+    LayoutLinkEditorWindow.destroyWindow()

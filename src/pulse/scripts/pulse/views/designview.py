@@ -4,8 +4,8 @@ from pulse.vendor.Qt import QtWidgets
 from .designviews.controls import ControlsPanel
 from .designviews.general import GeneralPanel
 from .designviews.joints import JointsPanel, JointOrientsPanel
-from .designviews.names import NamesPanel
 from .designviews.sym import SymmetryPanel
+from .designviews.layout import LayoutPanel
 
 __all__ = [
     "DesignViewWidget",
@@ -56,8 +56,8 @@ class DesignViewWidget(QtWidgets.QWidget):
         general = GeneralPanel(parent)
         layout.addWidget(general)
 
-        names = NamesPanel(parent)
-        layout.addWidget(names)
+        layoutPanel = LayoutPanel(parent)
+        layout.addWidget(layoutPanel)
 
         joints = JointsPanel(parent)
         layout.addWidget(joints)

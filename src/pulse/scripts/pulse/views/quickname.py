@@ -1,46 +1,18 @@
 
 from functools import partial
 import pymel.core as pm
+from pulse.vendor.Qt import QtCore, QtWidgets, QtGui
 
 import pulse.core
 import pulse.names
-from pulse.vendor.Qt import QtCore, QtWidgets, QtGui
-from pulse.views.core import PulseWindow, BlueprintUIModel
-from pulse.views.utils import undoAndRepeatPartial as cmd
-from pulse.views import style
-from .core import DesignViewPanel
+from .core import PulseWindow, BlueprintUIModel
+from .utils import undoAndRepeatPartial as cmd
+from . import style
 
 __all__ = [
-    "NamesPanel",
     "QuickNameWidget",
-    "QuickNameEditor",
+    "QuickNameWindow",
 ]
-
-
-class NamesPanel(DesignViewPanel):
-
-    def __init__(self, parent):
-        super(NamesPanel, self).__init__(parent=parent)
-
-    def getPanelDisplayName(self):
-        return "Names"
-
-    def setupPanelUi(self, parent):
-        layout = QtWidgets.QVBoxLayout(parent)
-        layout.setMargin(0)
-
-        frame = self.createPanelFrame(parent)
-        layout.addWidget(frame)
-
-        btnLayout = QtWidgets.QVBoxLayout(frame)
-        btnLayout.setMargin(0)
-        btnLayout.setSpacing(2)
-
-        quickNameWindowBtn = QtWidgets.QPushButton(frame)
-        quickNameWindowBtn.setText("Quick Name Editor")
-        quickNameWindowBtn.clicked.connect(
-            cmd(QuickNameEditor.toggleWindow))
-        btnLayout.addWidget(quickNameWindowBtn)
 
 
 class QuickNameWidget(QtWidgets.QWidget):
@@ -406,17 +378,17 @@ class QuickNameWidget(QtWidgets.QWidget):
                 s.rename(name.format(num=i+1))
 
 
-class QuickNameEditor(PulseWindow):
+class QuickNameWindow(PulseWindow):
 
-    OBJECT_NAME = 'pulseQuickNameEditor'
+    OBJECT_NAME = 'pulseQuickNameWindow'
     PREFERRED_SIZE = QtCore.QSize(400, 300)
     STARTING_SIZE = QtCore.QSize(400, 300)
     MINIMUM_SIZE = QtCore.QSize(400, 300)
 
-    WINDOW_MODULE = 'pulse.views.designviews.names'
+    WINDOW_MODULE = 'pulse.views.quickname'
 
     def __init__(self, parent=None):
-        super(QuickNameEditor, self).__init__(parent=parent)
+        super(QuickNameWindow, self).__init__(parent=parent)
 
         self.setWindowTitle('Quick Name Editor')
 

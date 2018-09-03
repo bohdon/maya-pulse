@@ -27,10 +27,17 @@ class BlueprintEditorWidget(QtWidgets.QWidget):
     def setupUi(self, parent):
         layout = QtWidgets.QVBoxLayout(self)
 
+        formLayout1 = QtWidgets.QFormLayout(self)
+        rigNameLabel = QtWidgets.QLabel(self)
+        rigNameLabel.setText("Rig Name")
         self.rigNameText = QtWidgets.QLineEdit(self)
         self.rigNameText.setText(self.blueprintModel.getRigName())
         self.rigNameText.textChanged.connect(self.rigNameTextChanged)
-        layout.addWidget(self.rigNameText)
+        formLayout1.setWidget(
+            0, QtWidgets.QFormLayout.LabelRole, rigNameLabel)
+        formLayout1.setWidget(
+            0, QtWidgets.QFormLayout.FieldRole, self.rigNameText)
+        layout.addLayout(formLayout1)
 
         initBtn = QtWidgets.QPushButton(self)
         initBtn.setText("Initialize Blueprint")
