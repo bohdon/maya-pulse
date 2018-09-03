@@ -1,6 +1,7 @@
 
 import os
 import logging
+import traceback
 from functools import partial, wraps
 from pulse.vendor.Qt import QtCore, QtWidgets, QtGui
 
@@ -110,6 +111,7 @@ def undoable(func):
         try:
             func(*args, **kwargs)
         except Exception as e:
+            traceback.print_exc()
             cmds.error(e)
         finally:
             cmds.undoInfo(closeChunk=True)

@@ -14,6 +14,7 @@ from pulse.vendor.mayacoretools import preservedSelection
 from pulse.joints import *
 from pulse.nodes import *
 from pulse.shapes import *
+from pulse.sym import *
 import pulse.links
 
 __all__ = [
@@ -27,8 +28,10 @@ __all__ = [
     'insertJointForSelected',
     'isDetailedChannelBoxEnabled',
     'linkSelected',
+    'mirrorSelected',
     'orientToJointForSelected',
     'orientToWorldForSelected',
+    'pairSelected',
     'parentSelected',
     'parentSelectedInOrder',
     'rotateSelectedComponentsAroundAxis',
@@ -38,6 +41,7 @@ __all__ = [
     'toggleDetailedChannelBoxForSelected',
     'toggleLocalRotationAxesForSelected',
     'unlinkSelected',
+    'unpairSelected',
 ]
 
 LOG = logging.getLogger(__name__)
@@ -363,3 +367,38 @@ def snapToLinkForSelected():
 
     for node in nodes:
         pulse.links.snapToLink(node)
+
+
+def pairSelected():
+    sel = pm.selected()
+    if len(sel) == 2:
+        pairMirrorNodes(sel[0], sel[1])
+
+
+def unpairSelected():
+    for s in pm.selected():
+        unpairMirrorNode(s)
+
+
+def mirrorSelected(
+        recursive=True,
+        create=True,
+        reparent=True,
+        transform=True):
+    """
+    Perform a mirroring operation on the selected nodes.
+
+    Args:
+        recursive (bool): Mirror the selected nodes and all children
+        create (bool): Allow creation of new nodes if a pair is not found
+        reparent (bool): Mirror the parenting structure of the nodes
+        transform (bool): Mirror the transform matrices of the nodes
+    """
+    nodes = pm.selected()
+
+    util = pulse.sym.MirrorUtil()
+    func = util.mirrorRecursive if recursive else util.mirror
+    return func(nodes,
+                create=create,
+                reparent=reparent,
+                transform=transform)
