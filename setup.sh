@@ -34,8 +34,9 @@ dev() {
 }
 
 test() {
-    build
-    mayapy tests build/$PACKAGE_NAME
+    docker build -t maya-pulse-2018 --build-arg maya_version=2018 .
+    docker rm maya-pulse-2018 || true
+    docker run --name maya-pulse-2018 maya-pulse-2018 mayapy tests
 }
 
 install() {
@@ -43,12 +44,12 @@ install() {
     clean
     build
     cp -v build/$PACKAGE_NAME.mod $MAYA_MODULES_INSTALL_PATH/$PACKAGE_NAME.mod
-    cp -Rv build/$PACKAGE_NAME $MAYA_MODULES_INSTALL_PATH/$PACKAGE_NAME
+    cp -R build/$PACKAGE_NAME $MAYA_MODULES_INSTALL_PATH/$PACKAGE_NAME
 }
 
 uninstall() {
-    rm -v $MAYA_MODULES_INSTALL_PATH/$PACKAGE_NAME.mod
-    rm -Rv $MAYA_MODULES_INSTALL_PATH/$PACKAGE_NAME
+    rm -v $MAYA_MODULES_INSTALL_PATH/$PACKAGE_NAME.mod || true
+    rm -R $MAYA_MODULES_INSTALL_PATH/$PACKAGE_NAME || true
 }
 
 

@@ -96,11 +96,11 @@ class Blueprint(object):
         Returns:
             (Blueprint, PyNode) of the new Blueprint and node
         """
-        pm.cmds.undoInfo(openChunk=True, chunkName='Create Pulse Blueprint')
+        cmds.undoInfo(openChunk=True, chunkName='Create Pulse Blueprint')
         blueprint = Blueprint()
         blueprint.initializeDefaultActions()
         node = blueprint.saveToNode(nodeName, create=True)
-        pm.cmds.undoInfo(closeChunk=True)
+        cmds.undoInfo(closeChunk=True)
         return blueprint, node
 
     @staticmethod
@@ -193,8 +193,8 @@ class Blueprint(object):
         Returns:
             The node on which the blueprint was saved
         """
-        if create and not pm.cmds.objExists(node):
-            node = pm.cmds.createNode('network', n=node)
+        if create and not cmds.objExists(node):
+            node = cmds.createNode('network', n=node)
         data = self.serialize()
         st = time.time()
         meta.setMetaData(node, BLUEPRINT_METACLASS, data, replace=True)

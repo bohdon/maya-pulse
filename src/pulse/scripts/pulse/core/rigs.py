@@ -1,6 +1,7 @@
 
 
 import logging
+from maya import cmds
 import pymel.core as pm
 import pymetanode as meta
 
@@ -89,7 +90,7 @@ def createRigNode(name):
     Args:
         name: A str name of the rig
     """
-    if pm.cmds.objExists(name):
+    if cmds.objExists(name):
         raise ValueError(
             "Cannot create rig, node already exists: {0}".format(name))
     node = pm.group(name=name, em=True)

@@ -2,7 +2,7 @@
 import os
 import logging
 
-from .version import *
+from .version import __version__
 from .core import *
 from .loader import *
 
