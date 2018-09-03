@@ -2,6 +2,7 @@
 from pulse.vendor.Qt import QtCore, QtWidgets, QtGui
 import pymel.core as pm
 
+from pulse.views import utils as viewutils
 from pulse.views.utils import undoAndRepeatPartial as cmd
 from pulse import editorutils
 from .core import DesignViewPanel
@@ -86,14 +87,13 @@ class GeneralPanel(DesignViewPanel):
         freezePivotBtn.clicked.connect(
             cmd(editorutils.freezePivotsForSelectedHierarchies))
 
-        gridLayout.addWidget(nameEditorBtn,     0, 0, 1, 1)
-        gridLayout.addWidget(colorEditorBtn,    0, 1, 1, 1)
-        gridLayout.addWidget(parentSelBtn,      1, 0, 1, 1)
-        gridLayout.addWidget(parentInOrderBtn,  1, 1, 1, 1)
-        gridLayout.addWidget(createOffsetBtn,   2, 0, 1, 1)
-        gridLayout.addWidget(selectChildrenBtn, 2, 1, 1, 1)
-        gridLayout.addWidget(freezeScaleBtn,    3, 0, 1, 1)
-        gridLayout.addWidget(freezePivotBtn,    3, 1, 1, 1)
+        gridItems = [
+            [nameEditorBtn, colorEditorBtn],
+            [parentSelBtn, parentInOrderBtn],
+            [createOffsetBtn, selectChildrenBtn],
+            [freezeScaleBtn, freezePivotBtn],
+        ]
+        viewutils.addItemsToGrid(gridLayout, gridItems)
 
     def selectChildren(self):
         """

@@ -2,6 +2,7 @@
 from pulse.vendor.Qt import QtCore, QtWidgets, QtGui
 import pymel.core as pm
 
+from pulse.views import utils as viewutils
 from pulse.views.utils import undoAndRepeatPartial as cmd
 from pulse.views.core import PulseWindow
 from pulse import editorutils
@@ -48,8 +49,10 @@ class LayoutPanel(DesignViewPanel):
         linkEditorBtn.clicked.connect(
             cmd(LayoutLinkEditorWindow.toggleWindow))
 
-        gridLayout.addWidget(snapToTargetsBtn, 0, 0, 1, 1)
-        gridLayout.addWidget(linkEditorBtn, 0, 1, 1, 1)
+        gridItems = [
+            [snapToTargetsBtn, linkEditorBtn],
+        ]
+        viewutils.addItemsToGrid(gridLayout, gridItems)
 
 
 class LayoutLinkEditorWidget(QtWidgets.QWidget):
@@ -74,8 +77,7 @@ class LayoutLinkEditorWidget(QtWidgets.QWidget):
         unlinkBtn.clicked.connect(
             cmd(editorutils.unlinkSelected))
 
-        gridLayout.addWidget(linkBtn, 0, 0, 1, 1)
-        gridLayout.addWidget(unlinkBtn, 0, 1, 1, 1)
+        viewutils.addItemsToGrid(gridLayout, [[linkBtn, unlinkBtn]])
 
 
 class LayoutLinkEditorWindow(PulseWindow):

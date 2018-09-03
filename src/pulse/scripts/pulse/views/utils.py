@@ -8,8 +8,11 @@ import maya.cmds as cmds
 
 
 __all__ = [
+    'addItemsToGrid',
     'clearLayout',
     'CollapsibleFrame',
+    'createHSpacer',
+    'createVSpacer',
     'dpiScale',
     'getIcon',
     'getIconPath',
@@ -178,6 +181,38 @@ def clearLayout(layout):
             item.widget().setParent(None)
         if item.layout():
             clearLayout(item.layout())
+
+
+def createHSpacer(width=20, height=20):
+    return QtWidgets.QSpacerItem(
+        20, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
+
+
+def createVSpacer(width=20, height=20):
+    return QtWidgets.QSpacerItem(
+        20, 20, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
+
+
+def addItemsToGrid(gridLayout, items):
+    """
+    Add a 2-dimensional array of items to a grid layout.
+    Assumes the grid layout is empty.
+
+    Args:
+        gridLayout (QGridLayout): A grid layout
+        items (list): A list of rows, where each row is a list of
+            QWidget, QLayoutItem, or QLayout
+            E.g. [[item1, item2], [item3, item4]]
+    """
+    for row, itemRow in enumerate(items):
+        for col, item in enumerate(itemRow):
+            if item is not None:
+                if isinstance(item, QtWidgets.QWidget):
+                    gridLayout.addWidget(item, row, col, 1, 1)
+                elif isinstance(item, QtWidgets.QLayoutItem):
+                    gridLayout.addItem(item, row, col, 1, 1)
+                elif isinstance(item, QtWidgets.QLayout):
+                    gridLayout.addLayout(item, row, col, 1, 1)
 
 
 class CollapsibleFrame(QtWidgets.QFrame):

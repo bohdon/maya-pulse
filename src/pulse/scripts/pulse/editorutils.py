@@ -23,6 +23,7 @@ __all__ = [
     'freezePivotsForSelectedHierarchies',
     'freezeScalesForSelectedHierarchies',
     'getDetailedChannelBoxAttrs',
+    'getSelectedTransforms',
     'insertJointForSelected',
     'isDetailedChannelBoxEnabled',
     'linkSelected',
@@ -40,6 +41,28 @@ __all__ = [
 ]
 
 LOG = logging.getLogger(__name__)
+
+
+def getSelectedTransforms(includeChildren=False):
+    """
+    Return the currently selected transforms (or joints).
+
+    Args:
+        includeChildren (bool): If true, also include all descendants
+            if the selected nodes
+    """
+    sel = pm.selected(type=['transform', 'joint'])
+    if includeChildren:
+        result = []
+        for s in sel:
+            if s not in result:
+                result.append(s)
+            for child in s.listRelatives(ad=True, type=['transform', 'joint']):
+                if child not in result:
+                    result.append(child)
+        return result
+    else:
+        return sel
 
 
 def centerSelectedJoints():
@@ -134,6 +157,7 @@ def rotateSelectedComponentsAroundAxis(axis, degrees=90):
 
 
 def orientToWorldForSelected(
+        includeChildren=False,
         preserveChildren=True,
         preserveShapes=True,
         syncJointAxes=True):
@@ -142,7 +166,7 @@ def orientToWorldForSelected(
     the world aligned axes
     """
     # TODO: implement preserveShapes
-    sel = pm.selected()
+    sel = getSelectedTransforms(includeChildren)
     for node in sel:
         if node.nodeType() == 'joint':
             orientJointToWorld(node)
@@ -155,12 +179,13 @@ def orientToWorldForSelected(
 def orientToJointForSelected(
         axisOrder,
         upAxisStr,
+        includeChildren=False,
         preserveChildren=True,
         preserveShapes=True,
         syncJointAxes=True):
     """
     """
-    sel = pm.selected()
+    sel = getSelectedTransforms(includeChildren)
     for node in sel:
         if node.nodeType() == 'joint':
             orientJoint(node, axisOrder, upAxisStr)
@@ -304,8 +329,8 @@ def toggleDetailedChannelBoxForSelected():
         setDetailedChannelBoxEnabled(s, not isEnabled)
 
 
-def toggleLocalRotationAxesForSelected():
-    sel = pm.selected()
+def toggleLocalRotationAxesForSelected(includeChildren=False):
+    sel = getSelectedTransforms(includeChildren)
     isEnabled = False
     for s in sel:
         if s.dla.get():
