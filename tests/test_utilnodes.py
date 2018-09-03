@@ -8,12 +8,6 @@ from pulse import utilnodes
 
 class TestUtilNodes(unittest.TestCase):
 
-    def setUp(self):
-        pass
-
-    def tearDown(self):
-        pass
-
     def test_createUtilityNode(self):
         node = utilnodes.createUtilityNode('multiplyDivide')
         self.assertEqual(node.nodeType(), 'multiplyDivide')

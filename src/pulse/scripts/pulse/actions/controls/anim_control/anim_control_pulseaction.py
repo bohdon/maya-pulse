@@ -19,7 +19,8 @@ class AnimControlAction(pulse.BuildAction):
 
         # lockup attributes
         keyableAttrs = pulse.nodes.getExpandedAttrNames(self.keyableAttrs)
-        lockedAttrs = pulse.nodes.getExpandedAttrNames(['t', 'r', 'rp', 's', 'sp', 'ra', 'sh', 'v'])
+        lockedAttrs = pulse.nodes.getExpandedAttrNames(
+            ['t', 'r', 'rp', 's', 'sp', 'ra', 'sh', 'v'])
         lockedAttrs = list(set(lockedAttrs) - set(keyableAttrs))
 
         for attrName in keyableAttrs:
