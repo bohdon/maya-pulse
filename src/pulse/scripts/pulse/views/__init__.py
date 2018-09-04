@@ -10,7 +10,6 @@ from .buildtoolbar import *
 from .pulseeditor import *
 from .quickname import *
 from .quickcolor import *
-from .designviews.layout import *
 
 
 def toggleEditorUI():
@@ -40,4 +39,3 @@ def destroyEditorWorkspaceControls():
     PulseEditorWindow.destroyWindow()
     QuickNameWindow.destroyWindow()
     QuickColorWindow.destroyWindow()
-    LayoutLinkEditorWindow.destroyWindow()
