@@ -18,6 +18,7 @@ __all__ = [
     'getAxisVector',
     'getClosestAlignedAxes',
     'getClosestAlignedRelativeAxis',
+    'getDescendantsTopToBottom',
     'getExpandedAttrNames',
     'getOtherAxes',
     'getParentNodes',
@@ -77,6 +78,7 @@ def getParentNodes(nodes):
     Args:
         nodes: A list of nodes
     """
+    # TODO: optimize using long names and string matching
     result = []
     for n in nodes:
         if any([p in nodes for p in getAllParents(n)]):
@@ -149,6 +151,17 @@ def getAssemblies(nodes):
 
 # Transform Parenting
 # -------------------
+
+def getDescendantsTopToBottom(node, **kwargs):
+    """
+    Return a list of all the descendants of a node,
+    in hierarchical order, from top to bottom.
+
+    Args:
+        node (PyNode): A dag node with children
+        **kwargs: Kwargs given to the listRelatives command
+    """
+    return reversed(node.listRelatives(ad=True, **kwargs))
 
 
 def getTransformHierarchy(transform, includeParent=True):

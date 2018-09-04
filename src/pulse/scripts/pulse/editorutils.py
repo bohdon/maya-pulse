@@ -395,10 +395,18 @@ def mirrorSelected(
         transform (bool): Mirror the transform matrices of the nodes
     """
     nodes = pm.selected()
+    if not nodes:
+        LOG.warning("Select at least one node to mirror")
+        return
 
-    util = pulse.sym.MirrorUtil()
-    func = util.mirrorRecursive if recursive else util.mirror
-    return func(nodes,
-                create=create,
-                reparent=reparent,
-                transform=transform)
+    util = MirrorUtil()
+    util.isRecursive = recursive
+    util.isCreationAllowed = create
+
+    if reparent:
+        util.addOperation(MirrorParenting())
+    if transform:
+        # TODO: configure the transform util
+        util.addOperation(MirrorTransforms())
+
+    util.run(nodes)
