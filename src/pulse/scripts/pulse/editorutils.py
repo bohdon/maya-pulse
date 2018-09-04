@@ -47,6 +47,14 @@ __all__ = [
 LOG = logging.getLogger(__name__)
 
 
+def getEditorBlueprint():
+    """
+    Return the shared Blueprint instance from the default UI model
+    """
+    import pulse.views
+    return pulse.views.BlueprintUIModel.getDefaultModel().blueprint
+
+
 def getSelectedTransforms(includeChildren=False):
     """
     Return the currently selected transforms (or joints).
@@ -384,7 +392,8 @@ def mirrorSelected(
         recursive=True,
         create=True,
         reparent=True,
-        transform=True):
+        transform=True,
+        appearance=True):
     """
     Perform a mirroring operation on the selected nodes.
 
@@ -393,6 +402,7 @@ def mirrorSelected(
         create (bool): Allow creation of new nodes if a pair is not found
         reparent (bool): Mirror the parenting structure of the nodes
         transform (bool): Mirror the transform matrices of the nodes
+        appearance (bool): Mirror the name and color of the nodes
     """
     nodes = pm.selected()
     if not nodes:
@@ -408,5 +418,14 @@ def mirrorSelected(
     if transform:
         # TODO: configure the transform util
         util.addOperation(MirrorTransforms())
+    if appearance:
+        blueprint = getEditorBlueprint()
+        if blueprint:
+            namesOp = MirrorNames()
+            namesOp.blueprint = blueprint
+            util.addOperation(namesOp)
+            colorsOp = MirrorColors()
+            colorsOp.blueprint = blueprint
+            util.addOperation(colorsOp)
 
     util.run(nodes)

@@ -24,6 +24,8 @@ class SymmetryPanel(DesignViewPanel):
         'pulse.editor.mirrorTransforms', True)
     mirrorParenting = optionVarProperty(
         'pulse.editor.mirrorParenting', True)
+    mirrorAppearance = optionVarProperty(
+        'pulse.editor.mirrorAppearance', True)
     mirrorAllowCreate = optionVarProperty(
         'pulse.editor.mirrorAllowCreate', True)
 
@@ -35,6 +37,9 @@ class SymmetryPanel(DesignViewPanel):
 
     def setMirrorParenting(self, value):
         self.mirrorParenting = value
+
+    def setMirrorAppearance(self, value):
+        self.mirrorAppearance = value
 
     def setMirrorAllowCreate(self, value):
         self.mirrorAllowCreate = value
@@ -88,6 +93,15 @@ class SymmetryPanel(DesignViewPanel):
         layout.addWidget(check)
 
         check = QtWidgets.QCheckBox(parent)
+        check.setText("Appearance")
+        check.setStatusTip(
+            "Mirror the name and color of the nodes")
+        check.setChecked(self.mirrorAppearance)
+        check.stateChanged.connect(
+            self.setMirrorAppearance)
+        layout.addWidget(check)
+
+        check = QtWidgets.QCheckBox(parent)
         check.setText("Allow Node Creation")
         check.setStatusTip(
             "Allow the creation of nodes when mirroring recursively")
@@ -137,5 +151,6 @@ class SymmetryPanel(DesignViewPanel):
             create=self.mirrorAllowCreate,
             reparent=self.mirrorParenting,
             transform=self.mirrorTransforms,
+            appearance=self.mirrorAppearance,
         )
         cmd(editorutils.mirrorSelected, **kw)()

@@ -1,5 +1,6 @@
 
 import logging
+import re
 import pymel.core as pm
 import pymetanode as meta
 from vendor.mayacoretools import preservedSelection
@@ -27,6 +28,8 @@ __all__ = [
     'invertOtherAxes',
     'isCentered',
     'isMirrorNode',
+    'MirrorColors',
+    'MirrorNames',
     'MirrorOperation',
     'MirrorParenting',
     'MirrorTransforms',
@@ -504,6 +507,88 @@ class MirrorTransforms(MirrorOperation):
             applyMirrorSettings(s, **self._kwargsForApply())
 
 
+class BlueprintMirrorOperation(MirrorOperation):
+    """
+    A MirrorOperation that makes use of a Blueprint config
+    """
+
+    def __init__(self):
+        super(BlueprintMirrorOperation, self).__init__()
+        self.blueprint = None
+
+        self.includeName = True
+        self.includeColor = True
+        self.config = None
+
+    def getConfig(self):
+        if self.config is None:
+            if self.blueprint:
+                self.config = self.blueprint.getConfig()
+            # if still no config, set to empty dict to prevent repeat check
+            if self.config is None:
+                self.config = {}
+        return self.config
+
+
+class MirrorNames(BlueprintMirrorOperation):
+
+    def __init__(self):
+        super(MirrorNames, self).__init__()
+        self.replacements = None
+
+    def createRegexReplacement(self, src, dst):
+        """
+        """
+        regex = re.compile('(?<![^_]){0}_'.format(src))
+        repl = dst + '_'
+        return (regex, repl)
+
+    def getReplacements(self):
+        """
+        """
+        if self.replacements is None:
+            self.replacements = []
+            config = self.getConfig()
+            symConfig = config.get('symmetry', {})
+            prefixes = symConfig.get('prefixes', {})
+
+            leftPrefix = prefixes.get('left')
+            rightPrefix = prefixes.get('right')
+
+            if leftPrefix and rightPrefix:
+                for a, b in [(leftPrefix, rightPrefix)]:
+                    a2b = self.createRegexReplacement(a, b)
+                    b2a = self.createRegexReplacement(b, a)
+                    self.replacements.append((a2b, b2a))
+        return self.replacements
+
+    def getMirroredName(self, name):
+        """
+        """
+        mirroredName = name
+        replacements = self.getReplacements()
+        for pair in replacements:
+            for regex, repl in pair:
+                if regex.match(mirroredName):
+                    mirroredName = regex.sub(repl, mirroredName)
+                    break
+
+        return mirroredName
+
+    def mirrorNode(self, sourceNode, destNode):
+        """
+        """
+        name = sourceNode.nodeName()
+        destName = self.getMirroredName(name)
+        destNode.rename(destName)
+
+
+class MirrorColors(BlueprintMirrorOperation):
+
+    def mirrorNode(self, sourceNode, destNode):
+        pass
+
+
 class MirrorUtil(object):
     """
     A util class for performing MirrorOperations.
@@ -543,7 +628,6 @@ class MirrorUtil(object):
         """
         filteredNodes = self.gatherNodes(sourceNodes)
         pairs = self.createNodePairs(filteredNodes)
-        print(pairs)
         for operation in self._operations:
             # ensure consistent mirroring settings for all operations
             self.configureOperation(operation)
