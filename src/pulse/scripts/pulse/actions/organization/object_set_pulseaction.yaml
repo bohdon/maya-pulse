@@ -1,0 +1,15 @@
+ObjectSetAction:
+  id: Pulse.ObjectSet
+  displayName: Object Set
+  description: Creates an object set
+  color: [1.0, 1.0, 1.0]
+  category: Organization
+  attrs:
+
+    - name: name
+      desc: The name of the set
+      type: string
+
+    - name: objects
+      desc: List of objects to add to the set
+      type: nodelist

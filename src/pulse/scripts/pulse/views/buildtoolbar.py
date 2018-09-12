@@ -35,6 +35,7 @@ class BuildToolbarWidget(QtWidgets.QWidget, RigEventsMixin):
 
     def showEvent(self, event):
         super(BuildToolbarWidget, self).showEvent(event)
+        self.onStateDirty()
         self.enableRigEvents()
 
     def hideEvent(self, event):
@@ -85,6 +86,7 @@ class BuildToolbarWidget(QtWidgets.QWidget, RigEventsMixin):
     def cleanState(self):
         self.isStateDirty = False
         self.setEnabled(True)
+        self.rigExists = len(pulse.getAllRigs()) > 0
         self.checkBtn.setVisible(not self.rigExists)
         self.buildBtn.setVisible(not self.rigExists)
         self.openBPBtn.setVisible(self.rigExists)
@@ -127,6 +129,7 @@ class BuildToolbarWidget(QtWidgets.QWidget, RigEventsMixin):
                 debug=True)
             builder.start()
             # self.model.reloadBlueprint()
+            cmds.evalDeferred(self.onStateDirty)
 
 
 class BuildToolbarWindow(PulseWindow):

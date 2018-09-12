@@ -250,13 +250,13 @@ class Blueprint(object):
         hierAction = BuildStep(actionId='Pulse.BuildCoreHierarchy')
         hierAction.actionProxy.setAttrValue('allNodes', True)
         mainGroup = BuildStep('Main')
-        saveAction = BuildStep(actionId='Pulse.SaveBuiltRig')
+        renameAction = BuildStep(actionId='Pulse.RenameScene')
         optimizeAction = BuildStep(actionId='Pulse.OptimizeScene')
         self.rootStep.addChildren([
             importAction,
             hierAction,
             mainGroup,
-            saveAction,
+            renameAction,
             optimizeAction
         ])
 
