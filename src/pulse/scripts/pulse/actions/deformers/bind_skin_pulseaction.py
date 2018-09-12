@@ -1,8 +1,10 @@
 
+import os
+from maya import cmds
 import pymel.core as pm
-import maya.cmds as cmds
 
 import pulse
+import pulse.skins
 
 
 class BindSkinAction(pulse.BuildAction):
@@ -61,3 +63,25 @@ class BindSkinAction(pulse.BuildAction):
                 'renderGeo': renderGeo,
                 'bakeNodes': bakeNodes,
             })
+
+
+class ApplySkinWeightsAction(pulse.BuildAction):
+
+    def validate(self):
+        if not len(self.meshes):
+            raise pulse.BuildActionError('No meshes were set')
+        if not self.fileName:
+            raise pulse.BuildActionError('No filename was set')
+
+    def run(self):
+        # get full path
+        blueprintPath = str(pm.sceneName())
+        if not self.fileName:
+            # default to blueprint file name
+            filePath = os.path.splitext(blueprintPath)[0] + '.weights'
+        else:
+            filePath = os.path.join(
+                os.path.dirname(blueprintPath), self.fileName)
+
+        skins = [pulse.skins.getSkinFromMesh(m) for m in self.meshes]
+        pulse.skins.applySkinWeightsFromFile(filePath, *skins)

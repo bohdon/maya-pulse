@@ -5,6 +5,7 @@ located here, as they can be more specific than the core api
 but still not dependent on a UI.
 """
 
+import os
 import logging
 import maya.cmds as cmds
 import pymel.core as pm
@@ -16,6 +17,7 @@ from pulse.nodes import *
 from pulse.shapes import *
 from pulse.sym import *
 import pulse.links
+import pulse.skins
 
 __all__ = [
     'centerSelectedJoints',
@@ -36,6 +38,7 @@ __all__ = [
     'parentSelectedInOrder',
     'rotateSelectedComponentsAroundAxis',
     'rotateSelectedOrientsAroundAxis',
+    'saveSkinWeightsForSelected',
     'setDetailedChannelBoxEnabled',
     'snapToLinkForSelected',
     'toggleDetailedChannelBoxForSelected',
@@ -429,3 +432,24 @@ def mirrorSelected(
             util.addOperation(colorsOp)
 
     util.run(nodes)
+
+
+def saveSkinWeightsForSelected(filePath=None):
+    """
+    Save skin weights for the selected meshes to a file.
+
+    Args:
+        filePath (str): A full path to a .weights file to write. If None,
+            will use the scene name.
+    """
+    if filePath is None:
+        sceneName = pm.sceneName()
+        if not sceneName:
+            LOG.warning("Scene is not saved")
+            return
+        filePath = os.path.splitext(sceneName)[0] + '.weights'
+
+    skins = [pulse.skins.getSkinFromMesh(m) for m in pm.selected()]
+    skins = [s for s in skins if s]
+
+    pulse.skins.saveSkinWeightsToFile(filePath, *skins)

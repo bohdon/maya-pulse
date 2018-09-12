@@ -1,17 +1,22 @@
 
 import logging
-import pymel.core as pm  # pylint: disable=E0401
-import maya.OpenMaya as api  # pylint: disable=E0401
-import maya.OpenMayaAnim as apianim  # pylint: disable=E0401
+import pymel.core as pm
+import maya.OpenMaya as api
+import maya.OpenMayaAnim as apianim
+
+import pymetanode as meta
 
 __all__ = [
+    'applySkinWeightsFromFile',
+    'getMeshesFromSkin',
     'getSkinFromMesh',
-    'getSkinFromJoint',
     'getSkinInfluences',
+    'getSkinsFromJoint',
     'getSkinWeights',
-    'setSkinWeights',
-    'normalizeWeightsData',
     'normalizeSkinWeights',
+    'normalizeWeightsData',
+    'saveSkinWeightsToFile',
+    'setSkinWeights',
 ]
 
 LOG = logging.getLogger(__name__)
@@ -35,7 +40,7 @@ def getSkinFromMesh(mesh):
         return skins[0]
 
 
-def getSkinFromJoint(joint):
+def getSkinsFromJoint(joint):
     """
     Return a list of skin clusters in which a joint is an influence
 
@@ -43,6 +48,13 @@ def getSkinFromJoint(joint):
         joint (PyNode): A joint node
     """
     return list(set(joint.outputs(t="skinCluster")))
+
+
+def getMeshesFromSkin(skin):
+    """
+    Return the mesh connected to a skin cluster
+    """
+    return list(set(skin.outputGeometry.listConnections()))
 
 
 def getSkinInfluences(skin):
@@ -200,3 +212,70 @@ def normalizeSkinWeights(skin):
     weights = getSkinWeights(skin)
     normWeights = normalizeWeightsData(weights)
     setSkinWeights(skin, normWeights)
+
+
+def getSkinWeightsMap(*skins):
+    """
+    Return a dict containing weights for multiple skin clusters
+
+    Args:
+        *skins (PyNode): One or more skin cluster nodes
+
+    Returns:
+        A dict of {skinName: weights} for all the skin clusters
+    """
+    skinWeights = {}
+    for skin in skins:
+        weights = getSkinWeights(skin)
+        skinWeights[skin.nodeName()] = weights
+    return skinWeights
+
+
+def applySkinWeightsMap(skinWeights, *skins):
+    """
+    Set the skin weights for multiple skin clusters.
+
+    Args:
+        skinWeights (dict): A map of skin node names to weights data,
+            as given by `getSkinWeights`
+        *skins (PyNode): One or more skin cluster nodes
+    """
+    for skin in skins:
+        weights = skinWeights.get(skin.nodeName(), None)
+        if not weights:
+            LOG.warning("Could not find weights for skin: {0}".format(skin))
+            continue
+        setSkinWeights(skin, weights)
+
+
+def saveSkinWeightsToFile(filePath, *skins):
+    """
+    Save skin weights to a .weights file for one or more skin clusters.
+
+    Args:
+        filePath (str): A full path to the .weights file to write
+        *skins (PyNode): One or more skin cluster nodes
+    """
+    skinWeights = getSkinWeightsMap(*skins)
+    skinWeightsStr = meta.encodeMetaData(skinWeights)
+
+    with open(filePath, 'wb') as fp:
+        fp.write(skinWeightsStr)
+
+    LOG.info(filePath)
+
+
+def applySkinWeightsFromFile(filePath, *skins):
+    """
+    Load skin weights from a .weights file, and apply it to
+    one or more skin clusters.
+
+    Args:
+        filePath (str): A full path to the .weights file to read
+        *skins (PyNode): One or more skin cluster nodes
+    """
+    with open(filePath, 'rb') as fp:
+        content = fp.read()
+
+    skinWeights = meta.decodeMetaData(content)
+    applySkinWeightsMap(skinWeights, *skins)

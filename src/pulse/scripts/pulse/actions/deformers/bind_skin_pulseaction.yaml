@@ -15,7 +15,8 @@ BindSkinAction:
       type: nodelist
 
     - name: isRenderGeo
-      desc: Whether the bound meshes represent rendered geometry, will affect how joints are stored in the rigs meta data
+      desc: Whether the bound meshes represent rendered geometry, will affect
+            how joints are stored in the rigs meta data
       type: bool
       value: true
 
@@ -87,3 +88,18 @@ BindSkinAction:
       type: bool
       value: false
       advanced: true
+
+ApplySkinWeightsAction:
+  id: Pulse.ApplySkinWeights
+  displayName: Apply Skin Weights
+  description: Applies data from a .weights file to a skinned mesh
+  color: [1.0, .85, 0.5]
+  category: Deformers
+  attrs:
+    - name: meshes
+      type: nodelist
+      desc: The meshes to apply the skin weights to
+
+    - name: fileName
+      type: string
+      desc: The name of the .weights file, relative to the blueprint

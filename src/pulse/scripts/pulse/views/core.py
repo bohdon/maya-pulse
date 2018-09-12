@@ -302,6 +302,10 @@ class BlueprintUIModel(QtCore.QObject):
         stepPath, attrName = attrPath.split('.')
 
         step = self.blueprint.getStepByPath(stepPath)
+        if not step:
+            LOG.error("Could not find step: {0}".format(stepPath))
+            return
+
         if not step.isAction():
             LOG.error('getActionAttr: {0} is not an action'.format(step))
             return
