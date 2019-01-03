@@ -74,6 +74,7 @@ class PulseSetActionAttrCmd(PulseCmdBase):
         return syntax
 
     def doIt(self, args):
+        print(self.__class__.__name__, args)
         self.parseArguments(args)
         self.redoIt()
 
@@ -151,6 +152,7 @@ class PulseSetIsVariantAttrCmd(PulseCmdBase):
         return syntax
 
     def doIt(self, args):
+        print(self.__class__.__name__, args)
         self.parseArguments(args)
         self.redoIt()
 
@@ -218,6 +220,7 @@ class PulseMoveStepCmd(PulseCmdBase):
         return syntax
 
     def doIt(self, args):
+        print(self.__class__.__name__, args)
         self.parseArguments(args)
         self.redoIt()
 
@@ -253,6 +256,61 @@ class PulseMoveStepCmd(PulseCmdBase):
 
 
 CMD_CLASSES.append(PulseMoveStepCmd)
+
+
+class PulseDeleteStepCmd(PulseCmdBase):
+    """
+    Command to delete a Pulse BuildStep.
+    """
+
+    cmdName = "pulseDeleteStep"
+
+    pathFlagType = om.MSyntax.kString
+
+    @staticmethod
+    def createCmd():
+        return PulseDeleteStepCmd()
+
+    @staticmethod
+    def createSyntax():
+        syntax = om.MSyntax()
+        syntax.addArg(PulseDeleteStepCmd.pathFlagType)
+        return syntax
+
+    def doIt(self, args):
+        print(self.__class__.__name__, args)
+        self.parseArguments(args)
+        self.redoIt()
+
+    def parseArguments(self, args):
+        if len(args) != 1:
+            raise TypeError(
+                "pulseMoveStep() takes exactly 1 argument "
+                "({0} given)".format(len(args)))
+
+        try:
+            argdb = om.MArgDatabase(self.syntax(), args)
+        except RuntimeError:
+            om.MGlobal.displayError('Error while parsing arguments')
+            raise
+
+        self.stepPath = argdb.commandArgumentString(0)
+
+    def redoIt(self):
+        blueprintModel = self.getBlueprintModel()
+        if blueprintModel:
+            # save the serialized step data before deleting
+            self.deletedContent = blueprintModel.getStepData(self.stepPath)
+            if not blueprintModel.deleteStep(self.stepPath):
+                raise RuntimeError("Failed to delete BuildStep")
+
+    def undoIt(self):
+        blueprintModel = self.getBlueprintModel()
+        if blueprintModel and self.deletedContent:
+            blueprintModel.createStep(self.stepPath, self.deletedContent)
+
+
+CMD_CLASSES.append(PulseDeleteStepCmd)
 
 
 def initializePlugin(plugin):

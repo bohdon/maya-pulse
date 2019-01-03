@@ -387,6 +387,13 @@ class BuildStep(object):
         self._children[index].setParent(None)
         del self._children[index]
 
+    def removeFromParent(self):
+        """
+        Remove this item from its parent, if any.
+        """
+        if self.parent:
+            self.parent.removeChild(self)
+
     def insertChild(self, index, step):
         if not self.canHaveChildren:
             return
@@ -407,8 +414,24 @@ class BuildStep(object):
     def hasAnyChildren(self):
         return self.numChildren() != 0
 
+    def hasParent(self, step):
+        """
+        Return True if the step is an immediate or distance parent of this step.
+        """
+        if self.parent:
+            if self.parent == step:
+                return True
+            else:
+                return self.parent.hasParent(step)
+        return False
+
     def getChildAt(self, index):
         if not self.canHaveChildren:
+            return
+
+        if index < 0 or index >= len(self._children):
+            LOG.error("child index out of range: {0}, num children: {1}".format(
+                index, len(self._children)))
             return
 
         return self._children[index]
@@ -505,6 +528,26 @@ class BuildStep(object):
             for child in self._children:
                 if child:
                     child.setParent(self)
+
+    @staticmethod
+    def getTopmostSteps(steps):
+        """
+        Return a copy of the list of BuildSteps that doesn't include
+        any BuildSteps that have a parent or distant parent in the list.
+        """
+        def hasAnyParent(step, parents):
+            for parent in parents:
+                if step != parent and step.hasParent(parent):
+                    return True
+            return False
+
+        topSteps = []
+
+        for step in steps:
+            if not hasAnyParent(step, steps):
+                topSteps.append(step)
+
+        return topSteps
 
 
 class BuildActionError(Exception):

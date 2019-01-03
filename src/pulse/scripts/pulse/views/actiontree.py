@@ -1,4 +1,6 @@
 
+import maya.cmds as cmds
+
 import pulse
 from pulse.vendor.Qt import QtCore, QtWidgets
 from .core import PulseWindow
@@ -70,8 +72,23 @@ class ActionTreeWidget(QtWidgets.QWidget):
             indexes = self.selectionModel.selectedIndexes()
             if not indexes:
                 break
-            if not self.model.removeRow(indexes[0].row(), indexes[0].parent()):
-                break
+
+            steps = []
+            for index in indexes:
+                step = self.model.stepForIndex(index)
+                if step:
+                    steps.append(step)
+            steps = pulse.BuildStep.getTopmostSteps(steps)
+
+            paths = []
+            for step in steps:
+                paths.append(step.getFullPath())
+
+            cmds.undoInfo(openChunk=True, chunkName='Delete Pulse Actions')
+            for path in paths:
+                print('deleting {0}'.format(path))
+                cmds.pulseDeleteStep(path)
+            cmds.undoInfo(closeChunk=True)
 
 
 class ActionTreeWindow(PulseWindow):

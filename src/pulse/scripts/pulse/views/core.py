@@ -383,7 +383,8 @@ class BlueprintUIModel(QtCore.QObject):
             step.actionProxy.setAttrValue(attrName, value)
 
         index = self.buildStepTreeModel.indexByStepPath(stepPath)
-        self.buildStepTreeModel.dataChanged.emit(index, index, [])
+        # self.buildStepTreeModel.dataChanged.emit(index, index, [])
+        self.emitAllModelResets()
 
     def isActionAttrVariant(self, attrPath):
         stepPath, attrName = attrPath.split('.')
@@ -412,8 +413,9 @@ class BlueprintUIModel(QtCore.QObject):
 
         step.actionProxy.setIsVariantAttr(attrName, isVariant)
 
-        index = self.buildStepTreeModel.indexByStepPath(stepPath)
-        self.buildStepTreeModel.dataChanged.emit(index, index, [])
+        # index = self.buildStepTreeModel.indexByStepPath(stepPath)
+        # self.buildStepTreeModel.dataChanged.emit(index, index, [])
+        self.emitAllModelResets()
 
     def moveStep(self, sourcePath, targetPath):
         """
@@ -440,8 +442,55 @@ class BlueprintUIModel(QtCore.QObject):
         # TODO: handle moving between new parents
         newName = targetPath.split('/')[-1]
         step.setName(newName)
-        self.buildStepTreeModel.dataChanged.emit(index, index, [])
+        # self.buildStepTreeModel.dataChanged.emit(index, index, [])
+        self.emitAllModelResets()
         return step.getFullPath()
+
+    def getStepData(self, stepPath):
+        step = self.blueprint.getStepByPath(stepPath)
+        if not step:
+            LOG.error("getStepData: failed to find step: {0}".format(stepPath))
+            return
+
+        return step.serialize()
+
+    def deleteStep(self, stepPath):
+        if self.isReadOnly():
+            return False
+
+        step = self.blueprint.getStepByPath(stepPath)
+        if not step:
+            LOG.error("deleteStep: failed to find step: {0}".format(stepPath))
+            return False
+
+        # index = self.buildStepTreeModel.indexByStepPath(stepPath)
+        step.removeFromParent()
+        # self.buildStepTreeModel.dataChanged.emit(index, index, [])
+        self.emitAllModelResets()
+        return True
+
+    def createStep(self, stepPath, data):
+        if self.isReadOnly():
+            return False
+
+        parentStepPath = os.path.dirname(stepPath)
+        if not parentStepPath:
+            parentStepPath = '/'
+            parentStep = self.blueprint.rootStep
+        else:
+            parentStep = self.blueprint.getStepByPath(parentStepPath)
+            if not parentStep:
+                LOG.error(
+                    "createStep: failed to find parent step: {0}".format(parentStepPath))
+                return False
+
+        # index = self.buildStepTreeModel.indexByStepPath(parentStepPath)
+
+        step = BuildStep.fromData(data)
+        parentStep.addChild(step)
+        # self.buildStepTreeModel.dataChanged.emit(index, index, [])
+        self.emitAllModelResets()
+        return True
 
 
 class BuildStepTreeModel(QtCore.QAbstractItemModel):
@@ -453,15 +502,6 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
     def __init__(self, blueprint=None, parent=None):
         super(BuildStepTreeModel, self).__init__(parent=parent)
         self._blueprint = blueprint
-
-    def setBlueprint(self, newBlueprint):
-        """
-        Set a new Blueprint for this model, causing a full full model reset.
-        """
-        if self._blueprint is not newBlueprint:
-            self.beginResetModel()
-            self._blueprint = newBlueprint
-            self.endResetModel()
 
     def step(self, row, column, parent=QtCore.QModelIndex()):
         """
@@ -555,20 +595,20 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
         step = self.stepForIndex(parent)
         return step.numChildren() if step else 0
 
-    def insertRows(self, row, count, parent=QtCore.QModelIndex()):
-        self.beginInsertRows(parent, row, row + count - 1)
-        step = self.stepForIndex(parent)
-        for _ in range(count):
-            step.insertChild(row, BuildStep())
-        self.endInsertRows()
-        return True
+    # def insertRows(self, row, count, parent=QtCore.QModelIndex()):
+    #     self.beginInsertRows(parent, row, row + count - 1)
+    #     step = self.stepForIndex(parent)
+    #     for _ in range(count):
+    #         step.insertChild(row, BuildStep())
+    #     self.endInsertRows()
+    #     return True
 
-    def removeRows(self, row, count, parent=QtCore.QModelIndex()):
-        self.beginRemoveRows(parent, row, row + count - 1)
-        step = self.stepForIndex(parent)
-        step.removeChildren(row, count)
-        self.endRemoveRows()
-        return True
+    # def removeRows(self, row, count, parent=QtCore.QModelIndex()):
+    #     self.beginRemoveRows(parent, row, row + count - 1)
+    #     step = self.stepForIndex(parent)
+    #     cmds.pulseDeleteStep(step.getFullPath())
+    #     self.endRemoveRows()
+    #     return True
 
     def data(self, index, role=QtCore.Qt.DisplayRole):
         if not index.isValid():
