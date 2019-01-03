@@ -4,6 +4,7 @@ import maya.cmds as cmds
 from .core import *
 from .actionattrform import *
 from .actioneditor import *
+from .actionpalette import *
 from .actiontree import *
 from .buildtoolbar import *
 from .manageview import *
@@ -34,7 +35,6 @@ def destroyEditorWorkspaceControls():
 
     ActionEditorWindow.destroyWindow()
     ActionTreeWindow.destroyWindow()
-    BuildToolbarWindow.destroyWindow()
     PulseEditorWindow.destroyWindow()
     QuickNameWindow.destroyWindow()
     QuickColorWindow.destroyWindow()
