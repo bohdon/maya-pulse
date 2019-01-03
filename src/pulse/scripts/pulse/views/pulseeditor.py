@@ -6,7 +6,7 @@ from pulse.vendor.Qt import QtCore, QtWidgets
 from pulse.prefs import optionVarProperty
 
 from .core import PulseWindow
-from .blueprinteditor import BlueprintEditorWidget
+from .manageview import ManageWidget
 from .buildtoolbar import BuildToolbarWidget
 from .actiontree import ActionTreeWidget, ActionPaletteWidget
 from .actioneditor import ActionEditorWidget
@@ -63,12 +63,12 @@ class PulseEditorWindow(PulseWindow):
         buildToolbar = BuildToolbarWidget(parent)
         layout.addWidget(buildToolbar)
 
-        # main tab widget (Config / Design / Actions)
+        # main tab widget (Manage / Design / Actions)
         tabWidget = QtWidgets.QTabWidget(parent)
 
-        # config tab
-        configTab = BlueprintEditorWidget(parent)
-        tabWidget.addTab(configTab, "Config")
+        # manage tab
+        manageTab = ManageWidget(parent)
+        tabWidget.addTab(manageTab, "Manage")
 
         # design tab
         designTab = DesignViewWidget(parent)

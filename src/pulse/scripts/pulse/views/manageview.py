@@ -7,15 +7,14 @@ from .style import UIColors
 
 
 __all__ = [
-    'BlueprintEditorWidget',
-    'BlueprintEditorWindow',
+    'ManageWidget',
 ]
 
 
-class BlueprintEditorWidget(QtWidgets.QWidget):
+class ManageWidget(QtWidgets.QWidget):
 
     def __init__(self, parent=None):
-        super(BlueprintEditorWidget, self).__init__(parent=parent)
+        super(ManageWidget, self).__init__(parent=parent)
 
         self.blueprintModel = BlueprintUIModel.getDefaultModel()
         self.model = self.blueprintModel.buildStepTreeModel
@@ -70,24 +69,3 @@ class BlueprintEditorWidget(QtWidgets.QWidget):
 
     def debugPrintSerialized(self):
         print(self.blueprintModel.blueprint.dumpYaml())
-
-
-class BlueprintEditorWindow(PulseWindow):
-
-    OBJECT_NAME = 'pulseBlueprintEditorWindow'
-    PREFERRED_SIZE = QtCore.QSize(400, 300)
-    STARTING_SIZE = QtCore.QSize(400, 300)
-    MINIMUM_SIZE = QtCore.QSize(400, 300)
-
-    WINDOW_MODULE = 'pulse.views.blueprinteditor'
-
-    def __init__(self, parent=None):
-        super(BlueprintEditorWindow, self).__init__(parent=parent)
-
-        self.setWindowTitle('Pulse Blueprint Editor')
-
-        layout = QtWidgets.QVBoxLayout(self)
-        self.setLayout(layout)
-
-        widget = BlueprintEditorWidget(self)
-        layout.addWidget(widget)

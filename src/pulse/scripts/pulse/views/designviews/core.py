@@ -44,7 +44,8 @@ class DesignViewPanel(QtWidgets.QWidget):
         # header frame
         self.headerFrame = CollapsibleFrame(parent)
         headerColor = 'rgba({0}, {1}, {2}, 40)'.format(*self.getPanelColor())
-        self.headerFrame.setStyleSheet(".CollapsibleFrame{{ background-color: {color}; border-radius: 2px; }}".format(color=headerColor))
+        self.headerFrame.setStyleSheet(
+            ".CollapsibleFrame{{ background-color: {color}; border-radius: 2px; }}".format(color=headerColor))
         self.headerFrame.collapsedChanged.connect(self.onCollapsedChanged)
         # header layout
         self.headerLayout = QtWidgets.QHBoxLayout(self.headerFrame)
@@ -80,5 +81,6 @@ class DesignViewPanel(QtWidgets.QWidget):
         """
         frame = QtWidgets.QFrame(parent)
         frame.setObjectName("panelFrame")
-        frame.setStyleSheet(".QFrame#panelFrame{ background-color: rgba(255, 255, 255, 5); }")
+        frame.setStyleSheet(
+            ".QFrame#panelFrame{ background-color: rgba(255, 255, 255, 5); }")
         return frame

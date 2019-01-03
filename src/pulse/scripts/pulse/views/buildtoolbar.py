@@ -12,7 +12,6 @@ from .core import BlueprintUIModel
 
 __all__ = [
     'BuildToolbarWidget',
-    'BuildToolbarWindow',
 ]
 
 LOG = logging.getLogger(__name__)
@@ -130,24 +129,3 @@ class BuildToolbarWidget(QtWidgets.QWidget, RigEventsMixin):
             builder.start()
             # self.model.reloadBlueprint()
             cmds.evalDeferred(self.onStateDirty)
-
-
-class BuildToolbarWindow(PulseWindow):
-
-    OBJECT_NAME = 'pulseBuildToolbarWindow'
-    PREFERRED_SIZE = QtCore.QSize(400, 300)
-    STARTING_SIZE = QtCore.QSize(400, 300)
-    MINIMUM_SIZE = QtCore.QSize(400, 300)
-
-    WINDOW_MODULE = 'pulse.views.buildtoolbar'
-
-    def __init__(self, parent=None):
-        super(BuildToolbarWindow, self).__init__(parent=parent)
-
-        self.setWindowTitle('Pulse Blueprint Editor')
-
-        layout = QtWidgets.QVBoxLayout(self)
-        self.setLayout(layout)
-
-        widget = BuildToolbarWidget(self)
-        layout.addWidget(widget)

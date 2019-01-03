@@ -154,6 +154,10 @@ class BlueprintUIModel(QtCore.QObject):
     The owner and manager of various models representing a Blueprint
     in the scene. All reading and writing for the Blueprint through
     the UI should be done using this model.
+
+    Blueprints edited though the UI are saved to yaml files
+    associated with a maya scene file. This model is also responsible
+    for loading and saving the blueprint yaml file.
     """
 
     # shared instances, mapped by name
@@ -187,7 +191,7 @@ class BlueprintUIModel(QtCore.QObject):
         super(BlueprintUIModel, self).__init__(parent=parent)
 
         # the blueprint of this model
-        self.blueprint = Blueprint()
+        self._blueprint = Blueprint()
 
         # the tree item model and selection model for BuildItems
         self.buildStepTreeModel = BuildStepTreeModel(self.blueprint)
@@ -196,6 +200,13 @@ class BlueprintUIModel(QtCore.QObject):
 
         # attempt to load from the scene
         self.loadFromFile(suppressWarnings=True)
+
+    @property
+    def blueprint(self):
+        """
+        The Blueprint object represented by this Model.
+        """
+        return self._blueprint
 
     def isReadOnly(self):
         """
