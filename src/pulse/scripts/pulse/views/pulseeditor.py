@@ -5,7 +5,7 @@ import pulse
 from pulse.vendor.Qt import QtCore, QtWidgets
 from pulse.prefs import optionVarProperty
 
-from .core import PulseWindow
+from .core import PulseWindow, BlueprintUIModel
 from .manageview import ManageWidget
 from .buildtoolbar import BuildToolbarWidget
 from .actiontree import ActionTreeWidget, ActionPaletteWidget
@@ -46,7 +46,10 @@ class PulseEditorWindow(PulseWindow):
 
         pulse.loadBuiltinActions()
 
+        self.blueprintModel = BlueprintUIModel.getDefaultModel()
+
         self.setupUi(self)
+        self.setupMenuBar(self)
 
         self.mainTabWidget.setCurrentIndex(self.mainTabIndex)
         self.actionsTabWidget.setCurrentIndex(self.actionsTabIndex)
@@ -104,3 +107,53 @@ class PulseEditorWindow(PulseWindow):
 
         self.mainTabWidget = tabWidget
         self.actionsTabWidget = actionsTabWidget
+
+    def setupMenuBar(self, parent):
+        self.menuBar = QtWidgets.QMenuBar(parent)
+        self.layout().setMenuBar(self.menuBar)
+
+        fileMenu = self.menuBar.addMenu("Blueprint")
+
+        autosaveCheck = QtWidgets.QAction("Auto Save", parent)
+        autosaveCheck.setCheckable(True)
+        autosaveCheck.setChecked(True)
+        autosaveCheck.setStatusTip(
+            "Automatically save the Blueprint file when the scene is saved")
+        fileMenu.addAction(autosaveCheck)
+
+        saveAction = QtWidgets.QAction("Save", parent)
+        saveAction.setStatusTip(
+            "Save the Blueprint as a yaml file associated with the current maya scene file")
+        saveAction.triggered.connect(self.blueprintModel.save)
+        fileMenu.addAction(saveAction)
+
+        reloadAction = QtWidgets.QAction("Reload", parent)
+        reloadAction.setStatusTip(
+            "Reload the Blueprint from the yaml file associated with the current maya scene file")
+        reloadAction.triggered.connect(self.blueprintModel.load)
+        fileMenu.addAction(reloadAction)
+
+        fileMenu.addSeparator()
+
+        reloadAction = QtWidgets.QAction("Clear", parent)
+        reloadAction.setStatusTip(
+            "Delete all actions and reset the Blueprint.")
+        reloadAction.triggered.connect(
+            self.blueprintModel.initializeBlueprint)
+        fileMenu.addAction(reloadAction)
+
+        reloadAction = QtWidgets.QAction("Create Default Actions", parent)
+        reloadAction.setStatusTip(
+            "Reset the Blueprint to the default set of actions.")
+        reloadAction.triggered.connect(
+            self.blueprintModel.initializeBlueprintToDefaultActions)
+        fileMenu.addAction(reloadAction)
+
+        fileMenu.addSeparator()
+
+        debugPrintAction = QtWidgets.QAction("Debug Print YAML", parent)
+        debugPrintAction.triggered.connect(self.debugPrintSerialized)
+        fileMenu.addAction(debugPrintAction)
+
+    def debugPrintSerialized(self):
+        print(self.blueprintModel.blueprint.dumpYaml())

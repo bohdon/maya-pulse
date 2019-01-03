@@ -3,6 +3,7 @@ import pulse
 from pulse.vendor.Qt import QtCore, QtWidgets, QtGui
 from .core import PulseWindow
 from .core import BlueprintUIModel
+from .utils import createHeaderLabel
 from .style import UIColors
 
 
@@ -26,10 +27,13 @@ class ManageWidget(QtWidgets.QWidget):
     def setupUi(self, parent):
         layout = QtWidgets.QVBoxLayout(self)
 
-        formLayout1 = QtWidgets.QFormLayout(self)
-        rigNameLabel = QtWidgets.QLabel(self)
+        propertiesHeader = createHeaderLabel(parent, "Rig Properties")
+        layout.addWidget(propertiesHeader)
+
+        formLayout1 = QtWidgets.QFormLayout(parent)
+        rigNameLabel = QtWidgets.QLabel(parent)
         rigNameLabel.setText("Rig Name")
-        self.rigNameText = QtWidgets.QLineEdit(self)
+        self.rigNameText = QtWidgets.QLineEdit(parent)
         self.rigNameText.setText(self.blueprintModel.getRigName())
         self.rigNameText.textChanged.connect(self.rigNameTextChanged)
         formLayout1.setWidget(
@@ -37,16 +41,6 @@ class ManageWidget(QtWidgets.QWidget):
         formLayout1.setWidget(
             0, QtWidgets.QFormLayout.FieldRole, self.rigNameText)
         layout.addLayout(formLayout1)
-
-        initBtn = QtWidgets.QPushButton(self)
-        initBtn.setText("Initialize Blueprint")
-        initBtn.clicked.connect(self.initBlueprint)
-        layout.addWidget(initBtn)
-
-        debugPrintBtn = QtWidgets.QPushButton(self)
-        debugPrintBtn.setText("Debug Print YAML")
-        debugPrintBtn.clicked.connect(self.debugPrintSerialized)
-        layout.addWidget(debugPrintBtn)
 
         spacer = QtWidgets.QSpacerItem(
             0, 0, QtWidgets.QSizePolicy.Minimum,
@@ -63,9 +57,3 @@ class ManageWidget(QtWidgets.QWidget):
 
     def rigNameTextChanged(self):
         self.blueprintModel.setRigName(self.rigNameText.text())
-
-    def initBlueprint(self):
-        self.blueprintModel.initializeBlueprint()
-
-    def debugPrintSerialized(self):
-        print(self.blueprintModel.blueprint.dumpYaml())

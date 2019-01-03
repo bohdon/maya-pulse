@@ -42,40 +42,37 @@ class BuildToolbarWidget(QtWidgets.QWidget, RigEventsMixin):
         self.disableRigEvents()
 
     def setupUi(self, parent):
-        layout = QtWidgets.QHBoxLayout(parent)
+        layout = QtWidgets.QVBoxLayout(parent)
+        layout.setMargin(4)
+
+        frame = QtWidgets.QFrame(parent)
+        frame.setObjectName("panelFrame")
+        frame.setStyleSheet(
+            ".QFrame#panelFrame{ background-color: rgba(255, 255, 255, 10); }")
+        layout.addWidget(frame)
+
+        hlayout = QtWidgets.QHBoxLayout(frame)
 
         self.rigNameLabel = QtWidgets.QLabel(parent)
         self.rigNameLabel.setText(self.blueprintModel.getRigName())
-        layout.addWidget(self.rigNameLabel)
-
-        self.saveBtn = QtWidgets.QPushButton(parent)
-        self.saveBtn.setText("Save")
-        self.saveBtn.setMaximumWidth(80)
-        self.saveBtn.clicked.connect(self.saveBlueprintAndFile)
-        layout.addWidget(self.saveBtn)
-
-        self.loadBtn = QtWidgets.QPushButton(parent)
-        self.loadBtn.setText("Load")
-        self.loadBtn.setMaximumWidth(80)
-        self.loadBtn.clicked.connect(self.blueprintModel.loadFromFile)
-        layout.addWidget(self.loadBtn)
+        hlayout.addWidget(self.rigNameLabel)
 
         self.checkBtn = QtWidgets.QPushButton(parent)
-        self.checkBtn.setText("Check")
+        self.checkBtn.setText("Validate")
         self.checkBtn.setMaximumWidth(80)
-        self.checkBtn.clicked.connect(self.runCheck)
-        layout.addWidget(self.checkBtn)
+        self.checkBtn.clicked.connect(self.runValidation)
+        hlayout.addWidget(self.checkBtn)
 
         self.buildBtn = QtWidgets.QPushButton(parent)
         self.buildBtn.setText("Build")
         self.buildBtn.setMaximumWidth(80)
         self.buildBtn.clicked.connect(self.runBuild)
-        layout.addWidget(self.buildBtn)
+        hlayout.addWidget(self.buildBtn)
 
         self.openBPBtn = QtWidgets.QPushButton(parent)
         self.openBPBtn.setText("Open Blueprint")
         self.openBPBtn.clicked.connect(self.openBlueprintAndReload)
-        layout.addWidget(self.openBPBtn)
+        hlayout.addWidget(self.openBPBtn)
 
         self.cleanState()
 
@@ -106,15 +103,11 @@ class BuildToolbarWidget(QtWidgets.QWidget, RigEventsMixin):
         self.rigExists = len(pulse.getAllRigs()) > 1
         self.onStateDirty()
 
-    def saveBlueprintAndFile(self):
-        pm.saveFile()
-        self.blueprintModel.saveToFile()
-
     def openBlueprintAndReload(self):
         pulse.openFirstRigBlueprint()
         self.blueprintModel.loadFromFile()
 
-    def runCheck(self):
+    def runValidation(self):
         if self.blueprintModel.blueprint is not None:
             pass
 

@@ -2,6 +2,7 @@
 import pulse
 from pulse.vendor.Qt import QtCore, QtWidgets
 from .core import BlueprintUIModel
+from .utils import createHeaderLabel
 
 __all__ = [
     'ActionPaletteWidget',
@@ -65,7 +66,7 @@ class ActionPaletteWidget(QtWidgets.QWidget):
             layout.addLayout(catLay)
             categoryLayouts[cat] = catLay
             # add label
-            label = self.createLabel(parent, cat)
+            label = createHeaderLabel(parent, cat)
             catLay.addWidget(label)
 
         for actionConfig in allActionConfigs:
@@ -84,15 +85,6 @@ class ActionPaletteWidget(QtWidgets.QWidget):
         spacer = QtWidgets.QSpacerItem(
             0, 0, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
         layout.addItem(spacer)
-
-    def createLabel(self, parent, text):
-        label = QtWidgets.QLabel(parent)
-        label.setText(text)
-        label.setMinimumHeight(20)
-        label.setContentsMargins(10, 2, 2, 2)
-        label.setStyleSheet(
-            'background-color: rgba(0, 0, 0, 40); border-radius: 2px')
-        return label
 
     def getActionColor(self, actionConfig):
         color = actionConfig.get('color', [1, 1, 1])

@@ -1,3 +1,6 @@
+"""
+General UI utilities for simplifying UI creation code.
+"""
 
 import os
 import logging
@@ -12,6 +15,7 @@ __all__ = [
     'addItemsToGrid',
     'clearLayout',
     'CollapsibleFrame',
+    'createHeaderLabel',
     'createHSpacer',
     'createVSpacer',
     'dpiScale',
@@ -193,6 +197,20 @@ def createHSpacer(width=20, height=20):
 def createVSpacer(width=20, height=20):
     return QtWidgets.QSpacerItem(
         20, 20, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
+
+
+def createHeaderLabel(parent, text):
+    font = QtGui.QFont()
+    font.setWeight(75)
+    font.setBold(True)
+    label = QtWidgets.QLabel(parent)
+    label.setText(text)
+    label.setMinimumHeight(20)
+    label.setContentsMargins(10, 2, 2, 2)
+    label.setFont(font)
+    label.setStyleSheet(
+        'background-color: rgba(0, 0, 0, 40); border-radius: 2px')
+    return label
 
 
 def addItemsToGrid(gridLayout, items):

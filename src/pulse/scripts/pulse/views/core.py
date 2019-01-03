@@ -165,10 +165,15 @@ class BlueprintUIModel(QtCore.QObject):
 
     @classmethod
     def getDefaultModel(cls):
+        # type: (class) -> BlueprintUIModel
+        """
+        Return the default model instance used by editor views.
+        """
         return cls.getSharedModel(None)
 
     @classmethod
     def getSharedModel(cls, name):
+        # type: (class, str) -> BlueprintUIModel
         """
         Return a shared UI model by name, creating a new
         model if necessary. Will always return a valid
@@ -199,7 +204,7 @@ class BlueprintUIModel(QtCore.QObject):
             self.buildStepTreeModel)
 
         # attempt to load from the scene
-        self.loadFromFile(suppressWarnings=True)
+        self.load(suppressWarnings=True)
 
     @property
     def blueprint(self):
@@ -225,7 +230,7 @@ class BlueprintUIModel(QtCore.QObject):
         filepath = os.path.splitext(sceneName)[0] + '.yaml'
         return filepath
 
-    def saveToFile(self, suppressWarnings=False):
+    def save(self, suppressWarnings=False):
         """
         Save the Blueprint data to the file associated with this model
         """
@@ -239,7 +244,7 @@ class BlueprintUIModel(QtCore.QObject):
         if not success:
             LOG.error("Failed to save Blueprint to file: {0}".format(filepath))
 
-    def loadFromFile(self, suppressWarnings=False):
+    def load(self, suppressWarnings=False):
         """
         Load the Blueprint from the file associated with this model
         """
@@ -247,6 +252,8 @@ class BlueprintUIModel(QtCore.QObject):
         if not filepath:
             if not suppressWarnings:
                 LOG.warning("Scene is not saved")
+
+            self.initializeBlueprint()
             return
 
         success = self.blueprint.loadFromFile(filepath)
@@ -270,7 +277,15 @@ class BlueprintUIModel(QtCore.QObject):
 
     def initializeBlueprint(self):
         """
-        Initialize the Blueprint to its default state.
+        Initialize the Blueprint to an empty state.
+        """
+        self.blueprint.rootStep.clearChildren()
+        self.emitAllModelResets()
+
+    def initializeBlueprintToDefaultActions(self):
+        """
+        Initialize the Blueprint to its default state based
+        on the current blueprint config.
         """
         self.blueprint.rootStep.clearChildren()
         self.blueprint.initializeDefaultActions()
