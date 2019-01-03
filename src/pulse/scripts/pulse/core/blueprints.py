@@ -119,7 +119,7 @@ class Blueprint(object):
 
     def __init__(self):
         # the name of the rig this blueprint represents
-        self.rigName = 'newRig'
+        self.rigName = ''
         # the version of this blueprint
         self.version = BLUEPRINT_VERSION
         # the root step of this blueprint
@@ -285,6 +285,40 @@ class BlueprintBuilder(object):
     the Blueprint itself.
     """
 
+    @classmethod
+    def preBuildValidate(cls, blueprint):
+        # type: (class, Blueprint) -> bool
+        """
+        Perform a quick pre-build validation on a Blueprint
+        to ensure that building can at least be started.
+        """
+        if not blueprint:
+            LOG.error('No Blueprint was provided')
+            return False
+
+        if not blueprint.rigName:
+            LOG.error('Rig name is not set')
+            return False
+
+        if not blueprint.rootStep.hasAnyChildren():
+            LOG.error('Blueprint has no actions. Create new actions to begin.')
+            return False
+
+        return True
+
+    @classmethod
+    def createBuilderWithCurrentScene(cls, blueprint, debug=False):
+        """
+        Create and return a new BlueprintBuilder instance
+        using a blueprint and the current scene.
+        """
+        blueprintFile = str(pm.sceneName())
+        builder = cls(
+            blueprint,
+            blueprintFile=blueprintFile,
+            debug=debug)
+        return builder
+
     def __init__(self, blueprint, blueprintFile=None, debug=False, logDir=None):
         """
         Initialize a BlueprintBuilder
@@ -299,6 +333,9 @@ class BlueprintBuilder(object):
         if not isinstance(blueprint, Blueprint):
             raise ValueError("Expected Blueprint, got {0}".format(
                 type(blueprint).__name__))
+
+        if not blueprint.rigName:
+            raise ValueError("Blueprint rigName is not set")
 
         self.blueprint = blueprint
         self.blueprintFile = blueprintFile

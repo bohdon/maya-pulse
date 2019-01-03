@@ -404,6 +404,9 @@ class BuildStep(object):
 
         return len(self._children)
 
+    def hasAnyChildren(self):
+        return self.numChildren() != 0
+
     def getChildAt(self, index):
         if not self.canHaveChildren:
             return

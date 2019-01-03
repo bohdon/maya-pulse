@@ -8,6 +8,7 @@ from pulse.vendor.Qt import QtCore, QtWidgets, QtGui
 from pulse.core import RigEventsMixin
 from .core import PulseWindow
 from .core import BlueprintUIModel
+from .style import UIColors
 
 
 __all__ = [
@@ -45,17 +46,32 @@ class BuildToolbarWidget(QtWidgets.QWidget, RigEventsMixin):
         layout = QtWidgets.QVBoxLayout(parent)
         layout.setMargin(4)
 
-        frame = QtWidgets.QFrame(parent)
-        frame.setObjectName("panelFrame")
-        frame.setStyleSheet(
-            ".QFrame#panelFrame{ background-color: rgba(255, 255, 255, 10); }")
-        layout.addWidget(frame)
+        self.frame = QtWidgets.QFrame(parent)
+        self.frame.setObjectName("panelFrame")
+        layout.addWidget(self.frame)
 
-        hlayout = QtWidgets.QHBoxLayout(frame)
+        hlayout = QtWidgets.QHBoxLayout(self.frame)
 
+        labelLayout = QtWidgets.QVBoxLayout(parent)
+        hlayout.addLayout(labelLayout)
+
+        font = QtGui.QFont()
+        font.setPointSize(10)
+        font.setWeight(75)
+        font.setBold(True)
         self.rigNameLabel = QtWidgets.QLabel(parent)
-        self.rigNameLabel.setText(self.blueprintModel.getRigName())
-        hlayout.addWidget(self.rigNameLabel)
+        self.rigNameLabel.setFont(font)
+        self.rigNameLabel.setSizePolicy(
+            QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
+        self.rigNameLabel.setText(self.getRigNameText(
+            self.blueprintModel.getRigName()))
+        labelLayout.addWidget(self.rigNameLabel)
+
+        font = QtGui.QFont()
+        font.setItalic(True)
+        self.rigOrBlueprintLabel = QtWidgets.QLabel(parent)
+        self.rigOrBlueprintLabel.setFont(font)
+        labelLayout.addWidget(self.rigOrBlueprintLabel)
 
         self.checkBtn = QtWidgets.QPushButton(parent)
         self.checkBtn.setText("Validate")
@@ -77,7 +93,13 @@ class BuildToolbarWidget(QtWidgets.QWidget, RigEventsMixin):
         self.cleanState()
 
     def rigNameChanged(self, name):
-        self.rigNameLabel.setText(self.blueprintModel.getRigName())
+        self.rigNameLabel.setText(self.getRigNameText(name))
+
+    def getRigNameText(self, rigName):
+        name = self.blueprintModel.getRigName()
+        if not name:
+            name = '(unnamed)'
+        return name
 
     def cleanState(self):
         self.isStateDirty = False
@@ -86,6 +108,14 @@ class BuildToolbarWidget(QtWidgets.QWidget, RigEventsMixin):
         self.checkBtn.setVisible(not self.rigExists)
         self.buildBtn.setVisible(not self.rigExists)
         self.openBPBtn.setVisible(self.rigExists)
+        self.rigOrBlueprintLabel.setText(
+            "Editing Rig" if self.rigExists else "Editing Blueprint")
+
+        frameColor = UIColors.RED if self.rigExists else UIColors.BLUE
+        frameColor = list(frameColor)
+        frameColor[-1] = 10
+        self.frame.setStyleSheet(
+            ".QFrame#panelFrame{{ {0} }}".format(UIColors.asBGColor(frameColor)))
 
     def onStateDirty(self):
         if not self.isStateDirty:
@@ -113,12 +143,12 @@ class BuildToolbarWidget(QtWidgets.QWidget, RigEventsMixin):
 
     def runBuild(self):
         if self.blueprintModel.blueprint is not None:
-            # self.model.reloadBlueprint()
-            blueprintFile = str(pm.sceneName())
-            builder = pulse.BlueprintBuilder(
-                self.blueprintModel.blueprint,
-                blueprintFile=blueprintFile,
-                debug=True)
+
+            if not pulse.BlueprintBuilder.preBuildValidate(self.blueprintModel.blueprint):
+                return
+
+            builder = pulse.BlueprintBuilder.createBuilderWithCurrentScene(
+                self.blueprintModel.blueprint, debug=True)
             builder.start()
-            # self.model.reloadBlueprint()
+
             cmds.evalDeferred(self.onStateDirty)

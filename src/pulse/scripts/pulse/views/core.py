@@ -279,6 +279,7 @@ class BlueprintUIModel(QtCore.QObject):
         """
         Initialize the Blueprint to an empty state.
         """
+        self.blueprint.rigName = None
         self.blueprint.rootStep.clearChildren()
         self.emitAllModelResets()
 

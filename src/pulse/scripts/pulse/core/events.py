@@ -181,9 +181,6 @@ class RigLifecycleEvents(MayaCallbackEvents):
             if isRig(node):
                 LOG.debug("onRigCreated('{0}')".format(node))
                 self.onRigCreated(pm.PyNode(node))
-        else:
-            LOG.debug(
-                "Failed to locate node: {0}".format(fullName))
 
     def _onNodeRemoved(self, node, *args):
         """

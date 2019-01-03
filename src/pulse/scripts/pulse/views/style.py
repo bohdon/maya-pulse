@@ -16,6 +16,7 @@ class UIColors(object):
     HELPTEXT = (255, 255, 255, 0.25)
     WARNING = (200, 180, 120, 1)
     ERROR = (240, 60, 60, 1)
+    WHITE = (255, 255, 255, 1)
 
     @staticmethod
     def asStyleSheet(color):
