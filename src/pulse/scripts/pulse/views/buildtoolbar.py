@@ -9,6 +9,7 @@ from pulse.core import RigEventsMixin
 from .core import PulseWindow
 from .core import BlueprintUIModel
 from .style import UIColors
+from pulse.editorutils import saveSceneIfDirty
 
 
 __all__ = [
@@ -135,7 +136,7 @@ class BuildToolbarWidget(QtWidgets.QWidget, RigEventsMixin):
 
     def openBlueprintAndReload(self):
         pulse.openFirstRigBlueprint()
-        self.blueprintModel.loadFromFile()
+        self.blueprintModel.load()
 
     def runValidation(self):
         if self.blueprintModel.blueprint is not None:
@@ -143,9 +144,15 @@ class BuildToolbarWidget(QtWidgets.QWidget, RigEventsMixin):
 
     def runBuild(self):
         if self.blueprintModel.blueprint is not None:
-
             if not pulse.BlueprintBuilder.preBuildValidate(self.blueprintModel.blueprint):
                 return
+
+            # TODO: expose prompt to save scene as option
+            if not saveSceneIfDirty(prompt=False):
+                return
+
+            # if autoSave:
+            self.blueprintModel.save()
 
             builder = pulse.BlueprintBuilder.createBuilderWithCurrentScene(
                 self.blueprintModel.blueprint, debug=True)

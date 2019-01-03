@@ -38,6 +38,7 @@ __all__ = [
     'parentSelectedInOrder',
     'rotateSelectedComponentsAroundAxis',
     'rotateSelectedOrientsAroundAxis',
+    'saveSceneIfDirty',
     'saveSkinWeightsForSelected',
     'setDetailedChannelBoxEnabled',
     'snapToLinkForSelected',
@@ -48,6 +49,59 @@ __all__ = [
 ]
 
 LOG = logging.getLogger(__name__)
+
+
+def saveSceneIfDirty(prompt=True):
+    """
+    Prompt the user to save if the scene is modified, or has never been saved.
+
+    Returns True if the save was successful, or the scene has not been modified.
+
+    Args:
+        prompt (bool): If True, prompt the user, or attempt to automatically save where possible
+    """
+    modified = pm.cmds.file(q=True, modified=True)
+    neverSaved = not pm.sceneName()
+
+    if neverSaved:
+        # first time saving
+        if not prompt:
+            pm.runtime.SaveSceneAs()
+            return bool(pm.sceneName())
+        else:
+            # either save as or cancel
+            kwargs = dict(
+                title='Warning: Scene Not Saved',
+                message='Save changes to untitled scene?',
+                db="Save", cb="Cancel", ds="Cancel",
+                button=("Save", "Cancel"),
+            )
+            result = pm.confirmDialog(**kwargs)
+            if result == 'Save':
+                pm.runtime.SaveSceneAs()
+                return bool(pm.sceneName())
+            else:
+                return False
+
+    elif modified:
+        # saving modified file
+        if not prompt:
+            return pm.saveFile(force=True)
+        else:
+            kwargs = dict(
+                title='Save Scene',
+                message='Save changes to\n{0}'.format(pm.sceneName()),
+                db="Save", cb="Cancel", ds="Cancel",
+                button=("Save", "Cancel"),
+            )
+            result = pm.confirmDialog(**kwargs)
+            if result == 'Save':
+                return pm.saveFile(force=True)
+            else:
+                return False
+
+    else:
+        return True
 
 
 def getEditorBlueprint():

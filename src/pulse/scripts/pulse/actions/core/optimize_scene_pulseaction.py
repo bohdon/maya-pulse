@@ -24,7 +24,7 @@ class OptimizeSceneAction(pulse.BuildAction):
         pm.mel.deleteUnusedCommon_Multi(("unitConversion","timeToUnitConversion","unitToTimeConversion"), 1, "")
         pm.mel.MLdeleteUnused()
         pm.clearCache(allNodes=True)
-        pm.mel.deleteEmptyGroups()
+        # pm.mel.deleteEmptyGroups()
         pm.mel.deleteEmptyLayers("Display")
         pm.mel.deleteEmptyLayers("Render")
         #pm.mel.deleteUnusedSets()

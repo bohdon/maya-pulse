@@ -223,12 +223,20 @@ class BlueprintUIModel(QtCore.QObject):
         """
         Return the filepath for the Blueprint being edited
         """
-        sceneName = pm.sceneName()
-        if not sceneName:
-            return None
+        sceneName = None
+        isRigScene = len(pulse.getAllRigs()) > 0
 
-        filepath = os.path.splitext(sceneName)[0] + '.yaml'
-        return filepath
+        if isRigScene:
+            # get filepath from rig
+            rig = pulse.getAllRigs()[0]
+            rigdata = meta.getMetaData(rig, pulse.RIG_METACLASS)
+            sceneName = rigdata.get('blueprintFile')
+        else:
+            sceneName = pm.sceneName()
+
+        if sceneName:
+            filepath = os.path.splitext(sceneName)[0] + '.yaml'
+            return filepath
 
     def save(self, suppressWarnings=False):
         """
@@ -331,6 +339,9 @@ class BlueprintUIModel(QtCore.QObject):
         step = self.blueprint.getStepByPath(stepPath)
         if not step:
             LOG.error("Could not find step: {0}".format(stepPath))
+            print(self.blueprint)
+            print(self.blueprint.rootStep)
+            print(self.blueprint.rootStep.children)
             return
 
         if not step.isAction():
@@ -354,6 +365,13 @@ class BlueprintUIModel(QtCore.QObject):
         stepPath, attrName = attrPath.split('.')
 
         step = self.blueprint.getStepByPath(stepPath)
+        if not step:
+            LOG.error('Could not find step: {0}'.format(stepPath))
+            print(self.blueprint)
+            print(self.blueprint.rootStep)
+            print(self.blueprint.rootStep.children)
+            return
+
         if not step.isAction():
             LOG.error('setActionAttr: {0} is not an action'.format(step))
             return

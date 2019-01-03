@@ -251,13 +251,11 @@ class Blueprint(object):
         hierAction.actionProxy.setAttrValue('allNodes', True)
         mainGroup = BuildStep('Main')
         renameAction = BuildStep(actionId='Pulse.RenameScene')
-        optimizeAction = BuildStep(actionId='Pulse.OptimizeScene')
         self.rootStep.addChildren([
             importAction,
             hierAction,
             mainGroup,
-            renameAction,
-            optimizeAction
+            renameAction
         ])
 
     def getConfig(self):

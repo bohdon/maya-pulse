@@ -156,4 +156,6 @@ class PulseEditorWindow(PulseWindow):
         fileMenu.addAction(debugPrintAction)
 
     def debugPrintSerialized(self):
+        print(self.blueprintModel, self.blueprintModel.blueprint)
+        print(self.blueprintModel.getBlueprintFilepath())
         print(self.blueprintModel.blueprint.dumpYaml())

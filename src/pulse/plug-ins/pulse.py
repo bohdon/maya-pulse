@@ -36,7 +36,9 @@ class PulseCmdBase(om.MPxCommand):
         return True
 
     def getBlueprintModel(self):
-        return pulse.views.BlueprintUIModel.getDefaultModel()
+        model = pulse.views.BlueprintUIModel.getDefaultModel()
+        print('debug: plugin using BlueprintUIModel: ', model)
+        return model
 
     def toStrData(self, data):
         return pulse.core.serializeAttrValue(data)
