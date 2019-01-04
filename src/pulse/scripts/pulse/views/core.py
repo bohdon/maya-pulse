@@ -201,9 +201,9 @@ class BlueprintUIModel(QtCore.QObject):
         self._blueprint = Blueprint()
 
         # the tree item model and selection model for BuildSteps
-        self.buildStepTreeModel = BuildStepTreeModel(self.blueprint)
+        self.buildStepTreeModel = BuildStepTreeModel(self.blueprint, self)
         self.buildStepSelectionModel = BuildStepSelectionModel(
-            self.buildStepTreeModel)
+            self.buildStepTreeModel, self)
 
         # keeps track of whether a rig is currently in the scene,
         # which will affect the ability to edit the Blueprint
@@ -551,6 +551,12 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
         super(BuildStepTreeModel, self).__init__(parent=parent)
         self._blueprint = blueprint
 
+    def isReadOnly(self):
+        parent = QtCore.QObject.parent(self)
+        if parent and hasattr(parent, 'isReadOnly'):
+            return parent.isReadOnly()
+        return False
+
     def stepForIndex(self, index):
         """
         Return the BuildStep of a QModelIndex.
@@ -606,12 +612,16 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
 
     def flags(self, index):
         if not index.isValid():
-            return QtCore.Qt.ItemIsDropEnabled
+            if not self.isReadOnly():
+                return QtCore.Qt.ItemIsDropEnabled
+            else:
+                return 0
 
         flags = QtCore.Qt.ItemIsEnabled \
             | QtCore.Qt.ItemIsSelectable \
-            | QtCore.Qt.ItemIsDragEnabled \
-            | QtCore.Qt.ItemIsEditable
+
+        if not self.isReadOnly():
+            flags |= QtCore.Qt.ItemIsDragEnabled | QtCore.Qt.ItemIsEditable
 
         step = self.stepForIndex(index)
         if step and step.canHaveChildren:
