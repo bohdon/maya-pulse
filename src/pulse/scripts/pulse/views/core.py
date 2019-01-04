@@ -802,14 +802,13 @@ class BuildStepSelectionModel(QtCore.QItemSelectionModel):
         """
         Set the selection using BuildStep paths
         """
-        model = self.model()
-        if not model or not hasattr(model, 'blueprint'):
+        if not self.model() or not hasattr(self.model(), '_blueprint'):
             return
 
-        # blueprint = model.blueprint
-        # items = [blueprint.getStepByPath(p) for p in paths]
-        # indeces = [model.indexForItem(i) for i in items if i]
-        # self.clear()
-        # for index in indeces:
-        #     if index.isValid():
-        #         self.select(index, QtCore.QItemSelectionModel.Select)
+        blueprint = self.model()._blueprint
+        steps = [blueprint.getStepByPath(p) for p in paths]
+        indexes = [self.model().indexByStep(s) for s in steps if s]
+        self.clearSelection()
+        for index in indexes:
+            if index.isValid():
+                self.select(index, QtCore.QItemSelectionModel.Select)

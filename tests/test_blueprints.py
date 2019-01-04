@@ -32,6 +32,9 @@ steps:
 
 class TestBlueprints(unittest.TestCase):
 
+    def tearDown(self):
+        pm.delete(pulse.getAllRigs())
+
     def test_build(self):
         bp = pulse.Blueprint()
         bp.rigName = 'testRig'

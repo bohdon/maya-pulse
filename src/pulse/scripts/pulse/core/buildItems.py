@@ -228,7 +228,7 @@ class BuildStep(object):
     def actionProxy(self):
         return self._actionProxy
 
-    def setActionProxy(self, actionProxy, updateName=True):
+    def setActionProxy(self, actionProxy):
         """
         Set a BuildActionProxy for this step. Will fail if
         the step has any children.
@@ -242,9 +242,6 @@ class BuildStep(object):
             return
 
         self._actionProxy = actionProxy
-        if updateName and self._actionProxy:
-            self._name = self._actionProxy.getDisplayName()
-            self.ensureUniqueName()
 
     @property
     def canHaveChildren(self):
@@ -534,13 +531,17 @@ class BuildStep(object):
         Args:
             data: A dict containing serialized data for this step
         """
-        self.setName(data.get('name', None))
         if 'action' in data:
             newActionProxy = BuildActionProxy()
             newActionProxy.deserialize(data['action'])
-            self.setActionProxy(newActionProxy, updateName=False)
+            self.setActionProxy(newActionProxy)
         else:
             self._actionProxy = None
+
+        # set name after action, so that if no name has
+        # been set yet, it will initialized with the name
+        # of the action
+        self.setName(data.get('name', None))
 
         # TODO: warn if throwing away children in a rare case that
         #       both a proxy and children existed (maybe data was manually created).

@@ -99,7 +99,7 @@ class ActionPaletteWidget(QtWidgets.QWidget):
     def onActionClicked(self, typeName):
         self.clicked.emit(typeName)
 
-    def createStepsForSelection(self):
+    def createStepsForSelection(self, stepData=None):
         """
         Create new BuildSteps in the hierarchy at the
         current selection and return the new step paths.
@@ -133,8 +133,13 @@ class ActionPaletteWidget(QtWidgets.QWidget):
             parentPath = parentStep.getFullPath() if parentStep else None
             if not parentPath:
                 parentPath = ''
-            newStepPath = cmds.pulseCreateStep(parentPath, insertIndex, '')
+            if not stepData:
+                stepData = ''
+            newStepPath = cmds.pulseCreateStep(
+                parentPath, insertIndex, stepData)
             if newStepPath:
+                # TODO: remove this if/when plugin command only returns single string
+                newStepPath = newStepPath[0]
                 newPaths.append(newStepPath)
             # if self.model.insertRows(insertIndex, 1, parentIndex):
             #     newIndex = self.model.index(insertIndex, 0, parentIndex)
@@ -145,26 +150,12 @@ class ActionPaletteWidget(QtWidgets.QWidget):
     def createBuildGroup(self):
         if self.blueprintModel.isReadOnly():
             return
-
         newPaths = self.createStepsForSelection()
-
-        self.selectionModel.clearSelection()
         self.selectionModel.setSelectedItemPaths(newPaths)
 
     def createBuildAction(self, actionId):
         if self.blueprintModel.isReadOnly():
             return
-
-        newPaths = self.createStepsForSelection()
-
-        # update steps with correct action id and select them
-        self.selectionModel.clearSelection()
+        stepData = "{'action':{'id':'%s'}}" % actionId
+        newPaths = self.createStepsForSelection(stepData=stepData)
         self.selectionModel.setSelectedItemPaths(newPaths)
-
-        for path in newPaths:
-            step = self.blueprintModel.getStep(path)
-            if step:
-                actionProxy = pulse.BuildActionProxy(actionId)
-                step.setActionProxy(actionProxy)
-                index = self.model.indexByStepPath(path)
-                self.model.dataChanged.emit(index, index, [])
