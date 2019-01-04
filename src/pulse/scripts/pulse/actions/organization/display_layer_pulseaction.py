@@ -20,5 +20,5 @@ class DisplayLayerAction(pulse.BuildAction):
         layer.displayType.set(self.displayType)
         layer.shading.set(self.shading)
         layer.texturing.set(self.texturing)
-        layer.playback.set(self.displayType)
+        layer.playback.set(self.playback)
 
