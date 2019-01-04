@@ -520,7 +520,7 @@ class BlueprintBuilder(object):
                              pos='topCenter', backColor=0xaa8336,
                              fade=True, fadeStayTime=3000)
         else:
-            pm.inViewMessage(amg='Build Finished', pos='topCenter', fade=True)
+            pm.inViewMessage(amg='Build Successful', pos='topCenter', fade=True)
 
     def onCancel(self):
         """
@@ -592,5 +592,6 @@ class BlueprintBuilder(object):
         # delete all blueprint nodes
         for node in Blueprint.getAllBlueprintNodes():
             pm.delete(node)
+        pm.select(cl=True)
 
         yield dict(index=currentActionIndex, total=totalActionCount, finish=True)
