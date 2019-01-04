@@ -1,8 +1,8 @@
 
 import os
 import logging
-import maya.cmds as cmds
 import pymel.core as pm
+import maya.cmds as cmds
 import maya.OpenMayaUI as mui
 from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
 import pymetanode as meta
@@ -264,16 +264,14 @@ class BlueprintUIModel(QtCore.QObject):
             self.initializeBlueprint()
             return
 
+        self.buildStepTreeModel.beginResetModel()
         success = self.blueprint.loadFromFile(filepath)
-        self.emitAllModelResets()
+        self.buildStepTreeModel.endModelReset()
+        self.rigNameChanged.emit(self.getRigName())
 
         if not success:
             LOG.error(
                 "Failed to load Blueprint from file: {0}".format(filepath))
-
-    def emitAllModelResets(self):
-        self.buildStepTreeModel.modelReset.emit()
-        self.rigNameChanged.emit(self.getRigName())
 
     def getRigName(self):
         return self.blueprint.rigName
@@ -290,18 +288,20 @@ class BlueprintUIModel(QtCore.QObject):
         """
         Initialize the Blueprint to an empty state.
         """
+        self.buildStepTreeModel.beginResetModel()
         self.blueprint.rigName = None
         self.blueprint.rootStep.clearChildren()
-        self.emitAllModelResets()
+        self.buildStepTreeModel.endResetModel()
 
     def initializeBlueprintToDefaultActions(self):
         """
         Initialize the Blueprint to its default state based
         on the current blueprint config.
         """
+        self.buildStepTreeModel.beginResetModel()
         self.blueprint.rootStep.clearChildren()
         self.blueprint.initializeDefaultActions()
-        self.emitAllModelResets()
+        self.buildStepTreeModel.endResetModel()
 
     def createStep(self, parentPath, childIndex, data):
         """
@@ -321,16 +321,17 @@ class BlueprintUIModel(QtCore.QObject):
 
         parentStep = self.blueprint.getStepByPath(parentPath)
         if not parentStep:
-            LOG.error(
-                "createStep: failed to find parent step: {0}".format(parentPath))
+            LOG.error("createStep: failed to find parent step: %s", parentPath)
             return
 
-        index = self.buildStepTreeModel.indexByStepPath(parentPath)
+        parentIndex = self.buildStepTreeModel.indexByStep(parentStep)
+        self.buildStepTreeModel.beginInsertRows(
+            parentIndex, childIndex, childIndex)
 
         step = BuildStep.fromData(data)
         parentStep.insertChild(childIndex, step)
-        self.buildStepTreeModel.dataChanged.emit(index, index, [])
-        # self.emitAllModelResets()
+
+        self.buildStepTreeModel.endInsertRows()
         return step
 
     def deleteStep(self, stepPath):
@@ -346,13 +347,16 @@ class BlueprintUIModel(QtCore.QObject):
 
         step = self.blueprint.getStepByPath(stepPath)
         if not step:
-            LOG.error("deleteStep: failed to find step: {0}".format(stepPath))
+            LOG.error("deleteStep: failed to find step: %s", stepPath)
             return False
 
-        index = self.buildStepTreeModel.indexByStepPath(stepPath)
+        stepIndex = self.buildStepTreeModel.indexByStep(step)
+        self.buildStepTreeModel.beginRemoveRows(
+            stepIndex.parent(), stepIndex.row(), stepIndex.row())
+
         step.removeFromParent()
-        self.buildStepTreeModel.dataChanged.emit(index, index, [])
-        # self.emitAllModelResets()
+
+        self.buildStepTreeModel.endRemoveRows()
         return True
 
     def moveStep(self, sourcePath, targetPath):
@@ -369,24 +373,24 @@ class BlueprintUIModel(QtCore.QObject):
 
         step = self.blueprint.getStepByPath(sourcePath)
         if not step:
-            LOG.error("moveStep: failed to find step: {0}".format(sourcePath))
+            LOG.error("moveStep: failed to find step: %s", sourcePath)
             return
 
         if step == self.blueprint.rootStep:
             LOG.error("moveStep: cannot move root step")
             return
 
-        index = self.buildStepTreeModel.indexByStepPath(sourcePath)
+        self.buildStepTreeModel.layoutAboutToBeChanged.emit()
 
-        # TODO: handle moving between new parents
         sourceParentPath = os.path.dirname(sourcePath)
         targetParentPath = os.path.dirname(targetPath)
         if sourceParentPath != targetParentPath:
             step.setParent(self.blueprint.getStepByPath(targetParentPath))
         targetName = os.path.basename(targetPath)
         step.setName(targetName)
-        self.buildStepTreeModel.dataChanged.emit(index, index, [])
-        # self.emitAllModelResets()
+
+        self.buildStepTreeModel.layoutChanged.emit()
+
         return step.getFullPath()
 
     def getStep(self, stepPath):
@@ -490,7 +494,6 @@ class BlueprintUIModel(QtCore.QObject):
 
         index = self.buildStepTreeModel.indexByStepPath(stepPath)
         self.buildStepTreeModel.dataChanged.emit(index, index, [])
-        # self.emitAllModelResets()
 
     def isActionAttrVariant(self, attrPath):
         stepPath, attrName = attrPath.split('.')
@@ -525,7 +528,6 @@ class BlueprintUIModel(QtCore.QObject):
 
         index = self.buildStepTreeModel.indexByStepPath(stepPath)
         self.buildStepTreeModel.dataChanged.emit(index, index, [])
-        # self.emitAllModelResets()
 
 
 class BuildStepTreeModel(QtCore.QAbstractItemModel):
@@ -538,53 +540,28 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
         super(BuildStepTreeModel, self).__init__(parent=parent)
         self._blueprint = blueprint
 
-    def step(self, row, column, parent=QtCore.QModelIndex()):
-        """
-        Return the BuildStep for a row, column, and parent index.
-        """
-        return self.stepForIndex(self.index(row, column, parent))
-
     def stepForIndex(self, index):
         """
         Return the BuildStep of a QModelIndex.
         """
         if index.isValid():
-            stepPath = index.internalPointer()
-            if stepPath:
-                step = self._blueprint.getStepByPath(stepPath)
-            # stepFromPtr = index.internalPointer()
-            # if not isinstance(stepFromPtr, pulse.BuildStep):
-            #     # import traceback
-            #     # traceback.print_stack()
-            #     LOG.error("Expected BuildStep from index {0} internal pointer, "
-            #               "got {1}".format(index, type(stepFromPtr)))
-            #     return
-                # print('got step path {0!r} from index {1}, step: {2}'.format(
-                #     stepPath, index, step))
-                return step
-
+            return index.internalPointer()
         if self._blueprint:
             return self._blueprint.rootStep
+
+    def indexByStep(self, step):
+        if step and step != self._blueprint.rootStep:
+            return self.createIndex(step.indexInParent(), 0, step)
+        return QtCore.QModelIndex()
 
     def indexByStepPath(self, path):
         """
         Return a QModelIndex for a step by path
         """
-        # TODO: debug, this is not working
         if self._blueprint:
             step = self._blueprint.getStepByPath(path)
-            if step:
-                childIndeces = []
-                while step.parent:
-                    childIndeces.append(step.indexInParent())
-                    step = step.parent
-                # print(childIndeces)
-                parentIndex = QtCore.QModelIndex()
-                index = None
-                for childIndex in childIndeces:
-                    index = self.index(childIndex, 0, parentIndex)
-                    parentIndex = index
-                return index
+            return self.indexByStep(step)
+        return QtCore.QModelIndex()
 
     def index(self, row, column, parent=QtCore.QModelIndex()):
         """
@@ -595,8 +572,9 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
 
         parentStep = self.stepForIndex(parent)
         if parentStep and parentStep.canHaveChildren:
-            stepPath = parentStep.getChildAt(row).getFullPath()
-            return self.createIndex(row, column, stepPath)
+            childStep = parentStep.getChildAt(row)
+            if childStep:
+                return self.createIndex(row, column, childStep)
 
         return QtCore.QModelIndex()
 
@@ -604,11 +582,16 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
         if not index.isValid():
             return QtCore.QModelIndex()
 
-        thisStep = self.stepForIndex(index)
-        if thisStep:
-            if thisStep.parent and thisStep.parent != self._blueprint.rootStep:
-                return self.createIndex(thisStep.parent.indexInParent(), 0, thisStep.parent.getFullPath())
-        return QtCore.QModelIndex()
+        childStep = self.stepForIndex(index)
+        if childStep:
+            parentStep = childStep.parent
+        else:
+            return QtCore.QModelIndex()
+
+        if parentStep is None or parentStep == self._blueprint.rootStep:
+            return QtCore.QModelIndex()
+
+        return self.createIndex(parentStep.indexInParent(), 0, parentStep)
 
     def flags(self, index):
         if not index.isValid():
@@ -625,8 +608,8 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
 
         return flags
 
-    def supportedDropActions(self):
-        return QtCore.Qt.CopyAction | QtCore.Qt.MoveAction
+    # def supportedDropActions(self):
+    #     return QtCore.Qt.CopyAction | QtCore.Qt.MoveAction
 
     def columnCount(self, parent=QtCore.QModelIndex()):
         return 1
@@ -689,12 +672,7 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
         stepPath = step.getFullPath()
         stepNewPath = os.path.dirname(stepPath) + '/' + value
         cmds.pulseMoveStep(stepPath, stepNewPath)
-        # oldName = step.name
-        # step.setName(value)
-        # if step.name != oldName:
-        #     self.dataChanged.emit(index, index, [])
-
-        return False
+        return True
 
     def mimeTypes(self):
         return ['text/plain']
@@ -715,37 +693,37 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
         print(datastr)
         return result
 
-    def canDropMimeData(self, data, action, row, column, parent):
-        try:
-            stepDataList = meta.decodeMetaData(str(data.data('text/plain')))
-        except Exception:
-            return False
-        else:
-            return isinstance(stepDataList, list)
+    # def canDropMimeData(self, data, action, row, column, parent):
+    #     try:
+    #         stepDataList = meta.decodeMetaData(str(data.data('text/plain')))
+    #     except Exception:
+    #         return False
+    #     else:
+    #         return isinstance(stepDataList, list)
 
-    def dropMimeData(self, data, action, row, column, parent):
-        result = super(BuildStepTreeModel, self).dropMimeData(
-            data, action, row, column, parent)
+    # def dropMimeData(self, data, action, row, column, parent):
+    #     result = super(BuildStepTreeModel, self).dropMimeData(
+    #         data, action, row, column, parent)
 
-        if not result:
-            return False
+    #     if not result:
+    #         return False
 
-        try:
-            stepDataList = meta.decodeMetaData(str(data.data('text/plain')))
-        except Exception as e:
-            print(e)
-        else:
-            print(stepDataList, data, action, row, column, parent)
+    #     try:
+    #         stepDataList = meta.decodeMetaData(str(data.data('text/plain')))
+    #     except Exception as e:
+    #         print(e)
+    #     else:
+    #         print(stepDataList, data, action, row, column, parent)
 
-            count = len(stepDataList)
-            for i in range(count):
-                index = self.index(row + i, 0, parent)
-                step = self.stepForIndex(index)
-                if step:
-                    step.deserialize(stepDataList[i])
-                    # self.dataChanged.emit(index, index, [])
+    #         count = len(stepDataList)
+    #         for i in range(count):
+    #             index = self.index(row + i, 0, parent)
+    #             step = self.stepForIndex(index)
+    #             if step:
+    #                 step.deserialize(stepDataList[i])
+    #                 # self.dataChanged.emit(index, index, [])
 
-        return True
+    #     return True
 
 
 class BuildStepSelectionModel(QtCore.QItemSelectionModel):

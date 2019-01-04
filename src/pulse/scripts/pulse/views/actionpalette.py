@@ -130,7 +130,9 @@ class ActionPaletteWidget(QtWidgets.QWidget):
         newPaths = []
         for index in selIndexes:
             parentStep, insertIndex = getParentAndInsertIndex(index)
-            parentPath = parentStep.getFullPath() if parentStep else ''
+            parentPath = parentStep.getFullPath() if parentStep else None
+            if not parentPath:
+                parentPath = ''
             newStepPath = cmds.pulseCreateStep(parentPath, insertIndex, '')
             if newStepPath:
                 newPaths.append(newStepPath)

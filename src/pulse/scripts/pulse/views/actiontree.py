@@ -70,6 +70,7 @@ class ActionTreeWidget(QtWidgets.QWidget):
     def deleteSelectedItems(self):
         while True:
             indexes = self.selectionModel.selectedIndexes()
+            self.selectionModel.clearSelection()
             if not indexes:
                 break
 
@@ -82,11 +83,13 @@ class ActionTreeWidget(QtWidgets.QWidget):
 
             paths = []
             for step in steps:
-                paths.append(step.getFullPath())
+                path = step.getFullPath()
+                print(step, path)
+                if path:
+                    paths.append(path)
 
             cmds.undoInfo(openChunk=True, chunkName='Delete Pulse Actions')
             for path in paths:
-                print('deleting {0}'.format(path))
                 cmds.pulseDeleteStep(path)
             cmds.undoInfo(closeChunk=True)
 
