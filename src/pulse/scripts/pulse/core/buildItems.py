@@ -552,7 +552,7 @@ class BuildStep(object):
                 c) for c in data.get('children', [])]
             for child in self._children:
                 if child:
-                    child.setParent(self)
+                    child.setParentInternal(self)
 
     @staticmethod
     def getTopmostSteps(steps):

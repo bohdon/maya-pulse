@@ -5,6 +5,30 @@ import pymel.core as pm
 import pulse
 import pulse.controlshapes
 
+EXAMPLE_BLUEPRINT_A = """
+version: 1.0.0
+rigName: TestRig
+steps:
+  name: Root
+  children:
+  - name: Import References
+    action:
+      id: Pulse.ImportReferences
+  - name: Build Core Hierarchy
+    action:
+      id: Pulse.BuildCoreHierarchy
+      allNodes: true
+  - name: Main
+    children:
+    - name: GroupA
+      children:
+      - name: GroupC
+    - name: GroupB
+  - name: Rename Scene
+    action:
+      id: Pulse.RenameScene
+"""
+
 
 class TestBlueprints(unittest.TestCase):
 
@@ -105,3 +129,16 @@ class TestBlueprints(unittest.TestCase):
         stepY.setParent(stepB)
         self.assertEqual(stepZ.getFullPath(), 'StepB/StepY/StepZ')
         self.assertTrue(stepX.numChildren() == 0)
+
+    def test_deserialize(self):
+        bp = pulse.Blueprint()
+        bp.loadFromYaml(EXAMPLE_BLUEPRINT_A)
+
+        self.assertEqual(bp.rigName, 'TestRig')
+        self.assertTrue(bp.rootStep.numChildren() == 4)
+
+        stepA = bp.getStepByPath('Main/GroupA')
+        stepC = bp.getStepByPath('Main/GroupA/GroupC')
+        self.assertIsNotNone(stepC)
+        self.assertEqual(stepC.parent, stepA)
+        self.assertTrue(stepC.hasParent(bp.rootStep))

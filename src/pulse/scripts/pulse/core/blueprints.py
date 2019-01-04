@@ -182,6 +182,17 @@ class Blueprint(object):
         data = self.serialize()
         return yaml.dump(data, default_flow_style=False, Dumper=PulseDumper)
 
+    def loadFromYaml(self, yamlstr):
+        """
+        Load this Blueprint from a yaml string
+        """
+        try:
+            data = yaml.load(yamlstr)
+        except Exception:
+            return False
+
+        return self.deserialize(data)
+
     def saveToNode(self, node, create=False):
         """
         Save this Blueprint to a node, creating a new node if desired.

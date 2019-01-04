@@ -266,7 +266,7 @@ class BlueprintUIModel(QtCore.QObject):
 
         self.buildStepTreeModel.beginResetModel()
         success = self.blueprint.loadFromFile(filepath)
-        self.buildStepTreeModel.endModelReset()
+        self.buildStepTreeModel.endResetModel()
         self.rigNameChanged.emit(self.getRigName())
 
         if not success:

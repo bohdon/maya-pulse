@@ -38,19 +38,19 @@ class TestPulseCmds(unittest.TestCase):
 
         cmds.pulseMoveStep('StepB', 'StepA/StepBX')
         stepB = bp.getStepByPath('StepA/StepBX')
-        self.assertTrue(stepB is not None)
+        self.assertIsNotNone(stepB)
 
         cmds.undo()
         stepA = bp.getStepByPath('StepA')
         stepB = bp.getStepByPath('StepB')
-        self.assertTrue(stepB is not None)
+        self.assertIsNotNone(stepB)
         self.assertTrue(stepA.numChildren() == 0)
 
         cmds.pulseMoveStep('StepB', 'StepBY')
         stepB = bp.getStepByPath('StepBY')
-        self.assertTrue(stepB is not None)
+        self.assertIsNotNone(stepB)
 
         cmds.undo()
         cmds.redo()
         stepB = bp.getStepByPath('StepBY')
-        self.assertTrue(stepB is not None)
+        self.assertIsNotNone(stepB)
