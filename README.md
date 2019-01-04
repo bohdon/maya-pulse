@@ -24,7 +24,10 @@ import pymel.core as pm
 pm.newFile(force=True)
 pm.unloadPlugin('pulse')
 
-pulse.views.destroyUIModelInstances()
+try:
+    pulse.views.destroyUIModelInstances()
+except:
+    pass
 
 import pulse.vendor.mayacoretools as tools
 tools.deleteModules('pulse*')
