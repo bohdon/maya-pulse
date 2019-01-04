@@ -52,7 +52,7 @@ class ActionTreeWidget(QtWidgets.QWidget):
         self.treeView.setHeaderHidden(True)
         self.treeView.setDragEnabled(True)
         self.treeView.setDragDropMode(
-            QtWidgets.QAbstractItemView.DragDropMode.InternalMove)
+            QtWidgets.QAbstractItemView.DragDropMode.DragDrop)
         self.treeView.setDefaultDropAction(
             QtCore.Qt.DropAction.MoveAction)
         self.treeView.setSelectionMode(

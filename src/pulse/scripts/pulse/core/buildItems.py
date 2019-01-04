@@ -209,8 +209,9 @@ class BuildStep(object):
             else:
                 newName = 'BuildStep'
         # strip name and ensure its unique among siblings
-        if self._name != newName:
-            self._name = newName.strip()
+        newNameClean = newName.strip()
+        if self._name != newNameClean:
+            self._name = newNameClean
             self.ensureUniqueName()
 
     def setNameFromAction(self):
@@ -253,14 +254,30 @@ class BuildStep(object):
     def parent(self):
         return self._parent
 
+    def setParentInternal(self, newParent):
+        self._parent = newParent
+        self.onParentChanged()
+
     def setParent(self, newParent):
+        """
+        Set the parent of this BuildStep, removing it from
+        its old parent if necessary.
+        """
         if newParent and not newParent.canHaveChildren:
-            return
+            raise ValueError(
+                "Cannot set parent to step that cannot have children: {0}".format(newParent))
 
         if self._parent is not newParent:
-            self._parent = newParent
             if self._parent:
-                self.ensureUniqueName()
+                self._parent.removeChildInternal(self)
+                self._parent = None
+            if newParent:
+                newParent.addChild(self)
+            else:
+                self.setParentInternal(None)
+
+    def onParentChanged(self):
+        self.ensureUniqueName()
 
     @property
     def children(self):
@@ -343,7 +360,7 @@ class BuildStep(object):
             return
 
         for step in self._children:
-            step.setParent(None)
+            step.setParentInternal(None)
 
         self._children = []
 
@@ -358,8 +375,9 @@ class BuildStep(object):
             raise TypeError(
                 'Expected BuildStep, got {0}'.format(type(step).__name__))
 
-        self._children.append(step)
-        step.setParent(self)
+        if step not in self._children:
+            self._children.append(step)
+            step.setParentInternal(self)
 
     def addChildren(self, steps):
         for step in steps:
@@ -371,7 +389,11 @@ class BuildStep(object):
 
         if step in self._children:
             self._children.remove(step)
-            step.setParent(None)
+            step.setParentInternal(None)
+
+    def removeChildInternal(self, step):
+        if step in self._children:
+            self._children.remove(step)
 
     def removeChildren(self, index, count):
         for _ in range(count):
@@ -384,7 +406,9 @@ class BuildStep(object):
         if index < 0 or index >= len(self._children):
             return
 
-        self._children[index].setParent(None)
+        step = self._children[index]
+        step.setParentInternal(None)
+
         del self._children[index]
 
     def removeFromParent(self):
@@ -402,8 +426,9 @@ class BuildStep(object):
             raise TypeError(
                 'Expected BuildStep, got {0}'.format(type(step).__name__))
 
-        self._children.insert(index, step)
-        step.setParent(self)
+        if step not in self._children:
+            self._children.insert(index, step)
+            step.setParentInternal(self)
 
     def numChildren(self):
         if not self.canHaveChildren:

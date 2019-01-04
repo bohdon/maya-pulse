@@ -44,3 +44,64 @@ class TestBlueprints(unittest.TestCase):
         assemblies = pm.ls(assemblies=True)
         self.assertTrue(len(assemblies) == 5)
 
+    def test_build_steps(self):
+        bp = pulse.Blueprint()
+
+        stepA = pulse.BuildStep('StepFirst')
+        stepB = pulse.BuildStep('StepB')
+        stepC = pulse.BuildStep('StepC')
+        stepX = pulse.BuildStep('StepX')
+        stepY = pulse.BuildStep('StepY')
+        stepZ = pulse.BuildStep('StepZ')
+
+        self.assertEqual(stepA.getDisplayName(), 'StepFirst (0)')
+        stepA.setName(None)
+        self.assertEqual(stepA.name, 'BuildStep')
+        stepA.setName('StepA')
+
+        bp.rootStep.addChild(stepA)
+        self.assertTrue(bp.rootStep.numChildren() == 1)
+        self.assertEqual(stepA.parent, bp.rootStep)
+        self.assertTrue(stepA.hasParent(bp.rootStep))
+
+        bp.rootStep.addChild(stepA)
+        self.assertTrue(bp.rootStep.numChildren() == 1)
+
+        bp.rootStep.removeChild(stepA)
+        self.assertTrue(bp.rootStep.numChildren() == 0)
+        self.assertEqual(stepA.parent, None)
+
+        bp.rootStep.insertChild(0, stepA)
+        self.assertTrue(bp.rootStep.numChildren() == 1)
+        self.assertEqual(stepA.parent, bp.rootStep)
+
+        bp.rootStep.insertChild(0, stepB)
+        self.assertTrue(bp.rootStep.numChildren() == 2)
+        self.assertEqual(stepB.parent, bp.rootStep)
+
+        bp.rootStep.insertChild(0, stepC)
+        self.assertTrue(bp.rootStep.numChildren() == 3)
+        self.assertEqual(stepC.parent, bp.rootStep)
+
+        self.assertEqual(bp.rootStep.getChildAt(0), stepC)
+        self.assertEqual(bp.rootStep.getChildAt(1), stepB)
+        self.assertEqual(bp.rootStep.getChildAt(2), stepA)
+
+        stepA.setName('StepC')
+        self.assertEqual(stepA.name, 'StepC 1')
+
+        stepC.addChild(stepX)
+        stepY.setParent(stepX)
+        stepY.addChild(stepZ)
+        self.assertEqual(stepC.getFullPath(), 'StepC')
+        self.assertEqual(stepX.getFullPath(), 'StepC/StepX')
+        self.assertEqual(stepY.getFullPath(), 'StepC/StepX/StepY')
+        self.assertEqual(stepZ.getFullPath(), 'StepC/StepX/StepY/StepZ')
+
+        self.assertTrue(stepZ.hasParent(bp.rootStep))
+        self.assertTrue(stepZ.hasParent(stepX))
+        self.assertFalse(stepX.hasParent(stepY))
+
+        stepY.setParent(stepB)
+        self.assertEqual(stepZ.getFullPath(), 'StepB/StepY/StepZ')
+        self.assertTrue(stepX.numChildren() == 0)

@@ -236,7 +236,13 @@ class Blueprint(object):
             path (string): A path pointing to a BuildStep
                 e.g. My/Build/Step
         """
-        return self.rootStep.getChildByPath(path)
+        if not path:
+            return self.rootStep
+        else:
+            step = self.rootStep.getChildByPath(path)
+            if not step:
+                LOG.warning("could not find BuildStep: {0}".format(path))
+            return step
 
     def initializeDefaultActions(self):
         """

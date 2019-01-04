@@ -279,9 +279,12 @@ class BlueprintUIModel(QtCore.QObject):
         return self.blueprint.rigName
 
     def setRigName(self, newRigName):
-        if not self.isReadOnly():
-            self.blueprint.rigName = newRigName
-            self.rigNameChanged.emit(self.blueprint.rigName)
+        if self.isReadOnly():
+            LOG.error('Cannot edit readonly Blueprint')
+            return
+
+        self.blueprint.rigName = newRigName
+        self.rigNameChanged.emit(self.blueprint.rigName)
 
     def initializeBlueprint(self):
         """
@@ -300,122 +303,57 @@ class BlueprintUIModel(QtCore.QObject):
         self.blueprint.initializeDefaultActions()
         self.emitAllModelResets()
 
-    def getActionDataForAttrPath(self, attrPath):
+    def createStep(self, parentPath, childIndex, data):
         """
-        Return serialized data for an action represented
-        by an attribute path.
-        """
-        stepPath, _ = attrPath.split('.')
+        Create a new BuildStep
 
-        step = self.blueprint.getStepByPath(stepPath)
-        if not step.isAction():
-            LOG.error(
-                'getActionDataForAttrPath: {0} is not an action'.format(step))
+        Args:
+            parentPath (str): The path to the parent step
+            childIndex (int): The index at which to insert the new step
+            data (str): The serialized data for the BuildStep to create
+
+        Returns:
+            The newly created BuildStep, or None if the operation failed.
+        """
+        if self.isReadOnly():
+            LOG.error('Cannot edit readonly Blueprint')
             return
 
-        return step.actionProxy.serialize()
-
-    def setActionDataForAttrPath(self, attrPath, data):
-        """
-        Replace all values on an action represented by an
-        attribute path by deserializng data.
-        """
-        stepPath, _ = attrPath.split('.')
-
-        step = self.blueprint.getStepByPath(stepPath)
-        if not step.isAction():
+        parentStep = self.blueprint.getStepByPath(parentPath)
+        if not parentStep:
             LOG.error(
-                'setActionDataForAttrPath: {0} is not an action'.format(step))
+                "createStep: failed to find parent step: {0}".format(parentPath))
             return
 
-        step.actionProxy.deserialize(data)
+        index = self.buildStepTreeModel.indexByStepPath(parentPath)
 
-        index = self.buildStepTreeModel.indexByStepPath(stepPath)
+        step = BuildStep.fromData(data)
+        parentStep.insertChild(childIndex, step)
         self.buildStepTreeModel.dataChanged.emit(index, index, [])
+        # self.emitAllModelResets()
+        return step
 
-    def getActionAttr(self, attrPath, variantIndex=-1):
-        stepPath, attrName = attrPath.split('.')
-
-        step = self.blueprint.getStepByPath(stepPath)
-        if not step:
-            LOG.error("Could not find step: {0}".format(stepPath))
-            print(self.blueprint)
-            print(self.blueprint.rootStep)
-            print(self.blueprint.rootStep.children)
-            return
-
-        if not step.isAction():
-            LOG.error('getActionAttr: {0} is not an action'.format(step))
-            return
-
-        if variantIndex >= 0:
-            if step.actionProxy.numVariants() > variantIndex:
-                actionData = step.actionProxy.getVariant(variantIndex)
-                return actionData.getAttrValue(attrName)
-        else:
-            return step.actionProxy.getAttrValue(attrName)
-
-    def setActionAttr(self, attrPath, value, variantIndex=-1):
+    def deleteStep(self, stepPath):
         """
-        Set the value for an attribute on the Blueprint
+        Delete a BuildStep
+
+        Returns:
+            True if the step was deleted successfully
         """
         if self.isReadOnly():
-            return
-
-        stepPath, attrName = attrPath.split('.')
+            LOG.error('Cannot edit readonly Blueprint')
+            return False
 
         step = self.blueprint.getStepByPath(stepPath)
         if not step:
-            LOG.error('Could not find step: {0}'.format(stepPath))
-            print(self.blueprint)
-            print(self.blueprint.rootStep)
-            print(self.blueprint.rootStep.children)
-            return
-
-        if not step.isAction():
-            LOG.error('setActionAttr: {0} is not an action'.format(step))
-            return
-
-        if variantIndex >= 0:
-            variant = step.actionProxy.getOrCreateVariant(variantIndex)
-            variant.setAttrValue(attrName, value)
-        else:
-            step.actionProxy.setAttrValue(attrName, value)
+            LOG.error("deleteStep: failed to find step: {0}".format(stepPath))
+            return False
 
         index = self.buildStepTreeModel.indexByStepPath(stepPath)
-        # self.buildStepTreeModel.dataChanged.emit(index, index, [])
-        self.emitAllModelResets()
-
-    def isActionAttrVariant(self, attrPath):
-        stepPath, attrName = attrPath.split('.')
-
-        step = self.blueprint.getStepByPath(stepPath)
-        if not step.isAction():
-            LOG.error(
-                "isActionAttrVariant: {0} is not an action".format(step))
-            return
-
-        return step.actionProxy.isVariantAttr(attrName)
-
-    def setIsActionAttrVariant(self, attrPath, isVariant):
-        """
-        """
-        if self.isReadOnly():
-            return
-
-        stepPath, attrName = attrPath.split('.')
-
-        step = self.blueprint.getStepByPath(stepPath)
-        if not step.isAction():
-            LOG.error(
-                "setIsActionAttrVariant: {0} is not an action".format(step))
-            return
-
-        step.actionProxy.setIsVariantAttr(attrName, isVariant)
-
-        # index = self.buildStepTreeModel.indexByStepPath(stepPath)
-        # self.buildStepTreeModel.dataChanged.emit(index, index, [])
-        self.emitAllModelResets()
+        step.removeFromParent()
+        self.buildStepTreeModel.dataChanged.emit(index, index, [])
+        # self.emitAllModelResets()
+        return True
 
     def moveStep(self, sourcePath, targetPath):
         """
@@ -426,6 +364,7 @@ class BlueprintUIModel(QtCore.QObject):
             the operation failed.
         """
         if self.isReadOnly():
+            LOG.error('Cannot edit readonly Blueprint')
             return
 
         step = self.blueprint.getStepByPath(sourcePath)
@@ -440,57 +379,153 @@ class BlueprintUIModel(QtCore.QObject):
         index = self.buildStepTreeModel.indexByStepPath(sourcePath)
 
         # TODO: handle moving between new parents
-        newName = targetPath.split('/')[-1]
-        step.setName(newName)
-        # self.buildStepTreeModel.dataChanged.emit(index, index, [])
-        self.emitAllModelResets()
+        sourceParentPath = os.path.dirname(sourcePath)
+        targetParentPath = os.path.dirname(targetPath)
+        if sourceParentPath != targetParentPath:
+            step.setParent(self.blueprint.getStepByPath(targetParentPath))
+        targetName = os.path.basename(targetPath)
+        step.setName(targetName)
+        self.buildStepTreeModel.dataChanged.emit(index, index, [])
+        # self.emitAllModelResets()
         return step.getFullPath()
 
+    def getStep(self, stepPath):
+        """
+        Return the BuildStep at a path
+        """
+        return self.blueprint.getStepByPath(stepPath)
+
     def getStepData(self, stepPath):
-        step = self.blueprint.getStepByPath(stepPath)
+        """
+        Return the serialized data for a step at a path
+        """
+        step = self.getStep(stepPath)
+        if step:
+            return step.serialize()
+
+    def getActionData(self, stepPath):
+        """
+        Return serialized data for a BuildActionProxy
+        """
+        step = self.getStep(stepPath)
         if not step:
-            LOG.error("getStepData: failed to find step: {0}".format(stepPath))
             return
 
-        return step.serialize()
+        if not step.isAction():
+            LOG.error(
+                'getActionData: %s step is not an action', step)
+            return
 
-    def deleteStep(self, stepPath):
-        if self.isReadOnly():
-            return False
+        return step.actionProxy.serialize()
 
-        step = self.blueprint.getStepByPath(stepPath)
+    def setActionData(self, stepPath, data):
+        """
+        Replace all attribute values on a BuildActionProxy.
+        """
+        step = self.getStep(stepPath)
         if not step:
-            LOG.error("deleteStep: failed to find step: {0}".format(stepPath))
-            return False
+            return
 
-        # index = self.buildStepTreeModel.indexByStepPath(stepPath)
-        step.removeFromParent()
-        # self.buildStepTreeModel.dataChanged.emit(index, index, [])
-        self.emitAllModelResets()
-        return True
+        if not step.isAction():
+            LOG.error(
+                'setActionData: %s step is not an action', step)
+            return
 
-    def createStep(self, stepPath, data):
-        if self.isReadOnly():
-            return False
+        step.actionProxy.deserialize(data)
 
-        parentStepPath = os.path.dirname(stepPath)
-        if not parentStepPath:
-            parentStepPath = '/'
-            parentStep = self.blueprint.rootStep
+        index = self.buildStepTreeModel.indexByStepPath(stepPath)
+        self.buildStepTreeModel.dataChanged.emit(index, index, [])
+
+    def getActionAttr(self, attrPath, variantIndex=-1):
+        """
+        Return the value of an attribute of a BuildAction
+
+        Args:
+            attrPath (str): The full path to an action attribute, e.g. 'My/Action.myAttr'
+            variantIndex (int): The index of the variant to retrieve, if the action has variants
+
+        Returns:
+            The attribute value, of varying types
+        """
+        stepPath, attrName = attrPath.split('.')
+
+        step = self.getStep(stepPath)
+        if not step:
+            return
+
+        if not step.isAction():
+            LOG.error('getActionAttr: %s is not an action', step)
+            return
+
+        if variantIndex >= 0:
+            if step.actionProxy.numVariants() > variantIndex:
+                actionData = step.actionProxy.getVariant(variantIndex)
+                return actionData.getAttrValue(attrName)
         else:
-            parentStep = self.blueprint.getStepByPath(parentStepPath)
-            if not parentStep:
-                LOG.error(
-                    "createStep: failed to find parent step: {0}".format(parentStepPath))
-                return False
+            return step.actionProxy.getAttrValue(attrName)
 
-        # index = self.buildStepTreeModel.indexByStepPath(parentStepPath)
+    def setActionAttr(self, attrPath, value, variantIndex=-1):
+        """
+        Set the value for an attribute on the Blueprint
+        """
+        if self.isReadOnly():
+            LOG.error('Cannot edit readonly Blueprint')
+            return
 
-        step = BuildStep.fromData(data)
-        parentStep.addChild(step)
-        # self.buildStepTreeModel.dataChanged.emit(index, index, [])
-        self.emitAllModelResets()
-        return True
+        stepPath, attrName = attrPath.split('.')
+
+        step = self.getStep(stepPath)
+        if not step:
+            return
+
+        if not step.isAction():
+            LOG.error('setActionAttr: %s is not an action', step)
+            return
+
+        if variantIndex >= 0:
+            variant = step.actionProxy.getOrCreateVariant(variantIndex)
+            variant.setAttrValue(attrName, value)
+        else:
+            step.actionProxy.setAttrValue(attrName, value)
+
+        index = self.buildStepTreeModel.indexByStepPath(stepPath)
+        self.buildStepTreeModel.dataChanged.emit(index, index, [])
+        # self.emitAllModelResets()
+
+    def isActionAttrVariant(self, attrPath):
+        stepPath, attrName = attrPath.split('.')
+
+        step = self.getStep(stepPath)
+        if not step.isAction():
+            LOG.error(
+                "isActionAttrVariant: {0} is not an action".format(step))
+            return
+
+        return step.actionProxy.isVariantAttr(attrName)
+
+    def setIsActionAttrVariant(self, attrPath, isVariant):
+        """
+        """
+        if self.isReadOnly():
+            LOG.error('Cannot edit readonly Blueprint')
+            return
+
+        stepPath, attrName = attrPath.split('.')
+
+        step = self.getStep(stepPath)
+        if not step:
+            return
+
+        if not step.isAction():
+            LOG.error(
+                "setIsActionAttrVariant: {0} is not an action".format(step))
+            return
+
+        step.actionProxy.setIsVariantAttr(attrName, isVariant)
+
+        index = self.buildStepTreeModel.indexByStepPath(stepPath)
+        self.buildStepTreeModel.dataChanged.emit(index, index, [])
+        # self.emitAllModelResets()
 
 
 class BuildStepTreeModel(QtCore.QAbstractItemModel):
@@ -514,14 +549,19 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
         Return the BuildStep of a QModelIndex.
         """
         if index.isValid():
-            stepFromPtr = index.internalPointer()
-            if not isinstance(stepFromPtr, pulse.BuildStep):
-                # import traceback
-                # traceback.print_stack()
-                LOG.error("Expected BuildStep from index internal pointer, "
-                          "got {0}".format(type(stepFromPtr)))
-                return
-            return stepFromPtr
+            stepPath = index.internalPointer()
+            if stepPath:
+                step = self._blueprint.getStepByPath(stepPath)
+            # stepFromPtr = index.internalPointer()
+            # if not isinstance(stepFromPtr, pulse.BuildStep):
+            #     # import traceback
+            #     # traceback.print_stack()
+            #     LOG.error("Expected BuildStep from index {0} internal pointer, "
+            #               "got {1}".format(index, type(stepFromPtr)))
+            #     return
+                print('got step path {0!r} from index {1}, step: {2}'.format(
+                    stepPath, index, step))
+                return step
 
         if self._blueprint:
             return self._blueprint.rootStep
@@ -540,6 +580,7 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
                     step = step.parent
                 # print(childIndeces)
                 parentIndex = QtCore.QModelIndex()
+                index = None
                 for childIndex in childIndeces:
                     index = self.index(childIndex, 0, parentIndex)
                     parentIndex = index
@@ -554,8 +595,8 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
 
         parentStep = self.stepForIndex(parent)
         if parentStep and parentStep.canHaveChildren:
-            step = parentStep.getChildAt(row)
-            return self.createIndex(row, column, step)
+            stepPath = parentStep.getChildAt(row).getFullPath()
+            return self.createIndex(row, column, stepPath)
 
         return QtCore.QModelIndex()
 
@@ -564,11 +605,10 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
             return QtCore.QModelIndex()
 
         thisStep = self.stepForIndex(index)
-        parentStep = thisStep.parent if thisStep else None
-        if not parentStep or parentStep == self._blueprint.rootStep:
-            return QtCore.QModelIndex()
-
-        return self.createIndex(parentStep.indexInParent(), 0, parentStep)
+        if thisStep:
+            if thisStep.parent and thisStep.parent != self._blueprint.rootStep:
+                return self.createIndex(thisStep.parent.indexInParent(), 0, thisStep.parent.getFullPath())
+        return QtCore.QModelIndex()
 
     def flags(self, index):
         if not index.isValid():
@@ -724,7 +764,8 @@ class BuildStepSelectionModel(QtCore.QItemSelectionModel):
         items = []
         for index in indexes:
             if index.isValid():
-                buildItem = index.internalPointer()
+                buildItem = self.model.stepForIndex(index)
+                # buildItem = index.internalPointer()
                 if buildItem:
                     items.append(buildItem)
         return list(set(items))
@@ -737,7 +778,8 @@ class BuildStepSelectionModel(QtCore.QItemSelectionModel):
         indeces = []
         for index in indexes:
             if index.isValid():
-                buildItem = index.internalPointer()
+                buildItem = self.model.stepForIndex(index)
+                # buildItem = index.internalPointer()
                 if buildItem and buildItem.canHaveChildren:
                     indeces.append(index)
                 # TODO: get parent until we have an item that supports children
