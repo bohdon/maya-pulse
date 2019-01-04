@@ -3,6 +3,7 @@ import os
 import logging
 import pymel.core as pm
 import maya.cmds as cmds
+import maya.OpenMaya as api
 import maya.OpenMayaUI as mui
 from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
 import pymetanode as meta
@@ -10,6 +11,7 @@ import pymetanode as meta
 import pulse
 from pulse.vendor.Qt import QtCore, QtWidgets, QtGui
 from pulse.core import Blueprint, BuildStep, serializeAttrValue
+from pulse.prefs import optionVarProperty
 from .utils import dpiScale
 
 __all__ = [
@@ -20,6 +22,7 @@ __all__ = [
 ]
 
 LOG = logging.getLogger(__name__)
+LOG.level = logging.DEBUG
 
 
 class PulseWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
@@ -186,13 +189,30 @@ class BlueprintUIModel(QtCore.QObject):
     @classmethod
     def deleteSharedModel(cls, name):
         if name in cls.INSTANCES:
+            cls.INSTANCES[name].onDelete()
             del cls.INSTANCES[name]
+
+    @classmethod
+    def deleteAllSharedModels(cls):
+        keys = cls.INSTANCES.keys()
+        for key in keys:
+            cls.INSTANCES[key].onDelete()
+            del cls.INSTANCES[key]
 
     # a config property on the blueprint changed
     # TODO: add more generic blueprint property data model
     rigNameChanged = QtCore.Signal(str)
 
     rigExistsChanged = QtCore.Signal()
+
+    autoSave = optionVarProperty('pulse.editor.autoSave', True)
+    autoLoad = optionVarProperty('pulse.editor.autoLoad', True)
+
+    def setAutoSave(self, value):
+        self.autoSave = value
+
+    def setAutoLoad(self, value):
+        self.autoLoad = value
 
     def __init__(self, parent=None):
         super(BlueprintUIModel, self).__init__(parent=parent)
@@ -210,7 +230,16 @@ class BlueprintUIModel(QtCore.QObject):
         self.rigExists = len(pulse.getAllRigs()) > 0
 
         # attempt to load from the scene
-        self.load(suppressWarnings=True)
+        if self.autoLoad:
+            self.load(suppressWarnings=True)
+
+        # register maya scene callbacks that can be used
+        # for auto-saving the Blueprint
+        self._callbackIds = []
+        self.addSceneCallbacks()
+
+    def onDelete(self):
+        self.removeSceneCallbacks()
 
     @property
     def blueprint(self):
@@ -243,11 +272,51 @@ class BlueprintUIModel(QtCore.QObject):
             filepath = os.path.splitext(sceneName)[0] + '.yaml'
             return filepath
 
+    def addSceneCallbacks(self):
+        if not self._callbackIds:
+            saveId = api.MSceneMessage.addCallback(
+                api.MSceneMessage.kBeforeSave, self.onBeforeSaveScene)
+            openId = api.MSceneMessage.addCallback(
+                api.MSceneMessage.kAfterOpen, self.onAfterOpenScene)
+            newId = api.MSceneMessage.addCallback(
+                api.MSceneMessage.kAfterNew, self.onAfterNewScene)
+            self._callbackIds.append(saveId)
+            self._callbackIds.append(openId)
+            self._callbackIds.append(newId)
+        LOG.debug(
+            'BlueprintUIModel: added scene callbacks')
+
+    def removeSceneCallbacks(self):
+        if self._callbackIds:
+            while self._callbackIds:
+                cbid = self._callbackIds.pop()
+                api.MMessage.removeCallback(cbid)
+            LOG.debug(
+                'BlueprintUIModel: removed scene callbacks')
+
+    def onBeforeSaveScene(self, clientData=None):
+        if self.autoSave:
+            self.refreshRigExists()
+            if not self.isReadOnly():
+                LOG.debug('Auto-saving Pulse Blueprint...')
+                self.save()
+
+    def onAfterOpenScene(self, clientData=None):
+        if self.autoLoad:
+            self.load()
+
+    def onAfterNewScene(self, clientData=None):
+        self.initializeBlueprint()
+
     def save(self, suppressWarnings=False):
         """
         Save the Blueprint data to the file associated with this model
         """
         self.refreshRigExists()
+
+        if self.isReadOnly():
+            return
+
         filepath = self.getBlueprintFilepath()
         if not filepath:
             if not suppressWarnings:
@@ -303,6 +372,7 @@ class BlueprintUIModel(QtCore.QObject):
         self.blueprint.rigName = None
         self.blueprint.rootStep.clearChildren()
         self.buildStepTreeModel.endResetModel()
+        self.rigNameChanged.emit(self.blueprint.rigName)
 
     def initializeBlueprintToDefaultActions(self):
         """

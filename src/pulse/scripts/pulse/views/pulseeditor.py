@@ -116,10 +116,19 @@ class PulseEditorWindow(PulseWindow):
 
         autosaveCheck = QtWidgets.QAction("Auto Save", parent)
         autosaveCheck.setCheckable(True)
-        autosaveCheck.setChecked(True)
+        autosaveCheck.setChecked(self.blueprintModel.autoSave)
+        autosaveCheck.toggled.connect(self.blueprintModel.setAutoSave)
         autosaveCheck.setStatusTip(
-            "Automatically save the Blueprint file when the scene is saved")
+            "Automatically save Blueprint files when a scene is saved")
         fileMenu.addAction(autosaveCheck)
+
+        autoloadCheck = QtWidgets.QAction("Auto Load", parent)
+        autoloadCheck.setCheckable(True)
+        autoloadCheck.setChecked(self.blueprintModel.autoLoad)
+        autoloadCheck.toggled.connect(self.blueprintModel.setAutoLoad)
+        autoloadCheck.setStatusTip(
+            "Automatically load Blueprint files when a scene is opened")
+        fileMenu.addAction(autoloadCheck)
 
         saveAction = QtWidgets.QAction("Save", parent)
         saveAction.setStatusTip(

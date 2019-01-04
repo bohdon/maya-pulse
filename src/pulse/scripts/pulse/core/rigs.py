@@ -129,4 +129,3 @@ def openFirstRigBlueprint():
         LOG.warning('No rig in the scene')
         return
     openRigBlueprint(rigs[0])
-

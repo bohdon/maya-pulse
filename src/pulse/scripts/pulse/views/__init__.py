@@ -25,6 +25,14 @@ def hideEditorUI():
     PulseEditorWindow.hideWindow()
 
 
+def tearDownUI():
+    """
+    Hide and delete UI elements and registered callbacks.
+    """
+    hideEditorUI()
+    destroyEditorWorkspaceControls()
+
+
 def destroyEditorWorkspaceControls():
     """
     Development util to destroy workspace controls
@@ -38,3 +46,11 @@ def destroyEditorWorkspaceControls():
     PulseEditorWindow.destroyWindow()
     QuickNameWindow.destroyWindow()
     QuickColorWindow.destroyWindow()
+
+
+def destroyUIModelInstances():
+    """
+    Destroy all BlueprintUIModel instances, and
+    unregister any scene callbacks.
+    """
+    BlueprintUIModel.deleteAllSharedModels()

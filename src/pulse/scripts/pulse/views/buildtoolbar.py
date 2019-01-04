@@ -127,7 +127,6 @@ class BuildToolbarWidget(QtWidgets.QWidget):
 
     def openBlueprintAndReload(self):
         pulse.openFirstRigBlueprint()
-        self.blueprintModel.load()
 
     def runValidation(self):
         if self.blueprintModel.blueprint is not None:
