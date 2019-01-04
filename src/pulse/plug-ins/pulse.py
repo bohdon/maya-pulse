@@ -228,6 +228,58 @@ class PulseMoveStepCmd(PulseCmdBase):
 CMD_CLASSES.append(PulseMoveStepCmd)
 
 
+class PulseRenameStepCmd(PulseCmdBase):
+    """
+    Command to move or rename a Pulse BuildStep.
+    """
+
+    cmdName = "pulseRenameStep"
+
+    pathFlagType = om.MSyntax.kString
+    nameFlagType = om.MSyntax.kString
+    numArgs = 2
+
+    @staticmethod
+    def createCmd():
+        return PulseRenameStepCmd()
+
+    @staticmethod
+    def createSyntax():
+        syntax = om.MSyntax()
+        syntax.addArg(PulseRenameStepCmd.pathFlagType)
+        syntax.addArg(PulseRenameStepCmd.nameFlagType)
+        return syntax
+
+    def doIt(self, args):
+        self.parseArguments(args)
+        self.redoIt()
+
+    def parseArguments(self, args):
+        argparser = self.getArgParser(args)
+        self.stepPath = argparser.commandArgumentString(0)
+        self.targetName = argparser.commandArgumentString(1)
+
+    def redoIt(self):
+        blueprintModel = getBlueprintModel()
+        if blueprintModel:
+            # save the resolved path after performing the move
+            step = blueprintModel.getStep(self.stepPath)
+            self.oldName = step.name if step else ''
+            self.resolvedTargetPath = blueprintModel.renameStep(
+                self.stepPath, self.targetName)
+            if self.resolvedTargetPath is None:
+                raise RuntimeError("Failed to rename BuildStep")
+
+    def undoIt(self):
+        blueprintModel = getBlueprintModel()
+        if blueprintModel:
+            blueprintModel.renameStep(
+                self.resolvedTargetPath, self.oldName)
+
+
+CMD_CLASSES.append(PulseRenameStepCmd)
+
+
 class PulseSetActionAttrCmd(PulseCmdBase):
     """
     Command to modify the value of a Pulse BuildAction attribute.

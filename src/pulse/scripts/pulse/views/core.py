@@ -9,7 +9,7 @@ import pymetanode as meta
 
 import pulse
 from pulse.vendor.Qt import QtCore, QtWidgets, QtGui
-from pulse.core import Blueprint, BuildStep
+from pulse.core import Blueprint, BuildStep, serializeAttrValue
 from .utils import dpiScale
 
 __all__ = [
@@ -404,6 +404,29 @@ class BlueprintUIModel(QtCore.QObject):
 
         return step.getFullPath()
 
+    def renameStep(self, stepPath, targetName):
+        if self.isReadOnly():
+            LOG.error('Cannot edit readonly Blueprint')
+            return
+
+        step = self.blueprint.getStepByPath(stepPath)
+        if not step:
+            LOG.error("moveStep: failed to find step: %s", stepPath)
+            return
+
+        if step == self.blueprint.rootStep:
+            LOG.error("moveStep: cannot rename root step")
+            return
+
+        oldName = step.name
+        step.setName(targetName)
+
+        if step.name != oldName:
+            index = self.buildStepTreeModel.indexByStep(step)
+            self.buildStepTreeModel.dataChanged.emit(index, index, [])
+
+        return step.getFullPath()
+
     def getStep(self, stepPath):
         """
         Return the BuildStep at a path
@@ -551,6 +574,16 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
         super(BuildStepTreeModel, self).__init__(parent=parent)
         self._blueprint = blueprint
 
+        # used to keep track of drag move actions since
+        # we don't have enough data within one function
+        # to group undo chunks completely
+        self.isMoveActionOpen = False
+        # hacky, but used to rename dragged steps back to their
+        # original names since they will get new names due to
+        # conflicts from both source and target steps existing
+        # at the same time briefly
+        self.dragRenameQueue = []
+
     def isReadOnly(self):
         parent = QtCore.QObject.parent(self)
         if parent and hasattr(parent, 'isReadOnly'):
@@ -629,30 +662,12 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
 
         return flags
 
-    # def supportedDropActions(self):
-    #     return QtCore.Qt.CopyAction | QtCore.Qt.MoveAction
-
     def columnCount(self, parent=QtCore.QModelIndex()):
         return 1
 
     def rowCount(self, parent=QtCore.QModelIndex()):
         step = self.stepForIndex(parent)
         return step.numChildren() if step else 0
-
-    # def insertRows(self, row, count, parent=QtCore.QModelIndex()):
-    #     self.beginInsertRows(parent, row, row + count - 1)
-    #     step = self.stepForIndex(parent)
-    #     for _ in range(count):
-    #         step.insertChild(row, BuildStep())
-    #     self.endInsertRows()
-    #     return True
-
-    # def removeRows(self, row, count, parent=QtCore.QModelIndex()):
-    #     self.beginRemoveRows(parent, row, row + count - 1)
-    #     step = self.stepForIndex(parent)
-    #     cmds.pulseDeleteStep(step.getFullPath())
-    #     self.endRemoveRows()
-    #     return True
 
     def data(self, index, role=QtCore.Qt.DisplayRole):
         if not index.isValid():
@@ -690,9 +705,10 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
 
         step = self.stepForIndex(index)
 
+        if not value:
+            value = ''
         stepPath = step.getFullPath()
-        stepNewPath = os.path.dirname(stepPath) + '/' + value
-        cmds.pulseMoveStep(stepPath, stepNewPath)
+        cmds.pulseRenameStep(stepPath, value)
         return True
 
     def mimeTypes(self):
@@ -701,50 +717,132 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
     def mimeData(self, indexes):
         result = QtCore.QMimeData()
 
-        def getSingleItemData(index):
+        # TODO: this block of getting topmost steps is redundantly
+        #       used in deleting steps, need to consolidate
+        steps = []
+        for index in indexes:
             step = self.stepForIndex(index)
-            data = step.serialize()
-            if 'children' in data:
-                del data['children']
-            return data
+            if step:
+                steps.append(step)
+        steps = pulse.BuildStep.getTopmostSteps(steps)
 
-        stepDataList = [getSingleItemData(index) for index in indexes]
+        stepDataList = [step.serialize() for step in steps]
         datastr = meta.encodeMetaData(stepDataList)
         result.setData('text/plain', datastr)
-        print(datastr)
         return result
 
-    # def canDropMimeData(self, data, action, row, column, parent):
-    #     try:
-    #         stepDataList = meta.decodeMetaData(str(data.data('text/plain')))
-    #     except Exception:
-    #         return False
-    #     else:
-    #         return isinstance(stepDataList, list)
+    def supportedDropActions(self):
+        return QtCore.Qt.CopyAction | QtCore.Qt.MoveAction
 
-    # def dropMimeData(self, data, action, row, column, parent):
-    #     result = super(BuildStepTreeModel, self).dropMimeData(
-    #         data, action, row, column, parent)
+    def canDropMimeData(self, data, action, row, column, parentIndex):
+        try:
+            stepDataList = meta.decodeMetaData(str(data.data('text/plain')))
+        except Exception:
+            return False
+        else:
+            return isinstance(stepDataList, list)
 
-    #     if not result:
-    #         return False
+    def dropMimeData(self, data, action, row, column, parentIndex):
+        if not self.canDropMimeData(data, action, row, column, parentIndex):
+            return False
 
-    #     try:
-    #         stepDataList = meta.decodeMetaData(str(data.data('text/plain')))
-    #     except Exception as e:
-    #         print(e)
-    #     else:
-    #         print(stepDataList, data, action, row, column, parent)
+        if action == QtCore.Qt.IgnoreAction:
+            return True
 
-    #         count = len(stepDataList)
-    #         for i in range(count):
-    #             index = self.index(row + i, 0, parent)
-    #             step = self.stepForIndex(index)
-    #             if step:
-    #                 step.deserialize(stepDataList[i])
-    #                 # self.dataChanged.emit(index, index, [])
+        try:
+            stepDataList = meta.decodeMetaData(str(data.data('text/plain')))
+        except Exception as e:
+            LOG.error(e)
+            return False
 
-    #     return True
+        print('dropData', stepDataList, data, action, row, column, parentIndex)
+
+        beginRow = 0
+        parentPath = None
+
+        if parentIndex.isValid():
+            parentStep = self.stepForIndex(parentIndex)
+            if parentStep:
+                if parentStep.canHaveChildren:
+                    # drop into step group
+                    beginRow = parentStep.numChildren()
+                    parentPath = parentStep.getFullPath()
+                else:
+                    # drop next to step
+                    beginRow = parentIndex.row()
+                    parentPath = os.path.dirname(parentStep.getFullPath())
+
+        if not parentPath:
+            parentPath = ''
+            beginRow = self.rowCount(QtCore.QModelIndex())
+        if row != -1:
+            beginRow = row
+
+        cmds.undoInfo(openChunk=True, chunkName='Drag Pulse Actions')
+        self.isMoveActionOpen = True
+        cmds.evalDeferred(self._deferredMoveUndoClose)
+
+        # create dropped steps
+        count = len(stepDataList)
+        for i in range(count):
+            stepDataStr = serializeAttrValue(stepDataList[i])
+            newStepPath = cmds.pulseCreateStep(
+                parentPath, beginRow + i, stepDataStr)
+            if newStepPath:
+                newStepPath = newStepPath[0]
+
+                if action == QtCore.Qt.MoveAction:
+                    # create queue of renames to perform after source
+                    # steps have been removed
+                    targetName = stepDataList[i].get('name', '')
+                    self.dragRenameQueue.append((newStepPath, targetName))
+
+        return True
+
+    def removeRows(self, row, count, parent):
+        indexes = []
+        for i in range(row, row + count):
+            index = self.index(i, 0, parent)
+            indexes.append(index)
+
+        # TODO: provide better api for deleting groups of steps
+        steps = []
+        for index in indexes:
+            step = self.stepForIndex(index)
+            if step:
+                steps.append(step)
+        steps = pulse.BuildStep.getTopmostSteps(steps)
+
+        paths = []
+        for step in steps:
+            path = step.getFullPath()
+            if path:
+                paths.append(path)
+
+        if not self.isMoveActionOpen:
+            cmds.undoInfo(openChunk=True, chunkName='Delete Pulse Actions')
+
+        for path in paths:
+            cmds.pulseDeleteStep(path)
+
+        if not self.isMoveActionOpen:
+            cmds.undoInfo(closeChunk=True)
+
+    def _deferredMoveUndoClose(self):
+        """
+        Called after a drag move operation has finished in order
+        to capture all cmds into one undo chunk.
+        """
+        if self.isMoveActionOpen:
+            self.isMoveActionOpen = False
+
+            # rename dragged steps back to their original names
+            # since they were changed due to conflicts during drop
+            while self.dragRenameQueue:
+                path, name = self.dragRenameQueue.pop()
+                cmds.pulseRenameStep(path, name)
+
+            cmds.undoInfo(closeChunk=True)
 
 
 class BuildStepSelectionModel(QtCore.QItemSelectionModel):

@@ -54,3 +54,8 @@ class TestPulseCmds(unittest.TestCase):
         cmds.redo()
         stepB = bp.getStepByPath('StepBY')
         self.assertIsNotNone(stepB)
+
+        cmds.pulseMoveStep('StepBY', 'StepA/StepBY')
+        cmds.pulseRenameStep('StepA/StepBY', 'StepBZ')
+        stepB = bp.getStepByPath('StepA/StepBZ')
+        self.assertIsNotNone(stepB)

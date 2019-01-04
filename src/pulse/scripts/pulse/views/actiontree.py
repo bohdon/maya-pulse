@@ -71,6 +71,7 @@ class ActionTreeWidget(QtWidgets.QWidget):
         self.treeView.setItemDelegate(ActionTreeStyledItemDelegate(parent))
         self.treeView.setHeaderHidden(True)
         self.treeView.setDragEnabled(True)
+        self.treeView.setAcceptDrops(True)
         self.treeView.setDragDropMode(
             QtWidgets.QAbstractItemView.DragDropMode.DragDrop)
         self.treeView.setDefaultDropAction(
@@ -90,7 +91,11 @@ class ActionTreeWidget(QtWidgets.QWidget):
     def deleteSelectedItems(self):
         while True:
             indexes = self.selectionModel.selectedIndexes()
+
+            # this currently also prevents an infinite recursion bug,
+            # probably related to retriggering delete with current select
             self.selectionModel.clearSelection()
+
             if not indexes:
                 break
 

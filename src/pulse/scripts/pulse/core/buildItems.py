@@ -202,17 +202,19 @@ class BuildStep(object):
         Args:
             newName (str): The new name of the step
         """
-        # ensure a non-null name
-        if not newName:
-            if self._actionProxy:
-                newName = self._actionProxy.getDisplayName()
-            else:
-                newName = 'New Step'
-        # strip name and ensure its unique among siblings
-        newNameClean = newName.strip()
+        newNameClean = self.getCleanName(newName)
         if self._name != newNameClean:
             self._name = newNameClean
             self.ensureUniqueName()
+
+    def getCleanName(self, name):
+        # ensure a non-null name
+        if not name:
+            if self._actionProxy:
+                name = self._actionProxy.getDisplayName()
+            else:
+                name = 'New Step'
+        return name.strip()
 
     def setNameFromAction(self):
         """
