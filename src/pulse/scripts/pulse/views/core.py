@@ -192,6 +192,8 @@ class BlueprintUIModel(QtCore.QObject):
     # TODO: add more generic blueprint property data model
     rigNameChanged = QtCore.Signal(str)
 
+    rigExistsChanged = QtCore.Signal()
+
     def __init__(self, parent=None):
         super(BlueprintUIModel, self).__init__(parent=parent)
 
@@ -202,6 +204,10 @@ class BlueprintUIModel(QtCore.QObject):
         self.buildStepTreeModel = BuildStepTreeModel(self.blueprint)
         self.buildStepSelectionModel = BuildStepSelectionModel(
             self.buildStepTreeModel)
+
+        # keeps track of whether a rig is currently in the scene,
+        # which will affect the ability to edit the Blueprint
+        self.rigExists = len(pulse.getAllRigs()) > 0
 
         # attempt to load from the scene
         self.load(suppressWarnings=True)
@@ -217,16 +223,15 @@ class BlueprintUIModel(QtCore.QObject):
         """
         Return True if the Blueprint is not able to be modified.
         """
-        return False
+        return self.rigExists
 
     def getBlueprintFilepath(self):
         """
         Return the filepath for the Blueprint being edited
         """
         sceneName = None
-        isRigScene = len(pulse.getAllRigs()) > 0
 
-        if isRigScene:
+        if self.rigExists:
             # get filepath from rig
             rig = pulse.getAllRigs()[0]
             rigdata = meta.getMetaData(rig, pulse.RIG_METACLASS)
@@ -242,6 +247,7 @@ class BlueprintUIModel(QtCore.QObject):
         """
         Save the Blueprint data to the file associated with this model
         """
+        self.refreshRigExists()
         filepath = self.getBlueprintFilepath()
         if not filepath:
             if not suppressWarnings:
@@ -256,6 +262,7 @@ class BlueprintUIModel(QtCore.QObject):
         """
         Load the Blueprint from the file associated with this model
         """
+        self.refreshRigExists()
         filepath = self.getBlueprintFilepath()
         if not filepath:
             if not suppressWarnings:
@@ -272,6 +279,10 @@ class BlueprintUIModel(QtCore.QObject):
         if not success:
             LOG.error(
                 "Failed to load Blueprint from file: {0}".format(filepath))
+
+    def refreshRigExists(self):
+        self.rigExists = len(pulse.getAllRigs()) > 0
+        self.rigExistsChanged.emit()
 
     def getRigName(self):
         return self.blueprint.rigName

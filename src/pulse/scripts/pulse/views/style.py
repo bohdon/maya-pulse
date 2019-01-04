@@ -11,7 +11,7 @@ class UIColors(object):
 
     RED = (120, 60, 60, 1)
     GREEN = (60, 110, 60, 1)
-    BLUE = (60, 70, 120, 1)
+    BLUE = (60, 80, 120, 1)
     DARKGRAY = (20, 20, 20, 1)
     HELPTEXT = (255, 255, 255, 0.25)
     WARNING = (200, 180, 120, 1)

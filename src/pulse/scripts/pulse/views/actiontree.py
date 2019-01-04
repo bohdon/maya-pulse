@@ -15,6 +15,25 @@ __all__ = [
 ]
 
 
+class ActionTreeStyledItemDelegate(QtWidgets.QStyledItemDelegate):
+
+    def __init__(self, parent=None):
+        super(ActionTreeStyledItemDelegate, self).__init__(parent=parent)
+
+        self.blueprintModel = BlueprintUIModel.getDefaultModel()
+
+    def paint(self, painter, option, index):
+        opt = option
+        self.initStyleOption(opt, index)
+        opt.font.setItalic(self.shouldBeItalic(index))
+
+        super(ActionTreeStyledItemDelegate, self).paint(
+            painter, opt, index)
+
+    def shouldBeItalic(self, index):
+        return self.blueprintModel.isReadOnly()
+
+
 class ActionTreeWidget(QtWidgets.QWidget):
     """
     A tree view that displays all BuildActions in a Blueprint.
@@ -49,6 +68,7 @@ class ActionTreeWidget(QtWidgets.QWidget):
         layout = QtWidgets.QVBoxLayout(parent)
 
         self.treeView = QtWidgets.QTreeView(parent)
+        self.treeView.setItemDelegate(ActionTreeStyledItemDelegate(parent))
         self.treeView.setHeaderHidden(True)
         self.treeView.setDragEnabled(True)
         self.treeView.setDragDropMode(
