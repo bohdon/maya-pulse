@@ -51,7 +51,7 @@ class BuildActionLoader(object):
 
     def loadActionsFromModule(self, module):
         """
-        Return BuildItem type map data for all BuildActions
+        Return BuildStep type map data for all BuildActions
         contained in the given module
 
         Returns:
@@ -78,7 +78,7 @@ class BuildActionLoader(object):
 
     def loadActionsFromDirectory(self, startDir, pattern='*_pulseaction.py'):
         """
-        Return BuildItem type map data for all BuildActions found
+        Return BuildStep type map data for all BuildActions found
         by searching a directory. Search is performed recursively for
         any python files matching a pattern.
 

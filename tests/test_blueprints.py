@@ -56,7 +56,7 @@ class TestBlueprints(unittest.TestCase):
 
         self.assertEqual(stepA.getDisplayName(), 'StepFirst (0)')
         stepA.setName(None)
-        self.assertEqual(stepA.name, 'BuildStep')
+        self.assertEqual(stepA.name, 'New Step')
         stepA.setName('StepA')
 
         bp.rootStep.addChild(stepA)

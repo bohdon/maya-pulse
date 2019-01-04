@@ -1,4 +1,6 @@
 
+import maya.cmds as cmds
+
 import pulse
 from pulse.vendor.Qt import QtCore, QtWidgets
 from .core import BlueprintUIModel
@@ -86,7 +88,8 @@ class ActionPaletteWidget(QtWidgets.QWidget):
             0, 0, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
         layout.addItem(spacer)
 
-    def getActionColor(self, actionConfig):
+    @staticmethod
+    def getActionColor(actionConfig):
         color = actionConfig.get('color', [1, 1, 1])
         if color:
             return [int(c * 255) for c in color]
@@ -99,7 +102,11 @@ class ActionPaletteWidget(QtWidgets.QWidget):
     def createStepsForSelection(self):
         """
         Create new BuildSteps in the hierarchy at the
-        current selection and return the new model indexes.
+        current selection and return the new step paths.
+
+        Args:
+            stepData (str): A string representation of serialized
+                BuildStep data used to create the new steps
         """
         if self.blueprintModel.isReadOnly():
             return
@@ -115,51 +122,47 @@ class ActionPaletteWidget(QtWidgets.QWidget):
             print('step', step)
             if step.canHaveChildren:
                 print('inserting at num children')
-                return index, step.numChildren()
+                return step, step.numChildren()
             else:
                 print('inserting at selected + 1')
-                return model.parent(index), index.row() + 1
+                return step.parent, index.row() + 1
 
-        newIndexes = []
+        newPaths = []
         for index in selIndexes:
-            parentIndex, insertIndex = getParentAndInsertIndex(index)
-            if self.model.insertRows(insertIndex, 1, parentIndex):
-                newIndex = self.model.index(insertIndex, 0, parentIndex)
-                newIndexes.append(newIndex)
+            parentStep, insertIndex = getParentAndInsertIndex(index)
+            parentPath = parentStep.getFullPath() if parentStep else ''
+            newStepPath = cmds.pulseCreateStep(parentPath, insertIndex, '')
+            if newStepPath:
+                newPaths.append(newStepPath)
+            # if self.model.insertRows(insertIndex, 1, parentIndex):
+            #     newIndex = self.model.index(insertIndex, 0, parentIndex)
+            #     newPaths.append(newIndex)
 
-        return newIndexes
+        return newPaths
 
     def createBuildGroup(self):
         if self.blueprintModel.isReadOnly():
             return
 
-        newIndexes = self.createStepsForSelection()
-        model = self.selectionModel.model()
+        newPaths = self.createStepsForSelection()
 
-        # update steps with correct action id and select them
         self.selectionModel.clearSelection()
-        for index in newIndexes:
-            step = model.stepForIndex(index)
-            if step:
-                step.setName('New Step')
-                model.dataChanged.emit(index, index, [])
-            self.selectionModel.select(
-                index, QtCore.QItemSelectionModel.Select)
+        self.selectionModel.setSelectedItemPaths(newPaths)
 
     def createBuildAction(self, actionId):
         if self.blueprintModel.isReadOnly():
             return
 
-        newIndexes = self.createStepsForSelection()
-        model = self.selectionModel.model()
+        newPaths = self.createStepsForSelection()
 
         # update steps with correct action id and select them
         self.selectionModel.clearSelection()
-        for index in newIndexes:
-            step = model.stepForIndex(index)
+        self.selectionModel.setSelectedItemPaths(newPaths)
+
+        for path in newPaths:
+            step = self.blueprintModel.getStep(path)
             if step:
                 actionProxy = pulse.BuildActionProxy(actionId)
                 step.setActionProxy(actionProxy)
-            model.dataChanged.emit(index, index, [])
-            self.selectionModel.select(
-                index, QtCore.QItemSelectionModel.Select)
+                index = self.model.indexByStepPath(path)
+                self.model.dataChanged.emit(index, index, [])

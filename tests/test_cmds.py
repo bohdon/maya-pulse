@@ -1,6 +1,6 @@
 
 import unittest
-import pymel.core as pm
+import maya.cmds as cmds
 
 import pulse
 import pulse.views
@@ -8,49 +8,49 @@ import pulse.views
 
 class TestPulseCmds(unittest.TestCase):
     """
-    Tests the pulse plugin cmds for editing a Blueprint instance.
+    Tests the pulse plugin cmds for working with a BlueprintUIModel.
     """
 
     def setUp(self):
-        pm.loadPlugin('pulse', quiet=True)
+        cmds.loadPlugin('pulse', quiet=True)
 
     def test_create_step(self):
         blueprintModel = pulse.views.BlueprintUIModel.getDefaultModel()
         bp = blueprintModel.blueprint
 
-        result = pm.pulseCreateStep("", 0, "{'name':'StepA'}")
+        result = cmds.pulseCreateStep("", 0, "{'name':'StepA'}")
         self.assertEqual(result, ['StepA'])
 
-        result = pm.pulseCreateStep("", 0, "{'name':'StepB'}")
+        result = cmds.pulseCreateStep("", 0, "{'name':'StepB'}")
         self.assertEqual(result, ['StepB'])
 
-        result = pm.pulseCreateStep("", 0, "{'name':'StepC'}")
-        self.assertEqual(result, ['StepC'])
+        result = cmds.pulseCreateStep("", 0, "")
+        self.assertEqual(result, ['New Step'])
 
         self.assertTrue(bp.rootStep.numChildren() == 3)
-        pm.undo()
+        cmds.undo()
         self.assertTrue(bp.rootStep.numChildren() == 2)
 
-        pm.pulseDeleteStep('StepA')
+        cmds.pulseDeleteStep('StepA')
         self.assertTrue(bp.rootStep.numChildren() == 1)
-        pm.undo()
+        cmds.undo()
         self.assertTrue(bp.rootStep.numChildren() == 2)
 
-        pm.pulseMoveStep('StepB', 'StepA/StepBX')
+        cmds.pulseMoveStep('StepB', 'StepA/StepBX')
         stepB = bp.getStepByPath('StepA/StepBX')
         self.assertTrue(stepB is not None)
 
-        pm.undo()
+        cmds.undo()
         stepA = bp.getStepByPath('StepA')
         stepB = bp.getStepByPath('StepB')
         self.assertTrue(stepB is not None)
         self.assertTrue(stepA.numChildren() == 0)
 
-        pm.pulseMoveStep('StepB', 'StepBY')
+        cmds.pulseMoveStep('StepB', 'StepBY')
         stepB = bp.getStepByPath('StepBY')
         self.assertTrue(stepB is not None)
 
-        pm.undo()
-        pm.redo()
+        cmds.undo()
+        cmds.redo()
         stepB = bp.getStepByPath('StepBY')
         self.assertTrue(stepB is not None)

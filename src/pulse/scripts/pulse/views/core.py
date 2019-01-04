@@ -198,7 +198,7 @@ class BlueprintUIModel(QtCore.QObject):
         # the blueprint of this model
         self._blueprint = Blueprint()
 
-        # the tree item model and selection model for BuildItems
+        # the tree item model and selection model for BuildSteps
         self.buildStepTreeModel = BuildStepTreeModel(self.blueprint)
         self.buildStepSelectionModel = BuildStepSelectionModel(
             self.buildStepTreeModel)
@@ -559,8 +559,8 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
             #     LOG.error("Expected BuildStep from index {0} internal pointer, "
             #               "got {1}".format(index, type(stepFromPtr)))
             #     return
-                print('got step path {0!r} from index {1}, step: {2}'.format(
-                    stepPath, index, step))
+                # print('got step path {0!r} from index {1}, step: {2}'.format(
+                #     stepPath, index, step))
                 return step
 
         if self._blueprint:
@@ -750,7 +750,7 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
 
 class BuildStepSelectionModel(QtCore.QItemSelectionModel):
     """
-    The selection model for the BuildItems of a Blueprint. Allows
+    The selection model for the BuildSteps of a Blueprint. Allows
     a singular selection that is shared across all UI for the Blueprint.
     An instance of this model should be acquired by going through
     the BlueprintUIModel for a specific Blueprint.
@@ -758,29 +758,29 @@ class BuildStepSelectionModel(QtCore.QItemSelectionModel):
 
     def getSelectedItems(self):
         """
-        Return the currently selected BuildItems
+        Return the currently selected BuildSteps
         """
         indexes = self.selectedIndexes()
         items = []
         for index in indexes:
             if index.isValid():
-                buildItem = self.model.stepForIndex(index)
-                # buildItem = index.internalPointer()
-                if buildItem:
-                    items.append(buildItem)
+                buildStep = self.model.stepForIndex(index)
+                # buildStep = index.internalPointer()
+                if buildStep:
+                    items.append(buildStep)
         return list(set(items))
 
     def getSelectedGroups(self):
         """
-        Return indexes of the selected BuildItems that can have children
+        Return indexes of the selected BuildSteps that can have children
         """
         indexes = self.selectedIndexes()
         indeces = []
         for index in indexes:
             if index.isValid():
-                buildItem = self.model.stepForIndex(index)
-                # buildItem = index.internalPointer()
-                if buildItem and buildItem.canHaveChildren:
+                buildStep = self.model.stepForIndex(index)
+                # buildStep = index.internalPointer()
+                if buildStep and buildStep.canHaveChildren:
                     indeces.append(index)
                 # TODO: get parent until we have an item that supports children
         return list(set(indeces))
@@ -794,14 +794,14 @@ class BuildStepSelectionModel(QtCore.QItemSelectionModel):
 
     def getSelectedItemPaths(self):
         """
-        Return the full paths of the selected BuildItems
+        Return the full paths of the selected BuildSteps
         """
         items = self.getSelectedItems()
         return [i.getFullPath() for i in items]
 
     def setSelectedItemPaths(self, paths):
         """
-        Set the selection using BuildItem paths
+        Set the selection using BuildStep paths
         """
         model = self.model()
         if not model or not hasattr(model, 'blueprint'):

@@ -207,7 +207,7 @@ class BuildStep(object):
             if self._actionProxy:
                 newName = self._actionProxy.getDisplayName()
             else:
-                newName = 'BuildStep'
+                newName = 'New Step'
         # strip name and ensure its unique among siblings
         newNameClean = newName.strip()
         if self._name != newNameClean:
@@ -534,7 +534,7 @@ class BuildStep(object):
         Args:
             data: A dict containing serialized data for this step
         """
-        self.setName(data['name'])
+        self.setName(data.get('name', None))
         if 'action' in data:
             newActionProxy = BuildActionProxy()
             newActionProxy.deserialize(data['action'])
