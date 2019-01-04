@@ -303,7 +303,7 @@ class BlueprintUIModel(QtCore.QObject):
 
     def onAfterOpenScene(self, clientData=None):
         if self.autoLoad:
-            self.load()
+            self.load(suppressWarnings=True)
 
     def onAfterNewScene(self, clientData=None):
         self.initializeBlueprint()
@@ -338,6 +338,12 @@ class BlueprintUIModel(QtCore.QObject):
                 LOG.warning("Scene is not saved")
 
             self.initializeBlueprint()
+            return
+
+        if not os.path.isfile(filepath):
+            if not suppressWarnings:
+                LOG.warning(
+                    "Blueprint file does not exist: {0}".format(filepath))
             return
 
         self.buildStepTreeModel.beginResetModel()
