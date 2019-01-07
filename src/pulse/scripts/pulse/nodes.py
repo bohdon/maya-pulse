@@ -8,6 +8,7 @@ __all__ = [
     'areNodesAligned',
     'convertScaleConstraintToWorldSpace',
     'createOffsetGroup',
+    'disableColorOverride',
     'freezePivot',
     'freezePivotsForHierarchy',
     'freezeScalesForHierarchy',
@@ -794,29 +795,41 @@ def getOverrideColor(node):
         The color (RGB tuple), or None if color is
         not overridden.
     """
-    if node.overrideEnabled.get() and node.overrideRGBColors.get():
-        return node.overrideColorRGB.get()
+    shapes = node.getChildren(s=True)
+    for shape in shapes:
+        if shape.overrideEnabled.get() and shape.overrideRGBColors.get():
+            return shape.overrideColorRGB.get()
 
 
-def setOverrideColor(node, color, skipEnableOverrides=False, replaceShapeColors=True):
+def setOverrideColor(node, color, skipEnableOverrides=False):
     """
     Set the override color of a node
 
     Args:
-        node (PyNode): A transform or shape node
+        node (PyNode): A transform node
         color (tuple of float): An RGB color, 0..1
         skipEnableOverrides (bool): If True, skip enabling the overrides,
             just set the color. Faster if overrides are already enabled.
-        replaceShapeColors (bool): If True, disable any overrides enabled on
-            shapes, and favor transform coloration.
     """
-    if not skipEnableOverrides:
-        node.overrideEnabled.set(True)
-        node.overrideRGBColors.set(True)
+    shapes = node.getChildren(s=True)
 
-    if replaceShapeColors:
-        # check shapes
-        for shape in node.getShapes():
-            shape.overrideEnabled.set(False)
+    for shape in shapes:
+        if not skipEnableOverrides:
+            shape.overrideEnabled.set(True)
+            shape.overrideRGBColors.set(True)
 
-    node.overrideColorRGB.set(color)
+        shape.overrideColorRGB.set(color)
+
+
+def disableColorOverride(node):
+    """
+    Disable drawing overrides for a node and all its shapes.
+
+    Args:
+        node (PyNode): A transform node
+    """
+    shapes = node.getChildren(s=True)
+    for shape in [node] + shapes:
+        shape.overrideEnabled.set(False)
+        shape.overrideRGBColors.set(False)
+        shape.overrideColorRGB.set((0, 0, 0))

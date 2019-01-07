@@ -7,6 +7,7 @@ from vendor.mayacoretools import preservedSelection
 
 from . import nodes
 from . import joints
+from . import colors
 
 __all__ = [
     'applyMirrorSettings',
@@ -719,7 +720,7 @@ class MirrorColors(BlueprintMirrorOperation):
             if configColor.get('name') == name:
                 hexColor = configColor.get('color')
                 if hexColor:
-                    return self._hexToRGB01(hexColor)
+                    return colors.hexToRGB01(hexColor)
 
     def getColorName(self, color):
         """
@@ -728,24 +729,13 @@ class MirrorColors(BlueprintMirrorOperation):
         Args:
             color (tuple of float): The color to search for
         """
-        hexColor = self._RGB01ToHex(color)
+        hexColor = colors.RGB01ToHex(color)
         configColors = self.getConfig().get('colors', [])
         for configColor in configColors:
             if configColor.get('color') == hexColor:
                 return configColor.get('name')
 
         LOG.warning('Color has no name: %s (%s)', color, hexColor)
-
-    # TODO: move this utils somewhere better
-
-    @staticmethod
-    def _RGB01ToHex(rgb):
-        return '#%02x%02x%02x' % tuple([x * 255 for x in rgb])
-
-    @staticmethod
-    def _hexToRGB01(hexColor):
-        h = hexColor.lstrip('#')
-        return tuple([x/255.0 for x in [int(h[i:i+2], 16) for i in (0, 2, 4)]])
 
 
 class MirrorUtil(object):

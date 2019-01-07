@@ -71,29 +71,15 @@ names:
   - name: end
     sort: 6
 colors:
+  - name: root
+    color: "#f6bd15"
   - name: c_main
-    color: "#8b6b0c"
-  - name: c_sub
-    color: "#8b6b0c"
-  - name: c_ik
-    color: "#8b6b0c"
+    color: "#f6bd15"
   - name: c_alt
-    color: "#8b6b0c"
+    color: "#594407"
   - name: l_main
     color: "#186fd5"
-  - name: l_sub
-    color: "#186fd5"
-  - name: l_alt
-    color: "#186fd5"
-  - name: l_ik
-    color: "#186fd5"
   - name: r_main
-    color: "#832121"
-  - name: r_sub
-    color: "#832121"
-  - name: r_alt
-    color: "#832121"
-  - name: r_ik
     color: "#832121"
 symmetry:
   pairs:

@@ -13,9 +13,11 @@ __all__ = [
     'createControl',
     'createControlsForSelected',
     'getControlShapes',
+    'getShapeData',
     'loadControlShapesFromDirectory',
     'removeShapes',
     'replaceShapes',
+    'saveControlShapeToFile',
 ]
 
 CONTROLSHAPE_METACLASS = 'pulse_controlshape'
@@ -112,8 +114,27 @@ def loadBuiltinControlShapes():
         BUILTIN_CONTROLSHAPES_LOADED = True
 
 
+def saveControlShapeToFile(name, icon, curve, filePath):
+    """
+    Save a control curve to a yaml file.
+
+    Args:
+        curve (PyNode): A curve transform node containing one or
+            more curve shapes.
+    """
+    data = {
+        'name': name,
+        'icon': icon,
+        'sort': 100,
+        'curves': getShapeData(curve),
+    }
+    with open(filePath, 'wb') as fp:
+        yaml.dump(data, fp)
+
+
 # Control Creation
 # ----------------
+
 
 def createControl(shapeData, name=None, targetNode=None,
                   link=False, parent=None):
@@ -214,5 +235,29 @@ def replaceShapes(node, shapeData):
     if not isinstance(node, pm.nt.Transform):
         raise TypeError(
             'Expected a Transform node, got {0}'.format(type(node).__name__))
+
+    color = pulse.nodes.getOverrideColor(node)
     removeShapes(node)
     addShapes(node, shapeData)
+    if color:
+        pulse.nodes.setOverrideColor(node, color)
+
+
+def getShapeData(node):
+    """
+    Return curve shape data for a node.
+
+    Args:
+        node (PyNode): A transform containing one or more curve shapes
+    """
+    result = []
+    shapes = node.getShapes(type='nurbsCurve')
+    for shape in shapes:
+        shapeData = {
+            'degree': shape.degree(),
+            'periodic': shape.form() == pm.nt.NurbsCurve.Form.periodic,
+            'knot': shape.getKnots(),
+            'point': [p.tolist() for p in shape.getCVs()],
+        }
+        result.append(shapeData)
+    return result

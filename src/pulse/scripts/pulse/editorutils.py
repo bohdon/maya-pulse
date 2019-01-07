@@ -12,6 +12,7 @@ import pymel.core as pm
 
 from pulse.vendor.mayacoretools import preservedSelection
 
+from pulse.colors import *
 from pulse.joints import *
 from pulse.nodes import *
 from pulse.shapes import *
@@ -22,6 +23,7 @@ import pulse.skins
 __all__ = [
     'centerSelectedJoints',
     'createOffsetForSelected',
+    'disableColorOverrideForSelected',
     'disableSegmentScaleCompensateForSelected',
     'freezePivotsForSelectedHierarchies',
     'freezeScalesForSelectedHierarchies',
@@ -42,6 +44,7 @@ __all__ = [
     'saveSceneIfDirty',
     'saveSkinWeightsForSelected',
     'setDetailedChannelBoxEnabled',
+    'setOverrideColorForSelected',
     'snapToLinkForSelected',
     'toggleDetailedChannelBoxForSelected',
     'toggleLocalRotationAxesForSelected',
@@ -525,4 +528,17 @@ def getNamedColor(name):
             if color.get('name') == name:
                 color = color.get('color')
                 if color:
-                    return pulse.sym.MirrorColors._hexToRGB01(color)
+                    return colors.hexToRGB01(color)
+
+
+def setOverrideColorForSelected(color):
+    """
+    Set the display override color for the selected nodes
+    """
+    for node in pm.selected():
+        pulse.nodes.setOverrideColor(node, color)
+
+
+def disableColorOverrideForSelected():
+    for node in pm.selected():
+        pulse.nodes.disableColorOverride(node)
