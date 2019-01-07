@@ -228,6 +228,7 @@ class BuildStep(object):
 
     @property
     def actionProxy(self):
+        # type: () -> BuildActionProxy
         return self._actionProxy
 
     def setActionProxy(self, actionProxy):
@@ -344,6 +345,13 @@ class BuildStep(object):
         else:
             # a root step, or step without a parent has no path
             return None
+
+    def getParentPath(self):
+        """
+        Return the full path to this BuildStep's parent
+        """
+        if self._parent:
+            return self._parent.getFullPath()
 
     def indexInParent(self):
         """
@@ -1079,6 +1087,7 @@ class BuildActionProxy(BuildActionData):
         return variant
 
     def getVariant(self, index):
+        # type: (int) -> BuildActionDataVariant
         """
         Return the BuildActionDataVariant instance at an index
         """
