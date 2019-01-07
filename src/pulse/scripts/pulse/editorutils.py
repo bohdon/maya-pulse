@@ -448,6 +448,7 @@ def unpairSelected():
 def mirrorSelected(
         recursive=True,
         create=True,
+        curveShapes=True,
         reparent=True,
         transform=True,
         appearance=True):
@@ -457,6 +458,7 @@ def mirrorSelected(
     Args:
         recursive (bool): Mirror the selected nodes and all children
         create (bool): Allow creation of new nodes if a pair is not found
+        curveShapes (bool): Flip curve shapes of newly created nodes
         reparent (bool): Mirror the parenting structure of the nodes
         transform (bool): Mirror the transform matrices of the nodes
         appearance (bool): Mirror the name and color of the nodes
@@ -470,10 +472,12 @@ def mirrorSelected(
     util.isRecursive = recursive
     util.isCreationAllowed = create
 
+    if curveShapes:
+        util.addOperation(MirrorCurveShapes())
     if reparent:
         util.addOperation(MirrorParenting())
     if transform:
-        # TODO: configure the transform util
+        # TODO: configure the transform util with mirror mode, etc
         util.addOperation(MirrorTransforms())
     if appearance:
         blueprint = getEditorBlueprint()

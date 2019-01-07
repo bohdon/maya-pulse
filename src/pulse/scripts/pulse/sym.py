@@ -29,6 +29,7 @@ __all__ = [
     'isCentered',
     'isMirrorNode',
     'MirrorColors',
+    'MirrorCurveShapes',
     'MirrorNames',
     'MirrorOperation',
     'MirrorParenting',
@@ -320,7 +321,7 @@ class MirrorOperation(object):
         # if set, the custom matrix to use as the base for mirroring
         self.axisMatrix = None
 
-    def mirrorNode(self, sourceNode, destNode):
+    def mirrorNode(self, sourceNode, destNode, isNewNode):
         """
         Implement in subclasses to perform the mirroring operation.
         """
@@ -337,7 +338,7 @@ class MirrorParenting(MirrorOperation):
         # when true, will search for centered nodes for joints
         self.findCenteredJoints = True
 
-    def mirrorNode(self, sourceNode, destNode):
+    def mirrorNode(self, sourceNode, destNode, isNewNode):
         """
         Change the parent of destNode to match that of sourceNode,
         ensuring the use of paired nodes where possible to preserve
@@ -424,15 +425,15 @@ class MirrorTransforms(MirrorOperation):
             attrs=self.setAttrs,
         )
 
-    def mirrorNode(self, sourceNode, destNode):
+    def mirrorNode(self, sourceNode, destNode, isNewNode):
         """
         Move a node to the mirrored position of another node.
 
         Args:
             sourceNode (PyNode): The node whos position will be used
             destNode (PyNode): The node to modify
+            isNewNode (bool): Is the destination node newly created?
         """
-        pass
         settings = getMirrorSettings(
             sourceNode, destNode, **self._kwargsForGet())
         if settings:
@@ -507,6 +508,65 @@ class MirrorTransforms(MirrorOperation):
             applyMirrorSettings(s, **self._kwargsForApply())
 
 
+class MirrorCurveShapes(MirrorOperation):
+    """
+    Mirrors the NurbsCurve shapes of a node by simply
+    flipping them, assuming MirrorTransformations would also
+    be run on the mirrored nodes.
+
+    Only occurs on new nodes, since the shapes only need
+    to be flipped once. Does not copy shape information from
+    the source node (TODO: it should...)
+    """
+
+    def __init__(self):
+        super(MirrorCurveShapes, self).__init__()
+
+        self.mirrorMode = MirrorMode.Simple
+
+    def mirrorNode(self, sourceNode, destNode, isNewNode):
+        # curve shape mirroring doesn't care about the actual
+        # position, its only job is to flip the curve
+        # shapes the first time they are mirrored
+        if isNewNode:
+            MirrorCurveShapes.flipAllCurveShapes(
+                destNode, self.axis, self.mirrorMode)
+
+    @staticmethod
+    def flipAllCurveShapes(node, axis=0, mirrorMode=MirrorMode.Simple):
+        """
+        Flip the position of all cvs in all curve shapes of a node
+        in a manner that corresponds to the transformation mirror modes.
+
+        Args:
+            curveShape (NurbsCurve):    The curve to mirror
+            axis (int): An axis to mirror across
+            mirrorMode: The MirrorMode type to use
+        """
+        shapes = node.getChildren(s=True)
+        for shape in shapes:
+            if hasattr(shape, "cv"):
+                MirrorCurveShapes.flipCurveShape(shape, axis, mirrorMode)
+
+    @staticmethod
+    def flipCurveShape(curveShape, axis=0, mirrorMode=MirrorMode.Simple):
+        """
+        Flip the position of all cvs in a curve shape in a manner that
+        corresponds to the transformation mirror modes.
+
+        Args:
+            curveShape (NurbsCurve):    The curve to mirror
+            axis (int): An axis to mirror across
+            mirrorMode: The MirrorMode type to use
+        """
+        if mirrorMode == MirrorMode.Simple:
+            pm.scale(curveShape.cv, [-1, -1, -1])
+        elif mirrorMode == MirrorMode.Aligned:
+            s = [1, 1, 1]
+            s[axis] = -1
+            pm.scale(curveShape.cv, s)
+
+
 class BlueprintMirrorOperation(MirrorOperation):
     """
     A MirrorOperation that makes use of a Blueprint config
@@ -575,7 +635,7 @@ class MirrorNames(BlueprintMirrorOperation):
 
         return mirroredName
 
-    def mirrorNode(self, sourceNode, destNode):
+    def mirrorNode(self, sourceNode, destNode, isNewNode):
         """
         """
         name = sourceNode.nodeName()
@@ -585,7 +645,7 @@ class MirrorNames(BlueprintMirrorOperation):
 
 class MirrorColors(BlueprintMirrorOperation):
 
-    def mirrorNode(self, sourceNode, destNode):
+    def mirrorNode(self, sourceNode, destNode, isNewNode):
         pass
 
 
@@ -606,8 +666,8 @@ class MirrorUtil(object):
         # if set, the custom matrix to use as the base for mirroring
         self.axisMatrix = None
 
-        # don't mirrored joints that are centered along the mirror axis
-        self.skipCenteredJoints = True
+        # don't mirrored nodes that are centered along the mirror axis
+        self.skipCentered = True
 
         # valid all source nodes before mirroring, potentially
         # cleaning or modifying their pairing data
@@ -618,6 +678,10 @@ class MirrorUtil(object):
 
         # if True, applies operations to the nodes and all their children
         self.isRecursive = False
+
+        # list of any nodes created during the operation, only valid
+        # after creating node pairs, but before run() has finished
+        self._newNodes = []
 
     def addOperation(self, operation):
         self._operations.append(operation)
@@ -632,7 +696,9 @@ class MirrorUtil(object):
             # ensure consistent mirroring settings for all operations
             self.configureOperation(operation)
             for pair in pairs:
-                operation.mirrorNode(*pair)
+                isNewNode = pair[1] in self._newNodes
+                operation.mirrorNode(pair[0], pair[1], isNewNode)
+        self._newNodes = []
 
     def shouldMirrorNode(self, sourceNode):
         """
@@ -642,9 +708,8 @@ class MirrorUtil(object):
         which may be included with recursive operations, but not
         wanted when mirroring.
         """
-        if self.skipCenteredJoints and isinstance(sourceNode, pm.nt.Joint):
+        if self.skipCentered:
             if isCentered(sourceNode, self.axis):
-                # skip centered joints
                 return False
 
         return True
@@ -696,7 +761,9 @@ class MirrorUtil(object):
                 validateMirrorNode(sourceNode)
 
             if self.isCreationAllowed:
-                destNode = self.getOrCreatePairNode(sourceNode)
+                destNode, isNewNode = self._getOrCreatePairNode(sourceNode)
+                if destNode and isNewNode:
+                    self._newNodes.append(destNode)
             else:
                 destNode = getPairedNode(sourceNode)
 
@@ -708,16 +775,31 @@ class MirrorUtil(object):
 
         return pairs
 
+    def _getOrCreatePairNode(self, sourceNode):
+        """
+        Return the pair node of a node, and if none exists,
+        create a new pair node. Does not check isCreationAllowed.
+
+        Returns:
+            The pair node (PyNode), and a bool that is True if the
+            node was just created, False otherwise.
+        """
+        destNode = getPairedNode(sourceNode)
+        if destNode:
+            return destNode, False
+        else:
+            destNode = duplicateAndPairNode(sourceNode)
+            return destNode, True
+
     def getOrCreatePairNode(self, sourceNode):
         """
         Return the pair node of a node, and if none exists,
         create a new pair node. Does not check isCreationAllowed.
+
+        Returns:
+            The pair node (PyNode).
         """
-        destNode = getPairedNode(sourceNode)
-        if destNode:
-            return destNode
-        else:
-            return duplicateAndPairNode(sourceNode)
+        return self._getOrCreatePairNode(sourceNode)[0]
 
 
 def getMirrorSettings(sourceNode, destNode=None,
@@ -868,10 +950,10 @@ def getMirroredMatrices(node,
     Automatically handles Transform vs. Joint differences
 
     Args:
-        axis: the axis about which to mirror
+        axis (int): An axis to mirror across
         axisMatrix: the matrix in which we should mirror
-        translate: A bool, if False, the matrix will not be moved
-        rotate: A bool, if False, the matrix will not be rotated
+        translate (bool): If False, the matrix will not be moved
+        rotate (bool): If False, the matrix will not be rotated
         mirrorMode: what type of mirroring should be performed, see `MirrorMode`
     """
     # build kwargs for both commands
@@ -923,10 +1005,10 @@ def getMirroredTransformMatrix(matrix,
     Return the mirrored version of the given matrix.
 
     Args:
-        axis: A axis about which to mirror
+        axis (int): An axis to mirror across
         axisMatrix: A matrix in which we should mirror
-        translate: A bool, if False, the matrix will not be moved
-        rotate: A bool, if False, the matrix will not be rotated
+        translate (bool): If False, the matrix will not be moved
+        rotate (bool): If False, the matrix will not be rotated
         mirrorMode: what type of mirroring should be performed,
             default is MirrorMode.Simple
     """
@@ -964,10 +1046,10 @@ def getMirroredJointMatrices(matrix, r, ra, jo,
     and joint orient matrices.
 
     Args:
-        axis: A axis about which to mirror
+        axis (int): An axis to mirror across
         axisMatrix: A matrix in which we should mirror
-        translate: A bool, if False, the matrix will not be moved
-        rotate: A bool, if False, the matrix will not be rotated
+        translate (bool): If False, the matrix will not be moved
+        rotate (bool): If False, the matrix will not be rotated
         mirrorMode: what type of mirroring should be performed,
             default is MirrorMode.Simple
     """

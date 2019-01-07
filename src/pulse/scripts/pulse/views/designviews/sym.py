@@ -149,6 +149,7 @@ class SymmetryPanel(DesignViewPanel):
         kw = dict(
             recursive=self.mirrorRecursive,
             create=self.mirrorAllowCreate,
+            curveShapes=True,
             reparent=self.mirrorParenting,
             transform=self.mirrorTransforms,
             appearance=self.mirrorAppearance,
