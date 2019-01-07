@@ -453,6 +453,7 @@ def mirrorSelected(
         recursive=True,
         create=True,
         curveShapes=True,
+        links=True,
         reparent=True,
         transform=True,
         appearance=True):
@@ -463,6 +464,7 @@ def mirrorSelected(
         recursive (bool): Mirror the selected nodes and all children
         create (bool): Allow creation of new nodes if a pair is not found
         curveShapes (bool): Flip curve shapes of newly created nodes
+        links (bool): Mirror links. See links.py
         reparent (bool): Mirror the parenting structure of the nodes
         transform (bool): Mirror the transform matrices of the nodes
         appearance (bool): Mirror the name and color of the nodes
@@ -478,6 +480,8 @@ def mirrorSelected(
 
     if curveShapes:
         util.addOperation(MirrorCurveShapes())
+    if links:
+        util.addOperation(MirrorLinks())
     if reparent:
         util.addOperation(MirrorParenting())
     if transform:

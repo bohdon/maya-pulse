@@ -150,6 +150,7 @@ class SymmetryPanel(DesignViewPanel):
             recursive=self.mirrorRecursive,
             create=self.mirrorAllowCreate,
             curveShapes=True,
+            links=True,
             reparent=self.mirrorParenting,
             transform=self.mirrorTransforms,
             appearance=self.mirrorAppearance,

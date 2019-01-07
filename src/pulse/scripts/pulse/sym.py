@@ -5,9 +5,10 @@ import pymel.core as pm
 import pymetanode as meta
 from vendor.mayacoretools import preservedSelection
 
-from . import nodes
-from . import joints
 from . import colors
+from . import joints
+from . import links
+from . import nodes
 
 __all__ = [
     'applyMirrorSettings',
@@ -32,6 +33,7 @@ __all__ = [
     'isMirrorNode',
     'MirrorColors',
     'MirrorCurveShapes',
+    'MirrorLinks',
     'MirrorNames',
     'MirrorOperation',
     'MirrorParenting',
@@ -736,6 +738,19 @@ class MirrorColors(BlueprintMirrorOperation):
                 return configColor.get('name')
 
         LOG.warning('Color has no name: %s (%s)', color, hexColor)
+
+
+class MirrorLinks(BlueprintMirrorOperation):
+    """
+    Mirrors Blueprint links. See links.py
+    """
+
+    def mirrorNode(self, sourceNode, destNode, isNewNode):
+        sourceLink = links.getLink(sourceNode)
+        if sourceLink:
+            destLink = getPairedNode(sourceLink)
+            if destLink:
+                links.link(destLink, destNode)
 
 
 class MirrorUtil(object):
