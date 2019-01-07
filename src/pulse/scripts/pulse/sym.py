@@ -20,6 +20,7 @@ __all__ = [
     'getCenteredParent',
     'getMirroredJointMatrices',
     'getMirroredMatrices',
+    'getMirroredName',
     'getMirroredOrCenteredParent',
     'getMirroredParent',
     'getMirroredTransformMatrix',
@@ -574,79 +575,177 @@ class BlueprintMirrorOperation(MirrorOperation):
 
     def __init__(self):
         super(BlueprintMirrorOperation, self).__init__()
+        # the Blueprint owner of the mirror operation
         self.blueprint = None
-
-        self.includeName = True
-        self.includeColor = True
-        self.config = None
+        # the Blueprint's config data
+        self._config = None
 
     def getConfig(self):
-        if self.config is None:
+        """
+        Return the Blueprint's config. Caches the config
+        on the first request.
+        """
+        if self._config is None:
             if self.blueprint:
-                self.config = self.blueprint.getConfig()
+                self._config = self.blueprint.getConfig()
             # if still no config, set to empty dict to prevent repeat check
-            if self.config is None:
-                self.config = {}
-        return self.config
+            if self._config is None:
+                self._config = {}
+        return self._config
+
+
+def _createNameReplacement(search, replace):
+    """
+    Return a tuple containing a regex and replacement string.
+    Regexes replace prefixes, suffixes, or middles, as long as
+    the search is separated with '_' from adjacent characters.
+    """
+    regex = re.compile('(?<![^_]){0}(?=(_|$))'.format(search))
+    return (regex, replace)
+
+
+def _generateMirrorNameReplacements(config):
+    """
+    Generate and return the full list of replacement pairs.
+
+    Returns:
+        A list of (regex, replacement) tuples.
+    """
+    replacements = []
+    symConfig = config.get('symmetry', {})
+    prefixPairs = symConfig.get('pairs', [])
+
+    for pair in prefixPairs:
+        if 'left' in pair and 'right' in pair:
+            left = pair['left']
+            right = pair['right']
+            l2r = _createNameReplacement(left, right)
+            r2l = _createNameReplacement(right, left)
+            replacements.append(l2r)
+            replacements.append(r2l)
+        else:
+            LOG.warning("Invalid symmetry pairs")
+
+    return replacements
+
+
+def _getMirroredNameWithReplacements(name, replacements):
+    mirroredName = name
+    for regex, repl in replacements:
+        if regex.match(mirroredName):
+            mirroredName = regex.sub(repl, mirroredName)
+            break
+    return mirroredName
+
+
+def getMirroredName(name, config):
+    """
+    Given a string name, return the mirrored version considering
+    all symmetry names defined in the Blueprint config.
+    """
+    replacements = _generateMirrorNameReplacements(config)
+    return _getMirroredNameWithReplacements(name, replacements)
 
 
 class MirrorNames(BlueprintMirrorOperation):
+    """
+    Mirrors the names of nodes.
+    """
 
     def __init__(self):
         super(MirrorNames, self).__init__()
-        self.replacements = None
-
-    def createRegexReplacement(self, src, dst):
-        """
-        """
-        regex = re.compile('(?<![^_]){0}_'.format(src))
-        repl = dst + '_'
-        return (regex, repl)
+        # cached set of (regex, replacement) pairs
+        self._replacements = None
 
     def getReplacements(self):
         """
+        Return the list of regex and replacement pairs.
+        Caches the list the first time it is requested so that
+        subsequent calls are faster.
         """
-        if self.replacements is None:
-            self.replacements = []
-            config = self.getConfig()
-            symConfig = config.get('symmetry', {})
-            prefixes = symConfig.get('prefixes', {})
-
-            leftPrefix = prefixes.get('left')
-            rightPrefix = prefixes.get('right')
-
-            if leftPrefix and rightPrefix:
-                for a, b in [(leftPrefix, rightPrefix)]:
-                    a2b = self.createRegexReplacement(a, b)
-                    b2a = self.createRegexReplacement(b, a)
-                    self.replacements.append((a2b, b2a))
-        return self.replacements
-
-    def getMirroredName(self, name):
-        """
-        """
-        mirroredName = name
-        replacements = self.getReplacements()
-        for pair in replacements:
-            for regex, repl in pair:
-                if regex.match(mirroredName):
-                    mirroredName = regex.sub(repl, mirroredName)
-                    break
-
-        return mirroredName
+        if self._replacements is None:
+            self._replacements = _generateMirrorNameReplacements(
+                self.getConfig())
+        return self._replacements
 
     def mirrorNode(self, sourceNode, destNode, isNewNode):
-        """
-        """
         name = sourceNode.nodeName()
-        destName = self.getMirroredName(name)
+        destName = _getMirroredNameWithReplacements(
+            name, self.getReplacements())
         destNode.rename(destName)
 
 
 class MirrorColors(BlueprintMirrorOperation):
+    """
+    Mirrors the override display color of nodes.
+    """
+
+    def __init__(self):
+        super(MirrorColors, self).__init__()
+        # cached set of (regex, replacement) pairs
+        self._replacements = None
+
+    def getReplacements(self):
+        """
+        Return the list of regex and replacement pairs.
+        Caches the list the first time it is requested so that
+        subsequent calls are faster.
+        """
+        if self._replacements is None:
+            self._replacements = _generateMirrorNameReplacements(
+                self.getConfig())
+        return self._replacements
 
     def mirrorNode(self, sourceNode, destNode, isNewNode):
-        pass
+        sourceColor = nodes.getOverrideColor(sourceNode)
+        if sourceColor:
+            sourceName = self.getColorName(sourceColor)
+            if sourceName:
+                destName = _getMirroredNameWithReplacements(
+                    sourceName, self.getReplacements())
+                destColor = self.getNamedColor(destName)
+                if destColor:
+                    nodes.setOverrideColor(destNode, destColor)
+
+    def getNamedColor(self, name):
+        """
+        Return a color from the Blueprint config by name
+
+        Returns:
+            color (tuple of float)
+        """
+        configColors = self.getConfig().get('colors', [])
+        for configColor in configColors:
+            if configColor.get('name') == name:
+                hexColor = configColor.get('color')
+                if hexColor:
+                    return self._hexToRGB01(hexColor)
+
+    def getColorName(self, color):
+        """
+        Return the name of a color, if it has one.
+
+        Args:
+            color (tuple of float): The color to search for
+        """
+        hexColor = self._RGB01ToHex(color)
+        configColors = self.getConfig().get('colors', [])
+        for configColor in configColors:
+            if configColor.get('color') == hexColor:
+                return configColor.get('name')
+
+        LOG.warning('Color has no name: %s (%s)', color, hexColor)
+
+    # TODO: move this utils somewhere better
+
+    @staticmethod
+    def _RGB01ToHex(rgb):
+        return '#%02x%02x%02x' % tuple([x * 255 for x in rgb])
+
+    @staticmethod
+    def _hexToRGB01(hexColor):
+        h = hexColor.lstrip('#')
+        return tuple([x/255.0 for x in [int(h[i:i+2], 16) for i in (0, 2, 4)]])
 
 
 class MirrorUtil(object):
@@ -846,7 +945,7 @@ def getMirrorSettings(sourceNode, destNode=None,
     # these are stored in a string attr as a python dict
     if useNodeSettings:
         data = meta.getMetaData(sourceNode, MIRROR_METACLASS)
-        customSettings = data.get('customSettings', None)
+        customSettings = data.get('customSettings')
         if customSettings is not None:
             LOG.debug("Custom Mirror Node")
             # nodeStngs = data['customSettings']

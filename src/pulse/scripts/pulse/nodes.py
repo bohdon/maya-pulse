@@ -21,6 +21,7 @@ __all__ = [
     'getDescendantsTopToBottom',
     'getExpandedAttrNames',
     'getOtherAxes',
+    'getOverrideColor',
     'getParentNodes',
     'getRelativeMatrix',
     'getRotationMatrix',
@@ -32,6 +33,7 @@ __all__ = [
     'normalizeEulerRotations',
     'parentInOrder',
     'setConstraintLocked',
+    'setOverrideColor',
     'setParent',
     'setRelativeMatrix',
     'setTransformHierarchy',
@@ -776,3 +778,45 @@ def areNodesAligned(nodeA, nodeB):
         if i != axis or sign != 1:
             return False
     return True
+
+
+# Node Coloring
+# -------------
+
+def getOverrideColor(node):
+    """
+    Return the override color of a node.
+
+    Args:
+        node (PyNode): A transform node
+
+    Returns:
+        The color (RGB tuple), or None if color is
+        not overridden.
+    """
+    if node.overrideEnabled.get() and node.overrideRGBColors.get():
+        return node.overrideColorRGB.get()
+
+
+def setOverrideColor(node, color, skipEnableOverrides=False, replaceShapeColors=True):
+    """
+    Set the override color of a node
+
+    Args:
+        node (PyNode): A transform or shape node
+        color (tuple of float): An RGB color, 0..1
+        skipEnableOverrides (bool): If True, skip enabling the overrides,
+            just set the color. Faster if overrides are already enabled.
+        replaceShapeColors (bool): If True, disable any overrides enabled on
+            shapes, and favor transform coloration.
+    """
+    if not skipEnableOverrides:
+        node.overrideEnabled.set(True)
+        node.overrideRGBColors.set(True)
+
+    if replaceShapeColors:
+        # check shapes
+        for shape in node.getShapes():
+            shape.overrideEnabled.set(False)
+
+    node.overrideColorRGB.set(color)

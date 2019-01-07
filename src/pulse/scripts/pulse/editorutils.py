@@ -26,6 +26,7 @@ __all__ = [
     'freezePivotsForSelectedHierarchies',
     'freezeScalesForSelectedHierarchies',
     'getDetailedChannelBoxAttrs',
+    'getNamedColor',
     'getSelectedTransforms',
     'insertJointForSelected',
     'isDetailedChannelBoxEnabled',
@@ -511,3 +512,17 @@ def saveSkinWeightsForSelected(filePath=None):
     skins = [s for s in skins if s]
 
     pulse.skins.saveSkinWeightsToFile(filePath, *skins)
+
+
+def getNamedColor(name):
+    """
+    Return a color by name from the config of the editor Blueprint
+    """
+    blueprint = getEditorBlueprint()
+    if blueprint:
+        config = blueprint.getConfig()
+        for color in config.get('colors', []):
+            if color.get('name') == name:
+                color = color.get('color')
+                if color:
+                    return pulse.sym.MirrorColors._hexToRGB01(color)

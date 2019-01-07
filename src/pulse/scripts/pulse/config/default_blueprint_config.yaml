@@ -70,7 +70,38 @@ names:
     sort: 6
   - name: end
     sort: 6
+colors:
+  - name: c_main
+    color: "#8b6b0c"
+  - name: c_sub
+    color: "#8b6b0c"
+  - name: c_ik
+    color: "#8b6b0c"
+  - name: c_alt
+    color: "#8b6b0c"
+  - name: l_main
+    color: "#186fd5"
+  - name: l_sub
+    color: "#186fd5"
+  - name: l_alt
+    color: "#186fd5"
+  - name: l_ik
+    color: "#186fd5"
+  - name: r_main
+    color: "#832121"
+  - name: r_sub
+    color: "#832121"
+  - name: r_alt
+    color: "#832121"
+  - name: r_ik
+    color: "#832121"
 symmetry:
-  prefixes:
-    left: l
-    right: r
+  pairs:
+    - left: l
+      right: r
+    - left: L
+      right: R
+    - left: left
+      right: right
+    - left: Left
+      right: Right
