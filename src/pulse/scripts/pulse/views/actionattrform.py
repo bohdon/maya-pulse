@@ -700,10 +700,13 @@ class NodeListAttrForm(ActionAttrForm):
         while self.listWidget.takeItem(0):
             pass
         for node in attrValue:
-            item = QtWidgets.QListWidgetItem(node.nodeName())
-            uuid = meta.getUUID(node)
-            item.setData(QtCore.Qt.UserRole, uuid)
-            self.listWidget.addItem(item)
+            if node:
+                item = QtWidgets.QListWidgetItem(node.nodeName())
+                uuid = meta.getUUID(node)
+                item.setData(QtCore.Qt.UserRole, uuid)
+                self.listWidget.addItem(item)
+            else:
+                self.listWidget.addItem('(missing)')
         # 13px line height per item, clamped in range 40..120, added 8px buffer
         newHeight = max(40, min(120, 8 + 13 * self.listWidget.count()))
         self.listWidget.setFixedHeight(newHeight)
