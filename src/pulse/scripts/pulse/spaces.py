@@ -40,6 +40,17 @@ LOG = logging.getLogger(__name__)
 SPACE_METACLASS = 'pulse_space'
 SPACECONSTRAINT_METACLASS = 'pulse_space_con'
 SPACESWITCH_ATTR = 'space'
+IS_MATRIX_PLUGIN_LOADED = False
+
+
+def loadMatrixPlugin():
+    global IS_MATRIX_PLUGIN_LOADED
+    if not IS_MATRIX_PLUGIN_LOADED:
+        try:
+            pm.loadPlugin('matrixNodes', quiet=True)
+            IS_MATRIX_PLUGIN_LOADED = True
+        except:
+            pass
 
 
 def getAllSpaces():
@@ -132,6 +143,7 @@ def prepareSpaceConstraint(node, follower, spaceNames):
     decompName = nodeName + '_space_decomp'
 
     # create utility nodes
+    loadMatrixPlugin()
     offsetChoice = pm.shadingNode('choice', n=offsetChoiceName, asUtility=True)
     spaceChoice = pm.shadingNode('choice', n=spaceChoiceName, asUtility=True)
     multMatrix = pm.shadingNode('multMatrix', n=multMatrixName, asUtility=True)
