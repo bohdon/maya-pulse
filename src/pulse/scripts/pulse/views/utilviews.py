@@ -12,14 +12,14 @@ from .core import PulseWindow
 LOG = logging.getLogger(__name__)
 
 
-class CopyPastMatrixWidget(QtWidgets.QWidget):
+class CopyPasteMatrixWidget(QtWidgets.QWidget):
     """
     A util widget that contains a clipboard for copying and pasting
     transform matrices between objects.
     """
 
     def __init__(self, parent=None):
-        super(CopyPastMatrixWidget, self).__init__(parent=parent)
+        super(CopyPasteMatrixWidget, self).__init__(parent=parent)
 
         # contains copied matrix data
         self.clipboard = {}
@@ -187,7 +187,7 @@ class CopyPastMatrixWidget(QtWidgets.QWidget):
                 pulse.nodes.setWorldMatrix(node, matrix)
 
 
-class CopyPastMatrixWindow(PulseWindow):
+class CopyPasteMatrixWindow(PulseWindow):
 
     OBJECT_NAME = 'pulseCopyPasteMatrixWindow'
     PREFERRED_SIZE = QtCore.QSize(220, 160)
@@ -199,12 +199,12 @@ class CopyPastMatrixWindow(PulseWindow):
     WINDOW_MODULE = 'pulse.views.utilviews'
 
     def __init__(self, parent=None):
-        super(CopyPastMatrixWindow, self).__init__(parent=parent)
+        super(CopyPasteMatrixWindow, self).__init__(parent=parent)
 
         self.setWindowTitle('Copy Paste Matrix')
 
         layout = QtWidgets.QVBoxLayout(self)
         self.setLayout(layout)
 
-        widget = CopyPastMatrixWidget(self)
+        widget = CopyPasteMatrixWidget(self)
         layout.addWidget(widget)
