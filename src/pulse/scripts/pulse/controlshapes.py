@@ -55,6 +55,8 @@ def createLineShape(startNode, endNode, parentNode=None):
     if endNode != parentNode:
         connectNodeToControlPoint(endNode, curveShape, 1)
 
+    return curveShape
+
 
 def connectNodeToControlPoint(node, curveShape, pointIndex):
     """

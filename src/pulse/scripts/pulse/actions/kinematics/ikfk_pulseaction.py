@@ -113,8 +113,12 @@ class ThreeBoneIKFKAction(pulse.BuildAction):
 
         # add connecting line shape
         if self.addPoleLine:
-            pulse.controlshapes.createLineShape(
+            # keep consistent color overrides for the mid ctl
+            color = pulse.nodes.getOverrideColor(self.midCtlIk)
+            lineShape = pulse.controlshapes.createLineShape(
                 self.midIkJoint, self.midCtlIk, self.midCtlIk)
+            if color:
+                pulse.nodes.setOverrideColor(self.midCtlIk, color)
 
         # cleanup
         handle.v.set(False)
