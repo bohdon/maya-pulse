@@ -7,11 +7,14 @@ import pymetanode as meta
 
 import pulse.nodes
 import pulse.links
+import pulse.utilnodes
 
 __all__ = [
     'addShapes',
+    'connectNodeToControlPoint',
     'createControl',
     'createControlsForSelected',
+    'createLineShape',
     'getControlShapes',
     'getShapeData',
     'loadControlShapesFromDirectory',
@@ -23,6 +26,51 @@ __all__ = [
 CONTROLSHAPE_METACLASS = 'pulse_controlshape'
 BUILTIN_CONTROLSHAPES_LOADED = False
 CONTROLSHAPES = {}
+
+
+def createLineShape(startNode, endNode, parentNode=None):
+    """
+    Create a curve shape that draws a straight line between
+    two nodes.
+
+    Args:
+        startNode (PyNode): A transform node
+        endNode (PyNode): A transform node
+        parentNode (PyNode): A transform node to use as the parent
+            of the newly created shape. Default is None, which creates
+            a new transform for the curve.
+    """
+    curveTransform = pm.curve(d=1, p=[(0, 0, 0), (0, 0, 0)], k=[0, 1])
+    curveShape = curveTransform.getShape()
+
+    if parentNode:
+        pm.parent(curveShape, parentNode, shape=True, relative=True)
+        pm.delete(curveTransform)
+        curveTransform = None
+
+    # if a parent node is used, we don't need to connect the control point,
+    # it can stay at relative location (0, 0, 0)
+    if startNode != parentNode:
+        connectNodeToControlPoint(startNode, curveShape, 0)
+    if endNode != parentNode:
+        connectNodeToControlPoint(endNode, curveShape, 1)
+
+
+def connectNodeToControlPoint(node, curveShape, pointIndex):
+    """
+    Connect the world location of a node to the world location of a
+    control point on a curve shape. Assumes that the curveShape is
+    not a child of the node (in which case this is unnecessary).
+
+    Args:
+        node (PyNode): A transform node
+        curveShape (Curve): A curve shape
+        pointIndex (int): The index of a control point on the curve shape
+    """
+    # TODO: name the utility nodes
+    mmtx = pulse.utilnodes.multMatrix(node.wm, curveShape.pim)
+    decomp = pulse.utilnodes.decomposeMatrix(mmtx)
+    decomp.outputTranslate >> curveShape.controlPoints[pointIndex]
 
 
 # Control Shape Registration

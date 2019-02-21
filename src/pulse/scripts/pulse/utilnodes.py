@@ -471,18 +471,26 @@ def condition(firstTerm, secondTerm, trueVal, falseVal, operation):
 
 def choice(selector, *inputs):
     choiceNode = pm.shadingNode('choice', asUtility=True)
-
     setOrConnectAttr(choiceNode.selector, selector)
     for i, input in enumerate(inputs):
-        # hook up inputs
         setOrConnectAttr(choiceNode.input[i], input)
-
     return choiceNode.output
+
+
+def multMatrix(*matrices):
+    loadMatrixPlugin()
+    mmtx = pm.shadingNode('multMatrix', asUtility=True)
+    for i, matrix in enumerate(matrices):
+        setOrConnectAttr(mmtx.matrixIn[i], matrix)
+    return mmtx.matrixSum
 
 
 def decomposeMatrix(matrix):
     """
-    Create and return a `decomposeMatrix` utility node.
+    Create a `decomposeMatrix` utility node.
+
+    Returns:
+        The `decomposeMatrix` node (not output attributes).
     """
     loadMatrixPlugin()
     return createUtilityNode(

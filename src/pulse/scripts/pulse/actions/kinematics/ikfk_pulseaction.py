@@ -2,6 +2,7 @@
 import pymel.core as pm
 
 import pulse
+import pulse.controlshapes
 import pulse.joints
 import pulse.nodes
 import pulse.utilnodes
@@ -70,11 +71,14 @@ class ThreeBoneIKFKAction(pulse.BuildAction):
 
         # create target transforms driven by ikfk switching
         rootTargetName = n = '{}_ikfk_target'.format(self.rootJoint)
-        rootTarget = pm.group(n=rootTargetName, em=True)
+        rootTarget = pm.group(n=rootTargetName, em=True, p=self.rootCtl)
         midTargetName = n = '{}_ikfk_target'.format(self.midJoint)
-        midTarget = pm.group(n=midTargetName, em=True)
+        midTarget = pm.group(n=midTargetName, em=True, p=self.rootCtl)
         endTargetName = n = '{}_ikfk_target'.format(self.endJoint)
-        endTarget = pm.group(n=endTargetName, em=True)
+        endTarget = pm.group(n=endTargetName, em=True, p=self.rootCtl)
+        # target transforms operate in world space
+        for target in (rootTarget, midTarget, endTarget):
+            target.inheritsTransform.set(False)
 
         # create choices for world matrix from ik and fk targets
         rootChoice = pulse.utilnodes.choice(
@@ -106,6 +110,11 @@ class ThreeBoneIKFKAction(pulse.BuildAction):
         self.endCtlFk.v.setLocked(False)
         fkAttr >> self.midCtlFk.v
         fkAttr >> self.endCtlFk.v
+
+        # add connecting line shape
+        if self.addPoleLine:
+            pulse.controlshapes.createLineShape(
+                self.midIkJoint, self.midCtlIk, self.midCtlIk)
 
         # cleanup
         handle.v.set(False)
