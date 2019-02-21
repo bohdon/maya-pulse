@@ -15,18 +15,41 @@ __all__ = [
 
 LOG = logging.getLogger(__name__)
 
+IS_MATRIX_PLUGIN_LOADED = False
+IS_QUAT_PLUGIN_LOADED = False
 
-def getConstraintWeightAttr(node, constraint):
+
+def loadMatrixPlugin():
+    global IS_MATRIX_PLUGIN_LOADED
+    if not IS_MATRIX_PLUGIN_LOADED:
+        try:
+            pm.loadPlugin('matrixNodes', quiet=True)
+            IS_MATRIX_PLUGIN_LOADED = True
+        except:
+            pass
+
+
+def loadQuatPlugin():
+    global IS_QUAT_PLUGIN_LOADED
+    if not IS_QUAT_PLUGIN_LOADED:
+        try:
+            pm.loadPlugin('quatNodes', quiet=True)
+            IS_QUAT_PLUGIN_LOADED = True
+        except:
+            pass
+
+
+def getConstraintWeightAttr(leader, constraint):
     """
-    Return the weight attribute from a constraint that affects
-    a specific node attached to the constraint.
+    Return the weight attribute from a constraint that
+    corresponds to a specific leader node.
 
     Args:
-        node (PyNode): The node that is affected by the weight attr
-        constraint (PyNode): The constraint node that has the weight attr
+        leader (PyNode): A node that is one of the leaders of a constraint
+        constraint (PyNode): A constraint node
     """
     for i, target in enumerate(constraint.getTargetList()):
-        if node == target:
+        if leader == target:
             return constraint.getWeightAliasList()[i]
 
 
@@ -61,17 +84,17 @@ def getOutputAttr(input):
 
     # map of node types to output attribute names
     outputAttrs = {
-        'clamp': 'output',
-        'reverse': 'output',
-        'blendColors': 'output',
-        'vectorProduct': 'output',
-        'multiplyDivide': 'output',
         'addDoubleLinear': 'output',
-
-        'setRange': 'outValue',
-        'condition': 'outColor',
         'angleBetween': 'angle',
+        'blendColors': 'output',
+        'choice': 'output',
+        'clamp': 'output',
+        'condition': 'outColor',
         'distanceBetween': 'distance',
+        'multiplyDivide': 'output',
+        'reverse': 'output',
+        'setRange': 'outValue',
+        'vectorProduct': 'output',
     }
 
     node = input.node()
@@ -444,6 +467,45 @@ def condition(firstTerm, secondTerm, trueVal, falseVal, operation):
     return _createUtilityAndReturnOutput(
         'condition', firstTerm=firstTerm, secondTerm=secondTerm,
         colorIfTrue=trueVal, colorIfFalse=falseVal, operation=operation)
+
+
+def choice(selector, *inputs):
+    choiceNode = pm.shadingNode('choice', asUtility=True)
+
+    setOrConnectAttr(choiceNode.selector, selector)
+    for i, input in enumerate(inputs):
+        # hook up inputs
+        setOrConnectAttr(choiceNode.input[i], input)
+
+    return choiceNode.output
+
+
+def decomposeMatrix(matrix):
+    """
+    Create and return a `decomposeMatrix` utility node.
+    """
+    loadMatrixPlugin()
+    return createUtilityNode(
+        'decomposeMatrix', inputMatrix=matrix)
+
+
+def decomposeMatrixAndConnect(matrix, transform):
+    """
+    Decompose a matrix and connect it to the translate, rotate,
+    and scales of a transform node.
+
+    Args:
+        matrix (Attribute): A matrix attribute
+        transform (PyNode): A transform node
+
+    Returns:
+        the decomposeMatrix node
+    """
+    decomp = decomposeMatrix(matrix)
+    decomp.outputTranslate >> transform.translate
+    decomp.outputRotate >> transform.rotate
+    decomp.outputScale >> transform.scale
+    return decomp
 
 
 def createUtilityNode(nodeType, **kwargs):

@@ -2,8 +2,9 @@
 import pymel.core as pm
 
 import pulse
-import pulse.nodes
 import pulse.joints
+import pulse.nodes
+import pulse.utilnodes
 
 
 class ThreeBoneIKFKAction(pulse.BuildAction):
@@ -17,8 +18,10 @@ class ThreeBoneIKFKAction(pulse.BuildAction):
             raise pulse.BuildActionError('midCtlIk is not set')
         if not self.midCtlFk:
             raise pulse.BuildActionError('midCtlFk is not set')
-        if not self.endCtl:
-            raise pulse.BuildActionError('endCtl is not set')
+        if not self.endCtlIk:
+            raise pulse.BuildActionError('endCtlIk is not set')
+        if not self.endCtlFk:
+            raise pulse.BuildActionError('endCtlFk is not set')
 
     def run(self):
         # retrieve mid and root joints
@@ -41,34 +44,71 @@ class ThreeBoneIKFKAction(pulse.BuildAction):
 
         # create ik and hook up pole object and controls
         handle, effector = pm.ikHandle(
-            n="{0}_ikHandle".format(self.endIkJoint),
-            sj=self.rootIkJoint, ee=self.endIkJoint, sol="ikRPsolver")
+            name="{0}_ikHandle".format(self.endIkJoint),
+            startJoint=self.rootIkJoint,
+            endEffector=self.endIkJoint,
+            solver="ikRPsolver")
 
         # add twist attr to end control
-        self.endCtl.addAttr('twist', at='double', k=1)
-        self.endCtl.twist >> handle.twist
+        self.endCtlIk.addAttr('twist', at='double', k=1)
+        self.endCtlIk.twist >> handle.twist
 
         # connect mid ik ctl (pole vector)
         pm.poleVectorConstraint(self.midCtlIk, handle)
 
         # parent ik handle to end control
-        handle.setParent(self.endCtl)
+        handle.setParent(self.endCtlIk)
 
         # constraint end joint scale and rotation to end control
-        pm.orientConstraint(self.endCtl, self.endIkJoint, mo=True)
-        pm.scaleConstraint(self.endCtl, self.endIkJoint, mo=True)
+        pm.orientConstraint(self.endCtlIk, self.endIkJoint, mo=True)
+        pm.scaleConstraint(self.endCtlIk, self.endIkJoint, mo=True)
 
-        # constraint the original joint branch to the ik joint branch
-        pulse.nodes.fullConstraint(self.rootIkJoint, self.rootJoint)
-        pulse.nodes.fullConstraint(self.midIkJoint, self.midJoint)
-        pulse.nodes.fullConstraint(self.endIkJoint, self.endJoint)
+        # setup ikfk switch attr (integer, not blend)
+        self.rootCtl.addAttr("ik", min=0, max=1, at='short',
+                             defaultValue=1, keyable=1)
+        ikAttr = self.rootCtl.attr("ik")
 
-        # setup ikfk switch
-        # ...
+        # create target transforms driven by ikfk switching
+        rootTargetName = n = '{}_ikfk_target'.format(self.rootJoint)
+        rootTarget = pm.group(n=rootTargetName, em=True)
+        midTargetName = n = '{}_ikfk_target'.format(self.midJoint)
+        midTarget = pm.group(n=midTargetName, em=True)
+        endTargetName = n = '{}_ikfk_target'.format(self.endJoint)
+        endTarget = pm.group(n=endTargetName, em=True)
+
+        # create choices for world matrix from ik and fk targets
+        rootChoice = pulse.utilnodes.choice(
+            ikAttr, self.rootCtl.wm, self.rootIkJoint.wm)
+        midChoice = pulse.utilnodes.choice(
+            ikAttr, self.midCtlFk.wm, self.midIkJoint.wm)
+        endChoice = pulse.utilnodes.choice(
+            ikAttr, self.endCtlFk.wm, self.endIkJoint.wm)
+
+        pulse.utilnodes.decomposeMatrixAndConnect(
+            rootChoice, rootTarget)
+        pulse.utilnodes.decomposeMatrixAndConnect(
+            midChoice, midTarget)
+        pulse.utilnodes.decomposeMatrixAndConnect(
+            endChoice, endTarget)
+
+        pulse.nodes.fullConstraint(rootTarget, self.rootJoint)
+        pulse.nodes.fullConstraint(midTarget, self.midJoint)
+        pulse.nodes.fullConstraint(endTarget, self.endJoint)
+
+        # connect visibility
+        self.midCtlIk.v.setLocked(False)
+        self.endCtlIk.v.setLocked(False)
+        ikAttr >> self.midCtlIk.v
+        ikAttr >> self.endCtlIk.v
+
+        fkAttr = pulse.utilnodes.reverse(ikAttr)
+        self.midCtlFk.v.setLocked(False)
+        self.endCtlFk.v.setLocked(False)
+        fkAttr >> self.midCtlFk.v
+        fkAttr >> self.endCtlFk.v
 
         # cleanup
+        handle.v.set(False)
         for jnt in ikjnts:
             # TODO: lock attrs
             jnt.v.set(False)
-
-        handle.v.set(False)

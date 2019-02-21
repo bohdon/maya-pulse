@@ -17,6 +17,9 @@ ThreeBoneIKFKAction:
     - name: midCtlFk
       desc: The mid joint control during FK
       type: node
-    - name: endCtl
-      desc: The end joint control
+    - name: endCtlIk
+      desc: The end joint control during IK
+      type: node
+    - name: endCtlFk
+      desc: The end joint control during FK
       type: node
