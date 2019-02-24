@@ -294,11 +294,9 @@ class BlueprintUIModel(QtCore.QObject):
                 'BlueprintUIModel: removed scene callbacks')
 
     def onBeforeSaveScene(self, clientData=None):
-        if self.autoSave:
-            self.refreshRigExists()
-            if not self.isReadOnly():
-                LOG.debug('Auto-saving Pulse Blueprint...')
-                self.save()
+        if self.shouldAutoSaveBlueprint():
+            LOG.debug('Auto-saving Pulse Blueprint...')
+            self.save()
 
     def onAfterOpenScene(self, clientData=None):
         if self.autoLoad:
@@ -354,9 +352,29 @@ class BlueprintUIModel(QtCore.QObject):
             LOG.error(
                 "Failed to load Blueprint from file: {0}".format(filepath))
 
+    def doesBlueprintPairFileExist(self):
+        """
+        Return True if a Blueprint yaml file exists that is
+        paired to the current maya scene file.
+        """
+        filepath = self.getBlueprintFilepath()
+        if filepath:
+            return os.path.isfile(filepath)
+        return False
+
     def refreshRigExists(self):
         self.rigExists = len(pulse.getAllRigs()) > 0
         self.rigExistsChanged.emit()
+
+    def shouldAutoSaveBlueprint(self):
+        if not self.autoSave:
+            return False
+        if not self.doesBlueprintPairFileExist():
+            return False
+        self.refreshRigExists()
+        if self.isReadOnly():
+            return False
+        return True
 
     def getRigName(self):
         return self.blueprint.rigName

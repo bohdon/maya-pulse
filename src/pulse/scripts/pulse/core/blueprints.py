@@ -83,6 +83,16 @@ class Blueprint(object):
         # the config, automatically loaded when calling `getConfig`
         self.config = None
 
+    def isEmpty(self):
+        """
+        Return True if this Blueprint is empty.
+        """
+        if self.rigName.strip():
+            return False
+        if self.rootStep.numChildren > 0:
+            return False
+        return True
+
     def serialize(self):
         data = UnsortableOrderedDict()
         data['version'] = self.version
@@ -440,7 +450,8 @@ class BlueprintBuilder(object):
                              pos='topCenter', backColor=0xaa8336,
                              fade=True, fadeStayTime=3000)
         else:
-            pm.inViewMessage(amg='Build Successful', pos='topCenter', fade=True)
+            pm.inViewMessage(amg='Build Successful',
+                             pos='topCenter', fade=True)
 
     def onCancel(self):
         """
