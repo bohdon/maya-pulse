@@ -158,9 +158,8 @@ class BlueprintUIModel(QtCore.QObject):
     in the scene. All reading and writing for the Blueprint through
     the UI should be done using this model.
 
-    Blueprints edited though the UI are saved to yaml files
-    associated with a maya scene file. This model is also responsible
-    for loading and saving the blueprint yaml file.
+    Blueprints represented in this model are saved and loaded using yaml
+    files which are paired with a maya scene file.
     """
 
     # shared instances, mapped by name

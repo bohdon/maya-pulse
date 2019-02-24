@@ -16,7 +16,6 @@ from .serializer import PulseDumper, PulseLoader, UnsortableOrderedDict
 from .. import version
 
 __all__ = [
-    'BLUEPRINT_METACLASS',
     'BLUEPRINT_VERSION',
     'Blueprint',
     'BlueprintBuilder',
@@ -25,7 +24,6 @@ __all__ = [
 LOG = logging.getLogger(__name__)
 LOG.level = logging.DEBUG
 
-BLUEPRINT_METACLASS = 'pulse_blueprint'
 BLUEPRINT_VERSION = version.__version__
 
 
@@ -72,50 +70,6 @@ class Blueprint(object):
         blueprint = Blueprint()
         blueprint.deserialize(data)
         return blueprint
-
-    @staticmethod
-    def fromNode(node):
-        """
-        Load a Blueprint from a node.
-
-        Args:
-            node: A PyNode or node name containing blueprint data
-        """
-        blueprint = Blueprint()
-        blueprint.loadFromNode(node)
-        return blueprint
-
-    @staticmethod
-    def createNode(nodeName):
-        """
-        Create a new Blueprint and save it to a node by name.
-
-        Args:
-            nodeName (str): The name of the new blueprint node to create
-
-        Returns:
-            (Blueprint, PyNode) of the new Blueprint and node
-        """
-        cmds.undoInfo(openChunk=True, chunkName='Create Pulse Blueprint')
-        blueprint = Blueprint()
-        blueprint.initializeDefaultActions()
-        node = blueprint.saveToNode(nodeName, create=True)
-        cmds.undoInfo(closeChunk=True)
-        return blueprint, node
-
-    @staticmethod
-    def isBlueprintNode(node):
-        """
-        Return whether the given node is a Blueprint node
-        """
-        return meta.hasMetaClass(node, BLUEPRINT_METACLASS)
-
-    @staticmethod
-    def getAllBlueprintNodes():
-        """
-        Return all nodes in the scene with Blueprint data
-        """
-        return meta.findMetaNodes(BLUEPRINT_METACLASS)
 
     def __init__(self):
         # the name of the rig this blueprint represents
@@ -192,40 +146,6 @@ class Blueprint(object):
             return False
 
         return self.deserialize(data)
-
-    def saveToNode(self, node, create=False):
-        """
-        Save this Blueprint to a node, creating a new node if desired.
-
-        Args:
-            node (PyNode or str): A node or node name
-            create (bool): If true, create the node if necessary
-
-        Returns:
-            The node on which the blueprint was saved
-        """
-        if create and not cmds.objExists(node):
-            node = cmds.createNode('network', n=node)
-        data = self.serialize()
-        st = time.time()
-        meta.setMetaData(node, BLUEPRINT_METACLASS, data, replace=True)
-        et = time.time()
-        LOG.debug('blueprint save time: {0}s'.format(et - st))
-        return node
-
-    def loadFromNode(self, node):
-        """
-        Load Blueprint data from a node.
-
-        Args:
-            node: A PyNode or node name
-        """
-        if not Blueprint.isBlueprintNode(node):
-            LOG.warning(
-                "Node does not contain Blueprint data: {0}".format(node))
-            return
-        data = meta.getMetaData(node, BLUEPRINT_METACLASS)
-        self.deserialize(data)
 
     def actionIterator(self):
         """
@@ -588,10 +508,5 @@ class BlueprintBuilder(object):
 
             # return progress
             yield dict(index=currentActionIndex, total=totalActionCount)
-
-        # delete all blueprint nodes
-        for node in Blueprint.getAllBlueprintNodes():
-            pm.delete(node)
-        pm.select(cl=True)
 
         yield dict(index=currentActionIndex, total=totalActionCount, finish=True)
