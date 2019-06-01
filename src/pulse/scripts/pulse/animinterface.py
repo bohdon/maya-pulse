@@ -111,11 +111,19 @@ def getAnimControlInterface(ctl, excludeAttrs=None):
         attrInfo['default'] = getApproximateAttrValue(attr)
 
         if attr.type() == 'enum':
-            attrInfo['enums'] = dict(attr.getEnums())
+            attrInfo['enums'] = getEnumDictByIndex(attr.getEnums())
 
         interface['attrs'][attrName] = attrInfo
 
     return interface
+
+
+def getEnumDictByIndex(enumDict):
+    """
+    Return an EnumDict indexed by enum index, instead of
+    by the enum name, since the index is the important value when animating.
+    """
+    return dict([(v, k) for k, v in enumDict.items()])
 
 
 def getApproximateAttrValue(attr):
