@@ -91,8 +91,10 @@ def getSkinWeights(skin, indices=None, influences=None,
         skin (PyNode): A skin cluster node
         indices (list of int): If given, only return weights for the vertices
             at these indices
-        influences (?): ?
-        influencesAsStrings (?): ?
+        influences (list of PyNode): An optional list of known influences, if omitted
+            will retrieve all the influences from the skin
+        influencesAsStrings (bool): If true, return influences as strings
+            instead of PyNode objects
 
     Returns:
         A list of tuples representing each vertex and the weights for
@@ -118,8 +120,9 @@ def getSkinWeights(skin, indices=None, influences=None,
             logical = weightsPlug[i].logicalIndex()
             if logical in influences:
                 influence = influences[logical]
+                influence_value = influence.nodeName() if influencesAsStrings else influence
                 weight = weightsPlug[i].asFloat()
-                weights.append((influence, weight))
+                weights.append((influence_value, weight))
 
         result.append((vert, weights))
 
@@ -140,6 +143,7 @@ def setSkinWeights(skin, weights, prune=True):
 
     influences = getSkinInfluences(skin)
     infIdMap = dict([(v, k) for k, v in influences.items()])
+    infIdByNameMap = dict([(v.nodeName(), k) for k, v in influences.items()])
 
     # keep track of missing influences
     missingInfluences = set()
@@ -152,11 +156,15 @@ def setSkinWeights(skin, weights, prune=True):
 
         usedInfIds = []
         for inf, weight in vertWeights:
-            if inf not in infIdMap:
+            infId = infIdMap.get(inf)
+            if not infId:
+                # try retrieving by name
+                infId = infIdByNameMap.get(inf)
+
+            if not infId:
                 missingInfluences.add(inf)
                 continue
 
-            infId = infIdMap[inf]
             weightsPlug.elementByLogicalIndex(infId).setFloat(weight)
             usedInfIds.append(infId)
 
