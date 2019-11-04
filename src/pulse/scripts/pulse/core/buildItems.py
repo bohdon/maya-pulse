@@ -183,6 +183,9 @@ class BuildStep(object):
         # the BuildActionProxy for this step
         self._actionProxy = actionProxy
 
+        # is this build step currently disabled?
+        self.isDisabled = False
+
         # auto-create a basic BuildActionProxy if an actionId was given
         if actionId:
             self._actionProxy = BuildActionProxy(actionId)
@@ -222,6 +225,16 @@ class BuildStep(object):
         """
         if self._actionProxy:
             self.setName(self._actionProxy.getDisplayName())
+
+    def isDisabledInHierarchy(self):
+        """
+        Return true if this step or any of its parents is disabled
+        """
+        if self.isDisabled:
+            return True
+        if self._parent:
+            return self._parent.isDisabledInHierarchy()
+        return False
 
     def isAction(self):
         return self._actionProxy is not None
@@ -316,8 +329,7 @@ class BuildStep(object):
         """
         if self._actionProxy:
             return self._actionProxy.getColor()
-        else:
-            pass
+        return [1, 1, 1]
 
     def getIconFile(self):
         """
@@ -505,14 +517,16 @@ class BuildStep(object):
 
     def childIterator(self):
         """
-        Generator that yields this step and all children, recursively.
+        Generator that yields all children, recursively.
         """
-        yield self
-
-        if self.canHaveChildren:
-            for child in self._children:
-                for step in child.childIterator():
-                    yield step
+        if not self.canHaveChildren:
+            return
+        for child in self._children:
+            if child.isDisabled:
+                continue
+            yield child
+            for descendant in child.childIterator():
+                yield descendant
 
     def actionIterator(self):
         if self._actionProxy:
@@ -525,6 +539,10 @@ class BuildStep(object):
         """
         data = UnsortableOrderedDict()
         data['name'] = self._name
+
+        if self.isDisabled:
+            data['isDisabled'] = True
+
         if self._actionProxy:
             data['action'] = self._actionProxy.serialize()
 
@@ -541,6 +559,8 @@ class BuildStep(object):
         Args:
             data: A dict containing serialized data for this step
         """
+        self.isDisabled = data.get('isDisabled', False)
+
         if 'action' in data:
             newActionProxy = BuildActionProxy()
             newActionProxy.deserialize(data['action'])
@@ -960,7 +980,7 @@ class BuildActionProxy(BuildActionData):
         """
         Return the color of this action when represented in the UI
         """
-        return self.config.get('color')
+        return self.config.get('color', [1, 1, 1])
 
     def getIconFile(self):
         """

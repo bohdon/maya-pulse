@@ -786,23 +786,52 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
 
         elif role == QtCore.Qt.ForegroundRole:
             color = step.getColor()
-            if color:
-                return QtGui.QColor(*[c * 255 for c in color])
+            # dim color if step is disabled
+            if step.isDisabledInHierarchy():
+                color = [c * 0.4 for c in color]
+            return QtGui.QColor(*[c * 255 for c in color])
 
     def setData(self, index, value, role=QtCore.Qt.EditRole):
-        if not index.isValid():
+        if self.isReadOnly():
             return False
-
-        if role != QtCore.Qt.EditRole:
+        if not index.isValid():
             return False
 
         step = self.stepForIndex(index)
 
-        if not value:
-            value = ''
-        stepPath = step.getFullPath()
-        cmds.pulseRenameStep(stepPath, value)
-        return True
+        if role == QtCore.Qt.EditRole:
+            if not value:
+                value = ''
+            stepPath = step.getFullPath()
+            cmds.pulseRenameStep(stepPath, value)
+            return True
+
+        elif role == QtCore.Qt.CheckStateRole:
+            step.isDisabled = True if value else False
+            self.dataChanged.emit(index, index, [])
+            self._emitDataChangedOnAllChildren(index, [])
+            # emit data changed on all children
+            return True
+
+        return False
+
+    def _emitDataChangedOnAllChildren(self, parent=QtCore.QModelIndex(), roles=None):
+        if not parent.isValid():
+            return
+        rowCount = self.rowCount(parent)
+        if rowCount == 0:
+            return
+
+        firstChild = self.index(0, 0, parent)
+        lastChild = self.index(rowCount - 1, 0, parent)
+
+        # emit one event for all child indexes of parent
+        self.dataChanged.emit(firstChild, lastChild, roles)
+
+        # recursively emit on all children
+        for i in range(rowCount):
+            childIndex = self.index(i, 0, parent)
+            self._emitDataChangedOnAllChildren(childIndex, roles)
 
     def mimeTypes(self):
         return ['text/plain']

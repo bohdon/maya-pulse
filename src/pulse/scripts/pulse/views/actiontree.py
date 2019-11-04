@@ -32,6 +32,10 @@ class ActionTreeStyledItemDelegate(QtWidgets.QStyledItemDelegate):
         self.initStyleOption(opt, index)
         opt.font.setItalic(self.shouldBeItalic(index))
 
+        step = self.blueprintModel.buildStepTreeModel.stepForIndex(index)
+        if (step):
+            opt.font.setStrikeOut(step.isDisabled)
+
         super(ActionTreeStyledItemDelegate, self).paint(
             painter, opt, index)
 
@@ -67,6 +71,8 @@ class ActionTreeWidget(QtWidgets.QWidget):
                 if key == QtCore.Qt.Key_Delete:
                     self.deleteSelectedItems()
                     return True
+                elif key == QtCore.Qt.Key_D:
+                    self.toggleSelectedItemsDisabled()
                 elif key == QtCore.Qt.Key_M:
                     self.mirrorSelectedItems()
                     return True
@@ -120,6 +126,31 @@ class ActionTreeWidget(QtWidgets.QWidget):
         for path in paths:
             cmds.pulseDeleteStep(path)
         cmds.undoInfo(closeChunk=True)
+
+    def toggleSelectedItemsDisabled(self):
+        """
+        Toggle the disabled state of the selected items.
+        If item disable states are mismatched, will disable all items.
+        """
+        indexes = self.selectionModel.selectedIndexes()
+
+        if not indexes:
+            return
+
+        steps = []
+        for index in indexes:
+            step = self.model.stepForIndex(index)
+            if step:
+                steps.append((index, step))
+
+        allDisabled = all([s.isDisabled for i, s in steps])
+        newDisabled = False if allDisabled else True
+        for index, step in steps:
+            self.model.setData(index, newDisabled, QtCore.Qt.CheckStateRole)
+            # step.isDisabled = newDisabled
+
+        # for index in indexes:
+        #     self.model.dataChanged.emit(index, index, [])
 
     def mirrorSelectedItems(self):
         indexes = self.selectionModel.selectedIndexes()
