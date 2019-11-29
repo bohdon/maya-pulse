@@ -1222,8 +1222,10 @@ class BuildAction(BuildActionData):
     """
     The base class for any rigging action that can run during a build.
 
-    Both `validate` and `run` must be overridden in subclasses to
-    provide functionality when checking and building the rig.
+    Override `run` to perform the rigging operations for the action
+
+    Optionally override `validate` to perform operations that can check
+    the validity of the actions properties.
     """
 
     @staticmethod
@@ -1338,11 +1340,11 @@ class BuildAction(BuildActionData):
 
     def validate(self):
         """
-        Validate this build action. Should be implemented
+        Validate this build action. Can be implemented
         in subclasses to check the action's config data
         and raise BuildActionErrors if anything is invalid.
         """
-        raise NotImplementedError
+        pass
 
     def run(self):
         """

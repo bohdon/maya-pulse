@@ -129,12 +129,18 @@ class BuildToolbarWidget(QtWidgets.QWidget):
         pulse.openFirstRigBlueprint()
 
     def runValidation(self):
-        if self.blueprintModel.blueprint is not None:
-            pass
+        blueprint = self.blueprintModel.blueprint
+        if blueprint is not None:
+            if not pulse.BlueprintBuilder.preBuildValidate(blueprint):
+                return
+
+            validator = pulse.BlueprintValidator(blueprint)
+            validator.start()
 
     def runBuild(self):
-        if self.blueprintModel.blueprint is not None:
-            if not pulse.BlueprintBuilder.preBuildValidate(self.blueprintModel.blueprint):
+        blueprint = self.blueprintModel.blueprint
+        if blueprint is not None:
+            if not pulse.BlueprintBuilder.preBuildValidate(blueprint):
                 return
 
             # TODO: expose prompt to save scene as option
@@ -145,7 +151,7 @@ class BuildToolbarWidget(QtWidgets.QWidget):
             self.blueprintModel.save()
 
             builder = pulse.BlueprintBuilder.createBuilderWithCurrentScene(
-                self.blueprintModel.blueprint, debug=True)
+                blueprint, debug=True)
             builder.start()
 
             cmds.evalDeferred(self.onStateDirty)

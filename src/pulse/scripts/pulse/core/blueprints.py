@@ -19,6 +19,7 @@ __all__ = [
     'BLUEPRINT_VERSION',
     'Blueprint',
     'BlueprintBuilder',
+    'BlueprintValidator',
 ]
 
 LOG = logging.getLogger(__name__)
@@ -512,12 +513,27 @@ class BlueprintBuilder(object):
 
             # run the action
             action.rig = self.rig
-            try:
-                action.run()
-            except Exception as error:
-                self._onError(step, action, error)
+            self.runBuildAction(step, action)
 
             # return progress
             yield dict(index=currentActionIndex, total=totalActionCount)
 
         yield dict(index=currentActionIndex, total=totalActionCount, finish=True)
+
+    def runBuildAction(self, step, action):
+        try:
+            action.run()
+        except Exception as error:
+            self._onError(step, action, error)
+
+
+class BlueprintValidator(BlueprintBuilder):
+    """
+    Runs `validate` for all BuildActions in a Blueprint.
+    """
+
+    def runBuildAction(self, step, action):
+        try:
+            action.validate()
+        except BuildActionError as error:
+            self._onError(step, action, error)
