@@ -69,11 +69,10 @@ class BuildActionLoader(object):
                 configFile = os.path.splitext(module.__file__)[0] + '.yaml'
                 actionConfig = self.loadActionConfig(name, configFile)
                 if actionConfig:
-                    LOG.debug('Loaded BuildAction: {0}'.format(obj.__name__))
+                    LOG.debug('Loaded BuildAction: %s', obj.__name__)
                     result.append((actionConfig, obj))
                 else:
-                    LOG.error('Failed to load BuildAction: {0}'.format(
-                        obj.getTypeName()))
+                    LOG.error('Failed to load BuildAction: %s', obj)
         return result
 
     def loadActionsFromDirectory(self, startDir, pattern='*_pulseaction.py'):
