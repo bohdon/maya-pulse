@@ -189,6 +189,10 @@ class BuildActionDataForm(QtWidgets.QWidget):
         if not actionData:
             return
 
+        if actionData.isMissingConfig():
+            # TODO: add 'action not found' error ui
+            return
+
         parent = self
 
         # remove forms for non existent attrs

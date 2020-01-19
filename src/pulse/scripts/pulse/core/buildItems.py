@@ -627,6 +627,8 @@ class BuildActionData(object):
         self.configFile = None
         self._config = None
         self._attrValues = {}
+        # true if the actionId is set, but config data could not be found
+        self._isMissingConfig = False
 
         if self._actionId:
             self.retrieveActionConfig()
@@ -640,15 +642,20 @@ class BuildActionData(object):
             return self._config
         return {}
 
-    def hasConfig(self):
+    def isValid(self):
         """
-        Return True if this object has a valid actionId and
-        corresponding config loaded.
+        Return True if there is a valid config data for this action
         """
-        return self._actionId and (self._config is not None)
+        return self._config is not None
 
     def isActionIdValid(self):
         return self._actionId is not None
+
+    def isMissingConfig(self):
+        """
+        Is there no config defined for the current actionId?
+        """
+        return self._isMissingConfig
 
     def getActionId(self):
         """
@@ -669,8 +676,11 @@ class BuildActionData(object):
         """
         self._config = getBuildActionConfig(self._actionId)
         if self._config is None:
+            self._isMissingConfig = True
             LOG.warning(
                 "Failed to find action config for {0}".format(self._actionId))
+        else:
+            self._isMissingConfig = False
 
     def numAttrs(self):
         """
@@ -685,16 +695,16 @@ class BuildActionData(object):
         Returns:
             A list of dict representing all attr configs
         """
+        if not self.isValid():
+            return []
+
         return self.config['attrs']
 
     def getAttrNames(self):
         """
         Return a list of attribute names for this BuildAction class
         """
-        if not self.hasConfig():
-            return
-
-        for attr in self.config['attrs']:
+        for attr in self.getAttrs():
             yield attr['name']
 
     def hasAttrConfig(self, attrName):
@@ -718,7 +728,7 @@ class BuildActionData(object):
         Args:
             attrName (str): The name of a BuildAction attribute
         """
-        if not self.hasConfig():
+        if not self.isValid():
             return
 
         for attr in self.config['attrs']:
@@ -732,7 +742,7 @@ class BuildActionData(object):
         Args:
             attr (dict): A BuildAction attribute config object
         """
-        if not self.hasConfig():
+        if not self.isValid():
             return
 
         if 'value' in attr:
@@ -797,7 +807,7 @@ class BuildActionData(object):
         """
         data = UnsortableOrderedDict()
         data['id'] = self._actionId
-        if self.hasConfig():
+        if self.isValid():
             for attr in self.getAttrs():
                 if self.hasAttrValue(attr['name']):
                     data[attr['name']] = self._attrValues[attr['name']]
@@ -817,7 +827,7 @@ class BuildActionData(object):
             self.retrieveActionConfig()
 
         # load values for all action attrs
-        if self.hasConfig():
+        if self.isValid():
             for attr in self.getAttrs():
                 if attr['name'] in data:
                     self._attrValues[attr['name']] = data[attr['name']]
@@ -856,18 +866,10 @@ class BuildActionDataVariant(BuildActionData):
         Returns:
             A list of dict representing all attr configs
         """
+        if not self.isValid():
+            return []
+
         return [a for a in self.config['attrs'] if a['name'] in self.getVariantAttrs()]
-
-    def getAttrNames(self):
-        """
-        Return a list of attribute names for this BuildAction class
-        """
-        if not self.hasConfig():
-            return
-
-        for attr in self.config['attrs']:
-            if attr['name'] in self.getVariantAttrs():
-                yield attr['name']
 
     def isVariantAttr(self, attrName):
         """
