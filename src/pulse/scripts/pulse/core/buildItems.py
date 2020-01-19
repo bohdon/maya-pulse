@@ -22,8 +22,9 @@ __all__ = [
     'registerAction',
 ]
 
-
 LOG = logging.getLogger(__name__)
+LOG_LEVEL_KEY = 'PYLOG_%s' % LOG.name.split('.')[0].upper()
+LOG.setLevel(os.environ.get(LOG_LEVEL_KEY, 'INFO').upper())
 
 BUILDACTIONMAP = {}
 

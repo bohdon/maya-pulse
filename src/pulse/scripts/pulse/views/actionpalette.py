@@ -1,4 +1,7 @@
 
+import os
+import logging
+from functools import partial
 import maya.cmds as cmds
 
 import pulse
@@ -9,6 +12,10 @@ from .utils import createHeaderLabel
 __all__ = [
     'ActionPaletteWidget',
 ]
+
+LOG = logging.getLogger(__name__)
+LOG_LEVEL_KEY = 'PYLOG_%s' % LOG.name.split('.')[0].upper()
+LOG.setLevel(os.environ.get(LOG_LEVEL_KEY, 'INFO').upper())
 
 
 class ActionPaletteWidget(QtWidgets.QWidget):
@@ -80,8 +87,7 @@ class ActionPaletteWidget(QtWidgets.QWidget):
             btn.setStyleSheet(
                 'background-color:rgba({0}, {1}, {2}, 30)'.format(*color))
             btn.setMinimumHeight(22)
-            cmd = lambda x=actionId: self.createBuildAction(x)
-            btn.clicked.connect(cmd)
+            btn.clicked.connect(partial(self.createBuildAction, actionId))
             categoryLayouts[actionCategory].addWidget(btn)
 
         spacer = QtWidgets.QSpacerItem(
@@ -109,7 +115,10 @@ class ActionPaletteWidget(QtWidgets.QWidget):
                 BuildStep data used to create the new steps
         """
         if self.blueprintModel.isReadOnly():
+            LOG.debug('cannot create steps, blueprint is read only')
             return
+
+        LOG.debug('creating new steps at selection: %s', stepData)
 
         selIndexes = self.selectionModel.selectedIndexes()
         if not selIndexes:
@@ -119,12 +128,12 @@ class ActionPaletteWidget(QtWidgets.QWidget):
 
         def getParentAndInsertIndex(index):
             step = model.stepForIndex(index)
-            print('step', step)
+            LOG.debug('step: %s', step)
             if step.canHaveChildren:
-                print('inserting at num children')
+                LOG.debug('inserting at num children: %d', step.numChildren())
                 return step, step.numChildren()
             else:
-                print('inserting at selected + 1')
+                LOG.debug('inserting at selected + 1: %d', index.row() + 1)
                 return step.parent, index.row() + 1
 
         newPaths = []
@@ -150,12 +159,14 @@ class ActionPaletteWidget(QtWidgets.QWidget):
     def createBuildGroup(self):
         if self.blueprintModel.isReadOnly():
             return
+        LOG.debug('createBuildGroup')
         newPaths = self.createStepsForSelection()
         self.selectionModel.setSelectedItemPaths(newPaths)
 
     def createBuildAction(self, actionId):
         if self.blueprintModel.isReadOnly():
             return
+        LOG.debug('createBuildAction: %s', actionId)
         stepData = "{'action':{'id':'%s'}}" % actionId
         newPaths = self.createStepsForSelection(stepData=stepData)
         self.selectionModel.setSelectedItemPaths(newPaths)

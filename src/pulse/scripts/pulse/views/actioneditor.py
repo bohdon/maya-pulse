@@ -1,5 +1,7 @@
 # coding=utf-8
 
+import os
+import logging
 from functools import partial
 import maya.cmds as cmds
 from pulse.vendor.Qt import QtCore, QtWidgets, QtGui
@@ -21,6 +23,10 @@ __all__ = [
     'BuildActionProxyForm',
     'BuildStepForm',
 ]
+
+LOG = logging.getLogger(__name__)
+LOG_LEVEL_KEY = 'PYLOG_%s' % LOG.name.split('.')[0].upper()
+LOG.setLevel(os.environ.get(LOG_LEVEL_KEY, 'INFO').upper())
 
 
 class BuildStepForm(QtWidgets.QWidget):
@@ -189,9 +195,22 @@ class BuildActionDataForm(QtWidgets.QWidget):
         if not actionData:
             return
 
+        if not hasattr(self, 'missingLabel'):
+            self.missingLabel = None
+
         if actionData.isMissingConfig():
-            # TODO: add 'action not found' error ui
+            # add warning that the action config was not found
+            if not self.missingLabel:
+                self.missingLabel = QtWidgets.QLabel(self)
+                self.missingLabel.setText(
+                    "Failed to find action config for: `%s`" % actionData.getActionId())
+                self.attrListLayout.addWidget(self.missingLabel)
             return
+        else:
+            # remove missing label if it existed previously
+            if self.missingLabel:
+                self.attrListLayout.removeWidget(self.missingLabel)
+                self.missingLabel = None
 
         parent = self
 
