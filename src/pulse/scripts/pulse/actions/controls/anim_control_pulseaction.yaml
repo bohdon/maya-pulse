@@ -8,11 +8,15 @@ AnimControlAction:
   attrs:
     - name: controlNode
       type: node
-    - name: createOffset
-      description: Creates an offset transform to absorb local transformations on the control node
-      type: bool
-      value: True
+    - name: zeroOutMethod
+      description: Which method to use to ensure the control transform attributes are zeroed by default in the current possition
+      type: option
+      value: 1
+      options:
+        - None
+        - Freeze
+        - Create Offset
     - name: keyableAttrs
       description: Defines attributes that can be animated. All others will be locked
       type: stringlist
-      value: ['t', 'r', 's']
+      value: ["t", "r", "s"]

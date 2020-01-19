@@ -1,6 +1,5 @@
 
 import pymel.core as pm
-
 import pymetanode as meta
 
 import pulse
@@ -14,7 +13,12 @@ class AnimControlAction(pulse.BuildAction):
         # easy to search for by anim tools, etc
         meta.setMetaData(self.controlNode, self.config['controlMetaClass'], {})
 
-        if self.createOffset:
+        if self.zeroOutMethod == 1:
+            # freeze transforms
+            pm.makeIdentity(self.controlNode, apply=True, n=0,
+                            pn=True, r=True, t=True, s=True)
+        elif self.zeroOutMethod == 2:
+            # create an offset
             offsetNode = pulse.nodes.createOffsetGroup(self.controlNode)
 
         # lockup attributes
