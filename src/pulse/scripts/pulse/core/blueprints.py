@@ -10,7 +10,7 @@ import pymel.core as pm
 import maya.cmds as cmds
 import pymetanode as meta
 
-from .buildItems import BuildStep
+from .buildItems import BuildActionError, BuildStep
 from .rigs import RIG_METACLASS, createRigNode
 from .serializer import PulseDumper, PulseLoader, UnsortableOrderedDict
 from .. import version
@@ -283,23 +283,8 @@ class BlueprintBuilder(object):
         if not blueprint.rigName:
             raise ValueError("Blueprint rigName is not set")
 
-        self.blueprint = blueprint
-        self.blueprintFile = blueprintFile
-        self.debug = debug
-
-        self.log = logging.getLogger('pulse.build')
-        # the output directory for log files
-        dateStr = datetime.now().strftime('%Y-%m-%d_%H%M%S')
-        if not logDir:
-            logDir = tempfile.gettempdir()
-        logFile = os.path.join(logDir, 'pulse_build_{0}_{1}.log'.format(
-            self.blueprint.rigName, dateStr))
-        self.fileHandler = logging.FileHandler(logFile)
-        self.fileHandler.setLevel(logging.DEBUG)
-        logFormatter = logging.Formatter(
-            '%(asctime)s %(levelname)s %(name)s: %(message)s')
-        self.fileHandler.setFormatter(logFormatter)
-        self.log.handlers = [self.fileHandler]
+        # the name of this builder object, used in logs
+        self.builderName = 'Builder'
 
         self.errors = []
         self.generator = None
@@ -310,6 +295,44 @@ class BlueprintBuilder(object):
         self.startTime = None
         self.endTime = None
         self.elapsedTime = 0
+
+        # the rig root node, available after the builder starts,
+        # and createRigStructure has been called
+        self.rig = None
+
+        self.blueprint = blueprint
+        self.blueprintFile = blueprintFile
+        self.debug = debug
+
+        # create a logger, and setup a file handler
+        self.log = logging.getLogger('pulse.build')
+        self.log.setLevel(logging.DEBUG if self.debug else logging.INFO)
+        self.setupFileLogger(self.log, logDir)
+
+    def setupFileLogger(self, logger, logDir=None):
+        """
+        Create a file handler for the logger of this builder.
+        """
+        if not logDir:
+            logDir = tempfile.gettempdir()
+
+        # the output directory for log files
+        dateStr = datetime.now().strftime('%Y-%m-%d_%H%M%S')
+        rigName = self.blueprint.rigName if self.blueprint else 'test'
+        logFileName = 'pulse_build_{0}_{1}.log'.format(rigName, dateStr)
+        logFile = os.path.join(logDir, logFileName)
+
+        self.fileHandler = logging.FileHandler(logFile)
+        self.fileHandler.setLevel(logging.DEBUG)
+
+        logFormatter = logging.Formatter(
+            '%(asctime)s %(levelname)s %(name)s: %(message)s')
+        self.fileHandler.setFormatter(logFormatter)
+
+        logger.handlers = [self.fileHandler]
+
+    def closeFileLogger(self):
+        self.fileHandler.close()
 
     def start(self, run=True):
         """
@@ -410,10 +433,12 @@ class BlueprintBuilder(object):
         # record time
         self.startTime = time.time()
         # log start of build
-        self.log.info("Started building rig: {0}".format(
-            self.blueprint.rigName))
+        self.log.info(self.getStartBuildLogMessage())
         if self.debug:
             self.log.info("Debug is enabled")
+
+    def getStartBuildLogMessage(self):
+        return "Started building rig: {0}".format(self.blueprint.rigName)
 
     def onProgress(self, index, total):
         """
@@ -434,25 +459,39 @@ class BlueprintBuilder(object):
         self.endTime = time.time()
         self.elapsedTime = self.endTime - self.startTime
 
-        errorCount = len(self.errors)
         # log results
-        logMsg = "Built Rig '{0}', {1:.3f} seconds, {2} error(s)".format(
-            self.blueprint.rigName, self.elapsedTime, errorCount)
+        finishMsg = self.getFinishBuildLogMessage()
+
+        errorCount = len(self.errors)
         lvl = logging.WARNING if errorCount else logging.INFO
-        self.log.log(lvl, logMsg, extra=dict(
+        self.log.log(lvl, finishMsg, extra=dict(
             duration=self.elapsedTime,
             scenePath=self.blueprintFile,
         ))
-        self.fileHandler.close()
+
+        self.closeFileLogger()
 
         # show results with in view message
+        inViewMsg = self.getFinishBuildInViewMessage()
         if errorCount:
-            pm.inViewMessage(amg='Build Finished with {0} error(s)'.format(errorCount),
+            pm.inViewMessage(amg=inViewMsg,
                              pos='topCenter', backColor=0xaa8336,
                              fade=True, fadeStayTime=3000)
         else:
-            pm.inViewMessage(amg='Build Successful',
+            pm.inViewMessage(amg=inViewMsg,
                              pos='topCenter', fade=True)
+
+    def getFinishBuildLogMessage(self):
+        errorCount = len(self.errors)
+        return "Built Rig '{0}', {1:.3f} seconds, {2} error(s)".format(
+            self.blueprint.rigName, self.elapsedTime, errorCount)
+
+    def getFinishBuildInViewMessage(self):
+        errorCount = len(self.errors)
+        if errorCount > 0:
+            return 'Build Finished with {0} error(s)'.format(errorCount)
+        else:
+            return 'Build Successful'
 
     def onCancel(self):
         """
@@ -492,13 +531,7 @@ class BlueprintBuilder(object):
 
         yield dict(index=currentActionIndex, total=totalActionCount)
 
-        # create a new rig
-        self.rig = createRigNode(self.blueprint.rigName)
-        # add some additional meta data
-        meta.updateMetaData(self.rig, RIG_METACLASS, dict(
-            version=BLUEPRINT_VERSION,
-            blueprintFile=self.blueprintFile,
-        ))
+        self.createRigStructure()
 
         yield dict(index=currentActionIndex, total=totalActionCount)
 
@@ -520,6 +553,15 @@ class BlueprintBuilder(object):
 
         yield dict(index=currentActionIndex, total=totalActionCount, finish=True)
 
+    def createRigStructure(self):
+        # create a new rig
+        self.rig = createRigNode(self.blueprint.rigName)
+        # add some additional meta data
+        meta.updateMetaData(self.rig, RIG_METACLASS, dict(
+            version=BLUEPRINT_VERSION,
+            blueprintFile=self.blueprintFile,
+        ))
+
     def runBuildAction(self, step, action):
         try:
             action.run()
@@ -532,8 +574,35 @@ class BlueprintValidator(BlueprintBuilder):
     Runs `validate` for all BuildActions in a Blueprint.
     """
 
+    def __init__(self, *args, **kwargs):
+        super(BlueprintValidator, self).__init__(*args, **kwargs)
+        self.builderName = 'Validator'
+
+    def setupFileLogger(self, logger, logDir):
+        # no file logging for validation
+        pass
+
+    def closeFileLogger(self):
+        pass
+
+    def createRigStructure(self):
+        # do nothing, only validating
+        pass
+
+    def getStartBuildLogMessage(self):
+        return "Validating rig: {0}".format(self.blueprint.rigName)
+
+    def getFinishBuildLogMessage(self):
+        errorCount = len(self.errors)
+        return "Validated Rig '{0}': {1} error(s)".format(
+            self.blueprint.rigName, errorCount)
+
+    def getFinishBuildInViewMessage(self):
+        errorCount = len(self.errors)
+        return 'Validate Finished with {0} error(s)'.format(errorCount)
+
     def runBuildAction(self, step, action):
         try:
-            action.validate()
-        except BuildActionError as error:
+            action.runValidate()
+        except Exception as error:
             self._onError(step, action, error)

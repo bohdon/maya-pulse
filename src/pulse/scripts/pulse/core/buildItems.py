@@ -2,6 +2,7 @@
 import os
 import logging
 import re
+import maya.cmds as cmds
 import pymetanode as meta
 
 from .rigs import RIG_METACLASS
@@ -1320,6 +1321,13 @@ class BuildAction(BuildActionData):
             self._log = logging.getLogger(self.getLoggerName())
         return self._log
 
+    def getMinApiVersion(self):
+        """
+        Override to return the minimum Maya api version required for this BuildAction.
+        (This compares against `cmds.about(api=True)`)
+        """
+        return 0
+
     def getRigMetaData(self):
         """
         Return all meta data on the rig being built
@@ -1340,6 +1348,23 @@ class BuildAction(BuildActionData):
             self.log.error('Cannot update rig meta data, no rig is set')
             return
         meta.updateMetaData(self.rig, RIG_METACLASS, data)
+
+    def validateApiVersion(self):
+        """
+        Validate that the current Maya version meets the requirements for this build action
+        """
+        minApiVersion = self.getMinApiVersion()
+        if minApiVersion > 0 and cmds.about(api=True) < minApiVersion:
+            raise BuildActionError(
+                "Maya api version %s is required to use %s" % (minApiVersion, self._actionId))
+
+    def runValidate(self):
+        """
+        Runs the validate function, as well as performing some other
+        basic checks to make sure the build action is valid for use.
+        """
+        self.validateApiVersion()
+        self.validate()
 
     def validate(self):
         """

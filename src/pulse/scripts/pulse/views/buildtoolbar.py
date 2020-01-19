@@ -134,7 +134,7 @@ class BuildToolbarWidget(QtWidgets.QWidget):
             if not pulse.BlueprintBuilder.preBuildValidate(blueprint):
                 return
 
-            validator = pulse.BlueprintValidator(blueprint)
+            validator = pulse.BlueprintValidator(blueprint, debug=True)
             validator.start()
 
     def runBuild(self):
