@@ -1,6 +1,7 @@
 
 import pymel.core as pm
 import pymetanode as meta
+import maya.cmds as cmds
 
 import pulse
 import pulse.nodes
@@ -8,18 +9,22 @@ import pulse.nodes
 
 class AnimControlAction(pulse.BuildAction):
 
+    def getMinApiVersion(self):
+        if self.zeroOutMethod == 1:
+            return 20200000
+        return 0
+
     def run(self):
         # add meta class to the control, making it
         # easy to search for by anim tools, etc
         meta.setMetaData(self.controlNode, self.config['controlMetaClass'], {})
 
         if self.zeroOutMethod == 1:
-            # freeze transforms
-            pm.makeIdentity(self.controlNode, apply=True, n=0,
-                            pn=True, r=True, t=True, s=True)
+            # freeze offset matrix
+            pulse.nodes.freezeOffsetMatrix(self.controlNode)
         elif self.zeroOutMethod == 2:
-            # create an offset
-            offsetNode = pulse.nodes.createOffsetGroup(self.controlNode)
+            # create an offset transform
+            pulse.nodes.createOffsetGroup(self.controlNode)
 
         # lockup attributes
         keyableAttrs = pulse.nodes.getExpandedAttrNames(self.keyableAttrs)

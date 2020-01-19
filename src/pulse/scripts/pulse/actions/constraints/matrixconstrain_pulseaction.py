@@ -8,6 +8,9 @@ import pulse.nodes
 
 class MatrixConstrainAction(pulse.BuildAction):
 
+    def getMinApiVersion(self):
+        return 20200000
+
     def validate(self):
         if not self.leader:
             raise pulse.BuildActionError("leader must be set")

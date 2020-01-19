@@ -14,8 +14,8 @@ AnimControlAction:
       value: 1
       options:
         - None
-        - Freeze
-        - Create Offset
+        - Offset Matrix
+        - Insert Transform
     - name: keyableAttrs
       description: Defines attributes that can be animated. All others will be locked
       type: stringlist

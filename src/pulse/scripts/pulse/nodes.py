@@ -9,6 +9,8 @@ __all__ = [
     'convertScaleConstraintToWorldSpace',
     'createOffsetGroup',
     'disableColorOverride',
+    'freezeOffsetMatrix',
+    'freezeOffsetMatrixForHierarchy',
     'freezePivot',
     'freezePivotsForHierarchy',
     'freezeScalesForHierarchy',
@@ -39,6 +41,8 @@ __all__ = [
     'setRelativeMatrix',
     'setTransformHierarchy',
     'setWorldMatrix',
+    'unfreezeOffsetMatrix',
+    'unfreezeOffsetMatrixForHierarchy',
 ]
 
 
@@ -531,6 +535,46 @@ def freezePivotsForHierarchy(transform):
     setTransformHierarchy(hierarchy)
 
 
+def freezeOffsetMatrix(transform):
+    """
+    Freeze the translate, rotate, and scale of a transform
+    by moving its current local matrix values into its
+    offsetParentMatrix. This operation is idempotent.
+    (Maya 2020 and higher)
+    """
+    localMtx = transform.m.get()
+    offsetMtx = transform.offsetParentMatrix.get()
+    newOffsetMtx = localMtx * offsetMtx
+    transform.offsetParentMatrix.set(newOffsetMtx)
+    transform.setMatrix(pm.dt.Matrix())
+
+
+def freezeOffsetMatrixForHierarchy(transform):
+    children = transform.listRelatives(ad=True, type='transform')
+    for node in [transform] + children:
+        freezeOffsetMatrix(node)
+
+
+def unfreezeOffsetMatrix(transform):
+    """
+    Unfreeze the translate, rotate, and scale of a transform
+    by moving its current offset parent matrix values into its
+    translate, rotate, and scale. This operation is idempotent.
+    (Maya 2020 and higher)
+    """
+    localMtx = transform.m.get()
+    offsetMtx = transform.offsetParentMatrix.get()
+    newLocalMtx = localMtx * offsetMtx
+    transform.setMatrix(newLocalMtx)
+    transform.offsetParentMatrix.set(pm.dt.Matrix())
+
+
+def unfreezeOffsetMatrixForHierarchy(transform):
+    children = transform.listRelatives(ad=True, type='transform')
+    for node in [transform] + children:
+        unfreezeOffsetMatrix(node)
+
+
 def getEulerRotationFromMatrix(matrix):
     """
     Return the euler rotation in degrees of a matrix
@@ -548,7 +592,7 @@ def getWorldMatrix(node, negateRotateAxis=True):
     if isinstance(node, pm.nt.Transform):
         wm = pm.dt.TransformationMatrix(node.wm.get())
         if negateRotateAxis:
-            r = pm.dt.EulerRotation(pm.cmds.xform(
+            r = pm.dt.EulerRotation(cmds.xform(
                 node.longName(), q=True, ws=True, ro=True))
             wm.setRotation(r, node.getRotationOrder())
         return wm
@@ -569,8 +613,8 @@ def setWorldMatrix(node, matrix, translate=True, rotate=True, scale=True, matchA
         matrix.reorderRotation(ro)
 
     if translate:
-        pm.cmds.xform(node.longName(), ws=True,
-                      t=matrix.getTranslation('world'))
+        cmds.xform(node.longName(), ws=True,
+                   t=matrix.getTranslation('world'))
     if rotate:
         if matchAxes and any(node.ra.get()):
             # Get the source's rotation matrix
@@ -588,10 +632,10 @@ def setWorldMatrix(node, matrix, translate=True, rotate=True, scale=True, matchA
             rotation.setDisplayUnit('degrees')
         else:
             rotation = getEulerRotationFromMatrix(matrix)
-        pm.cmds.xform(node.longName(), ws=True, ro=rotation)
+        cmds.xform(node.longName(), ws=True, ro=rotation)
     if scale:
         localScaleMatrix = matrix * node.pim.get()
-        pm.cmds.xform(node.longName(), s=localScaleMatrix.getScale('world'))
+        cmds.xform(node.longName(), s=localScaleMatrix.getScale('world'))
 
 
 def matchWorldMatrix(leader, *followers):

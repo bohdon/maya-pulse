@@ -65,7 +65,7 @@ def cleanupLinks():
             unlink(node)
 
 
-def snapToLink(node, translate=True, rotate=True, scale=True):
+def snapToLink(node, translate=True, rotate=True, scale=False):
     """
     Update a node to match its followers position
     """

@@ -25,6 +25,7 @@ __all__ = [
     'createOffsetForSelected',
     'disableColorOverrideForSelected',
     'disableSegmentScaleCompensateForSelected',
+    'freezeOffsetMatricesForSelectedHierarchies',
     'freezePivotsForSelectedHierarchies',
     'freezeScalesForSelectedHierarchies',
     'getDetailedChannelBoxAttrs',
@@ -48,6 +49,7 @@ __all__ = [
     'snapToLinkForSelected',
     'toggleDetailedChannelBoxForSelected',
     'toggleLocalRotationAxesForSelected',
+    'unfreezeOffsetMatricesForSelectedHierarchies',
     'unlinkSelected',
     'unpairSelected',
 ]
@@ -187,6 +189,18 @@ def freezePivotsForSelectedHierarchies():
     with preservedSelection() as sel:
         for s in sel:
             freezePivotsForHierarchy(s)
+
+
+def freezeOffsetMatricesForSelectedHierarchies():
+    with preservedSelection() as sel:
+        for s in sel:
+            freezeOffsetMatrixForHierarchy(s)
+
+
+def unfreezeOffsetMatricesForSelectedHierarchies():
+    with preservedSelection() as sel:
+        for s in sel:
+            unfreezeOffsetMatrixForHierarchy(s)
 
 
 def parentSelected():
@@ -429,12 +443,12 @@ def unlinkSelected():
 
 
 def snapToLinkForSelected():
-    nodes = pm.selected()
-    if not nodes:
-        nodes = pulse.links.getAllLinkedNodes()
+    sel = pm.selected()
+    if not sel:
+        sel = pulse.links.getAllLinkedNodes()
         # TODO: sort by parenting hierarchy
 
-    for node in nodes:
+    for node in sel:
         pulse.links.snapToLink(node)
 
 
