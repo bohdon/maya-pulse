@@ -1,0 +1,15 @@
+MatrixConstrainAction:
+  id: Pulse.MatrixConstrain
+  displayName: Matrix Constrain
+  description: Constrain nodes using offsetParentMatrix connections
+  color: [.4, .6, .8]
+  category: Constraints
+  attrs:
+    - name: leader
+      type: node
+    - name: follower
+      type: node
+    - name: preservePosition
+      description: If true, preserve the followers world space position after the connection is made
+      type: bool
+      value: true
