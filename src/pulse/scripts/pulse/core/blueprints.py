@@ -1,7 +1,6 @@
 
 import os
 import logging
-import traceback
 import tempfile
 import time
 from datetime import datetime
@@ -10,7 +9,7 @@ import pymel.core as pm
 import maya.cmds as cmds
 import pymetanode as meta
 
-from .buildItems import BuildActionError, BuildStep
+from .buildItems import BuildStep
 from .rigs import RIG_METACLASS, createRigNode
 from .serializer import PulseDumper, PulseLoader, UnsortableOrderedDict
 from .. import version
@@ -116,7 +115,7 @@ class Blueprint(object):
         Returns:
             True if the load was successful
         """
-        LOG.debug("Loading blueprint: {0}".format(filepath))
+        LOG.debug("Loading blueprint: %s", filepath)
 
         try:
             with open(filepath, 'rb') as fp:
@@ -135,7 +134,7 @@ class Blueprint(object):
         if not sceneName:
             return False
 
-        LOG.debug("Saving blueprint: {0}".format(filepath))
+        LOG.debug("Saving blueprint: %s", filepath)
 
         data = self.serialize()
         with open(filepath, 'wb') as fp:
@@ -183,7 +182,7 @@ class Blueprint(object):
         else:
             step = self.rootStep.getChildByPath(path)
             if not step:
-                LOG.warning("could not find BuildStep: {0}".format(path))
+                LOG.warning("could not find BuildStep: %s", path)
             return step
 
     def initializeDefaultActions(self):
@@ -309,7 +308,7 @@ class BlueprintBuilder(object):
         self.log.setLevel(logging.DEBUG if self.debug else logging.INFO)
         self.setupFileLogger(self.log, logDir)
 
-    def setupFileLogger(self, logger, logDir=None):
+    def setupFileLogger(self, logger, logDir):
         """
         Create a file handler for the logger of this builder.
         """
@@ -433,12 +432,13 @@ class BlueprintBuilder(object):
         # record time
         self.startTime = time.time()
         # log start of build
-        self.log.info(self.getStartBuildLogMessage())
-        if self.debug:
-            self.log.info("Debug is enabled")
+        startMsg = self.getStartBuildLogMessage()
+        if startMsg:
+            self.log.info(startMsg)
 
     def getStartBuildLogMessage(self):
-        return "Started building rig: {0}".format(self.blueprint.rigName)
+        return "Started building rig: {0} (debug={1})".format(
+            self.blueprint.rigName, self.debug)
 
     def onProgress(self, index, total):
         """
@@ -510,48 +510,39 @@ class BlueprintBuilder(object):
         Args:
             step (BuildStep): The step on which the error occurred
             action (BuildAction): The action for which the error occurred
-            error: The exception that occurred
+            error (Exception): The exception that occurred
         """
-        if self.debug:
-            # when debugging, show stack trace
-            self.log.error('{0}'.format(
-                step.getFullPath()), exc_info=True)
-            traceback.print_exc()
-        else:
-            self.log.error('{0} ({1}): {2}'.format(
-                step.getFullPath(), action.getActionId(), error))
+        self.log.error('%s (%s): %s', step.getFullPath(),
+                       action.getActionId(), error)
 
     def buildGenerator(self):
         """
         This is the main iterator for performing all build operations.
         It runs all BuildSteps and BuildActions in order.
         """
-        currentActionIndex = 0
-        totalActionCount = 0
+        index = 0
+        actionCount = 0
 
-        yield dict(index=currentActionIndex, total=totalActionCount)
+        yield dict(index=index, total=actionCount)
 
         self.createRigStructure()
 
-        yield dict(index=currentActionIndex, total=totalActionCount)
+        yield dict(index=index, total=actionCount)
 
         # recursively iterate through all build actions
         allActions = list(self.blueprint.actionIterator())
-        totalActionCount = len(allActions)
-        for currentActionIndex, (step, action) in enumerate(allActions):
-            # TODO: yield actions in groups so we can know how many are in each step?
-            path = step.getFullPath()
-            self.log.info(
-                '[{0}/{1}] {path}'.format(currentActionIndex + 1, totalActionCount, path=path))
+        actionCount = len(allActions)
+        for index, (step, action) in enumerate(allActions):
+            # TODO: include more data somehow so we can track variant action indexes
 
             # run the action
             action.rig = self.rig
-            self.runBuildAction(step, action)
+            self.runBuildAction(step, action, index, actionCount)
 
             # return progress
-            yield dict(index=currentActionIndex, total=totalActionCount)
+            yield dict(index=index, total=actionCount)
 
-        yield dict(index=currentActionIndex, total=totalActionCount, finish=True)
+        yield dict(index=index, total=actionCount, finish=True)
 
     def createRigStructure(self):
         # create a new rig
@@ -562,7 +553,9 @@ class BlueprintBuilder(object):
             blueprintFile=self.blueprintFile,
         ))
 
-    def runBuildAction(self, step, action):
+    def runBuildAction(self, step, action, index, actionCount):
+        path = step.getFullPath()
+        self.log.info('[%s/%s] %s', index + 1, actionCount, path)
         try:
             action.run()
         except Exception as error:
@@ -590,7 +583,7 @@ class BlueprintValidator(BlueprintBuilder):
         pass
 
     def getStartBuildLogMessage(self):
-        return "Validating rig: {0}".format(self.blueprint.rigName)
+        return
 
     def getFinishBuildLogMessage(self):
         errorCount = len(self.errors)
@@ -601,7 +594,7 @@ class BlueprintValidator(BlueprintBuilder):
         errorCount = len(self.errors)
         return 'Validate Finished with {0} error(s)'.format(errorCount)
 
-    def runBuildAction(self, step, action):
+    def runBuildAction(self, step, action, index, actionCount):
         try:
             action.runValidate()
         except Exception as error:
