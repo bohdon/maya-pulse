@@ -12,42 +12,42 @@ class ThreeBoneIKFKAction(pulse.BuildAction):
 
     def validate(self):
         if not self.endJoint:
-            raise pulse.BuildActionError('endJoint is not set')
+            raise pulse.BuildActionError('endJoint must be set')
         if not self.rootCtl:
-            raise pulse.BuildActionError('rootCtl is not set')
+            raise pulse.BuildActionError('rootCtl must be set')
         if not self.midCtlIk:
-            raise pulse.BuildActionError('midCtlIk is not set')
+            raise pulse.BuildActionError('midCtlIk must be set')
         if not self.midCtlFk:
-            raise pulse.BuildActionError('midCtlFk is not set')
+            raise pulse.BuildActionError('midCtlFk must be set')
         if not self.endCtlIk:
-            raise pulse.BuildActionError('endCtlIk is not set')
+            raise pulse.BuildActionError('endCtlIk must be set')
         if not self.endCtlFk:
-            raise pulse.BuildActionError('endCtlFk is not set')
+            raise pulse.BuildActionError('endCtlFk must be set')
 
     def run(self):
         # retrieve mid and root joints
-        self.midJoint = self.endJoint.getParent()
-        self.rootJoint = self.midJoint.getParent()
+        midJoint = self.endJoint.getParent()
+        rootJoint = midJoint.getParent()
 
         # duplicate joints for ik chain
         ikJointNameFmt = '{0}_ik'
         ikjnts = pulse.nodes.duplicateBranch(
-            self.rootJoint, self.endJoint, nameFmt=ikJointNameFmt)
+            rootJoint, self.endJoint, nameFmt=ikJointNameFmt)
         for j in ikjnts:
             # TODO: debug settings for build actions
             j.v.set(True)
-        self.rootIkJoint = ikjnts[0]
-        self.midIkJoint = ikjnts[1]
-        self.endIkJoint = ikjnts[2]
+        rootIkJoint = ikjnts[0]
+        midIkJoint = ikjnts[1]
+        endIkJoint = ikjnts[2]
 
         # parent ik joints to root control
-        self.rootIkJoint.setParent(self.rootCtl)
+        rootIkJoint.setParent(self.rootCtl)
 
         # create ik and hook up pole object and controls
         handle, effector = pm.ikHandle(
-            name="{0}_ikHandle".format(self.endIkJoint),
-            startJoint=self.rootIkJoint,
-            endEffector=self.endIkJoint,
+            name="{0}_ikHandle".format(endIkJoint),
+            startJoint=rootIkJoint,
+            endEffector=endIkJoint,
             solver="ikRPsolver")
 
         # add twist attr to end control
@@ -61,8 +61,8 @@ class ThreeBoneIKFKAction(pulse.BuildAction):
         handle.setParent(self.endCtlIk)
 
         # constraint end joint scale and rotation to end control
-        pm.orientConstraint(self.endCtlIk, self.endIkJoint, mo=True)
-        pm.scaleConstraint(self.endCtlIk, self.endIkJoint, mo=True)
+        pm.orientConstraint(self.endCtlIk, endIkJoint, mo=True)
+        pm.scaleConstraint(self.endCtlIk, endIkJoint, mo=True)
 
         # setup ikfk switch attr (integer, not blend)
         self.rootCtl.addAttr("ik", min=0, max=1, at='short',
@@ -70,9 +70,9 @@ class ThreeBoneIKFKAction(pulse.BuildAction):
         ikAttr = self.rootCtl.attr("ik")
 
         # create target transforms driven by ikfk switching
-        rootTargetName = n = '{}_ikfk_target'.format(self.rootJoint)
+        rootTargetName = n = '{}_ikfk_target'.format(rootJoint)
         rootTarget = pm.group(n=rootTargetName, em=True, p=self.rootCtl)
-        midTargetName = n = '{}_ikfk_target'.format(self.midJoint)
+        midTargetName = n = '{}_ikfk_target'.format(midJoint)
         midTarget = pm.group(n=midTargetName, em=True, p=self.rootCtl)
         endTargetName = n = '{}_ikfk_target'.format(self.endJoint)
         endTarget = pm.group(n=endTargetName, em=True, p=self.rootCtl)
@@ -82,11 +82,11 @@ class ThreeBoneIKFKAction(pulse.BuildAction):
 
         # create choices for world matrix from ik and fk targets
         rootChoice = pulse.utilnodes.choice(
-            ikAttr, self.rootCtl.wm, self.rootIkJoint.wm)
+            ikAttr, self.rootCtl.wm, rootIkJoint.wm)
         midChoice = pulse.utilnodes.choice(
-            ikAttr, self.midCtlFk.wm, self.midIkJoint.wm)
+            ikAttr, self.midCtlFk.wm, midIkJoint.wm)
         endChoice = pulse.utilnodes.choice(
-            ikAttr, self.endCtlFk.wm, self.endIkJoint.wm)
+            ikAttr, self.endCtlFk.wm, endIkJoint.wm)
 
         pulse.utilnodes.decomposeMatrixAndConnect(
             rootChoice, rootTarget)
@@ -95,8 +95,8 @@ class ThreeBoneIKFKAction(pulse.BuildAction):
         pulse.utilnodes.decomposeMatrixAndConnect(
             endChoice, endTarget)
 
-        pulse.nodes.fullConstraint(rootTarget, self.rootJoint)
-        pulse.nodes.fullConstraint(midTarget, self.midJoint)
+        pulse.nodes.fullConstraint(rootTarget, rootJoint)
+        pulse.nodes.fullConstraint(midTarget, midJoint)
         pulse.nodes.fullConstraint(endTarget, self.endJoint)
 
         # connect visibility
@@ -115,8 +115,8 @@ class ThreeBoneIKFKAction(pulse.BuildAction):
         if self.addPoleLine:
             # keep consistent color overrides for the mid ctl
             color = pulse.nodes.getOverrideColor(self.midCtlIk)
-            lineShape = pulse.controlshapes.createLineShape(
-                self.midIkJoint, self.midCtlIk, self.midCtlIk)
+            pulse.controlshapes.createLineShape(
+                midIkJoint, self.midCtlIk, self.midCtlIk)
             if color:
                 pulse.nodes.setOverrideColor(self.midCtlIk, color)
 

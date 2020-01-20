@@ -3,11 +3,12 @@ import pymel.core as pm
 
 import pulse
 
+
 class DisplayLayerAction(pulse.BuildAction):
 
     def validate(self):
         if not len(self.name):
-            raise pulse.BuildActionError('No name was given for display layer')
+            raise pulse.BuildActionError('name cannot be empty')
 
     def run(self):
         layer = pm.ls(self.name)
@@ -21,4 +22,3 @@ class DisplayLayerAction(pulse.BuildAction):
         layer.shading.set(self.shading)
         layer.texturing.set(self.texturing)
         layer.playback.set(self.playback)
-

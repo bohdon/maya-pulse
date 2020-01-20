@@ -14,6 +14,10 @@ class AnimControlAction(pulse.BuildAction):
             return 20200000
         return 0
 
+    def validate(self):
+        if not self.controlNode:
+            raise pulse.BuildActionError('controlNode is not set')
+
     def run(self):
         # add meta class to the control, making it
         # easy to search for by anim tools, etc

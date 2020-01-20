@@ -24,9 +24,9 @@ class BindSkinAction(pulse.BuildAction):
 
     def validate(self):
         if not len(self.meshes):
-            raise pulse.BuildActionError('No meshes found to bind')
+            raise pulse.BuildActionError('meshes must have at least one value')
         if not len(self.joints):
-            raise pulse.BuildActionError('No joints found to bind')
+            raise pulse.BuildActionError('joints must have at least one value')
 
     def run(self):
         bindkwargs = dict(
@@ -69,19 +69,21 @@ class ApplySkinWeightsAction(pulse.BuildAction):
 
     def validate(self):
         if not len(self.meshes):
-            raise pulse.BuildActionError('No meshes were set')
-        if not self.fileName:
-            raise pulse.BuildActionError('No filename was set')
+            raise pulse.BuildActionError('meshes must have at least one value')
+        filePath = self.getWeightsFilePath()
+        if not os.path.isfile(filePath):
+            raise pulse.BuildActionError('file not found: %s' % filePath)
 
     def run(self):
-        # get full path
-        blueprintPath = str(pm.sceneName())
-        if not self.fileName:
-            # default to blueprint file name
-            filePath = os.path.splitext(blueprintPath)[0] + '.weights'
-        else:
-            filePath = os.path.join(
-                os.path.dirname(blueprintPath), self.fileName)
-
+        filePath = self.getWeightsFilePath()
         skins = [pulse.skins.getSkinFromMesh(m) for m in self.meshes]
         pulse.skins.applySkinWeightsFromFile(filePath, *skins)
+
+    def getWeightsFilePath(self):
+        blueprintPath = str(pm.sceneName())
+        if self.fileName:
+            return os.path.join(
+                os.path.dirname(blueprintPath), self.fileName).replace('\\', '/')
+        else:
+            # default to blueprint file name
+            return os.path.splitext(blueprintPath)[0] + '.weights'

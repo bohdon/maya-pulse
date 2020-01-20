@@ -10,6 +10,10 @@ class RenameSceneAction(pulse.BuildAction):
     Renames the current maya scene.
     """
 
+    def validate(self):
+        if not self.filename:
+            raise pulse.BuildActionError('Filename cannot be empty')
+
     def run(self):
         sceneName = pm.sceneName()
         rigData = self.getRigMetaData()

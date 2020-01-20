@@ -15,7 +15,6 @@ class BuildCoreHierarchyAction(pulse.BuildAction):
     """
 
     def run(self):
-
         if self.groupName:
             grpNode = pm.group(name=self.groupName, em=True, p=self.rig)
             for a in ('tx', 'ty', 'tz', 'rx', 'ry', 'rz', 'sx', 'sy', 'sz'):
@@ -28,7 +27,6 @@ class BuildCoreHierarchyAction(pulse.BuildAction):
 
         else:
             grpNode = self.rig
-
 
         # parent nodes to this group
         nodes = self.nodes

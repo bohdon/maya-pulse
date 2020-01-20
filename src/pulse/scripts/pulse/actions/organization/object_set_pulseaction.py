@@ -8,7 +8,7 @@ class ObjectSetAction(pulse.BuildAction):
 
     def validate(self):
         if not len(self.name):
-            raise pulse.BuildActionError('No name was given for object set')
+            raise pulse.BuildActionError('name cannot be empty')
 
     def run(self):
         objectSet = pm.ls(self.name)
