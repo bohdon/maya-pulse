@@ -76,9 +76,6 @@ class ThreeBoneIKFKAction(pulse.BuildAction):
         midTarget = pm.group(n=midTargetName, em=True, p=self.rootCtl)
         endTargetName = n = '{}_ikfk_target'.format(self.endJoint)
         endTarget = pm.group(n=endTargetName, em=True, p=self.rootCtl)
-        # target transforms operate in world space
-        for target in (rootTarget, midTarget, endTarget):
-            target.inheritsTransform.set(False)
 
         # create choices for world matrix from ik and fk targets
         rootChoice = pulse.utilnodes.choice(
@@ -88,12 +85,10 @@ class ThreeBoneIKFKAction(pulse.BuildAction):
         endChoice = pulse.utilnodes.choice(
             ikAttr, self.endCtlFk.wm, endIkJoint.wm)
 
-        pulse.utilnodes.decomposeMatrixAndConnect(
-            rootChoice, rootTarget)
-        pulse.utilnodes.decomposeMatrixAndConnect(
-            midChoice, midTarget)
-        pulse.utilnodes.decomposeMatrixAndConnect(
-            endChoice, endTarget)
+        # connect the target matrices to the target transform nodes
+        pulse.utilnodes.connectMatrix(rootChoice, rootTarget)
+        pulse.utilnodes.connectMatrix(midChoice, midTarget)
+        pulse.utilnodes.connectMatrix(endChoice, endTarget)
 
         pulse.nodes.fullConstraint(rootTarget, rootJoint)
         pulse.nodes.fullConstraint(midTarget, midJoint)

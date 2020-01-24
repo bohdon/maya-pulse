@@ -513,7 +513,7 @@ class BlueprintBuilder(object):
             error (Exception): The exception that occurred
         """
         self.log.error('%s (%s): %s', step.getFullPath(),
-                       action.getActionId(), error)
+                       action.getActionId(), error, exc_info=True)
 
     def buildGenerator(self):
         """

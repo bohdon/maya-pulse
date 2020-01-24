@@ -1,5 +1,6 @@
 
 import logging
+import maya.cmds as cmds
 import pymel.core as pm
 
 from . import nodes
@@ -514,6 +515,24 @@ def decomposeMatrixAndConnect(matrix, transform):
     decomp.outputRotate >> transform.rotate
     decomp.outputScale >> transform.scale
     return decomp
+
+
+def connectMatrix(matrix, transform):
+    """
+    A generalized function for connecting a matrix to a transform.
+    For Maya 2020 and higher this uses offsetParentMatrix connections.
+    For Maya 2019 and below this uses a decompose matrix node and
+    connections to translate, rotate, and scale. Assumes the connect
+    is world space, and will disable inheritsTransform on the target.
+    """
+    if cmds.about(api=True) >= 20200000:
+        transform.t.set(0, 0, 0)
+        transform.r.set(0, 0, 0)
+        transform.s.set(1, 1, 1)
+        nodes.connectOffsetMatrix(
+            matrix, transform, preservePosition=False, preserveTransformValues=False)
+    else:
+        transform.inheritsTransform.set(False)
 
 
 def createUtilityNode(nodeType, **kwargs):

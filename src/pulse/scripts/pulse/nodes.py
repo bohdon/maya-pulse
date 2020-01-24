@@ -482,7 +482,7 @@ def connectOffsetMatrix(leader, follower, preservePosition=True,
     (Maya 2020 and higher)
 
     Args:
-        leader (PyNode): A node to use as the leader
+        leader (PyNode or matrix Attribute): A node to use as the leader
         follower (PyNode): A node to use as the follower
         preservePosition (bool): If true, preserve the followers world space position
         preserveTransformValues (bool): If true, preservePosition will not affect the
@@ -492,9 +492,22 @@ def connectOffsetMatrix(leader, follower, preservePosition=True,
             will be moved into the multMatrix node.
         keepInheritTransform (bool): If true, inheritsTransform will not be changed
     """
+    # this order is important because Attributes are subclasses of PyNodes
+    if isinstance(leader, pm.Attribute):
+        if not leader.type() == 'matrix':
+            raise ValueError(
+                'Expected matrix attribute, got %s' % leader.type())
+        inputMatrix = leader
+    elif isinstance(leader, pm.PyNode):
+        inputMatrix = leader.wm
+    else:
+        raise ValueError(
+            'Expected PyNode or Attribute for leader, got: %s' % type(leader))
+
     if not preservePosition:
-        # just connect, nothing else
-        leader.wm >> follower.offsetParentMatrix
+        inputMatrix >> follower.offsetParentMatrix
+        if not keepInheritTransform:
+            follower.inheritsTransform.set(False)
     else:
         # remember world matrix
         wm = getWorldMatrix(follower)
@@ -507,15 +520,15 @@ def connectOffsetMatrix(leader, follower, preservePosition=True,
 
         if preserveTransformValues:
             # m needs to stay the same, opm will be connected to a matrix
-            # that includes both the new parent matrix (leader world matrix)
+            # that includes both the new parent matrix (input matrix)
             # and the delta between that and the old follower world matrix
-            deltaToOldWM = follower.im.get() * wm * leader.wim.get()
+            deltaToOldWM = follower.im.get() * wm * inputMatrix.get().inverse()
             mult = pm.createNode('multMatrix', n='multMatrix_opm_con')
             mult.matrixIn[0].set(deltaToOldWM)
-            leader.wm >> mult.matrixIn[1]
+            inputMatrix >> mult.matrixIn[1]
             mult.matrixSum >> follower.offsetParentMatrix
         else:
-            leader.wm >> follower.offsetParentMatrix
+            inputMatrix >> follower.offsetParentMatrix
             # restore world matrix (absorbed into local matrix)
             setWorldMatrix(follower, wm)
 
@@ -537,7 +550,8 @@ def disconnectOffsetMatrix(follower, preservePosition=True,
     """
     if not preservePosition:
         follower.opm.disconnect()
-        follower.inheritsTransform.set(True)
+        if not keepInheritTransform:
+            follower.inheritsTransform.set(True)
     else:
         # remember world matrix
         wm = getWorldMatrix(follower)
