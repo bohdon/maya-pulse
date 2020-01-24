@@ -1,4 +1,5 @@
 
+import os
 import logging
 import pymel.core as pm
 import maya.cmds as cmds
@@ -6,9 +7,11 @@ import maya.cmds as cmds
 
 __all__ = [
     'areNodesAligned',
+    'connectOffsetMatrix',
     'convertScaleConstraintToWorldSpace',
     'createOffsetGroup',
     'disableColorOverride',
+    'disconnectOffsetMatrix',
     'freezeOffsetMatrix',
     'freezeOffsetMatrixForHierarchy',
     'freezePivot',
@@ -45,8 +48,9 @@ __all__ = [
     'unfreezeOffsetMatrixForHierarchy',
 ]
 
-
 LOG = logging.getLogger(__name__)
+LOG_LEVEL_KEY = 'PYLOG_%s' % LOG.name.split('.')[0].upper()
+LOG.setLevel(os.environ.get(LOG_LEVEL_KEY, 'INFO').upper())
 
 
 # Node Retrieval
@@ -469,8 +473,98 @@ def fullConstraint(leader, follower):
     return pc, sc
 
 
+def connectOffsetMatrix(leader, follower, preservePosition=True,
+                        preserveTransformValues=True, keepInheritTransform=False):
+    """
+    Connect the world matrix of a node to the offsetParentMatrix of another node,
+    and disable inheritsTransform on the follower, effectively changing the parent
+    matrix to the new leader.
+    (Maya 2020 and higher)
+
+    Args:
+        leader (PyNode): A node to use as the leader
+        follower (PyNode): A node to use as the follower
+        preservePosition (bool): If true, preserve the followers world space position
+        preserveTransformValues (bool): If true, preservePosition will not affect the
+            current translate, rotate, and scale values of the follower by inserting
+            a multMatrix node to handle any existing offsets. This is necessary
+            if offsetParentMatrix has a non-identity value, in which case the value
+            will be moved into the multMatrix node.
+        keepInheritTransform (bool): If true, inheritsTransform will not be changed
+    """
+    if not preservePosition:
+        # just connect, nothing else
+        leader.wm >> follower.offsetParentMatrix
+    else:
+        # remember world matrix
+        wm = getWorldMatrix(follower)
+
+        # disable inherit transform to make the connection
+        # effectively replace any previous parent matrix
+        # contributors, so that the new connection is absolute
+        if not keepInheritTransform:
+            follower.inheritsTransform.set(False)
+
+        if preserveTransformValues:
+            # m needs to stay the same, opm will be connected to a matrix
+            # that includes both the new parent matrix (leader world matrix)
+            # and the delta between that and the old follower world matrix
+            deltaToOldWM = follower.im.get() * wm * leader.wim.get()
+            mult = pm.createNode('multMatrix', n='multMatrix_opm_con')
+            mult.matrixIn[0].set(deltaToOldWM)
+            leader.wm >> mult.matrixIn[1]
+            mult.matrixSum >> follower.offsetParentMatrix
+        else:
+            leader.wm >> follower.offsetParentMatrix
+            # restore world matrix (absorbed into local matrix)
+            setWorldMatrix(follower, wm)
+
+
+def disconnectOffsetMatrix(follower, preservePosition=True,
+                           preserveTransformValues=True, keepInheritTransform=False):
+    """
+    Disconnect any inputs to the offsetParentMatrix of a node,
+    and re-enable inheritsTransform.
+    (Maya 2020 and higher)
+
+    Args:
+        follower (PyNode): A node with input connections to offsetParentMatrix
+        preservePosition (bool): If true, preserve the followers world space position
+        preserveTransformValues (bool): If true, preservePosition will not affect the
+            current translate, rotate, and scale values of the follower by absorbing
+            any offset into the follower's offsetParentMatrix.
+        keepInheritTransform (bool): If true, inheritsTransform will not be changed
+    """
+    if not preservePosition:
+        follower.opm.disconnect()
+        follower.inheritsTransform.set(True)
+    else:
+        # remember world matrix
+        wm = getWorldMatrix(follower)
+
+        # enable inherit transform so that its as if previously
+        # replaced parent matrix contributors are restored
+        if not keepInheritTransform:
+            follower.inheritsTransform.set(True)
+
+        follower.opm.disconnect()
+
+        if preserveTransformValues:
+            # m needs to stay the same, opm will be set to the delta
+            # between the new parent matrix (parent node's world matrix,
+            # without this nodes opm) and the old follower world matrix.
+            pmWithoutOpm = follower.opm.get().inverse() * follower.pm.get()
+            deltaToOldOM = follower.im.get() * wm * pmWithoutOpm.inverse()
+            follower.opm.set(deltaToOldOM)
+        else:
+            # zero out opm and restore world matrix
+            follower.opm.set(pm.dt.Matrix())
+            setWorldMatrix(follower, wm)
+
+
 # Transform Modification
 # ----------------------
+
 
 def freezeScalesForHierarchy(transform):
     """
@@ -542,6 +636,10 @@ def freezeOffsetMatrix(transform):
     offsetParentMatrix. This operation is idempotent.
     (Maya 2020 and higher)
     """
+    if not transform.offsetParentMatrix.isSettable():
+        LOG.warning(
+            'Cannot freeze %s offset matrix, offsetParentMatrix is not settable', transform)
+        return
     localMtx = transform.m.get()
     offsetMtx = transform.offsetParentMatrix.get()
     newOffsetMtx = localMtx * offsetMtx
@@ -562,6 +660,10 @@ def unfreezeOffsetMatrix(transform):
     translate, rotate, and scale. This operation is idempotent.
     (Maya 2020 and higher)
     """
+    if not transform.offsetParentMatrix.isSettable():
+        LOG.warning(
+            'Cannot unfreeze %s offset matrix, offsetParentMatrix is not settable', transform)
+        return
     localMtx = transform.m.get()
     offsetMtx = transform.offsetParentMatrix.get()
     newLocalMtx = localMtx * offsetMtx
@@ -607,7 +709,7 @@ def setWorldMatrix(node, matrix, translate=True, rotate=True, scale=True, matchA
     if not isinstance(matrix, pm.dt.TransformationMatrix):
         matrix = pm.dt.TransformationMatrix(matrix)
 
-    # Conver the rotation order
+    # Convert the rotation order
     ro = node.getRotationOrder()
     if ro != matrix.rotationOrder():
         matrix.reorderRotation(ro)
