@@ -18,12 +18,5 @@ class MatrixConstrainAction(pulse.BuildAction):
             raise pulse.BuildActionError("follower must be set")
 
     def run(self):
-        if self.preservePosition:
-            # preserve world space matrix of the follower,
-            # since it may jump once we connect a non-zero parent matrix
-            wm = pulse.nodes.getWorldMatrix(self.follower)
-
-        self.leader.worldMatrix >> self.follower.offsetParentMatrix
-
-        if self.preservePosition:
-            pulse.nodes.setWorldMatrix(self.follower, wm)
+        pulse.nodes.connectOffsetMatrix(
+            self.leader, self.follower, True, self.preservePosition)
