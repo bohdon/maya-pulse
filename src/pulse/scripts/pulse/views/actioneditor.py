@@ -40,6 +40,9 @@ class BuildStepForm(QtWidgets.QWidget):
             index (QModelIndex): The index of the BuildStep
         """
         super(BuildStepForm, self).__init__(parent=parent)
+        self.displayNameLabel = None
+        self.actionForm = None
+
         self.index = QtCore.QPersistentModelIndex(index)
         self.setupUi(self)
         self.index.model().dataChanged.connect(self.onModelDataChanged)
@@ -54,7 +57,8 @@ class BuildStepForm(QtWidgets.QWidget):
         if not step:
             return
 
-        self.displayNameLabel.setText(step.getDisplayName())
+        if self.displayNameLabel:
+            self.displayNameLabel.setText(step.getDisplayName())
 
     def step(self):
         """
@@ -129,7 +133,10 @@ class BuildStepForm(QtWidgets.QWidget):
         layout.setSpacing(0)
 
         if step.isAction():
-            self.actionForm = BuildActionProxyForm(self.index, parent)
+            formCls = step.actionProxy.getEditorFormClass()
+            if not formCls:
+                formCls = BuildActionProxyForm
+            self.actionForm = formCls(self.index, parent)
             layout.addWidget(self.actionForm)
 
 
@@ -346,9 +353,12 @@ class BuildActionProxyForm(QtWidgets.QWidget):
 
     def __init__(self, index, parent=None):
         super(BuildActionProxyForm, self).__init__(parent=parent)
+        self.variantsLabel = None
+        self.variantListLayout = None
+
         self.index = QtCore.QPersistentModelIndex(index)
         self.hasVariantsUi = False
-        self.setupUi(self)
+        self.layout = self.setupUi(self)
         self.updateVariantFormList()
         self.index.model().dataChanged.connect(self.onModelDataChanged)
 
@@ -384,10 +394,11 @@ class BuildActionProxyForm(QtWidgets.QWidget):
         Build the content ui for this BatchBuildAction.
         Creates ui to manage the array of variant attributes.
         """
-
         layout = QtWidgets.QVBoxLayout(parent)
         layout.setSpacing(4)
         layout.setMargin(0)
+
+        self.setupLayoutHeader(parent, layout)
 
         # form for all main / invariant attributes
         mainAttrForm = MainBuildActionDataForm(self.index, parent=parent)
@@ -401,6 +412,15 @@ class BuildActionProxyForm(QtWidgets.QWidget):
         if self.shouldSetupVariantsUi():
             self.setupVariantsUi(parent, layout)
             self.hasVariantsUi = True
+
+        return layout
+
+    def setupLayoutHeader(self, parent, layout):
+        """
+        Called after the main layout has been created, before the
+        main action data form or variants forms have been added to the layout.
+        """
+        pass
 
     def setupVariantsUi(self, parent, layout):
         # variant header

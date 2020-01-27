@@ -973,6 +973,12 @@ class BuildActionProxy(BuildActionData):
         self._variantAttrs = []
         # all BuildActionDataVariant instances in this proxy
         self._variants = []
+    
+    def getEditorFormClass(self):
+        """
+        Return the custom BuildActionProxyForm class to use for this action
+        """
+        return self.config.get('editorFormClassObj')
 
     def getDisplayName(self):
         """

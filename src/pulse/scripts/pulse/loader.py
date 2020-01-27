@@ -7,6 +7,7 @@ from fnmatch import fnmatch
 import pulse.vendor.yaml as yaml
 
 from . import core
+from . import views
 
 
 __all__ = [
@@ -65,15 +66,35 @@ class BuildActionLoader(object):
             if (isinstance(obj, type) and issubclass(obj, core.BuildAction) and
                     obj is not core.BuildAction):
                 # get config for the action class
-                actionName = obj.__name__
                 configFile = os.path.splitext(module.__file__)[0] + '.yaml'
                 actionConfig = self.loadActionConfig(name, configFile)
                 if actionConfig:
+                    self.postProcessActionConfig(actionConfig, name, module)
                     LOG.debug('Loaded BuildAction: %s', obj.__name__)
                     result.append((actionConfig, obj))
                 else:
                     LOG.error('Failed to load BuildAction: %s', obj)
         return result
+
+    def postProcessActionConfig(self, actionConfig, actionName, module):
+        """
+        Called when a config has been loaded for an action, and is about to be registered.
+        Provides a chance to modify the loaded config.
+        """
+        # check for custom editor form class
+        editorFormClsName = actionConfig.get('editorFormClass')
+        if editorFormClsName:
+            if hasattr(module, editorFormClsName):
+                obj = getattr(module, editorFormClsName)
+                if isinstance(obj, type) and issubclass(obj, views.BuildActionProxyForm):
+                    # store the editor form class object in the config
+                    actionConfig['editorFormClassObj'] = obj
+                else:
+                    LOG.error(
+                        '%s is not a valid BuildActionProxyForm subclass', editorFormClsName)
+            else:
+                LOG.error(
+                    'Failed to find editorFormClass: %s in module %s', editorFormClsName, module)
 
     def loadActionsFromDirectory(self, startDir, pattern='*_pulseaction.py'):
         """
