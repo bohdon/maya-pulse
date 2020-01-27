@@ -455,6 +455,9 @@ class BlueprintBuilder(object):
         """
         Called when the build has completely finished.
         """
+        # clear selection
+        pm.select(cl=True)
+
         # record time
         self.endTime = time.time()
         self.elapsedTime = self.endTime - self.startTime
@@ -536,6 +539,7 @@ class BlueprintBuilder(object):
             # TODO: include more data somehow so we can track variant action indexes
 
             # run the action
+            action.builder = self
             action.rig = self.rig
             self.runBuildAction(step, action, index, actionCount)
 
