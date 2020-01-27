@@ -1,0 +1,17 @@
+CleanupJointsAction:
+  id: Pulse.CleanupJoints
+  displayName: Cleanup Joints
+  description: Cleans up a joint hierarchy, removing end joints or modifying segment scale compensate
+  category: Joints
+  attrs:
+    - name: rootJoint
+      description: A root joint of a hierarchy
+      type: node
+    - name: removeEndJoints
+      description: Delete all end joints in the hierarchy
+      type: bool
+      value: true
+    - name: disableScaleCompensate
+      description: Disable segment scale compensate on all joints
+      type: bool
+      value: false

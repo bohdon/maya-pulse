@@ -6,24 +6,24 @@ ThreeBoneIKFKAction:
   category: Kinematics
   attrs:
     - name: endJoint
-      desc: The end joint of the IK chain. Mid and root joint are retrieved automatically
+      description: The end joint of the IK chain. Mid and root joint are retrieved automatically
       type: node
     - name: rootCtl
-      desc: The root joint control
+      description: The root joint control
       type: node
     - name: midCtlIk
-      desc: The mid joint control during IK (the pole vector control)
+      description: The mid joint control during IK (the pole vector control)
       type: node
     - name: midCtlFk
-      desc: The mid joint control during FK
+      description: The mid joint control during FK
       type: node
     - name: endCtlIk
-      desc: The end joint control during IK
+      description: The end joint control during IK
       type: node
     - name: endCtlFk
-      desc: The end joint control during FK
+      description: The end joint control during FK
       type: node
     - name: addPoleLine
-      desc: Add a curve shape to the mid FK control that draws a line to the bone
+      description: Add a curve shape to the mid FK control that draws a line to the bone
       value: true
       type: bool

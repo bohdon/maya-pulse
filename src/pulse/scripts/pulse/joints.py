@@ -6,6 +6,7 @@ from . import nodes
 __all__ = [
     'centerJoint',
     'getChildJoints',
+    'getEndJoints',
     'getJointMatrices',
     'getParentJoint',
     'getRootJoint',
@@ -58,7 +59,7 @@ def getChildJoints(jnt):
     joint found for each branch.
 
     Args:
-        jnt: A Joint node
+        jnt (PyNode): A joint node
     """
     result = []
     children = jnt.getChildren()
@@ -67,6 +68,23 @@ def getChildJoints(jnt):
             result.append(child)
         else:
             result.extend(getChildJoints(child))
+    return result
+
+
+def getEndJoints(jnt):
+    """
+    Recurse through children and return all joints that have no joint children.
+
+    Args:
+        jnt (PyNode): A joint node
+    """
+    result = []
+    children = jnt.listRelatives(children=True, typ='joint')
+    if not children:
+        result.append(jnt)
+    else:
+        for child in children:
+            result.extend(getEndJoints(child))
     return result
 
 
