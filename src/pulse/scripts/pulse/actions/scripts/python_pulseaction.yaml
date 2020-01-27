@@ -1,0 +1,12 @@
+PythonAction:
+  id: Pulse.Python
+  displayName: Python
+  description: Run a python script
+  category: Scripts
+  attrs:
+    - name: function
+      description: The name of the function to run inside the blueprint's scripts.py file
+      type: string
+    - name: nodes
+      description: An optional list of nodes to pass in as arguments to the script. Can be accessed using `nodes[0..n]`
+      type: nodelist
