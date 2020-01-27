@@ -1,4 +1,6 @@
 
+import maya.cmds as cmds
+
 import pulse
 import pulse.spaces
 import pulse.nodes
@@ -18,6 +20,11 @@ class CreateSpaceAction(pulse.BuildAction):
 
 class SpaceConstrainAction(pulse.BuildAction):
 
+    def getMinApiVersion(self):
+        if self.useOffsetMatrix:
+            return 20200000
+        return 0
+
     def validate(self):
         if not self.node:
             raise pulse.BuildActionError("node must be set")
@@ -25,10 +32,14 @@ class SpaceConstrainAction(pulse.BuildAction):
             raise pulse.BuildActionError("spaces must have at least one value")
 
     def run(self):
-        # create an offset transform to be constrained
-        follower = pulse.nodes.createOffsetGroup(
-            self.node, '{0}_spaceConstraint')
-        pulse.spaces.prepareSpaceConstraint(self.node, follower, self.spaces)
+        follower = None
+        if not self.useOffsetMatrix:
+            # create an offset transform to be constrained
+            follower = pulse.nodes.createOffsetTransform(
+                self.node, '{0}_spaceConstraint')
+        # setup the constraint, which will be finalized during the ApplySpaces action
+        pulse.spaces.setupSpaceConstraint(
+            self.node, self.spaces, follower=follower, useOffsetMatrix=self.useOffsetMatrix)
 
 
 class ApplySpacesAction(pulse.BuildAction):
@@ -39,4 +50,4 @@ class ApplySpacesAction(pulse.BuildAction):
     def run(self):
         # TODO: only gather not-yet-created constraints
         allConstraints = pulse.spaces.getAllSpaceConstraints()
-        pulse.spaces.createSpaceConstraints(allConstraints)
+        pulse.spaces.connectSpaceConstraints(allConstraints)

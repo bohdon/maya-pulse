@@ -171,7 +171,7 @@ def createOffsetForSelected():
     """
     Create an offset group for the selected nodes
     """
-    pm.select([createOffsetGroup(s) for s in pm.selected(type='transform')])
+    pm.select([createOffsetTransform(s) for s in pm.selected(type='transform')])
 
 
 def freezeScalesForSelectedHierarchies():

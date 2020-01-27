@@ -28,7 +28,7 @@ class AnimControlAction(pulse.BuildAction):
             pulse.nodes.freezeOffsetMatrix(self.controlNode)
         elif self.zeroOutMethod == 2:
             # create an offset transform
-            pulse.nodes.createOffsetGroup(self.controlNode)
+            pulse.nodes.createOffsetTransform(self.controlNode)
 
         # lockup attributes
         keyableAttrs = pulse.nodes.getExpandedAttrNames(self.keyableAttrs)

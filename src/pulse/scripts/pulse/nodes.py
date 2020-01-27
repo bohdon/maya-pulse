@@ -9,7 +9,7 @@ __all__ = [
     'areNodesAligned',
     'connectOffsetMatrix',
     'convertScaleConstraintToWorldSpace',
-    'createOffsetGroup',
+    'createOffsetTransform',
     'disableColorOverride',
     'disconnectOffsetMatrix',
     'freezeOffsetMatrix',
@@ -275,17 +275,18 @@ def parentInOrder(nodes):
 # Node Creation
 # -------------
 
-def createOffsetGroup(node, name='{0}_offset'):
+def createOffsetTransform(node, name='{0}_offset'):
     """
-    Create a group transform that is inserted as the new parent of
-    a node. The group absorbs all relative transformations of the node
-    so that the nodes local matrix becomes identity. This includes
+    Create a transform that is inserted as the new parent of a node,
+    at the same world location as the node. This effectively transfers
+    the local matrix of a node into the new transform, zeroing out
+    the attributes of the node (usually for animation). This includes
     absorbing the rotate axis of the node.
 
     Args:
-        node: A PyNode to create an offset for
-        name: A string that can optionally be formatted with
-            the name of the node being grouped
+        node (PyNode): A node to create an offset for
+        name (str): The name to use for the new transform. Accepts a single
+            format argument which will be the name of `node`
     """
     # create the offset transform
     _name = name.format(node.nodeName())
@@ -315,6 +316,9 @@ def createOffsetGroup(node, name='{0}_offset'):
              # of the offset transform
              rotateAxis=[0, 0, 0],
              )
+    if cmds.about(api=True) >= 20200000:
+        # also need to reset offsetParentMatrix
+        node.opm.set(pm.dt.Matrix())
 
     return offset
 
@@ -519,18 +523,35 @@ def connectOffsetMatrix(leader, follower, preservePosition=True,
             follower.inheritsTransform.set(False)
 
         if preserveTransformValues:
-            # m needs to stay the same, opm will be connected to a matrix
-            # that includes both the new parent matrix (input matrix)
-            # and the delta between that and the old follower world matrix
-            deltaToOldWM = follower.im.get() * wm * inputMatrix.get().inverse()
+            # calculate offset between new leader and follower
+            offsetMtx = calculatePreservedOffsetMatrix(
+                inputMatrix.get(), wm, follower.m.get())
+            # store offset in a new multMatrix node, and connect
             mult = pm.createNode('multMatrix', n='multMatrix_opm_con')
-            mult.matrixIn[0].set(deltaToOldWM)
+            mult.matrixIn[0].set(offsetMtx)
             inputMatrix >> mult.matrixIn[1]
             mult.matrixSum >> follower.offsetParentMatrix
         else:
             inputMatrix >> follower.offsetParentMatrix
             # restore world matrix (absorbed into local matrix)
             setWorldMatrix(follower, wm)
+
+
+def calculatePreservedOffsetMatrix(leaderWorldMtx, followerWorldMtx, followerMtx):
+    """
+    Return an offset matrix between a leader and follower, such that:
+        follower.matrix * offsetMatrix * leader.worldMatrix == follower.worldMatrix
+
+    Args:
+        leaderWorldMtx (matrix): The matrix to which the new offset will be relative
+        followerWorldMtx (matrix): The world matrix that should be preserved
+        followerMtx (matrix): The local matrix of the follower node
+
+    Returns:
+        A matrix that represents the offset between leaderMatrix and the follower,
+        without the follower's local matrix being included.
+    """
+    return followerMtx.inverse() * followerWorldMtx * leaderWorldMtx.inverse()
 
 
 def disconnectOffsetMatrix(follower, preservePosition=True,

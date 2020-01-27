@@ -6,8 +6,19 @@ Space Switching Constraint Setup
     - Connect all space node world matrices to 'spaceChoice' (choice) node
     - Connect 'space' attribute (enum) to selector of both choice nodes
     - Connect output of choices to calc new follower world matrix (multMatrix)
+        (offsetChoice.output * spaceChoice.output)
+    - Connect output matrix to offsetParentMatrix of follower
+
+Space Switching Constraint Setup (2019 and older)
+    - Store offsets from each space node in new attrs on the follower
+        (follower.wm * space.wm.inverse)
+    - Connect all offset matrices to 'offsetChoice' (choice) node
+    - Connect all space node world matrices to 'spaceChoice' (choice) node
+    - Connect 'space' attribute (enum) to selector of both choice nodes
+    - Connect output of choices to calc new follower world matrix (multMatrix)
         (offsetChoice.output * spaceChoice.output * follower.pim)
-    - Decompose and connect to follower trs
+    - Decompose and connect to follower trs (will occupy transform attributes, so this
+        requires the use of an offset transform for anim controls)
 
 (see space switching solution by Jarred Love)
 
@@ -16,6 +27,7 @@ Space Switching Constraint Setup
 import os
 import logging
 from fnmatch import fnmatch
+import maya.cmds as cmds
 import pymel.core as pm
 import pymetanode as meta
 
@@ -24,10 +36,10 @@ import pulse.utilnodes
 
 __all__ = [
     'addDynamicSpace',
-    'createSpaceConstraints',
-    'createSpaceConstraint',
+    'connectSpaceConstraints',
+    'connectSpaceConstraint',
     'createSpace',
-    'prepareSpaceConstraint',
+    'setupSpaceConstraint',
     'getAllSpaceConstraints',
     'getAllSpaces',
     'getAllSpacesIndexedByName',
@@ -102,18 +114,30 @@ def createSpace(node, name):
     meta.setMetaData(node, SPACE_METACLASS, data)
 
 
-def prepareSpaceConstraint(node, follower, spaceNames):
+def setupSpaceConstraint(node, spaceNames, follower=None, useOffsetMatrix=True):
     """
-    Prepare a new space constraint. This sets up the constrained
-    node, but does not connect it to the desired spaces until
-    `createSpaceConstraint` is called.
+    Set up a node to be constrained for a space switch, but do not
+    actually connect it to the desired spaces until `connectSpaceConstraint` is called.
+    This is necessary because the transforms that represent each space may not
+    have been defined yet, but the desire to constrain to them by space name can be expressed
+    ahead of time.
 
     Args:
         node (PyNode): The node that will contain space switching attrs
-        follower (PyNode): The node that will be constrained, can be `node`,
-            or more commonly, a parent (offset) of `node`.
         spaceNames (str list): The names of all spaces to be applied
+        follower (PyNode): If given, the node that will be constrained, otherwise
+            `node` will be used. Useful when wanting to create the space constrain attributes
+            on an animation control, but connect the actual constraint to a parent transform
+        useOffsetMatrix (bool): When true, will connect to the offsetParentMatrix
+            of the follower node, instead of directly into the translate, rotate, and scale.
+            This also eliminates the necessity for a decompose matrix node.
     """
+    if useOffsetMatrix and cmds.about(api=True) < 20200000:
+        # not supported before Maya 2020
+        useOffsetMatrix = False
+
+    if not follower:
+        follower = node
 
     # setup space switching attr
     if not node.hasAttr(SPACESWITCH_ATTR):
@@ -126,7 +150,7 @@ def prepareSpaceConstraint(node, follower, spaceNames):
 
     nodeName = node.nodeName()
 
-    offsetChoiceName = nodeName + '_space_offset_choice'
+    offsetChoiceName = nodeName + '_spaceOffset_choice'
     spaceChoiceName = nodeName + '_space_choice'
     multMatrixName = nodeName + '_space_mmtx'
     decompName = nodeName + '_space_decomp'
@@ -136,17 +160,20 @@ def prepareSpaceConstraint(node, follower, spaceNames):
     spaceChoice = pm.shadingNode('choice', n=spaceChoiceName, asUtility=True)
     pulse.utilnodes.loadMatrixPlugin()
     multMatrix = pm.shadingNode('multMatrix', n=multMatrixName, asUtility=True)
-    decomp = pm.shadingNode('decomposeMatrix', n=decompName, asUtility=True)
+    if not useOffsetMatrix:
+        decomp = pm.shadingNode(
+            'decomposeMatrix', n=decompName, asUtility=True)
 
     # setup connections
     spaceAttr >> offsetChoice.selector
     spaceAttr >> spaceChoice.selector
     offsetChoice.output >> multMatrix.matrixIn[0]
     spaceChoice.output >> multMatrix.matrixIn[1]
-    follower.pim >> multMatrix.matrixIn[2]
-    multMatrix.matrixSum >> decomp.inputMatrix
-    # connection from decomp output to the follower trs
-    # occurs after the actual space nodes are connected
+    # follower.pim >> multMatrix.matrixIn[2]
+    if not useOffsetMatrix:
+        multMatrix.matrixSum >> decomp.inputMatrix
+    # final connection to the follower occurs
+    # during connectSpaceConstraint.
 
     spaceData = []
     # native space indeces always take priority,
@@ -173,27 +200,41 @@ def prepareSpaceConstraint(node, follower, spaceNames):
         'offsetChoice': offsetChoice,
         'spaceChoice': spaceChoice,
         'multMatrix': multMatrix,
-        'decompose': decomp,
+        'useOffsetMatrix': useOffsetMatrix,
     }
+    if not useOffsetMatrix:
+        # decomp only exists when not using offset matrix
+        data['decompose'] = decomp
 
     meta.setMetaData(node, SPACECONSTRAINT_METACLASS, data)
 
 
-def createSpaceConstraints(nodes):
+def _setupSpaceConstraintAttrs(node, spaceNames):
+     # setup space switching attr
+    if not node.hasAttr(SPACESWITCH_ATTR):
+        enumNames = ':'.join(spaceNames)
+        node.addAttr(SPACESWITCH_ATTR, at='enum', en=enumNames)
+        spaceAttr = node.attr(SPACESWITCH_ATTR)
+        spaceAttr.setKeyable(True)
+    else:
+        spaceAttr = node.attr(SPACESWITCH_ATTR)
+
+
+def connectSpaceConstraints(nodes):
     """
     Create the actual constraints for a list of prepared
     space constraints. This is more efficient than calling
-    createSpaceConstraint for each node since all
+    connectSpaceConstraint for each node since all
     spaces are gathered only once.
     """
     spaceNodesByName = getAllSpacesIndexedByName()
 
     allConstraints = getAllSpaceConstraints()
     for constraint in allConstraints:
-        _createSpaceConstraint(constraint, spaceNodesByName)
+        _connectSpaceConstraint(constraint, spaceNodesByName)
 
 
-def createSpaceConstraint(node):
+def connectSpaceConstraint(node):
     """
     Create the actual constraints for each defined space in
     a space constraint node.
@@ -206,10 +247,10 @@ def createSpaceConstraint(node):
         return
 
     spaceNodesByName = getAllSpacesIndexedByName()
-    _createSpaceConstraint(node, spaceNodesByName)
+    _connectSpaceConstraint(node, spaceNodesByName)
 
 
-def _createSpaceConstraint(node, spaceNodesByName):
+def _connectSpaceConstraint(node, spaceNodesByName):
     """
     Connect all spaces defined in the node's space data
     to the space constraint utility nodes.
@@ -227,49 +268,68 @@ def _createSpaceConstraint(node, spaceNodesByName):
         if not spaceData['switch']:
             spaceNode = spaceNodesByName.get(spaceData['name'], None)
             if spaceNode:
-                _connectSpaceToConstraint(node, data, index, spaceNode)
+                _connectSpaceToConstraint(data, index, spaceNode)
                 didConnectAny = True
             else:
                 LOG.warning(
                     "Space node not found: {0}".format(spaceData['name']))
 
     if didConnectAny:
-        # connect space constraint output now that at least one space is setup
+        # connect final output now that at least one space is connected
         # TODO: make sure the space 0 is setup, or whatever the attrs value is
-        decomp = data['decompose']
         follower = data['follower']
-        decomp.outputTranslate >> follower.translate
-        decomp.outputRotate >> follower.rotate
-        decomp.outputScale >> follower.scale
+        useOffsetMatrix = data['useOffsetMatrix']
+
+        if useOffsetMatrix:
+            multMatrix = data['multMatrix']
+            multMatrix.matrixSum >> follower.offsetParentMatrix
+        else:
+            decomp = data['decompose']
+            decomp.outputTranslate >> follower.translate
+            decomp.outputRotate >> follower.rotate
+            decomp.outputScale >> follower.scale
+
+        # no longer need to inherit transform
+        follower.inheritsTransform.set(False)
 
 
-def _connectSpaceToConstraint(node, spaceConstraintData, index, spaceNode):
+def _connectSpaceToConstraint(spaceConstraintData, index, spaceNode):
     """
-    Calculate and store the offset for a space, and connect the space
-    to the choice nodes of a space constraint.
+    Connect a space node to a space constraint choice and calculate the
+    preserved offset matrix for the space as well.
 
     Args:
-        node (PyNode): The space constraint node
         spaceConstraintData (dict): The loaded space constraint data
             from the space constraint node
         index (int): The index of the space being connected
         spaceNode (PyNode): The node representing the space
     """
-    # calculate and store the offset between the space and follower
-    follower = spaceConstraintData['follower']
-    offsetMatrix = follower.wm.get() * spaceNode.wm.get().inverse()
-    offsetAttrName = 'space{}_offset'.format(index)
-    follower.addAttr(offsetAttrName, dt='matrix')
-    offsetAttr = follower.attr(offsetAttrName)
-    offsetAttr.set(offsetMatrix)
-
-    # connect offset choice
-    offsetChoice = spaceConstraintData['offsetChoice']
-    offsetAttr >> offsetChoice.input[index]
-
-    # connect space choice
+    # connect space node world matrix to choice node
     spaceChoice = spaceConstraintData['spaceChoice']
     spaceNode.wm >> spaceChoice.input[index]
+
+    # calculate the offset between the space and follower
+    follower = spaceConstraintData['follower']
+    useOffsetMatrix = spaceConstraintData['useOffsetMatrix']
+    if useOffsetMatrix:
+        # calculate an offset matrix that doesn't include the local matrix of the follower,
+        # so that the result can be plugged into the offsetParentMatrix of the follower
+        offsetMtx = pulse.nodes.calculatePreservedOffsetMatrix(
+            spaceNode.wm.get(), follower.wm.get(), follower.m.get())
+    else:
+        # the space constraint will go directly into the transform
+        # attrs of the follower, so it should include all of the follower world matrix
+        offsetMtx = follower.wm.get() * spaceNode.wim.get()
+
+    # store the offset matrix on the offset choice node
+    offsetChoice = spaceConstraintData['offsetChoice']
+    # create a matrix attribute on the choice node to hold the offset
+    # (the choice input attributes are wildcards and cannot hold matrix data)
+    offsetAttrName = 'offset{}'.format(index)
+    offsetChoice.addAttr(offsetAttrName, dt='matrix')
+    offsetAttr = offsetChoice.attr(offsetAttrName)
+    offsetAttr.set(offsetMtx)
+    offsetAttr >> offsetChoice.input[index]
 
 
 def _getAllSpacesInConstraint(spaceConstraintData):
@@ -282,7 +342,7 @@ def _getAllSpacesInConstraint(spaceConstraintData):
 
     Returns:
         A list of dict representing spaces applied to a constraint.
-        See `prepareSpaceConstraint` for more detail.
+        See `setupSpaceConstraint` for more detail.
     """
     return spaceConstraintData['spaces'] + spaceConstraintData['dynamicSpaces']
 
