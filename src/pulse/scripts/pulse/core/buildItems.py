@@ -973,7 +973,7 @@ class BuildActionProxy(BuildActionData):
         self._variantAttrs = []
         # all BuildActionDataVariant instances in this proxy
         self._variants = []
-    
+
     def getEditorFormClass(self):
         """
         Return the custom BuildActionProxyForm class to use for this action
@@ -1366,11 +1366,28 @@ class BuildAction(BuildActionData):
 
     def runValidate(self):
         """
-        Runs the validate function, as well as performing some other
-        basic checks to make sure the build action is valid for use.
+        Run the validate function and perform some other basic
+        checks to make sure the build action is valid for use.
         """
         self.validateApiVersion()
+        self.validateAttrValues()
         self.validate()
+
+    def validateAttrValues(self):
+        """
+        Check each action attribute to ensure it has a
+        valid value for its attribute type. Checks for things
+        like missing nodes or invalid options.
+        """
+        for attr in self.getAttrs():
+            attrName = attr['name']
+            attrType = attr['type']
+            if self.hasAttrValue(attrName):
+                attrValue = self.getAttrValue(attrName)
+                if attrType == 'nodelist':
+                    if None in attrValue:
+                        raise BuildActionError(
+                            '%s contains a missing object' % attrName)
 
     def validate(self):
         """
