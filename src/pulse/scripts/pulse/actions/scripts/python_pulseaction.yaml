@@ -3,10 +3,11 @@ PythonAction:
   displayName: Python
   description: Run a python script
   category: Scripts
+  editorFormClass: PythonActionForm
   attrs:
     - name: function
-      description: The name of the function to run inside the blueprint's scripts.py file
+      description: The name of the function to run. Should accept a single argument for the BuildAction being run.
       type: string
     - name: nodes
-      description: An optional list of nodes to pass in as arguments to the script. Can be accessed using `nodes[0..n]`
+      description: An optional list of nodes to pass in as arguments to the script. Can be accessed using `action.nodes`
       type: nodelist

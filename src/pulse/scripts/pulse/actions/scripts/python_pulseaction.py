@@ -2,12 +2,15 @@
 import sys
 import os
 import imp
+import subprocess
 import pymel.core as pm
+from pulse.vendor.Qt import QtCore, QtWidgets, QtGui
 
 import pulse
 
 
 class PythonAction(pulse.BuildAction):
+
     def validate(self):
         if not self.function:
             raise pulse.BuildActionError("function name cannot be empty")
@@ -51,3 +54,27 @@ class PythonAction(pulse.BuildAction):
             attr = getattr(module, functionName)
             if callable(attr):
                 return attr
+
+
+class PythonActionForm(pulse.views.BuildActionProxyForm):
+
+    def setupLayoutHeader(self, parent, layout):
+        editBtn = QtWidgets.QPushButton(parent)
+        editBtn.setText("Edit Script")
+        editBtn.clicked.connect(self.openScriptFileInEditor)
+        layout.addWidget(editBtn)
+
+    def openScriptFileInEditor(self):
+        if not 'VSCODE_PATH' in os.environ:
+            pm.warning(
+                'Add VSCODE_PATH to environment to enable script editing')
+            return
+
+        vscode = os.environ['VSCODE_PATH']
+        sceneName = pm.sceneName()
+        if not sceneName:
+            pm.warning('Save the scene to enable script editing')
+            return
+
+        scriptsFilename = os.path.splitext(sceneName)[0] + '_scripts.py'
+        subprocess.Popen([vscode, scriptsFilename])
