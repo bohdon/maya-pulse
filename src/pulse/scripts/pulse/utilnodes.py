@@ -533,6 +533,7 @@ def connectMatrix(matrix, transform):
             matrix, transform, preservePosition=False, preserveTransformValues=False)
     else:
         transform.inheritsTransform.set(False)
+        decomposeMatrixAndConnect(matrix, transform)
 
 
 def createUtilityNode(nodeType, **kwargs):
