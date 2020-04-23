@@ -1,3 +1,8 @@
+"""
+The main editor window. Contains the build toolbar, and tabs for manage, design,
+and actions views.
+"""
+
 
 from functools import partial
 

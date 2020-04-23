@@ -1,3 +1,6 @@
+"""
+Toolbar for running main actions like validate and build.
+"""
 
 import logging
 import maya.cmds as cmds

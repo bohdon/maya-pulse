@@ -1,3 +1,8 @@
+"""
+Widget for quickly naming nodes using preset lists of
+keywords, prefixes, and suffixes
+"""
+
 
 from functools import partial
 import pymel.core as pm
@@ -16,6 +21,10 @@ __all__ = [
 
 
 class QuickNameWidget(QtWidgets.QWidget):
+    """
+    Widget for quickly naming nodes using preset lists of
+    keywords, prefixes, and suffixes
+    """
 
     def __init__(self, parent=None):
         super(QuickNameWidget, self).__init__(parent=parent)

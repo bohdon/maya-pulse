@@ -1,3 +1,7 @@
+"""
+Form ui classes for any type of action attribute, e.g.
+float forms, node and node list forms, combo box forms, etc.
+"""
 
 import pymel.core as pm
 import maya.cmds as cmds

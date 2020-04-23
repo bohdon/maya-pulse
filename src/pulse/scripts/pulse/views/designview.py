@@ -1,3 +1,7 @@
+"""
+A widget containing a collection of panels with tools
+for designing the rig blueprint.
+"""
 
 
 from pulse.vendor.Qt import QtWidgets

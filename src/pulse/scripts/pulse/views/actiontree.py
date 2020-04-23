@@ -1,3 +1,6 @@
+"""
+Tree widget for displaying the build step hierarchy of a blueprint.
+"""
 
 import logging
 import maya.cmds as cmds

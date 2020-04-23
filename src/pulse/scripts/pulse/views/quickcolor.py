@@ -1,3 +1,7 @@
+"""
+Widget for quickly editing the color of animation controls.
+"""
+
 
 import pymel.core as pm
 from pulse.vendor.Qt import QtCore, QtWidgets, QtGui
@@ -16,6 +20,9 @@ __all__ = [
 
 
 class QuickColorWidget(QtWidgets.QWidget):
+    """
+    Widget for quickly editing the color of animation controls.
+    """
 
     def __init__(self, parent=None):
         super(QuickColorWidget, self).__init__(parent=parent)

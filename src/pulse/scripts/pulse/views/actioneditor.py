@@ -1,4 +1,7 @@
 # coding=utf-8
+"""
+Editor widgets for inspecting and editing BuildSteps and BuildActions.
+"""
 
 import os
 import logging

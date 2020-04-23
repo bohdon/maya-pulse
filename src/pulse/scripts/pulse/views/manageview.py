@@ -1,3 +1,6 @@
+"""
+A panel for displaying blueprint attributes and details
+"""
 
 import pulse
 from pulse.vendor.Qt import QtCore, QtWidgets, QtGui
@@ -13,6 +16,9 @@ __all__ = [
 
 
 class ManageWidget(QtWidgets.QWidget):
+    """
+    A panel for displaying blueprint attributes and details
+    """
 
     def __init__(self, parent=None):
         super(ManageWidget, self).__init__(parent=parent)

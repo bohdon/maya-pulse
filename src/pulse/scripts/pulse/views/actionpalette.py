@@ -1,3 +1,6 @@
+"""
+Palette for browsing actions that can be added to a blueprint.
+"""
 
 import os
 import logging

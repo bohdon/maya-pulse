@@ -1,3 +1,7 @@
+"""
+UI model classes, and base classes for common widgets.
+"""
+
 
 import os
 import logging
