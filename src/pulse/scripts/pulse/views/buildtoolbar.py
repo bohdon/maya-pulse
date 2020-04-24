@@ -35,6 +35,7 @@ class BuildToolbarWidget(QtWidgets.QWidget):
         self.onRigExistsChanged()
 
         # connect signals
+        self.blueprintModel.readOnlyChanged.connect(self.onReadOnlyChanged)
         self.blueprintModel.rigNameChanged.connect(self.rigNameChanged)
         self.blueprintModel.fileChanged.connect(self.onBlueprintFileChanged)
 
@@ -118,16 +119,19 @@ class BuildToolbarWidget(QtWidgets.QWidget):
 
     def onRigExistsChanged(self):
         self.cleanState()
+        self.refreshStateText()
         self.checkBtn.setVisible(not self.rigExists)
         self.buildBtn.setVisible(not self.rigExists)
         self.openBPBtn.setVisible(self.rigExists)
-        self.rigOrBlueprintLabel.setText("Rig" if self.rigExists else "Blueprint")
 
         frameColor = UIColors.RED if self.rigExists else UIColors.BLUE
         frameColor = list(frameColor)
         frameColor[-1] = 40
         self.frame.setStyleSheet(
             ".QFrame#panelFrame{{ {0} }}".format(UIColors.asBGColor(frameColor)))
+
+    def onReadOnlyChanged(self, isReadOnly):
+        self.refreshStateText()
 
     def cleanState(self):
         self.isStateDirty = False
@@ -138,6 +142,12 @@ class BuildToolbarWidget(QtWidgets.QWidget):
             self.isStateDirty = True
             self.setEnabled(False)
             cmds.evalDeferred(self.cleanState)
+
+    def refreshStateText(self):
+        stateText = "Rig" if self.rigExists else "Blueprint"
+        if self.blueprintModel.isReadOnly():
+            stateText += " (read-only)"
+        self.rigOrBlueprintLabel.setText(stateText)
 
     def openBlueprintAndReload(self):
         pulse.openFirstRigBlueprint()

@@ -32,6 +32,7 @@ class ActionPaletteWidget(QtWidgets.QWidget):
         super(ActionPaletteWidget, self).__init__(parent=parent)
 
         self.blueprintModel = BlueprintUIModel.getDefaultModel()
+        self.blueprintModel.readOnlyChanged.connect(self.onReadOnlyChanged)
         self.model = self.blueprintModel.buildStepTreeModel
         self.selectionModel = self.blueprintModel.buildStepSelectionModel
         self.setupUi(self)
@@ -40,22 +41,22 @@ class ActionPaletteWidget(QtWidgets.QWidget):
         """ Build the UI """
         layout = QtWidgets.QVBoxLayout(parent)
 
-        grpBtn = QtWidgets.QPushButton(parent)
-        grpBtn.setText("New Group")
-        grpBtn.clicked.connect(self.createBuildGroup)
-        layout.addWidget(grpBtn)
-
         searchField = QtWidgets.QLineEdit(parent)
         searchField.setPlaceholderText("Search")
         layout.addWidget(searchField)
 
-        tabScrollWidget = QtWidgets.QWidget(parent)
+        self.grpBtn = QtWidgets.QPushButton(parent)
+        self.grpBtn.setText("New Group")
+        self.grpBtn.clicked.connect(self.createBuildGroup)
+        layout.addWidget(self.grpBtn)
+
+        self.contentWidget = QtWidgets.QWidget(parent)
         tabScroll = QtWidgets.QScrollArea(parent)
         tabScroll.setFrameShape(QtWidgets.QScrollArea.NoFrame)
         tabScroll.setWidgetResizable(True)
-        tabScroll.setWidget(tabScrollWidget)
+        tabScroll.setWidget(self.contentWidget)
 
-        self.setupContentUi(tabScrollWidget)
+        self.setupContentUi(self.contentWidget)
 
         layout.addWidget(tabScroll)
 
@@ -104,6 +105,10 @@ class ActionPaletteWidget(QtWidgets.QWidget):
         else:
             return [255, 255, 255]
 
+    def onReadOnlyChanged(self, isReadOnly):
+        self.grpBtn.setEnabled(not isReadOnly)
+        self.contentWidget.setEnabled(not isReadOnly)
+
     def onActionClicked(self, typeName):
         self.clicked.emit(typeName)
 
@@ -117,7 +122,7 @@ class ActionPaletteWidget(QtWidgets.QWidget):
                 BuildStep data used to create the new steps
         """
         if self.blueprintModel.isReadOnly():
-            LOG.debug('cannot create steps, blueprint is read only')
+            LOG.warning('cannot create steps, blueprint is read only')
             return
 
         LOG.debug('creating new steps at selection: %s', stepData)
@@ -160,6 +165,7 @@ class ActionPaletteWidget(QtWidgets.QWidget):
 
     def createBuildGroup(self):
         if self.blueprintModel.isReadOnly():
+            LOG.warning("Cannot create group, blueprint is read-only")
             return
         LOG.debug('createBuildGroup')
         newPaths = self.createStepsForSelection()
@@ -167,6 +173,7 @@ class ActionPaletteWidget(QtWidgets.QWidget):
 
     def createBuildAction(self, actionId):
         if self.blueprintModel.isReadOnly():
+            LOG.warning("Cannot create action, blueprint is read-only")
             return
         LOG.debug('createBuildAction: %s', actionId)
         stepData = "{'action':{'id':'%s'}}" % actionId

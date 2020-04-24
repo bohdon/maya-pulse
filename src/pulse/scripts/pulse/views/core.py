@@ -224,6 +224,9 @@ class BlueprintUIModel(QtCore.QObject):
     autoSave = optionVarProperty('pulse.editor.autoSave', True)
     autoLoad = optionVarProperty('pulse.editor.autoLoad', True)
 
+    # called when the read-only state of the blueprint has changed
+    readOnlyChanged = QtCore.Signal(bool)
+
     def setAutoSave(self, value):
         self.autoSave = value
 
@@ -243,7 +246,8 @@ class BlueprintUIModel(QtCore.QObject):
 
         # keeps track of whether a rig is currently in the scene,
         # which will affect the ability to edit the Blueprint
-        self.rigExists = len(pulse.getAllRigs()) > 0
+        self.rigExists = False
+        self.refreshRigExists()
 
         # attempt to load from the scene
         if self.autoLoad:
@@ -391,8 +395,12 @@ class BlueprintUIModel(QtCore.QObject):
         return False
 
     def refreshRigExists(self):
+        oldReadOnly = self.isReadOnly()
         self.rigExists = len(pulse.getAllRigs()) > 0
         self.rigExistsChanged.emit()
+
+        if oldReadOnly != self.isReadOnly():
+            self.readOnlyChanged.emit(self.isReadOnly())
 
     def shouldAutoSaveBlueprint(self):
         if not self.autoSave:

@@ -572,6 +572,7 @@ class ActionEditorWidget(QtWidgets.QWidget):
         self.setupUi(self)
 
         self.blueprintModel = BlueprintUIModel.getDefaultModel()
+        self.blueprintModel.readOnlyChanged.connect(self.onReadOnlyChanged)
         self.model = self.blueprintModel.buildStepTreeModel
         self.model.dataChanged.connect(self.onModelDataChanged)
         self.model.modelReset.connect(self.onModelReset)
@@ -615,6 +616,9 @@ class ActionEditorWidget(QtWidgets.QWidget):
 
     def onModelReset(self):
         self.setupItemsUiForSelection()
+
+    def onReadOnlyChanged(self, isReadOnly):
+        self.setEnabled(not isReadOnly)
 
     def clearItemsUi(self):
         while True:

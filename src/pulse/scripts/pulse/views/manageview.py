@@ -29,6 +29,7 @@ class ManageWidget(QtWidgets.QWidget):
         self.setupUi(self)
 
         self.blueprintModel.rigNameChanged.connect(self.onRigNameChanged)
+        self.blueprintModel.readOnlyChanged.connect(self.onReadOnlyChanged)
 
     def setupUi(self, parent):
         layout = QtWidgets.QVBoxLayout(self)
@@ -60,6 +61,9 @@ class ManageWidget(QtWidgets.QWidget):
 
     def onRigNameChanged(self, name):
         self.rigNameText.setText(name)
+
+    def onReadOnlyChanged(self, isReadOnly):
+        self.setEnabled(not isReadOnly)
 
     def rigNameTextChanged(self):
         self.blueprintModel.setRigName(self.rigNameText.text())
