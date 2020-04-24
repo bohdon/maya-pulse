@@ -531,6 +531,9 @@ class BuildStep(object):
                 yield descendant
 
     def actionIterator(self):
+        """
+        Return a generator that yields all actions for this step.
+        """
         if self._actionProxy:
             for elem in self._actionProxy.actionIterator():
                 yield elem
@@ -990,7 +993,10 @@ class BuildActionProxy(BuildActionData):
         """
         Return the color of this action when represented in the UI
         """
-        return self.config.get('color', [1, 1, 1])
+        if self.isMissingConfig():
+            return [0.8, 0, 0]
+        else:
+            return self.config.get('color', [1, 1, 1])
 
     def getIconFile(self):
         """
@@ -1206,26 +1212,31 @@ class BuildActionProxy(BuildActionData):
         by this proxy. If variants are in use, constructs a BuildAction
         for each set of variant attribute values.
         """
-        if self.isActionIdValid():
-            if self.isVariantAction():
-                # ensure there are no invariant values for variant attrs
-                for attrName in self._variantAttrs:
-                    if self.hasAttrValue(attrName):
-                        LOG.warning("Found invariant value for a variant attr: "
-                                    "{0}.{1}".format(self.getActionId(), attrName))
+        if not self.isActionIdValid():
+            raise Exception("BuildActionProxy has no valid action id: %s" % self)
+        if self.isMissingConfig():
+            raise Exception("Failed to find BuildAction config: %s" %
+                            self.getActionId())
 
-                # create and yield new build actions for each variant
-                mainData = self.serialize()
-                for variant in self._variants:
-                    # TODO: update serialization to ensure variants only return
-                    #       data for the attributes they're supposed to modify
-                    data = variant.serialize()
-                    data.update(_copyData(mainData))
-                    newAction = BuildAction.fromData(data)
-                    yield newAction
-            else:
-                # no variants, just create one action
-                yield BuildAction.fromData(_copyData(self.serialize()))
+        if self.isVariantAction():
+            # ensure there are no invariant values for variant attrs
+            for attrName in self._variantAttrs:
+                if self.hasAttrValue(attrName):
+                    LOG.warning("Found invariant value for a variant attr: "
+                                "{0}.{1}".format(self.getActionId(), attrName))
+
+            # create and yield new build actions for each variant
+            mainData = self.serialize()
+            for variant in self._variants:
+                # TODO: update serialization to ensure variants only return
+                #       data for the attributes they're supposed to modify
+                data = variant.serialize()
+                data.update(_copyData(mainData))
+                newAction = BuildAction.fromData(data)
+                yield newAction
+        else:
+            # no variants, just create one action
+            yield BuildAction.fromData(_copyData(self.serialize()))
 
 
 class BuildAction(BuildActionData):
@@ -1247,11 +1258,11 @@ class BuildAction(BuildActionData):
             actionId (str): A BuildAction id.
         """
         actionClass = getBuildActionClass(actionId)
-        if actionClass:
-            item = actionClass()
-            return item
-        else:
-            LOG.error("Failed to find BuildAction class: {0}".format(actionId))
+        if not actionClass:
+            raise ValueError("Failed to find BuildAction class: {0}".format(actionId))
+
+        item = actionClass()
+        return item
 
     @staticmethod
     def fromData(data):
@@ -1265,13 +1276,12 @@ class BuildAction(BuildActionData):
             data: A dict object containing serialized BuildAction data
         """
         actionClass = getBuildActionClass(data['id'])
-        if actionClass:
-            item = actionClass()
-            item.deserialize(data)
-            return item
-        else:
-            LOG.error(
-                "Failed to find BuildAction class: {0}".format(data['id']))
+        if not actionClass:
+            raise ValueError("Failed to find BuildAction class: {0}".format(data['id']))
+
+        item = actionClass()
+        item.deserialize(data)
+        return item
 
     def __init__(self, **attrKwargs):
         """

@@ -157,18 +157,6 @@ class Blueprint(object):
 
         return self.deserialize(data)
 
-    def actionIterator(self):
-        """
-        Generator that yields all BuildActions in this Blueprint.
-
-        Returns:
-            A generator that yields a tuple of (BuildStep, BuildAction)
-            for every action in the Blueprint.
-        """
-        for step in self.rootStep.childIterator():
-            for action in step.actionIterator():
-                yield step, action
-
     def getStepByPath(self, path):
         """
         Return a BuildStep from the Blueprint by path
@@ -502,21 +490,45 @@ class BlueprintBuilder(object):
         """
         pass
 
-    def _onError(self, step, action, error):
-        self.errors.append(error)
-        self.onError(step, action, error)
+    def onError(self, error):
+        """
+        Called when a generic error occurs while running
 
-    def onError(self, step, action, error):
+        Args:
+            error (Exception): The exception that occurred
+        """
+        self.errors.append(error)
+        self.log.error(error, exc_info=self.debug)
+
+    def onStepError(self, step, action, error):
         """
         Called when an error occurs while running a BuildAction
 
         Args:
             step (BuildStep): The step on which the error occurred
-            action (BuildAction): The action for which the error occurred
+            action (BuildAction): The action or proxy for which the error occurred
             error (Exception): The exception that occurred
         """
-        self.log.error('%s (%s): %s', step.getFullPath(),
-                       action.getActionId(), error, exc_info=True)
+        self.errors.append(error)
+        self.log.error('/%s (%s): %s', step.getFullPath(),
+                       action.getActionId(), error, exc_info=self.debug)
+
+    def actionIterator(self):
+        """
+        Return a generator that yields all BuildActions in the Blueprint.
+
+        Returns:
+            A generator that yields a tuple of (BuildStep, BuildAction)
+            for every action in the Blueprint.
+        """
+        for step in self.blueprint.rootStep.childIterator():
+            # try-catch each step, so we can stumble over
+            # problematic steps without crashing the whole build
+            try:
+                for action in step.actionIterator():
+                    yield step, action
+            except Exception as error:
+                self.onStepError(step, step.actionProxy, error=error)
 
     def buildGenerator(self):
         """
@@ -533,7 +545,7 @@ class BlueprintBuilder(object):
         yield dict(index=index, total=actionCount)
 
         # recursively iterate through all build actions
-        allActions = list(self.blueprint.actionIterator())
+        allActions = list(self.actionIterator())
         actionCount = len(allActions)
         for index, (step, action) in enumerate(allActions):
             # TODO: include more data somehow so we can track variant action indexes
@@ -563,7 +575,7 @@ class BlueprintBuilder(object):
         try:
             action.run()
         except Exception as error:
-            self._onError(step, action, error)
+            self.onStepError(step, action, error)
 
 
 class BlueprintValidator(BlueprintBuilder):
@@ -602,4 +614,4 @@ class BlueprintValidator(BlueprintBuilder):
         try:
             action.runValidate()
         except Exception as error:
-            self._onError(step, action, error)
+            self.onStepError(step, action, error)
