@@ -436,7 +436,12 @@ class BlueprintUIModel(QtCore.QObject):
         self.buildStepTreeModel.beginInsertRows(
             parentIndex, childIndex, childIndex)
 
-        step = BuildStep.fromData(data)
+        try:
+            step = BuildStep.fromData(data)
+        except ValueError as e:
+            LOG.error("Failed to create build step: %s" % e, exc_info=True)
+            return
+
         parentStep.insertChild(childIndex, step)
 
         self.buildStepTreeModel.endInsertRows()

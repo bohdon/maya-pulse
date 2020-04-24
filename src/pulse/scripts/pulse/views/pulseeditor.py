@@ -11,11 +11,10 @@ from pulse.vendor.Qt import QtCore, QtWidgets
 from pulse.prefs import optionVarProperty
 
 from .core import PulseWindow, BlueprintUIModel
-from .manageview import ManageWidget
 from .buildtoolbar import BuildToolbarWidget
-from .actiontree import ActionTreeWidget, ActionPaletteWidget
-from .actioneditor import ActionEditorWidget
+from .manageview import ManageWidget
 from .designview import DesignViewWidget
+from .actionsview import ActionsViewWidget
 
 
 __all__ = [
@@ -36,13 +35,9 @@ class PulseEditorWindow(PulseWindow):
     WINDOW_MODULE = 'pulse.views.pulseeditor'
 
     mainTabIndex = optionVarProperty('pulse.editor.mainTabIndex', 0)
-    actionsTabIndex = optionVarProperty('pulse.editor.actionsTabIndex', 0)
 
     def setMainTabIndex(self, index):
         self.mainTabIndex = index
-
-    def setActionsTabIndex(self, index):
-        self.actionsTabIndex = index
 
     def __init__(self, parent=None):
         super(PulseEditorWindow, self).__init__(parent=parent)
@@ -57,11 +52,9 @@ class PulseEditorWindow(PulseWindow):
         self.setupMenuBar(self)
 
         self.mainTabWidget.setCurrentIndex(self.mainTabIndex)
-        self.actionsTabWidget.setCurrentIndex(self.actionsTabIndex)
 
         # connect signals
         self.mainTabWidget.currentChanged.connect(self.setMainTabIndex)
-        self.actionsTabWidget.currentChanged.connect(self.setActionsTabIndex)
 
     def setupUi(self, parent):
         layout = QtWidgets.QVBoxLayout(parent)
@@ -83,35 +76,12 @@ class PulseEditorWindow(PulseWindow):
         tabWidget.addTab(designTab, "Design")
 
         # actions tab
-        actionsTab = QtWidgets.QWidget(parent)
-        actionsLayout = QtWidgets.QVBoxLayout(actionsTab)
-
-        actionsSplitter = QtWidgets.QSplitter(parent)
-        actionsSplitter.setOrientation(QtCore.Qt.Orientation.Vertical)
-        actionsLayout.addWidget(actionsSplitter)
-
-        actionTree = ActionTreeWidget(actionsTab)
-        actionTree.layout().setMargin(0)
-        actionsSplitter.addWidget(actionTree)
-
-        # actions tab widget (Palette / Editor)
-        actionsTabWidget = QtWidgets.QTabWidget(parent)
-        actionsSplitter.addWidget(actionsTabWidget)
-
-        actionPalette = ActionPaletteWidget(actionsTab)
-        actionPalette.layout().setMargin(0)
-        actionsTabWidget.addTab(actionPalette, "Palette")
-
-        actionEditor = ActionEditorWidget(actionsTab)
-        actionEditor.layout().setMargin(0)
-        actionsTabWidget.addTab(actionEditor, "Editor")
-
-        tabWidget.addTab(actionsTab, "Actions")
+        actionsWidget = ActionsViewWidget(parent)
+        tabWidget.addTab(actionsWidget, "Actions")
 
         layout.addWidget(tabWidget)
 
         self.mainTabWidget = tabWidget
-        self.actionsTabWidget = actionsTabWidget
 
     def setupMenuBar(self, parent):
         self.menuBar = QtWidgets.QMenuBar(parent)
@@ -149,19 +119,12 @@ class PulseEditorWindow(PulseWindow):
 
         fileMenu.addSeparator()
 
-        reloadAction = QtWidgets.QAction("Clear", parent)
-        reloadAction.setStatusTip(
+        initBlueprint = QtWidgets.QAction("Initialize", parent)
+        initBlueprint.setStatusTip(
             "Delete all actions and reset the Blueprint.")
-        reloadAction.triggered.connect(
+        initBlueprint.triggered.connect(
             self.blueprintModel.initializeBlueprint)
-        fileMenu.addAction(reloadAction)
-
-        reloadAction = QtWidgets.QAction("Create Default Actions", parent)
-        reloadAction.setStatusTip(
-            "Reset the Blueprint to the default set of actions.")
-        reloadAction.triggered.connect(
-            self.blueprintModel.initializeBlueprintToDefaultActions)
-        fileMenu.addAction(reloadAction)
+        fileMenu.addAction(initBlueprint)
 
         fileMenu.addSeparator()
 

@@ -89,7 +89,6 @@ class ActionPaletteWidget(QtWidgets.QWidget):
             btn.setText(actionConfig['displayName'])
             btn.setStyleSheet(
                 'background-color:rgba({0}, {1}, {2}, 30)'.format(*color))
-            btn.setMinimumHeight(22)
             btn.clicked.connect(partial(self.createBuildAction, actionId))
             categoryLayouts[actionCategory].addWidget(btn)
 
