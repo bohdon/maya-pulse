@@ -61,7 +61,7 @@ class BuildToolbarWidget(QtWidgets.QWidget):
         hlayout.addLayout(labelLayout)
 
         font = QtGui.QFont()
-        font.setPointSize(14)
+        font.setPointSize(12)
         font.setWeight(75)
         font.setBold(True)
         self.rigNameLabel = QtWidgets.QLabel(parent)
@@ -73,14 +73,14 @@ class BuildToolbarWidget(QtWidgets.QWidget):
         labelLayout.addWidget(self.rigNameLabel)
 
         font = QtGui.QFont()
-        font.setPointSize(10)
+        font.setPointSize(9)
         font.setItalic(True)
         self.blueprintFilenameLabel = QtWidgets.QLabel(parent)
         self.blueprintFilenameLabel.setFont(font)
         labelLayout.addWidget(self.blueprintFilenameLabel)
 
         font = QtGui.QFont()
-        font.setPointSize(10)
+        font.setPointSize(9)
         font.setItalic(True)
         self.rigOrBlueprintLabel = QtWidgets.QLabel(parent)
         self.rigOrBlueprintLabel.setFont(font)
