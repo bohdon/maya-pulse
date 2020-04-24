@@ -206,6 +206,17 @@ class BlueprintUIModel(QtCore.QObject):
     # TODO: add more generic blueprint property data model
     rigNameChanged = QtCore.Signal(str)
 
+    # called when the blueprint filepath has changed
+    # occurs on maya open scene, or new scene
+    fileChanged = QtCore.Signal()
+
+    # called just before a blueprint file is loaded
+    # args: (filepath)
+    preFileLoad = QtCore.Signal(str)
+
+    # called when the blueprint file has changed
+    postFileLoad = QtCore.Signal()
+
     rigExistsChanged = QtCore.Signal()
 
     autoSave = optionVarProperty('pulse.editor.autoSave', True)
@@ -275,6 +286,14 @@ class BlueprintUIModel(QtCore.QObject):
             filepath = os.path.splitext(sceneName)[0] + '.yaml'
             return filepath
 
+    def getBlueprintFilename(self):
+        """
+        Return the filename for the Blueprint being edited
+        """
+        filepath = self.getBlueprintFilepath()
+        if filepath:
+            return os.path.basename(filepath)
+
     def addSceneCallbacks(self):
         if not self._callbackIds:
             saveId = api.MSceneMessage.addCallback(
@@ -305,9 +324,11 @@ class BlueprintUIModel(QtCore.QObject):
     def onAfterOpenScene(self, clientData=None):
         if self.autoLoad:
             self.load(suppressWarnings=True)
+        self.fileChanged.emit()
 
     def onAfterNewScene(self, clientData=None):
         self.initializeBlueprint()
+        self.fileChanged.emit()
 
     def save(self, suppressWarnings=False):
         """
@@ -337,8 +358,6 @@ class BlueprintUIModel(QtCore.QObject):
         if not filepath:
             if not suppressWarnings:
                 LOG.warning("Scene is not saved")
-
-            self.initializeBlueprint()
             return
 
         if not os.path.isfile(filepath):
@@ -347,10 +366,12 @@ class BlueprintUIModel(QtCore.QObject):
                     "Blueprint file does not exist: {0}".format(filepath))
             return
 
+        self.preFileLoad.emit(filepath)
         self.buildStepTreeModel.beginResetModel()
         success = self.blueprint.loadFromFile(filepath)
         self.buildStepTreeModel.endResetModel()
         self.rigNameChanged.emit(self.getRigName())
+        self.postFileLoad.emit()
 
         if not success:
             LOG.error(

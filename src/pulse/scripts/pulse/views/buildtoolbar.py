@@ -36,6 +36,7 @@ class BuildToolbarWidget(QtWidgets.QWidget):
 
         # connect signals
         self.blueprintModel.rigNameChanged.connect(self.rigNameChanged)
+        self.blueprintModel.fileChanged.connect(self.onBlueprintFileChanged)
 
     @property
     def rigExists(self):
@@ -47,7 +48,7 @@ class BuildToolbarWidget(QtWidgets.QWidget):
 
     def setupUi(self, parent):
         layout = QtWidgets.QVBoxLayout(parent)
-        layout.setMargin(4)
+        layout.setMargin(0)
 
         self.frame = QtWidgets.QFrame(parent)
         self.frame.setObjectName("panelFrame")
@@ -59,7 +60,7 @@ class BuildToolbarWidget(QtWidgets.QWidget):
         hlayout.addLayout(labelLayout)
 
         font = QtGui.QFont()
-        font.setPointSize(10)
+        font.setPointSize(14)
         font.setWeight(75)
         font.setBold(True)
         self.rigNameLabel = QtWidgets.QLabel(parent)
@@ -71,10 +72,18 @@ class BuildToolbarWidget(QtWidgets.QWidget):
         labelLayout.addWidget(self.rigNameLabel)
 
         font = QtGui.QFont()
+        font.setPointSize(10)
+        font.setItalic(True)
+        self.blueprintFilenameLabel = QtWidgets.QLabel(parent)
+        self.blueprintFilenameLabel.setFont(font)
+        labelLayout.addWidget(self.blueprintFilenameLabel)
+
+        font = QtGui.QFont()
+        font.setPointSize(10)
         font.setItalic(True)
         self.rigOrBlueprintLabel = QtWidgets.QLabel(parent)
         self.rigOrBlueprintLabel.setFont(font)
-        labelLayout.addWidget(self.rigOrBlueprintLabel)
+        hlayout.addWidget(self.rigOrBlueprintLabel)
 
         self.checkBtn = QtWidgets.QPushButton(parent)
         self.checkBtn.setText("Validate")
@@ -104,13 +113,15 @@ class BuildToolbarWidget(QtWidgets.QWidget):
             name = '(unnamed)'
         return name
 
+    def onBlueprintFileChanged(self):
+        self.blueprintFilenameLabel.setText(self.blueprintModel.getBlueprintFilename())
+
     def onRigExistsChanged(self):
         self.cleanState()
         self.checkBtn.setVisible(not self.rigExists)
         self.buildBtn.setVisible(not self.rigExists)
         self.openBPBtn.setVisible(self.rigExists)
-        self.rigOrBlueprintLabel.setText(
-            "Editing Rig" if self.rigExists else "Editing Blueprint")
+        self.rigOrBlueprintLabel.setText("Rig" if self.rigExists else "Blueprint")
 
         frameColor = UIColors.RED if self.rigExists else UIColors.BLUE
         frameColor = list(frameColor)

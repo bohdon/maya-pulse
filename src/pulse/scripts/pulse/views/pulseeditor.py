@@ -87,7 +87,34 @@ class PulseEditorWindow(PulseWindow):
         self.menuBar = QtWidgets.QMenuBar(parent)
         self.layout().setMenuBar(self.menuBar)
 
-        fileMenu = self.menuBar.addMenu("Blueprint")
+        fileMenu = self.menuBar.addMenu("File")
+
+        initBlueprint = QtWidgets.QAction("Initialize", parent)
+        initBlueprint.setStatusTip(
+            "Delete all actions and reset the Blueprint.")
+        initBlueprint.triggered.connect(
+            self.blueprintModel.initializeBlueprint)
+        fileMenu.addAction(initBlueprint)
+
+        saveAction = QtWidgets.QAction("Save", parent)
+        saveAction.setStatusTip(
+            "Save the Blueprint as a yaml file associated with the current maya scene file")
+        saveAction.triggered.connect(self.blueprintModel.save)
+        fileMenu.addAction(saveAction)
+
+        reloadAction = QtWidgets.QAction("Reload", parent)
+        reloadAction.setStatusTip(
+            "Reload the Blueprint from the yaml file associated with the current maya scene file")
+        reloadAction.triggered.connect(self.blueprintModel.load)
+        fileMenu.addAction(reloadAction)
+
+        fileMenu.addSeparator()
+
+        debugPrintAction = QtWidgets.QAction("Debug Print YAML", parent)
+        debugPrintAction.triggered.connect(self.debugPrintSerialized)
+        fileMenu.addAction(debugPrintAction)
+
+        fileMenu.addSeparator()
 
         autosaveCheck = QtWidgets.QAction("Auto Save", parent)
         autosaveCheck.setCheckable(True)
@@ -104,33 +131,6 @@ class PulseEditorWindow(PulseWindow):
         autoloadCheck.setStatusTip(
             "Automatically load Blueprint files when a scene is opened")
         fileMenu.addAction(autoloadCheck)
-
-        saveAction = QtWidgets.QAction("Save", parent)
-        saveAction.setStatusTip(
-            "Save the Blueprint as a yaml file associated with the current maya scene file")
-        saveAction.triggered.connect(self.blueprintModel.save)
-        fileMenu.addAction(saveAction)
-
-        reloadAction = QtWidgets.QAction("Reload", parent)
-        reloadAction.setStatusTip(
-            "Reload the Blueprint from the yaml file associated with the current maya scene file")
-        reloadAction.triggered.connect(self.blueprintModel.load)
-        fileMenu.addAction(reloadAction)
-
-        fileMenu.addSeparator()
-
-        initBlueprint = QtWidgets.QAction("Initialize", parent)
-        initBlueprint.setStatusTip(
-            "Delete all actions and reset the Blueprint.")
-        initBlueprint.triggered.connect(
-            self.blueprintModel.initializeBlueprint)
-        fileMenu.addAction(initBlueprint)
-
-        fileMenu.addSeparator()
-
-        debugPrintAction = QtWidgets.QAction("Debug Print YAML", parent)
-        debugPrintAction.triggered.connect(self.debugPrintSerialized)
-        fileMenu.addAction(debugPrintAction)
 
     def debugPrintSerialized(self):
         print(self.blueprintModel, self.blueprintModel.blueprint)
