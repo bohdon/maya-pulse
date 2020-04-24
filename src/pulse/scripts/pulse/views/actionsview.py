@@ -81,4 +81,21 @@ class ActionsViewWidget(QtWidgets.QWidget):
 
 
 class ActionsViewWindow(PulseWindow):
-    pass
+
+    OBJECT_NAME = 'pulseActionsViewWindow'
+    PREFERRED_SIZE = QtCore.QSize(400, 300)
+    STARTING_SIZE = QtCore.QSize(400, 300)
+    MINIMUM_SIZE = QtCore.QSize(400, 300)
+
+    WINDOW_MODULE = 'pulse.views.actionsview'
+
+    def __init__(self, parent=None):
+        super(ActionsViewWindow, self).__init__(parent=parent)
+
+        self.setWindowTitle('Pulse Action Editor')
+
+        layout = QtWidgets.QVBoxLayout(self)
+        self.setLayout(layout)
+
+        widget = ActionsViewWidget(self)
+        layout.addWidget(widget)
