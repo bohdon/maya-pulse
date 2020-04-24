@@ -28,6 +28,8 @@ __all__ = [
 LOG = logging.getLogger(__name__)
 LOG.level = logging.DEBUG
 
+BLUEPRINT_FILE_EXT = 'yml'
+
 
 class PulseWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
     """
@@ -283,7 +285,8 @@ class BlueprintUIModel(QtCore.QObject):
             sceneName = pm.sceneName()
 
         if sceneName:
-            filepath = os.path.splitext(sceneName)[0] + '.yaml'
+            baseName = os.path.splitext(sceneName)[0]
+            filepath = '%s.%s' % (baseName, BLUEPRINT_FILE_EXT)
             return filepath
 
     def getBlueprintFilename(self):
