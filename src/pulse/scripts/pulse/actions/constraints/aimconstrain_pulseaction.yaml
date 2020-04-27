@@ -1,0 +1,44 @@
+AimConstrainAction:
+  id: Pulse.AimConstrain
+  displayName: Aim Constrain
+  description: Creates an aim constraint, optionally allowing for blending between aim and non-aim
+  color: [.4, .6, .8]
+  category: Constraints
+  attrs:
+    - name: leader
+      type: node
+    - name: follower
+      type: node
+      description: The node to aim at
+    - name: aimVector
+      type: vector
+      value: [1, 0, 0]
+      description: The forward vector to use for the aim
+    - name: upVector
+      type: vector
+      value: [0, 1, 0]
+      description: The local up vector to align with the target world up vector
+    - name: worldUpObject
+      type: node
+      description: The node to use for retrieving world up vector
+    - name: worldUpVector
+      type: vector
+      value: [0, 1, 0]
+      description: The vector that upVector should align with if using ObjectRotation
+    - name: worldUpType
+      type: option
+      description: The world up type. ObjectRotation - the upVector is aligned to match the orientation of the worldUpObject, Object - the upVector is aimed towards the worldUpObject
+      value: 0
+      options:
+       - ObjectRotation
+       - Object
+    - name: createFollowerOffset
+      description: Creates and constrains a parent transform for the follower node, instead of constraining the follower itself
+      type: option
+      value: 1
+      options:
+        - Always
+        - Exclude Joints
+    - name: createBlend
+      type: bool
+      description: If true, create an offset and setup a blend attribute on the node to allow switching between aim and non-aim
