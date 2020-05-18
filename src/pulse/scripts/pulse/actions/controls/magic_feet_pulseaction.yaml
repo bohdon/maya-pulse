@@ -1,0 +1,38 @@
+MagicFeetAction:
+  id: Pulse.MagicFeet
+  displayName: Magic Feet
+  description: Allows controlling foot rotation, blending pivots between toe, heel and ankle
+  color: [.85, .65, .4]
+  category: Controls
+  attrs:
+    - name: follower
+      type: node
+      description: The control to drive with the final foot location
+    - name: toeFollower
+      type: node
+      description: The toe control to drive with the final toe location
+    - name: createFollowerOffset
+      description: Creates and constrains a parent transform for the follower node, instead of constraining the follower itself
+      type: option
+      value: 1
+      options:
+        - Always
+        - Exclude Joints
+    - name: control
+      type: node
+      description: The magic feet control
+    - name: liftControl
+      type: node
+      description: The control to use when the foot is lifted
+    - name: toePivot
+      type: node
+      description: Node where the toe should pivot
+    - name: ballPivot
+      type: node
+      description: Node where the ball should pivot
+    - name: heelPivot
+      type: node
+      description: Node where the heel should pivot
+    - name: plantedTarget
+      type: node
+      description: The transform to use as the planted target location, will be created if not given, allows creating a selectable node with custom shape
