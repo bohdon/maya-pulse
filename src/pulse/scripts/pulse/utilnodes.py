@@ -465,6 +465,19 @@ def lessOrEqual(a, b, trueVal, falseVal):
 
 
 def condition(firstTerm, secondTerm, trueVal, falseVal, operation):
+    """
+    Create a condition that returns either trueVal or falseVal based
+    on the comparison of firstTerm and secondTerm.
+
+    Args:
+        operaiton (int): An int value representing the type of comparison:
+            0 - Equal
+            1 - Not Equal
+            2 - Greater Than
+            3 - Greater or Equal
+            4 - Less Than
+            5 - Less or Equal
+    """
     return _createUtilityAndReturnOutput(
         'condition', firstTerm=firstTerm, secondTerm=secondTerm,
         colorIfTrue=trueVal, colorIfFalse=falseVal, operation=operation)
