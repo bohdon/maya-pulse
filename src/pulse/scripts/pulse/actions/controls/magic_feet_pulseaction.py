@@ -4,6 +4,9 @@ import pymetanode as meta
 
 import pulse
 
+MAGIC_FEET_CTL_METACLASSNAME = 'pulse_magicfeet_ctl'
+MAGIC_FEET_LIFT_CTL_METACLASSNAME = 'pulse_magicfeet_lift_ctl'
+
 
 class MagicFeetAction(pulse.BuildAction):
 
@@ -181,6 +184,20 @@ class MagicFeetAction(pulse.BuildAction):
         # connect final toe rotations to toeFollower
         # TODO(bsayre): parent both tgts to ankle somehow to prevent locking
         pulse.utilnodes.connectMatrix(ballToeMtxBlendAttr, _toeFollower)
+
+        # add meta data to controls
+        ctlData = {
+            'plantedTarget': planted_tgt,
+            'liftControl': self.liftControl,
+        }
+        meta.setMetaData(
+            self.control, MAGIC_FEET_CTL_METACLASSNAME, ctlData, False)
+
+        liftCtlData = {
+            'control': self.control
+        }
+        meta.setMetaData(
+            self.liftControl, MAGIC_FEET_LIFT_CTL_METACLASSNAME, liftCtlData, False)
 
     def createMatrixBlend(self, mtxA, mtxB, blendAttr, name):
         """
