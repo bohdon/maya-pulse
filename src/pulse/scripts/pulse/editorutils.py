@@ -362,9 +362,12 @@ def fixupJointOrientForSelected(aimAxis="x", keepAxis="y", preserveChildren=True
 
 
 def matchJointRotationToOrientForSelected(preserveChildren=True):
-    sel = pm.selected(type='joint')
-    for node in sel:
-        matchJointRotationToOrient(node, preserveChildren)
+    # handle current selection containing both joints, and possibly pivots of joints
+    sel = pm.selected()
+    for s in sel:
+        if s.nodeType() == 'joint':
+            joint = s.node()
+            matchJointRotationToOrient(joint, preserveChildren)
 
 
 def getDetailedChannelBoxAttrs(node):
