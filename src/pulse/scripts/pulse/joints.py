@@ -2,9 +2,11 @@
 import pymel.core as pm
 
 from . import nodes
+from . import math
 
 __all__ = [
     'centerJoint',
+    'fixupJointOrient',
     'getChildJoints',
     'getEndJoints',
     'getJointMatrices',
@@ -249,6 +251,56 @@ def orientJoint(joint, axisOrder='xyz', upAxisStr='y', **kwargs):
     else:
         # zero out rotations of end joints
         joint.jo.set([0, 0, 0])
+
+
+def fixupJointOrient(joint, aimAxis='x', keepAxis='y', preserveChildren=False):
+    """
+    Orient the joint to point down the bone, preserving one existing axis of the current orientation.
+
+    Args:
+        joint (Joint): The joint to modify
+        aimAxis (str): The axis to aim down the bone, default is 'x'
+        keepAxis (str): The axis to preserve, default is 'y'
+    """
+    children = getChildJoints(joint)
+    if not children:
+        raise ValueError("%s has no children" % joint)
+
+    # keep track of child positions
+    if preserveChildren:
+        childMatrices = [getJointMatrices(j) for j in children]
+
+    # use first child for aiming down bone
+    child = children[0]
+
+    # get the down-bone basis vector
+    jointPos = joint.getTranslation(space='world')
+    childPos = child.getTranslation(space='world')
+    aimAxisVector = childPos - jointPos
+
+    # get the keepAxis basis vector
+    keepAxisIndex = {'x': 0, 'y': 1, 'z': 2}[keepAxis]
+    keepAxisVector = joint.wm.get()[keepAxisIndex][0:3]
+
+    # convert the two axes into a rotation matrix
+    if aimAxis == 'x':
+        if keepAxis == 'y':
+            newMtx = math.makeMatrixFromXY(aimAxisVector, keepAxisVector)
+        elif keepAxis == 'z':
+            newMtx = math.makeMatrixFromXZ(aimAxisVector, keepAxisVector)
+        else:
+            raise NotImplementedError
+    else:
+        raise NotImplementedError
+
+    # set the new rotation matrix on the joint, removing any rotate or rotateAxis values
+    setJointMatrices(joint, newMtx, pm.dt.Matrix(),
+                     pm.dt.Matrix(), newMtx, translate=False)
+
+    # restore child positions
+    if preserveChildren:
+        for child, childm in zip(children, childMatrices):
+            setJointMatrices(child, *childm)
 
 
 def matchJointRotationToOrient(joint, preserveChildren=False):

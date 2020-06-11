@@ -32,8 +32,10 @@ __all__ = [
     'getNamedColor',
     'getSelectedTransforms',
     'insertJointForSelected',
+    'interactiveOrientForSelected',
     'isDetailedChannelBoxEnabled',
     'linkSelected',
+    'matchJointRotationToOrientForSelected',
     'mirrorSelected',
     'orientToJointForSelected',
     'orientToWorldForSelected',
@@ -171,7 +173,8 @@ def createOffsetForSelected():
     """
     Create an offset group for the selected nodes
     """
-    pm.select([createOffsetTransform(s) for s in pm.selected(type='transform')])
+    pm.select([createOffsetTransform(s)
+               for s in pm.selected(type='transform')])
 
 
 def freezeScalesForSelectedHierarchies():
@@ -343,6 +346,19 @@ def rotateOrientOrTransform(
             shapes = node.getShapes()
             for shape in shapes:
                 rotateComponents(shape, -rotation)
+
+
+def interactiveOrientForSelected():
+    sel = pm.selected(type='joint')
+    rotateAxes = [s.rotateAxis for s in sel]
+    pm.select(rotateAxes)
+
+
+def fixupJointOrientForSelected(aimAxis="x", keepAxis="y", preserveChildren=True):
+    sel = pm.selected(type='joint')
+    for node in sel:
+        fixupJointOrient(node, aimAxis=aimAxis, keepAxis=keepAxis,
+                         preserveChildren=preserveChildren)
 
 
 def matchJointRotationToOrientForSelected(preserveChildren=True):

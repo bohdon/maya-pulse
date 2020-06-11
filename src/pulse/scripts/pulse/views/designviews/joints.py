@@ -209,6 +209,15 @@ class JointOrientsPanel(DesignViewPanel):
         toggleLRABtn.clicked.connect(
             cmd(self.toggleLocalRotationAxesForSelected))
 
+        fixupOrientBtn = QtWidgets.QPushButton(parent)
+        fixupOrientBtn.setText("Fixup Orient")
+        fixupOrientBtn.setStatusTip(
+            "Adjust joint orientation to point down the bone, whilst preserving "
+            "the other axes as much as possible. "
+            "Currently hard-coded to point down X and prioritize Z")
+        fixupOrientBtn.clicked.connect(
+            self.fixupJointOrientForSelected)
+
         syncAxesBtn = QtWidgets.QPushButton(parent)
         syncAxesBtn.setText("Sync Axes")
         syncAxesBtn.setStatusTip(
@@ -226,12 +235,13 @@ class JointOrientsPanel(DesignViewPanel):
 
         interactiveOrientBtn = QtWidgets.QPushButton(parent)
         interactiveOrientBtn.setText("Interactive Orient")
-        interactiveOrientBtn.setEnabled(False)
+        interactiveOrientBtn.clicked.connect(self.interactiveOrientForSelected)
 
         gridItems = [
             [orientToJointBtn, orientToWorldBtn],
-            [interactiveOrientBtn, syncAxesBtn],
+            [fixupOrientBtn, syncAxesBtn],
             [toggleCBBtn, toggleLRABtn],
+            [interactiveOrientBtn]
         ]
         viewutils.addItemsToGrid(gridLayout, gridItems)
         layout.addLayout(gridLayout)
@@ -308,6 +318,9 @@ class JointOrientsPanel(DesignViewPanel):
         cmd(editorutils.rotateSelectedOrientsAroundAxis,
             axis, degrees, **kw)()
 
+    def interactiveOrientForSelected(self):
+        cmd(editorutils.interactiveOrientForSelected)()
+
     def orientToWorldForSelected(self):
         kw = dict(
             includeChildren=self.orientIncludeChildren,
@@ -327,6 +340,14 @@ class JointOrientsPanel(DesignViewPanel):
             syncJointAxes=self.syncJointAxes,
         )
         cmd(editorutils.orientToJointForSelected, **kw)()
+
+    def fixupJointOrientForSelected(self):
+        kw = dict(
+            aimAxis=self.getOrientAxisOrderStr()[0],
+            keepAxis=self.getOrientUpAxisStr(),
+            preserveChildren=self.orientPreserveChildren,
+        )
+        cmd(editorutils.fixupJointOrientForSelected, **kw)()
 
     def matchJointRotationToOrientForSelected(self):
         kw = dict(
