@@ -33,6 +33,7 @@ __all__ = [
     'isMirrorNode',
     'MirrorColors',
     'MirrorCurveShapes',
+    'MirrorJointDisplay',
     'MirrorLinks',
     'MirrorNames',
     'MirrorOperation',
@@ -569,6 +570,16 @@ class MirrorCurveShapes(MirrorOperation):
             s = [1, 1, 1]
             s[axis] = -1
             pm.scale(curveShape.cv, s)
+
+
+class MirrorJointDisplay(MirrorOperation):
+    """
+    Mirrors the display settings of joints
+    """
+
+    def mirrorNode(self, sourceNode, destNode, isNewNode):
+        if sourceNode.type() == 'joint' and destNode.type() == 'joint':
+            destNode.radius.set(sourceNode.radius.get())
 
 
 class BlueprintMirrorOperation(MirrorOperation):

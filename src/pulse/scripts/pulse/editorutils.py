@@ -526,6 +526,8 @@ def mirrorSelected(
             colorsOp = MirrorColors()
             colorsOp.blueprint = blueprint
             util.addOperation(colorsOp)
+            jointDisplayOp = MirrorJointDisplay()
+            util.addOperation(jointDisplayOp)
 
     util.run(nodes)
 
