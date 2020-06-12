@@ -237,11 +237,15 @@ class JointOrientsPanel(DesignViewPanel):
         interactiveOrientBtn.setText("Interactive Orient")
         interactiveOrientBtn.clicked.connect(self.interactiveOrientForSelected)
 
+        orientIKJointsBtn = QtWidgets.QPushButton(parent)
+        orientIKJointsBtn.setText("Orient IK Joints")
+        orientIKJointsBtn.clicked.connect(self.orientIKJointsForSelected)
+
         gridItems = [
             [orientToJointBtn, orientToWorldBtn],
             [fixupOrientBtn, syncAxesBtn],
             [toggleCBBtn, toggleLRABtn],
-            [interactiveOrientBtn]
+            [interactiveOrientBtn, orientIKJointsBtn]
         ]
         viewutils.addItemsToGrid(gridLayout, gridItems)
         layout.addLayout(gridLayout)
@@ -340,6 +344,14 @@ class JointOrientsPanel(DesignViewPanel):
             syncJointAxes=self.syncJointAxes,
         )
         cmd(editorutils.orientToJointForSelected, **kw)()
+
+    def orientIKJointsForSelected(self):
+        kw = dict(
+            aimAxis=self.getOrientAxisOrderStr()[0],
+            poleAxis=self.getOrientUpAxisStr(),
+            preserveChildren=self.orientPreserveChildren,
+        )
+        cmd(editorutils.orientIKJointsForSelected, **kw)()
 
     def fixupJointOrientForSelected(self):
         kw = dict(

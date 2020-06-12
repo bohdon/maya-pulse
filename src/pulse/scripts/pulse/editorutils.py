@@ -283,6 +283,13 @@ def orientToJointForSelected(
             #     matchJointRotationToOrient(node, preserveChildren)
 
 
+def orientIKJointsForSelected(aimAxis="x", poleAxis="y", preserveChildren=True):
+    sel = pm.selected(type='joint')
+    for node in sel:
+        orientIKJoints(node, aimAxis=aimAxis, poleAxis=poleAxis,
+                       preserveChildren=preserveChildren)
+
+
 def rotateSelectedOrientsAroundAxis(
         axis, degrees=90,
         preserveChildren=True,

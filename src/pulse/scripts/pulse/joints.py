@@ -9,12 +9,15 @@ __all__ = [
     'fixupJointOrient',
     'getChildJoints',
     'getEndJoints',
+    'getIKPoleVectorAndMidPoint',
     'getJointMatrices',
     'getParentJoint',
     'getRootJoint',
     'insertJoints',
     'matchJointRotationToOrient',
+    'orientIKJoints',
     'orientJoint',
+    'orientJointCustom',
     'orientJointToWorld',
     'rotateJointOrient',
     'setJointMatrices',
@@ -253,41 +256,23 @@ def orientJoint(joint, axisOrder='xyz', upAxisStr='y', **kwargs):
         joint.jo.set([0, 0, 0])
 
 
-def fixupJointOrient(joint, aimAxis='x', keepAxis='y', preserveChildren=False):
+def orientJointCustom(joint, aimVector, upVector, aimAxis='x', upAxis='y', preserveChildren=False):
     """
-    Orient the joint to point down the bone, preserving one existing axis of the current orientation.
-
-    Args:
-        joint (Joint): The joint to modify
-        aimAxis (str): The axis to aim down the bone, default is 'x'
-        keepAxis (str): The axis to preserve, default is 'y'
+    Orient a joint to point the aimAxis down aimVector, keeping upAxis as closely aligned to upVector
+    as possible. The third axis will be computed.
     """
     children = getChildJoints(joint)
-    if not children:
-        raise ValueError("%s has no children" % joint)
 
     # keep track of child positions
     if preserveChildren:
         childMatrices = [getJointMatrices(j) for j in children]
 
-    # use first child for aiming down bone
-    child = children[0]
-
-    # get the down-bone basis vector
-    jointPos = joint.getTranslation(space='world')
-    childPos = child.getTranslation(space='world')
-    aimAxisVector = childPos - jointPos
-
-    # get the keepAxis basis vector
-    keepAxisIndex = {'x': 0, 'y': 1, 'z': 2}[keepAxis]
-    keepAxisVector = joint.wm.get()[keepAxisIndex][0:3]
-
     # convert the two axes into a rotation matrix
     if aimAxis == 'x':
-        if keepAxis == 'y':
-            newMtx = math.makeMatrixFromXY(aimAxisVector, keepAxisVector)
-        elif keepAxis == 'z':
-            newMtx = math.makeMatrixFromXZ(aimAxisVector, keepAxisVector)
+        if upAxis == 'y':
+            newMtx = math.makeMatrixFromXY(aimVector, upVector)
+        elif upAxis == 'z':
+            newMtx = math.makeMatrixFromXZ(aimVector, upVector)
         else:
             raise NotImplementedError
     else:
@@ -303,6 +288,68 @@ def fixupJointOrient(joint, aimAxis='x', keepAxis='y', preserveChildren=False):
             setJointMatrices(child, *childm)
 
 
+def orientIKJoints(endJoint, aimAxis='x', poleAxis='y', preserveChildren=False):
+    """
+    Orient the two parent joints of the given end joint to line up with the IK plane
+    created by the triangle between all three joints.
+
+    Args:
+        endJoint (Joint): The end joint, the two parent joints will be modified
+        aimAxis (str): The axis to aim down the bone, default is 'x'
+        poleAxis (str): The axis to aim along the ik pole vector
+    """
+    midJoint = endJoint.getParent()
+    rootJoint = midJoint.getParent()
+
+    endPos = endJoint.getTranslation(space='world')
+    midPos = midJoint.getTranslation(space='world')
+    rootPos = rootJoint.getTranslation(space='world')
+
+    # get the aim-down-bone vectors
+    rootToMidVector = midPos - rootPos
+    midToEndVector = endPos - midPos
+
+    # get the pole vector
+    poleVector, _ = getIKPoleVectorAndMidPoint(endJoint)
+
+    orientJointCustom(rootJoint, aimVector=rootToMidVector, upVector=poleVector,
+                      aimAxis=aimAxis, upAxis=poleAxis,
+                      preserveChildren=preserveChildren)
+    orientJointCustom(midJoint, aimVector=midToEndVector, upVector=poleVector,
+                      aimAxis=aimAxis, upAxis=poleAxis,
+                      preserveChildren=preserveChildren)
+
+
+def fixupJointOrient(joint, aimAxis='x', keepAxis='y', preserveChildren=False):
+    """
+    Orient the joint to point down the bone, preserving one existing axis of the current orientation.
+
+    Args:
+        joint (Joint): The joint to modify
+        aimAxis (str): The axis to aim down the bone, default is 'x'
+        keepAxis (str): The axis to preserve, default is 'y'
+    """
+    children = getChildJoints(joint)
+    if not children:
+        raise ValueError("%s has no children" % joint)
+
+    # use first child for aiming down bone
+    child = children[0]
+
+    # get the down-bone basis vector
+    jointPos = joint.getTranslation(space='world')
+    childPos = child.getTranslation(space='world')
+    aimAxisVector = childPos - jointPos
+
+    # get the keepAxis basis vector
+    keepAxisIndex = {'x': 0, 'y': 1, 'z': 2}[keepAxis]
+    keepAxisVector = joint.wm.get()[keepAxisIndex][0:3]
+
+    orientJointCustom(joint, aimVector=aimAxisVector, upVector=keepAxisVector,
+                      aimAxis=aimAxis, upAxis=keepAxis,
+                      preserveChildren=preserveChildren)
+
+
 def matchJointRotationToOrient(joint, preserveChildren=False):
     if preserveChildren:
         children = getChildJoints(joint)
@@ -314,3 +361,27 @@ def matchJointRotationToOrient(joint, preserveChildren=False):
     if preserveChildren:
         for child, childm in zip(children, childMatrices):
             setJointMatrices(child, *childm)
+
+
+def getIKPoleVectorAndMidPoint(endJoint):
+    """
+    Return the pole vector and corresponding mid point between the root of an ik joint
+    setup and the given end joint
+    """
+    midJoint = endJoint.getParent()
+    rootJoint = midJoint.getParent()
+
+    endPos = endJoint.getTranslation(space='world')
+    midPos = midJoint.getTranslation(space='world')
+    rootPos = rootJoint.getTranslation(space='world')
+
+    # get the direction betwen root and end
+    ikDirection = (endPos - rootPos).normal()
+    # these are also the point-down-bone vectors
+    rootToMidVector = midPos - rootPos
+    # get point along the line between root..end that lines up with mid joint
+    midPoint = rootPos + ikDirection.dot(rootToMidVector) * ikDirection
+    # use poleVector for pole axis for both mid and root joint orientation
+    poleVector = (midPos - midPoint).normal()
+
+    return poleVector, midPoint
