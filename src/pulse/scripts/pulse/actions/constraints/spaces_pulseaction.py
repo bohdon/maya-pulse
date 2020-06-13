@@ -16,6 +16,7 @@ class CreateSpaceAction(pulse.BuildAction):
 
     def run(self):
         pulse.spaces.createSpace(self.node, self.name)
+        self.updateRigMetaDataDict('spaces', {self.name: self.node})
 
 
 class SpaceConstrainAction(pulse.BuildAction):

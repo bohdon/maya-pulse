@@ -1365,6 +1365,38 @@ class BuildAction(BuildActionData):
             return
         meta.updateMetaData(self.rig, RIG_METACLASS, data)
 
+    def extendRigMetaDataList(self, key, data):
+        """
+        Extend a list value in the meta data of the rig being built.
+
+        Args:
+            key (str): The meta data key for the list
+            data (list): A list of any basic python object to add to the meta data list value
+        """
+        # get current value for the meta data key
+        rigData = self.getRigMetaData()
+        currentValue = rigData.get(key, [])
+        # append or extend the new data
+        newValue = list(set(currentValue + data))
+        # update meta data
+        self.updateRigMetaData({key: newValue})
+
+    def updateRigMetaDataDict(self, key, data):
+        """
+        Update a dict value in the meta data of the rig being built.
+
+        Args:
+            key (str): The meta data key for the list
+            data (dict): A dict of any basic python objects to update the meta data value with
+        """
+        # get current value for the meta data key
+        rigData = self.getRigMetaData()
+        value = rigData.get(key, {})
+        # update dict value with the new data
+        value.update(data)
+        # update meta data
+        self.updateRigMetaData({key: value})
+
     def validateApiVersion(self):
         """
         Validate that the current Maya version meets the requirements for this build action

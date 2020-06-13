@@ -49,3 +49,6 @@ class AnimControlAction(pulse.BuildAction):
         # show rotate order in channel box
         self.controlNode.rotateOrder.setLocked(True)
         self.controlNode.rotateOrder.showInChannelBox(True)
+
+        # update rig meta data
+        self.extendRigMetaDataList('animControls', [self.controlNode])

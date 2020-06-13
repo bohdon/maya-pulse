@@ -51,18 +51,8 @@ class BindSkinAction(pulse.BuildAction):
         # TODO: support geomBind when using geodesic voxel binding
 
         if self.isRenderGeo:
-            rigData = self.getRigMetaData()
-            # add meshes to renderGeo list
-            renderGeo = rigData.get('renderGeo', [])
-            renderGeo = list(set(renderGeo + self.meshes))
-            # add joints to bakedJoints list
-            bakeNodes = rigData.get('bakeNodes', [])
-            bakeNodes = list(set(bakeNodes + self.joints))
-
-            self.updateRigMetaData({
-                'renderGeo': renderGeo,
-                'bakeNodes': bakeNodes,
-            })
+            self.extendRigMetaDataList('renderGeo', self.meshes)
+            self.extendRigMetaDataList('bakeNodes', self.joints)
 
 
 class ApplySkinWeightsAction(pulse.BuildAction):
