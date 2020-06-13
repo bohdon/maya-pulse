@@ -1,38 +1,29 @@
 """
 A widget containing a collection of panels with tools
-for designing the rig blueprint.
+for working with skinned meshes.
 """
 
-
 from pulse.vendor.Qt import QtWidgets
-from .designviews.controls import ControlsPanel
-from .designviews.general import GeneralPanel
-from .designviews.joints import JointsPanel, JointOrientsPanel
-from .designviews.sym import SymmetryPanel
-from .designviews.layout import LayoutPanel
+
+from .skinviews.manage import ManageWeightsPanel
 
 __all__ = [
-    "DesignViewWidget",
+    'SkinViewWidget',
 ]
 
 PANEL_DEFINITIONS = [
-    {"widgetClass": ControlsPanel},
-    {"widgetClass": GeneralPanel},
-    {"widgetClass": LayoutPanel},
-    {"widgetClass": JointsPanel},
-    {"widgetClass": JointOrientsPanel},
-    {"widgetClass": SymmetryPanel},
+    {"widgetClass": ManageWeightsPanel},
 ]
 
 
-class DesignViewWidget(QtWidgets.QWidget):
+class SkinViewWidget(QtWidgets.QWidget):
     """
     A widget containing a collection of panels with tools
-    for designing the rig blueprint.
+    for working with skinned meshes.
     """
 
     def __init__(self, parent=None):
-        super(DesignViewWidget, self).__init__(parent=parent)
+        super(SkinViewWidget, self).__init__(parent=parent)
 
         # list of panel widgets to add, in order
         self.panelDefinitions = PANEL_DEFINITIONS

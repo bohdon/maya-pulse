@@ -560,6 +560,34 @@ def saveSkinWeightsForSelected(filePath=None):
     skins = [pulse.skins.getSkinFromMesh(m) for m in pm.selected()]
     skins = [s for s in skins if s]
 
+    if not skins:
+        LOG.warning("No skins were found to save")
+        return
+
+    pulse.skins.saveSkinWeightsToFile(filePath, *skins)
+
+
+def saveAllSkinWeights(filePath=None):
+    """
+    Save skin weights for all skin clusters in the scene.
+
+    Args:
+        filePath (str): A full path to a .weights file to write. If None,
+            will use the scene name.
+    """
+    if filePath is None:
+        sceneName = pm.sceneName()
+        if not sceneName:
+            LOG.warning("Scene is not saved")
+            return
+        filePath = os.path.splitext(sceneName)[0] + '.weights'
+
+    skins = pm.ls(type='skinCluster')
+
+    if not skins:
+        LOG.warning("No skins were found to save")
+        return
+
     pulse.skins.saveSkinWeightsToFile(filePath, *skins)
 
 

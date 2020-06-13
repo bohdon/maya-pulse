@@ -14,11 +14,31 @@ from .core import PulseWindow, BlueprintUIModel
 from .buildtoolbar import BuildToolbarWidget
 from .manageview import ManageWidget
 from .designview import DesignViewWidget
+from .skinview import SkinViewWidget
 from .actionsview import ActionsViewWidget
 
 
 __all__ = [
     'PulseEditorWindow',
+]
+
+TAB_DEFINITIONS = [
+    {
+        "name": "Manage",
+        "widgetClass": ManageWidget
+    },
+    {
+        "name": "Design",
+        "widgetClass": DesignViewWidget
+    },
+    {
+        "name": "Skin",
+        "widgetClass": SkinViewWidget
+    },
+    {
+        "name": "Actions",
+        "widgetClass": ActionsViewWidget
+    },
 ]
 
 
@@ -43,6 +63,7 @@ class PulseEditorWindow(PulseWindow):
         super(PulseEditorWindow, self).__init__(parent=parent)
 
         self.setWindowTitle('Pulse')
+        self.tabDefinitions = TAB_DEFINITIONS
 
         pulse.loadBuiltinActions()
 
@@ -64,20 +85,12 @@ class PulseEditorWindow(PulseWindow):
         buildToolbar = BuildToolbarWidget(parent)
         layout.addWidget(buildToolbar)
 
-        # main tab widget (Manage / Design / Actions)
         tabWidget = QtWidgets.QTabWidget(parent)
 
-        # manage tab
-        manageTab = ManageWidget(parent)
-        tabWidget.addTab(manageTab, "Manage")
-
-        # design tab
-        designTab = DesignViewWidget(parent)
-        tabWidget.addTab(designTab, "Design")
-
-        # actions tab
-        actionsWidget = ActionsViewWidget(parent)
-        tabWidget.addTab(actionsWidget, "Actions")
+        # create a widget for each entry in self.tabDefinitions
+        for tabDef in self.tabDefinitions:
+            widget = tabDef['widgetClass'](parent)
+            tabWidget.addTab(widget, tabDef['name'])
 
         layout.addWidget(tabWidget)
 

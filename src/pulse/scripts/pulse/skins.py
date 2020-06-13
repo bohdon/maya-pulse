@@ -264,12 +264,19 @@ def saveSkinWeightsToFile(filePath, *skins):
         filePath (str): A full path to the .weights file to write
         *skins (PyNode): One or more skin cluster nodes
     """
+    pm.progressWindow(t='Saving Weights...', min=0, max=100, status=None)
+
+    pm.progressWindow(e=True, progress=0)
     skinWeights = getSkinWeightsMap(*skins)
+
+    pm.progressWindow(e=True, progress=80)
     skinWeightsStr = meta.encodeMetaData(skinWeights)
 
+    pm.progressWindow(e=True, progress=90)
     with open(filePath, 'wb') as fp:
         fp.write(skinWeightsStr)
 
+    pm.progressWindow(endProgress=True)
     LOG.info(filePath)
 
 
