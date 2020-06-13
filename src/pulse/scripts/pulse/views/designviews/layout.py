@@ -4,9 +4,8 @@ import pymel.core as pm
 
 from pulse.views import utils as viewutils
 from pulse.views.utils import undoAndRepeatPartial as cmd
-from pulse.views.core import PulseWindow
+from pulse.views.core import PulseWindow, PulsePanelWidget
 from pulse import editorutils
-from .core import DesignViewPanel
 
 __all__ = [
     "LayoutLinkEditorWidget",
@@ -15,7 +14,7 @@ __all__ = [
 ]
 
 
-class LayoutPanel(DesignViewPanel):
+class LayoutPanel(PulsePanelWidget):
 
     def __init__(self, parent):
         super(LayoutPanel, self).__init__(parent=parent)

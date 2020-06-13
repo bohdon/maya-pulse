@@ -3,17 +3,17 @@ from pulse.vendor.Qt import QtCore, QtWidgets, QtGui
 
 import pulse.controlshapes
 from pulse import editorutils
+from pulse.views.core import PulsePanelWidget
 from pulse.views.style import UIColors
 from pulse.views.utils import getIcon
 from pulse.views.utils import undoAndRepeatPartial as cmd
-from .core import DesignViewPanel
 
 __all__ = [
     "ControlsPanel",
 ]
 
 
-class ControlsPanel(DesignViewPanel):
+class ControlsPanel(PulsePanelWidget):
 
     def __init__(self, parent):
         super(ControlsPanel, self).__init__(parent=parent)

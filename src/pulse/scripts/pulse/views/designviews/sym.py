@@ -7,16 +7,16 @@ import pulse.sym
 
 from pulse.prefs import optionVarProperty
 from pulse.views import utils as viewutils
+from pulse.views.core import PulsePanelWidget
 from pulse.views.utils import undoAndRepeatPartial as cmd
 from pulse import editorutils
-from .core import DesignViewPanel
 
 __all__ = [
     "SymmetryPanel",
 ]
 
 
-class SymmetryPanel(DesignViewPanel):
+class SymmetryPanel(PulsePanelWidget):
 
     mirrorRecursive = optionVarProperty(
         'pulse.editor.mirrorRecursive', True)

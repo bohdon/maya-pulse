@@ -3,9 +3,9 @@ from pulse.vendor.Qt import QtCore, QtWidgets, QtGui
 import pymel.core as pm
 
 from pulse.views import utils as viewutils
+from pulse.views.core import PulsePanelWidget
 from pulse.views.utils import undoAndRepeatPartial as cmd
 from pulse import editorutils
-from .core import DesignViewPanel
 
 from ..quickname import QuickNameWindow
 from ..quickcolor import QuickColorWindow
@@ -15,7 +15,7 @@ __all__ = [
 ]
 
 
-class GeneralPanel(DesignViewPanel):
+class GeneralPanel(PulsePanelWidget):
 
     def __init__(self, parent):
         super(GeneralPanel, self).__init__(parent=parent)

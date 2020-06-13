@@ -6,10 +6,10 @@ from pulse.vendor.Qt.QtWidgets import QPushButton
 
 from pulse.prefs import optionVarProperty
 from pulse.views import utils as viewutils
+from pulse.views.core import PulsePanelWidget
 from pulse.views.utils import undoAndRepeatPartial as cmd
 from pulse.views.style import UIColors
 from pulse import editorutils
-from .core import DesignViewPanel
 
 __all__ = [
     "JointOrientsPanel",
@@ -17,7 +17,7 @@ __all__ = [
 ]
 
 
-class JointsPanel(DesignViewPanel):
+class JointsPanel(PulsePanelWidget):
 
     def getPanelDisplayName(self):
         return "Joints"
@@ -65,7 +65,7 @@ class JointsPanel(DesignViewPanel):
         viewutils.addItemsToGrid(gridLayout, gridItems)
 
 
-class JointOrientsPanel(DesignViewPanel):
+class JointOrientsPanel(PulsePanelWidget):
     """
     Util widget for orienting joints.
     """

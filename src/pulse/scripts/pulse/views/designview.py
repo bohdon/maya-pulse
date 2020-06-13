@@ -25,6 +25,16 @@ class DesignViewWidget(QtWidgets.QWidget):
     def __init__(self, parent=None):
         super(DesignViewWidget, self).__init__(parent=parent)
 
+        # list of panel widgets to add, in order
+        self.panelClasses = [
+            ControlsPanel,
+            GeneralPanel,
+            LayoutPanel,
+            JointsPanel,
+            JointOrientsPanel,
+            SymmetryPanel,
+        ]
+
         self.setupUi(self)
 
     def setupUi(self, parent):
@@ -53,24 +63,13 @@ class DesignViewWidget(QtWidgets.QWidget):
         self.scrollWidget.setLayout(self.scrollLayout)
 
     def setupPanelsUi(self, layout, parent):
-
-        controls = ControlsPanel(parent)
-        layout.addWidget(controls)
-
-        general = GeneralPanel(parent)
-        layout.addWidget(general)
-
-        layoutPanel = LayoutPanel(parent)
-        layout.addWidget(layoutPanel)
-
-        joints = JointsPanel(parent)
-        layout.addWidget(joints)
-
-        jointOrients = JointOrientsPanel(parent)
-        layout.addWidget(jointOrients)
-
-        sym = SymmetryPanel(parent)
-        layout.addWidget(sym)
+        """
+        Create a widget instance for each class in self.panelClasses
+        and add it to the layout.
+        """
+        for panelClass in self.panelClasses:
+            panel = panelClass(parent)
+            layout.addWidget(panel)
 
         spacer = QtWidgets.QSpacerItem(
             20, 20, QtWidgets.QSizePolicy.Minimum,
