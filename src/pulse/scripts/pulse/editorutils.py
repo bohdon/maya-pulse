@@ -42,13 +42,13 @@ __all__ = [
     'pairSelected',
     'parentSelected',
     'parentSelectedInOrder',
+    'positionLinkForSelected',
     'rotateSelectedComponentsAroundAxis',
     'rotateSelectedOrientsAroundAxis',
     'saveSceneIfDirty',
     'saveSkinWeightsForSelected',
     'setDetailedChannelBoxEnabled',
     'setOverrideColorForSelected',
-    'snapToLinkForSelected',
     'toggleDetailedChannelBoxForSelected',
     'toggleLocalRotationAxesForSelected',
     'unfreezeOffsetMatricesForSelectedHierarchies',
@@ -454,13 +454,13 @@ def toggleLocalRotationAxesForSelected(includeChildren=False):
         s.dla.set(not isEnabled)
 
 
-def linkSelected():
+def linkSelected(linkType=pulse.links.LinkType.DEFAULT):
     sel = pm.selected()
     if len(sel) != 2:
         LOG.warning("Select a leader then a follower")
         return
 
-    pulse.links.link(sel[0], sel[1])
+    pulse.links.link(sel[0], sel[1], linkType)
 
 
 def unlinkSelected():
@@ -468,14 +468,14 @@ def unlinkSelected():
         pulse.links.unlink(s)
 
 
-def snapToLinkForSelected():
+def positionLinkForSelected():
     sel = pm.selected()
     if not sel:
         sel = pulse.links.getAllLinkedNodes()
         # TODO: sort by parenting hierarchy
 
     for node in sel:
-        pulse.links.snapToLink(node)
+        pulse.links.positionLink(node)
 
 
 def pairSelected():

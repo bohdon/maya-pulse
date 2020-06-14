@@ -6,6 +6,7 @@ from pulse.views import utils as viewutils
 from pulse.views.utils import undoAndRepeatPartial as cmd
 from pulse.views.core import PulseWindow, PulsePanelWidget
 from pulse import editorutils
+from pulse import links
 
 __all__ = [
     "LayoutLinkEditorWidget",
@@ -38,7 +39,7 @@ class LayoutPanel(PulsePanelWidget):
         snapToTargetsBtn.setStatusTip(
             "Snap controls and linked objects to their target positions")
         snapToTargetsBtn.clicked.connect(
-            cmd(editorutils.snapToLinkForSelected))
+            cmd(editorutils.positionLinkForSelected))
 
         linkEditorBtn = QtWidgets.QPushButton(frame)
         linkEditorBtn.setText("Link Editor")
@@ -66,17 +67,26 @@ class LayoutLinkEditorWidget(QtWidgets.QWidget):
         gridLayout.setSpacing(2)
         self.setLayout(gridLayout)
 
-        linkBtn = QtWidgets.QPushButton(parent)
-        linkBtn.setText("Link")
-        linkBtn.clicked.connect(
-            cmd(editorutils.linkSelected))
+        linkDefaultBtn = QtWidgets.QPushButton(parent)
+        linkDefaultBtn.setText("Link")
+        linkDefaultBtn.clicked.connect(
+            cmd(editorutils.linkSelected, linkType=links.LinkType.DEFAULT))
+
+        linkIkPoleBtn = QtWidgets.QPushButton(parent)
+        linkIkPoleBtn.setText("Link IK Pole")
+        linkIkPoleBtn.clicked.connect(
+            cmd(editorutils.linkSelected, linkType=links.LinkType.IKPOLE))
 
         unlinkBtn = QtWidgets.QPushButton(parent)
         unlinkBtn.setText("Unlink")
         unlinkBtn.clicked.connect(
             cmd(editorutils.unlinkSelected))
 
-        viewutils.addItemsToGrid(gridLayout, [[linkBtn, unlinkBtn]])
+        gridItems = [
+            [linkDefaultBtn, linkIkPoleBtn],
+            [unlinkBtn],
+        ]
+        viewutils.addItemsToGrid(gridLayout, gridItems)
 
 
 class LayoutLinkEditorWindow(PulseWindow):
@@ -92,10 +102,14 @@ class LayoutLinkEditorWindow(PulseWindow):
         super(LayoutLinkEditorWindow, self).__init__(parent=parent)
 
         self.setWindowTitle('Layout Link Editor')
+        self.setMinimumSize(300, 100)
 
         layout = QtWidgets.QVBoxLayout(self)
-        layout.setMargin(0)
+        layout.setMargin(10)
         self.setLayout(layout)
 
         widget = LayoutLinkEditorWidget(self)
         layout.addWidget(widget)
+
+    def onSelectionChanged(self):
+        pass

@@ -369,7 +369,11 @@ def getIKPoleVectorAndMidPoint(endJoint):
     setup and the given end joint
     """
     midJoint = endJoint.getParent()
+    if not midJoint:
+        raise ValueError("%s has no parent joint" % endJoint)
     rootJoint = midJoint.getParent()
+    if not rootJoint:
+        raise ValueError("%s has no parent joint" % rootJoint)
 
     endPos = endJoint.getTranslation(space='world')
     midPos = midJoint.getTranslation(space='world')
