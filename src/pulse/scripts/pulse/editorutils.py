@@ -20,42 +20,6 @@ from pulse.sym import *
 import pulse.links
 import pulse.skins
 
-__all__ = [
-    'centerSelectedJoints',
-    'createOffsetForSelected',
-    'disableColorOverrideForSelected',
-    'disableSegmentScaleCompensateForSelected',
-    'freezeOffsetMatricesForSelectedHierarchies',
-    'freezePivotsForSelectedHierarchies',
-    'freezeScalesForSelectedHierarchies',
-    'getDetailedChannelBoxAttrs',
-    'getNamedColor',
-    'getSelectedTransforms',
-    'insertJointForSelected',
-    'interactiveOrientForSelected',
-    'isDetailedChannelBoxEnabled',
-    'linkSelected',
-    'matchJointRotationToOrientForSelected',
-    'mirrorSelected',
-    'orientToJointForSelected',
-    'orientToWorldForSelected',
-    'pairSelected',
-    'parentSelected',
-    'parentSelectedInOrder',
-    'positionLinkForSelected',
-    'rotateSelectedComponentsAroundAxis',
-    'rotateSelectedOrientsAroundAxis',
-    'saveSceneIfDirty',
-    'saveSkinWeightsForSelected',
-    'setDetailedChannelBoxEnabled',
-    'setOverrideColorForSelected',
-    'toggleDetailedChannelBoxForSelected',
-    'toggleLocalRotationAxesForSelected',
-    'unfreezeOffsetMatricesForSelectedHierarchies',
-    'unlinkSelected',
-    'unpairSelected',
-]
-
 LOG = logging.getLogger(__name__)
 
 
@@ -468,6 +432,16 @@ def unlinkSelected():
         pulse.links.unlink(s)
 
 
+def saveLinkOffsetsForSelected():
+    for s in pm.selected():
+        pulse.links.saveLinkOffsets(s)
+
+
+def clearLinkOffsetsForSelected():
+    for s in pm.selected():
+        pulse.links.clearLinkOffsets(s)
+
+
 def positionLinkForSelected():
     sel = pm.selected()
     if not sel:
@@ -520,8 +494,6 @@ def mirrorSelected(
 
     if curveShapes:
         util.addOperation(MirrorCurveShapes())
-    if links:
-        util.addOperation(MirrorLinks())
     if reparent:
         util.addOperation(MirrorParenting())
     if transform:
@@ -538,6 +510,9 @@ def mirrorSelected(
             util.addOperation(colorsOp)
             jointDisplayOp = MirrorJointDisplay()
             util.addOperation(jointDisplayOp)
+    # run links last so that snapping to link targets has priority
+    if links:
+        util.addOperation(MirrorLinks())
 
     util.run(nodes)
 

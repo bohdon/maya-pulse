@@ -24,6 +24,8 @@ class SymmetryPanel(PulsePanelWidget):
         'pulse.editor.mirrorTransforms', True)
     mirrorParenting = optionVarProperty(
         'pulse.editor.mirrorParenting', True)
+    mirrorLinks = optionVarProperty(
+        'pulse.editor.mirrorLinks', True)
     mirrorAppearance = optionVarProperty(
         'pulse.editor.mirrorAppearance', True)
     mirrorAllowCreate = optionVarProperty(
@@ -37,6 +39,9 @@ class SymmetryPanel(PulsePanelWidget):
 
     def setMirrorParenting(self, value):
         self.mirrorParenting = value
+
+    def setMirrorLinks(self, value):
+        self.mirrorLinks = value
 
     def setMirrorAppearance(self, value):
         self.mirrorAppearance = value
@@ -90,6 +95,15 @@ class SymmetryPanel(PulsePanelWidget):
         check.setChecked(self.mirrorParenting)
         check.stateChanged.connect(
             self.setMirrorParenting)
+        layout.addWidget(check)
+
+        check = QtWidgets.QCheckBox(parent)
+        check.setText("Links")
+        check.setStatusTip(
+            "Mirror the layout links of the nodes, allowing mirrored nodes to snap to their linked mirror nodes")
+        check.setChecked(self.mirrorLinks)
+        check.stateChanged.connect(
+            self.setMirrorLinks)
         layout.addWidget(check)
 
         check = QtWidgets.QCheckBox(parent)
@@ -150,7 +164,7 @@ class SymmetryPanel(PulsePanelWidget):
             recursive=self.mirrorRecursive,
             create=self.mirrorAllowCreate,
             curveShapes=True,
-            links=True,
+            links=self.mirrorLinks,
             reparent=self.mirrorParenting,
             transform=self.mirrorTransforms,
             appearance=self.mirrorAppearance,

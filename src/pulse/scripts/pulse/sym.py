@@ -363,11 +363,11 @@ class MirrorParenting(MirrorOperation):
             if srcParent:
                 dstParent = getPairedNode(srcParent)
                 if dstParent:
-                    destNode.setParent(dstParent)
+                    self.setParent(destNode, dstParent)
                 else:
-                    destNode.setParent(srcParent)
+                    self.setParent(destNode, srcParent)
             else:
-                destNode.setParent(None)
+                self.setParent(destNode, None)
 
             # handle joint reparenting
             if isinstance(destNode, pm.nt.Joint):
@@ -375,6 +375,14 @@ class MirrorParenting(MirrorOperation):
                 if p and isinstance(p, pm.nt.Joint):
                     if not pm.isConnected(p.scale, destNode.inverseScale):
                         p.scale >> destNode.inverseScale
+
+    def setParent(self, node, parent):
+        """
+        Set the parent of a node. PyMel advertises that PyNode.setParent will not error
+        if the parent is already the current parent, but it does error (tested Maya 2018).
+        """
+        if node.getParent() != parent:
+            node.setParent(parent)
 
 
 class MirrorTransforms(MirrorOperation):
@@ -757,11 +765,25 @@ class MirrorLinks(BlueprintMirrorOperation):
     """
 
     def mirrorNode(self, sourceNode, destNode, isNewNode):
-        sourceLink = links.getLink(sourceNode)
-        if sourceLink:
-            destLink = getPairedNode(sourceLink)
-            if destLink:
-                links.link(destLink, destNode)
+        # get link meta data
+        sourceLinkData = links.getLinkMetaData(sourceNode)
+        destLinkData = links.getLinkMetaData(destNode)
+        if sourceLinkData:
+            # look for mirror of the target node
+            sourceTargetNode = sourceLinkData.get('targetNode')
+            if sourceTargetNode:
+                destTargetNode = getPairedNode(sourceTargetNode)
+                if destTargetNode:
+                    # if no destination link data already exists, create
+                    # a copy of the source link data, otherwise only affect the target node
+                    if not destLinkData:
+                        destLinkData = sourceLinkData
+                    # update target node in the destination link data
+                    destLinkData['targetNode'] = destTargetNode
+                    links.setLinkMetaData(destNode, destLinkData)
+
+                    # position the dest node using the link
+                    links.positionLink(destNode)
 
 
 class MirrorUtil(object):

@@ -19,11 +19,13 @@ import pulse.nodes
 
 __all__ = [
     'cleanupLinks',
+    'clearLinkOffsets',
     'getAllLinkedNodes',
     'getLink',
     'getLinkMetaData',
     'link',
     'positionLink',
+    'saveLinkOffsets',
     'unlink',
 ]
 
@@ -52,8 +54,66 @@ def link(leader, follower, linkType=LinkType.DEFAULT, **kwargs):
         'type': linkType,
     }
     linkData.update(kwargs)
-    meta.setMetaData(follower, className=LINK_METACLASS, data=linkData)
-    LOG.info("Linked %s to %s (linkType: %s)" % (follower, leader, linkType))
+    setLinkMetaData(follower, linkData)
+    LOG.info("Linked %s to %s (linkType: %s)", follower, leader, linkType)
+
+
+def saveLinkOffsets(node, offsetTranslate=True, offsetRotate=True, offsetScale=False):
+    """
+    Save the current offset of a linked node in relation to its target node.
+    """
+    precision = 5
+
+    # get link meta data
+    linkData = getLinkMetaData(node)
+    targetNode = linkData.get('targetNode')
+    if targetNode:
+        # get local matrix of follower relative to leader
+        offsetMtx = pm.dt.TransformationMatrix(node.wm.get() * targetNode.wim.get())
+        # initialize variables for logging later
+        tOffset = rOffset = sOffset = None
+        if offsetTranslate:
+            tOffset = [round(v, precision) for v in offsetMtx.getTranslation('world')]
+            linkData['offsetTranslate'] = tOffset
+        if offsetRotate:
+            rot = offsetMtx.getRotation()
+            rot.setDisplayUnit('degrees')
+            rOffset = [round(v, precision) for v in rot]
+            linkData['offsetRotate'] = rOffset
+        if offsetScale:
+            sOffset = [round(v, precision) for v in offsetMtx.getScale('world')]
+            linkData['offsetScale'] = sOffset
+        setLinkMetaData(node, linkData)
+        LOG.info("Set link offsets: %s (translate: %s, rotate: %s, scale: %s)", node, tOffset, rOffset, sOffset)
+
+
+def clearLinkOffsets(node, offsetTranslate=True, offsetRotate=True, offsetScale=True):
+    """
+    Clear the transform offsets for a linked node.
+
+    Args:
+        offsetTranslate (bool): If true, clear translate offsets
+        offsetRotate (bool): If true, clear rotate offsets
+        offsetScale (bool): If true, clear scale offsets
+    """
+    # get link meta data
+    linkData = getLinkMetaData(node)
+
+    # delete offset data
+    didChange = False
+    if offsetTranslate and 'offsetTranslate' in linkData:
+        del linkData['offsetTranslate']
+        didChange = True
+    if offsetRotate and 'offsetRotate' in linkData:
+        del linkData['offsetRotate']
+        didChange = True
+    if offsetScale and 'offsetScale' in linkData:
+        del linkData['offsetScale']
+        didChange = True
+
+    if didChange:
+        # update meta data
+        setLinkMetaData(node, linkData)
 
 
 def unlink(node):
@@ -61,7 +121,7 @@ def unlink(node):
     Remove a link from a node
     """
     meta.removeMetaData(node, className=LINK_METACLASS)
-    LOG.info("Unlinked %s" % node)
+    LOG.info("Unlinked %s", node)
 
 
 def getLink(node):
@@ -87,6 +147,15 @@ def getLinkMetaData(node):
     return result
 
 
+def setLinkMetaData(node, linkData):
+    """
+    Set the metadata for a linked node
+    """
+    if not 'targetNode' in linkData:
+        raise ValueError("LinkData must contain a `targetNode`")
+    meta.setMetaData(node, className=LINK_METACLASS, data=linkData)
+
+
 def getAllLinkedNodes():
     """
     Return all nodes in the scene that are linked
@@ -109,14 +178,14 @@ def positionLink(node, translate=True, rotate=True, scale=False, quiet=False):
 
     if not linkData:
         if not quiet:
-            LOG.warning("Node is not linked to anything: %s" % node)
+            LOG.warning("Node is not linked to anything: %s", node)
         return
 
     # get target node
     leader = linkData.get('targetNode')
     if not leader:
         if not quiet:
-            LOG.warning("Linked node has no target: %s" % node)
+            LOG.warning("Linked node has no target: %s", node)
         return
 
     # get positioner class by link type
@@ -143,6 +212,23 @@ class LinkPositioner(object):
         self.shouldRotate = True
         self.shouldScale = False
 
+    def getOffsetMatrix(self, linkData):
+        """
+        Return the offset matrix to apply using any offsets
+        defined in the link's meta data.
+        """
+        tOffset = linkData.get('offsetTranslate')
+        rOffset = linkData.get('offsetRotate')
+        sOffset = linkData.get('offsetScale')
+        mtx = pm.dt.TransformationMatrix()
+        if sOffset:
+            mtx.setScale(sOffset, 'world')
+        if rOffset:
+            mtx.setRotation(rOffset)
+        if tOffset:
+            mtx.setTranslation(tOffset, 'world')
+        return mtx
+
     def updateTransform(self, leader, follower, linkData):
         """
         Update the transform of follower based on leader
@@ -150,7 +236,7 @@ class LinkPositioner(object):
         raise NotImplementedError
 
 
-class DefaultLinkPositioner(object):
+class DefaultLinkPositioner(LinkPositioner):
     """
     Default positioner, updates the follower to match the
     leaders position, with optional offsets.
@@ -158,8 +244,10 @@ class DefaultLinkPositioner(object):
 
     def updateTransform(self, leader, follower, linkData):
         worldMtx = pulse.nodes.getWorldMatrix(leader)
+        offsetMtx = self.getOffsetMatrix(linkData)
+        newMtx = offsetMtx * worldMtx
         pulse.nodes.setWorldMatrix(
-            follower, worldMtx,
+            follower, newMtx,
             translate=self.shouldTranslate,
             rotate=self.shouldRotate,
             scale=self.shouldScale)
@@ -168,7 +256,7 @@ class DefaultLinkPositioner(object):
 POSITIONER_CLASS_MAP[LinkType.DEFAULT] = DefaultLinkPositioner
 
 
-class IKPoleLinkPositioner(object):
+class IKPoleLinkPositioner(LinkPositioner):
     """
     IK Pole positioner, updates the follower to be placed
     along the pole vector.
