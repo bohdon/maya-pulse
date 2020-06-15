@@ -447,9 +447,23 @@ def positionLinkForSelected():
     if not sel:
         sel = pulse.links.getAllLinkedNodes()
         # TODO: sort by parenting hierarchy
+    else:
+        oldLen = len(sel)
+        # filter for only linked nodes
+        sel = [s for s in sel if pulse.links.isLinked(s)]
+        if oldLen > 0 and len(sel) == 0:
+            # something was selected, but no linked nodes
+            LOG.warning("No linked nodes were selected")
 
+    showProgress = (len(sel) > 20)
+    if showProgress:
+        pm.progressWindow(t='Positioning Links', min=0, max=len(sel))
     for node in sel:
         pulse.links.positionLink(node)
+        if showProgress:
+            pm.progressWindow(e=True, step=1)
+    if showProgress:
+        pm.progressWindow(endProgress=True)
 
 
 def pairSelected():

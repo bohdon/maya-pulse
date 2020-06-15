@@ -124,6 +124,10 @@ def unlink(node):
     LOG.info("Unlinked %s", node)
 
 
+def isLinked(node):
+    return meta.hasMetaClass(node, className=LINK_METACLASS)
+
+
 def getLink(node):
     """
     Return the leader that a node is linked to

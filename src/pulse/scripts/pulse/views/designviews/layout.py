@@ -212,10 +212,11 @@ class LinkInfoListWidget(QtWidgets.QWidget):
         layout.setMargin(4)
 
         for node in self.nodes:
+            if not links.isLinked(node):
+                continue
             linkData = links.getLinkMetaData(node)
-            if linkData:
-                linkInfo = LinkInfoWidget(parent, node, linkData)
-                layout.addWidget(linkInfo)
+            linkInfo = LinkInfoWidget(parent, node, linkData)
+            layout.addWidget(linkInfo)
 
         spacer = QtWidgets.QSpacerItem(
             20, 20, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
@@ -264,7 +265,12 @@ class LinkInfoWidget(QtWidgets.QWidget):
 
         # create labels for each piece of data
         for key in keys:
-            value = self.linkData[key]
+            value = self.linkData.get(key)
+            if not value:
+                if key == 'targetNode':
+                    value = '(missing)'
+                elif key == 'type':
+                    value = links.LinkType.DEFAULT
 
             nameLabel = QtWidgets.QLabel(parent)
             nameLabel.setText(key)
