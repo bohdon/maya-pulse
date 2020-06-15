@@ -67,8 +67,6 @@ class LayoutLinkEditorWidget(QtWidgets.QWidget):
 
         self.setupUi(self)
 
-        self.updateLinkInfoList()
-
         self.selection_changed_cb = None
 
     def showEvent(self, event):
@@ -76,6 +74,7 @@ class LayoutLinkEditorWidget(QtWidgets.QWidget):
         if self.selection_changed_cb is None:
             print('adding selection changed callback')
             self.selection_changed_cb = api.MEventMessage.addEventCallback("SelectionChanged", self.onSceneSelectionChanged)
+        self.updateLinkInfoList()
 
     def hideEvent(self, event):
         super(LayoutLinkEditorWidget, self).hideEvent(event)
