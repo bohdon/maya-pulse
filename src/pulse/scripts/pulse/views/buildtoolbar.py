@@ -176,6 +176,7 @@ class BuildToolbarWidget(QtWidgets.QWidget):
 
             builder = pulse.BlueprintBuilder.createBuilderWithCurrentScene(
                 blueprint, debug=True)
+            builder.showProgressUI = True
             builder.start()
 
             cmds.evalDeferred(self.onStateDirty)

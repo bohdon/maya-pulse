@@ -282,6 +282,7 @@ class BlueprintBuilder(object):
         self.startTime = None
         self.endTime = None
         self.elapsedTime = 0
+        self.showProgressUI = False
 
         # the rig root node, available after the builder starts,
         # and createRigStructure has been called
@@ -377,7 +378,7 @@ class BlueprintBuilder(object):
             if iterResult.get('finish'):
                 self.finish()
             # report progress
-            self.onProgress(iterResult['index'], iterResult['total'])
+            self.onProgress(iterResult['index'], iterResult['total'], iterResult['status'])
             # check for user cancel
             if self.checkCancel():
                 self.cancel()
@@ -428,7 +429,7 @@ class BlueprintBuilder(object):
         return "Started building rig: {0} (debug={1})".format(
             self.blueprint.rigName, self.debug)
 
-    def onProgress(self, index, total):
+    def onProgress(self, index, total, status):
         """
         Called after every step of the build.
         Override this in subclasses to monitor progress.
@@ -436,13 +437,22 @@ class BlueprintBuilder(object):
         Args:
             index: An int representing the index of the current action
             total: An int representing the total number of actions
+            status (str): A status string representing the current step in progress
         """
-        pass
+        if self.showProgressUI:
+            if index == 0:
+                pm.progressWindow(t='Building Blueprint', min=0)
+            pm.progressWindow(e=True, progress=index, max=total, status=status)
+            # pm.refresh()
 
     def onFinish(self):
         """
         Called when the build has completely finished.
         """
+        if self.showProgressUI:
+            pm.progressWindow(e=True, status=None)
+            pm.progressWindow(endProgress=True)
+
         # clear selection
         pm.select(cl=True)
 
@@ -535,14 +545,12 @@ class BlueprintBuilder(object):
         This is the main iterator for performing all build operations.
         It runs all BuildSteps and BuildActions in order.
         """
-        index = 0
-        actionCount = 0
 
-        yield dict(index=index, total=actionCount)
+        yield dict(index=0, total=2, status='Create Rig Structure')
 
         self.createRigStructure()
 
-        yield dict(index=index, total=actionCount)
+        yield dict(index=1, total=2, status='Retrieve Actions')
 
         # recursively iterate through all build actions
         allActions = list(self.actionIterator())
@@ -550,15 +558,15 @@ class BlueprintBuilder(object):
         for index, (step, action) in enumerate(allActions):
             # TODO: include more data somehow so we can track variant action indexes
 
+            # return progress for the action that is about to run
+            yield dict(index=index, total=actionCount, status=step.getFullPath())
+
             # run the action
             action.builder = self
             action.rig = self.rig
             self.runBuildAction(step, action, index, actionCount)
 
-            # return progress
-            yield dict(index=index, total=actionCount)
-
-        yield dict(index=index, total=actionCount, finish=True)
+        yield dict(index=actionCount, total=actionCount, status='Finished', finish=True)
 
     def createRigStructure(self):
         # create a new rig
@@ -570,12 +578,18 @@ class BlueprintBuilder(object):
         ))
 
     def runBuildAction(self, step, action, index, actionCount):
-        path = step.getFullPath()
-        self.log.info('[%s/%s] %s', index + 1, actionCount, path)
+        startTime = time.time()
+
         try:
             action.run()
         except Exception as error:
             self.onStepError(step, action, error)
+
+        endTime = time.time()
+        duration = endTime - startTime
+
+        path = step.getFullPath()
+        self.log.info('[%s/%s] %s (%.03fs)', index + 1, actionCount, path, duration)
 
 
 class BlueprintValidator(BlueprintBuilder):
