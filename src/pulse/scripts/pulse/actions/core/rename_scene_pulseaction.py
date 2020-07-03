@@ -17,6 +17,6 @@ class RenameSceneAction(pulse.BuildAction):
     def run(self):
         sceneName = pm.sceneName()
         rigData = self.getRigMetaData()
-        filename = self.filename.format(rig=rigData) + '.mb'
+        filename = self.filename.format(rig=rigData) + '.ma'
         newName = os.path.join(os.path.dirname(sceneName), filename)
         pm.renameFile(newName)
