@@ -17,15 +17,13 @@ def optionVarProperty(key, default):
     """
 
     def fget(self):
-        if pm.optionVar.has_key(key):
-            return pm.optionVar[key]
-        return default
+        return pm.optionVar.get(key, default)
 
     def fset(self, value):
         pm.optionVar[key] = value
 
     def fdel(self):
-        if pm.optionVar.has_key(key):
+        if key in pm.optionVar:
             del pm.optionVar[key]
 
     return property(fget, fset, fdel, 'Get or set the optionVar: {0}'.format(key))
