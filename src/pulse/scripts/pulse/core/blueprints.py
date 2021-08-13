@@ -51,7 +51,7 @@ def _loadConfig(configFile):
         cmds.warning("Config file not found: {0}".format(configFile))
         return
 
-    with open(configFile, 'rb') as fp:
+    with open(configFile, 'r') as fp:
         return yaml.load(fp)
 
 
@@ -118,9 +118,12 @@ class Blueprint(object):
         LOG.debug("Loading blueprint: %s", filepath)
 
         try:
-            with open(filepath, 'rb') as fp:
+            with open(filepath, 'r') as fp:
                 data = yaml.load(fp, Loader=PulseLoader)
         except IOError:
+            return False
+
+        if not data:
             return False
 
         return self.deserialize(data)
@@ -137,7 +140,7 @@ class Blueprint(object):
         LOG.debug("Saving blueprint: %s", filepath)
 
         data = self.serialize()
-        with open(filepath, 'wb') as fp:
+        with open(filepath, 'w') as fp:
             yaml.dump(data, fp, default_flow_style=False, Dumper=PulseDumper)
 
         return True
@@ -153,6 +156,9 @@ class Blueprint(object):
         try:
             data = yaml.load(yamlstr)
         except Exception:
+            return False
+
+        if not data:
             return False
 
         return self.deserialize(data)
@@ -373,7 +379,7 @@ class BlueprintBuilder(object):
         self.isRunning = True
 
         while True:
-            iterResult = self.generator.next()
+            iterResult = next(self.generator)
             # handle the result of the build iteration
             if iterResult.get('finish'):
                 self.finish()

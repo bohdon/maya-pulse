@@ -3,7 +3,7 @@ import logging
 import re
 import pymel.core as pm
 import pymetanode as meta
-from vendor.mayacoretools import preservedSelection
+from .vendor.mayacoretools import preservedSelection
 
 from . import colors
 from . import joints
@@ -967,7 +967,7 @@ def getMirrorSettings(sourceNode, destNode=None,
 
     def filterNodeSettings(settings):
         if excludedNodeSettings:
-            return {k: v for k, v in settings.iteritems()
+            return {k: v for k, v in settings.items()
                     if k not in excludedNodeSettings}
         return settings
 

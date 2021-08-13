@@ -68,7 +68,7 @@ def getAllParents(node, includeNode=False):
     Returns:
         A list of nodes
     """
-    if isinstance(node, basestring):
+    if isinstance(node, str):
         split = node.split('|')
         return ['|'.join(split[:i]) for i in reversed(range(2, len(split)))]
     parents = []
@@ -402,7 +402,7 @@ def getAttrOrValueDimension(attrOrValue):
         return getAttrDimension(attrOrValue)
     else:
         # support duck-typed lists
-        if not isinstance(attrOrValue, basestring):
+        if not isinstance(attrOrValue, str):
             try:
                 return len(attrOrValue)
             except:
@@ -874,7 +874,7 @@ def getAxis(value):
         return value
     elif isinstance(value, int):
         return pm.dt.Vector.Axis[value]
-    elif isinstance(value, basestring):
+    elif isinstance(value, str):
         for k in pm.dt.Vector.Axis.keys():
             if k.startswith(value):
                 return getattr(pm.dt.Vector.Axis, k)
@@ -886,7 +886,7 @@ def getAxisVector(axis, sign=1):
     """
     i = int(axis)
     v = [0, 0, 0]
-    v[i] = 1 * cmp(sign, 0)
+    v[i] = 1 * (1 if sign >= 0 else -1)
     return tuple(v)
 
 
@@ -921,7 +921,7 @@ def getClosestAlignedAxis(matrix, axis=0):
         if bestVal is None or abs(val) > abs(bestVal):
             bestVal = val
             bestAxis = a
-    return getAxis(bestAxis), cmp(bestVal, 0)
+    return getAxis(bestAxis), 1 if bestVal >= 0 else -1
 
 
 def getClosestAlignedAxes(matrix):

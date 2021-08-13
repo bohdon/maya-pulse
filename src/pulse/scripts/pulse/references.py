@@ -48,7 +48,7 @@ def importAllReferences(loadUnloaded=True, depthLimit=10, removeNamespace=False,
             try:
                 LOG.debug("Importing {0}".format(ref))
                 ref.importContents(removeNamespace=removeNamespace)
-            except RuntimeError, e:
+            except RuntimeError as e:
                 LOG.warning('Could not import reference: {0}\n{1}'.format(path, e))
 
             # Import any subrefs

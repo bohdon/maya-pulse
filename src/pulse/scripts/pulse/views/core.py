@@ -157,7 +157,7 @@ class PulseWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
 
         if restore:
             mixinPtr = mui.MQtUtil.findControl(cls.INSTANCE.objectName())
-            mui.MQtUtil.addWidgetToMayaLayout(long(mixinPtr), long(parent))
+            mui.MQtUtil.addWidgetToMayaLayout(int(mixinPtr), int(parent))
         else:
             uiScript = cls.UI_SCRIPT.format(
                 module=cls.WINDOW_MODULE, cls=cls.__name__)
@@ -362,9 +362,10 @@ class BlueprintUIModel(QtCore.QObject):
         """
         sceneName = None
 
-        if self.rigExists:
+        allRigs = pulse.getAllRigs()
+        if len(allRigs) > 0:
             # get filepath from rig
-            rig = pulse.getAllRigs()[0]
+            rig = allRigs[0]
             rigdata = meta.getMetaData(rig, pulse.RIG_METACLASS)
             sceneName = rigdata.get('blueprintFile')
         else:

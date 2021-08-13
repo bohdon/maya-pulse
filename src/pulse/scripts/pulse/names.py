@@ -10,7 +10,7 @@ def toTitle(name):
     """
     Return a string formatted to 'Title Case'
     """
-    if not isinstance(name, basestring):
+    if not isinstance(name, str):
         return
     return re.sub('([A-Z])', ' \\1', name).title()
 

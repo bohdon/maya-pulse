@@ -273,7 +273,7 @@ def saveSkinWeightsToFile(filePath, *skins):
     skinWeightsStr = meta.encodeMetaData(skinWeights)
 
     pm.progressWindow(e=True, progress=90)
-    with open(filePath, 'wb') as fp:
+    with open(filePath, 'w') as fp:
         fp.write(skinWeightsStr)
 
     pm.progressWindow(endProgress=True)
@@ -289,7 +289,7 @@ def applySkinWeightsFromFile(filePath, *skins):
         filePath (str): A full path to the .weights file to read
         *skins (PyNode): One or more skin cluster nodes
     """
-    with open(filePath, 'rb') as fp:
+    with open(filePath, 'r') as fp:
         content = fp.read()
 
     skinWeights = meta.decodeMetaData(content)

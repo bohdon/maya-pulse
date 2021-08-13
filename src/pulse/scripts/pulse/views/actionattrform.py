@@ -420,7 +420,7 @@ class DefaultAttrForm(ActionAttrForm):
         self.setDefaultFormWidget(self.textEdit)
 
     def _setFormValue(self, attrValue):
-        if isinstance(attrValue, basestring):
+        if isinstance(attrValue, str):
             self.textEdit.setText(repr(attrValue))
         else:
             self.textEdit.setText(meta.encodeMetaData(attrValue))
@@ -494,7 +494,7 @@ class IntAttrForm(ActionAttrForm):
         return self.spinBox.value()
 
     def _isValueTypeValid(self, attrValue):
-        return isinstance(attrValue, (int, long))
+        return isinstance(attrValue, int)
 
 
 ActionAttrForm.addFormType('int', IntAttrForm)
@@ -557,7 +557,7 @@ class StringAttrForm(ActionAttrForm):
         return self.lineEdit.text()
 
     def _isValueTypeValid(self, attrValue):
-        return isinstance(attrValue, basestring)
+        return isinstance(attrValue, str)
 
 
 ActionAttrForm.addFormType('string', StringAttrForm)
@@ -588,7 +588,7 @@ class OptionAttrForm(ActionAttrForm):
         return self.combo.currentIndex()
 
     def _isValueTypeValid(self, attrValue):
-        return isinstance(attrValue, (int, long))
+        return isinstance(attrValue, int)
 
     def _isValueValid(self, attrValue):
         return attrValue >= 0 and attrValue < len(self.attr['options'])

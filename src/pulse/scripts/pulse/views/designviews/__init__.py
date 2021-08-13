@@ -1,5 +1,5 @@
 
-from layout import LayoutLinkEditorWindow
+from .layout import LayoutLinkEditorWindow
 
 def destroyEditorWorkspaceControls():
     """

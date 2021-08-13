@@ -1,13 +1,16 @@
 
 import os
-import pulse.vendor.yaml as yaml
+import functools
 from fnmatch import fnmatch
+
+import pulse.vendor.yaml as yaml
 import pymel.core as pm
 import pymetanode as meta
 
 import pulse.nodes
 import pulse.links
 import pulse.utilnodes
+
 
 __all__ = [
     'addShapes',
@@ -82,13 +85,16 @@ def getControlShapes():
     """
     Return all available control shapes
     """
-    def sort(a, b):
+    def cmp(a, b):
+        return (a > b) - (a < b)
+
+    def sort_func(a, b):
         result = cmp(a.get('sort', 999), b.get('sort', 999))
         if result == 0:
             result = cmp(a['name'], b['name'])
         return result
 
-    return sorted(CONTROLSHAPES.values(), sort)
+    return sorted(CONTROLSHAPES.values(), key=functools.cmp_to_key(sort_func))
 
 
 def registerControlShape(name, shape):
@@ -137,7 +143,7 @@ def loadControlShapesFromDirectory(startDir, pattern='*_control.yaml'):
 
         if os.path.isfile(fullPath):
             if fnmatch(path, pattern):
-                with open(fullPath, 'rb') as fp:
+                with open(fullPath, 'r') as fp:
                     data = yaml.load(fp.read())
                 name = data.get('name')
                 if name:
@@ -178,7 +184,7 @@ def saveControlShapeToFile(name, icon, curve, filePath):
         'sort': 100,
         'curves': getShapeData(curve),
     }
-    with open(filePath, 'wb') as fp:
+    with open(filePath, 'w') as fp:
         yaml.dump(data, fp)
 
 

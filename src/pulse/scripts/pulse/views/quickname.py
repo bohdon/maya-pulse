@@ -296,7 +296,7 @@ class QuickNameWidget(QtWidgets.QWidget):
         self.activeKeyword = newKeyword
         self.refreshPreviewLabel()
         # color the clicked btn
-        for btnKey, btn in self.keywordBtns.iteritems():
+        for btnKey, btn in self.keywordBtns.items():
             if btnKey == self.activeKeyword:
                 btn.setStyleSheet(
                     style.UIColors.asBGColor(self.activeKeywordColor))
@@ -343,7 +343,7 @@ class QuickNameWidget(QtWidgets.QWidget):
         """
         # TODO: sort using config
         prefixes = []
-        for name, btn in self.prefixBtns.iteritems():
+        for name, btn in self.prefixBtns.items():
             if btn.isChecked():
                 prefixes.append(name)
         prefixes = self.sortOrderedNames(prefixes, 'prefixes')
@@ -355,7 +355,7 @@ class QuickNameWidget(QtWidgets.QWidget):
         """
         # TODO: sort using config
         suffixes = []
-        for name, btn in self.suffixBtns.iteritems():
+        for name, btn in self.suffixBtns.items():
             if btn.isChecked():
                 suffixes.append(name)
         suffixes = self.sortOrderedNames(suffixes, 'suffixes')

@@ -39,7 +39,7 @@ class BuildActionLoader(object):
             LOG.warning("Config file not found: {0}".format(configFile))
             return False
 
-        with open(configFile, 'rb') as fp:
+        with open(configFile, 'r') as fp:
             config = yaml.load(fp.read())
 
         if config and (name in config):
