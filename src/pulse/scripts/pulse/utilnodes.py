@@ -263,7 +263,7 @@ def getInputConnections(inputVal, destAttr):
         # all other odd associations
         ins = [_child(inputVal, i) for i in range(dim)]
         ats = [_child(destAttr, i) for i in range(dim)]
-        return zip(ins, ats)
+        return list(zip(ins, ats))
 
 
 def setOrConnectAttr(attr, val):
