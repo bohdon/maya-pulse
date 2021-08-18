@@ -1,15 +1,16 @@
 
 from functools import partial
+
 import pymel.core as pm
-from pulse.vendor.Qt import QtCore, QtWidgets, QtGui
 from pulse.vendor.Qt.QtWidgets import QPushButton
 
+from pulse import editorutils
 from pulse.prefs import optionVarProperty
+from pulse.vendor.Qt import QtWidgets
 from pulse.views import utils as viewutils
 from pulse.views.core import PulsePanelWidget
-from pulse.views.utils import undoAndRepeatPartial as cmd
 from pulse.views.style import UIColors
-from pulse import editorutils
+from pulse.views.utils import undoAndRepeatPartial as cmd
 
 __all__ = [
     "JointOrientsPanel",
@@ -57,10 +58,16 @@ class JointsPanel(PulsePanelWidget):
         disableSSCBtn.clicked.connect(
             cmd(editorutils.disableSegmentScaleCompensateForSelected))
 
+        freezeBtn = QPushButton(parent)
+        freezeBtn.setText("Freeze Joints")
+        freezeBtn.setStatusTip("Freeze rotates and scales on the selected joint hierarchies")
+        freezeBtn.clicked.connect(
+            cmd(editorutils.freezeJointsForSelectedHierarchies))
+
         gridItems = [
             [jointToolBtn, insertToolBtn],
             [centerBtn, insertBtn],
-            [disableSSCBtn],
+            [disableSSCBtn, freezeBtn],
         ]
         viewutils.addItemsToGrid(gridLayout, gridItems)
 

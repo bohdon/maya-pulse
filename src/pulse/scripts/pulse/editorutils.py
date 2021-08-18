@@ -5,20 +5,19 @@ located here, as they can be more specific than the core api
 but still not dependent on a UI.
 """
 
-import os
 import logging
+import os
+
 import maya.cmds as cmds
 import pymel.core as pm
 
-from pulse.vendor.mayacoretools import preservedSelection
-
-from pulse.colors import *
+import pulse.links
+import pulse.skins
 from pulse.joints import *
 from pulse.nodes import *
 from pulse.shapes import *
 from pulse.sym import *
-import pulse.links
-import pulse.skins
+from pulse.vendor.mayacoretools import preservedSelection
 
 LOG = logging.getLogger(__name__)
 
@@ -141,15 +140,20 @@ def createOffsetForSelected():
                for s in pm.selected(type='transform')])
 
 
-def freezeScalesForSelectedHierarchies():
+def freezeScalesForSelectedHierarchies(skipJoints=True):
     """
     Freeze scales on the selected transforms and all their descendants.
     See `freezeScalesForHierarchy` for more details.
+
+    Args:
+        skipJoints (bool): If true, don't attempt to freeze joint hierarchies. Does not prevent
+            freezing joints if they are a child of one of the selected transforms.
     """
     with preservedSelection() as sel:
-        tops = getParentNodes(sel[:])
-        for t in tops:
-            freezeScalesForHierarchy(t)
+        topNodes = getParentNodes(sel[:])
+        for topNode in topNodes:
+            if not skipJoints or topNode.nodeType() != 'joint':
+                freezeScalesForHierarchy(topNode)
 
 
 def freezePivotsForSelectedHierarchies():
@@ -168,6 +172,17 @@ def unfreezeOffsetMatricesForSelectedHierarchies():
     with preservedSelection() as sel:
         for s in sel:
             unfreezeOffsetMatrixForHierarchy(s)
+
+
+def freezeJointsForSelectedHierarchies():
+    """
+    Freeze rotates and scales on the selected joint hierarchies.
+    """
+    with preservedSelection() as sel:
+        topNodes = getParentNodes(sel[:])
+        for topNode in topNodes:
+            if topNode.nodeType() == 'joint':
+                freezeJoints(topNode)
 
 
 def parentSelected():
@@ -319,6 +334,14 @@ def rotateOrientOrTransform(
                 rotateComponents(shape, -rotation)
 
 
+def orientJointToRotationForSelected(includeChildren=False, preserveChildren=True):
+    nodes = getSelectedTransforms(includeChildren)
+    for node in nodes:
+        if node.nodeType() == 'joint':
+            joint = node.node()
+            orientJointToRotation(joint, preserveChildren)
+
+
 def interactiveOrientForSelected():
     sel = pm.selected(type='joint')
     rotateAxes = [s.rotateAxis for s in sel]
@@ -330,7 +353,6 @@ def fixupJointOrientForSelected(aimAxis="x", keepAxis="y", preserveChildren=True
     for node in sel:
         fixupJointOrient(node, aimAxis=aimAxis, keepAxis=keepAxis,
                          preserveChildren=preserveChildren)
-
 
 def matchJointRotationToOrientForSelected(preserveChildren=True):
     # handle current selection containing both joints, and possibly pivots of joints
@@ -529,6 +551,26 @@ def mirrorSelected(
         util.addOperation(MirrorLinks())
 
     util.run(nodes)
+
+
+def mirrorAndReplaceSelectedShapes():
+    def copyShape(src, dst):
+        shapes = src.getShapes()
+        for shape in shapes:
+            dupe = pm.duplicate(shape, addShape=True)
+            print(dupe)
+            pm.parent(dupe, dst, shape=True, relative=True)
+        pulse.sym.MirrorCurveShapes.flipAllCurveShapes(dst)
+        mappearance = pulse.sym.MirrorColors()
+        bm = pulse.views.core.BlueprintUIModel.getDefaultModel()
+        mappearance.blueprint = bm.blueprint
+        mappearance.mirrorNode(src, dst, False)
+
+    for s in pm.selected():
+        src = s
+        dst = pulse.sym.getPairedNode(src)
+        if dst:
+            copyShape(src, dst)
 
 
 def saveSkinWeightsForSelected(filePath=None):

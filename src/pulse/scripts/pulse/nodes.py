@@ -1,9 +1,9 @@
 
-import os
 import logging
-import pymel.core as pm
-import maya.cmds as cmds
+import os
 
+import maya.cmds as cmds
+import pymel.core as pm
 
 __all__ = [
     'areNodesAligned',
@@ -178,7 +178,7 @@ def getDescendantsTopToBottom(node, **kwargs):
 def getTransformHierarchy(transform, includeParent=True):
     """
     Return a list of (parent, [children]) tuples for a transform
-    and all of its descendents.
+    and all of its descendants.
 
     Args:
         transform: A Transform node
@@ -189,9 +189,9 @@ def getTransformHierarchy(transform, includeParent=True):
     if includeParent:
         result.append((transform.getParent(), [transform]))
 
-    descendents = transform.listRelatives(ad=True, type='transform')
+    descendants = transform.listRelatives(ad=True, type='transform')
 
-    for t in [transform] + descendents:
+    for t in [transform] + descendants:
         children = t.getChildren(type='transform')
         if children:
             result.append((t, children))
@@ -601,19 +601,19 @@ def disconnectOffsetMatrix(follower, preservePosition=True,
 # ----------------------
 
 
-def freezeScalesForHierarchy(transform):
+def freezeScalesForHierarchy(node):
     """
     Freeze scales on a transform and all its descendants without affecting pivots.
     Does this by parenting all children to the world, freezing, then restoring the hierarchy.
 
     Args:
-        transform: A Transform node
+        node (pm.PyNode): A Transform node
     """
-    hierarchy = getTransformHierarchy(transform)
-    children = transform.listRelatives(ad=True, type='transform')
+    hierarchy = getTransformHierarchy(node)
+    children = node.listRelatives(ad=True, type='transform')
     for c in children:
         c.setParent(None)
-    for n in [transform] + children:
+    for n in [node] + children:
         pm.makeIdentity(n, t=False, r=False, s=True, n=False, apply=True)
     setTransformHierarchy(hierarchy)
 

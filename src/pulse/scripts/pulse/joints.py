@@ -1,12 +1,13 @@
-
 import pymel.core as pm
 
-from . import nodes
 from . import math
+from . import nodes
+from .nodes import getDescendantsTopToBottom
 
 __all__ = [
     'centerJoint',
     'fixupJointOrient',
+    'freezeJoints',
     'getChildJoints',
     'getEndJoints',
     'getIKPoleVectorAndMidPoint',
@@ -18,12 +19,14 @@ __all__ = [
     'orientIKJoints',
     'orientJoint',
     'orientJointCustom',
+    'orientJointToRotation',
     'orientJointToWorld',
     'rotateJointOrient',
     'setJointMatrices',
     'setJointParent',
     'setJointRotationMatrix',
 ]
+
 
 
 def getRootJoint(jnt):
@@ -159,6 +162,34 @@ def centerJoint(jnt, child=None):
         raise TypeError('child must be a joint')
     mid = nodes.getTranslationMidpoint(parent, child)
     pm.move(jnt, mid, ws=True, pcp=True)
+
+
+def freezeJoints(joint, rotate=True, scale=True):
+    """
+    Freeze rotates and scales on a joint hierarchy without creating intermediate transform nodes
+
+    Args:
+        rotate (bool): If true, freeze rotations
+        scale (bool): If true, freeze scales
+        joint (pm.PyNode): A Transform node
+    """
+    nodes = [joint]
+    nodes.extend(getDescendantsTopToBottom(joint))
+
+    if rotate:
+        # freeze rotates
+        for node in nodes:
+            orientJointToRotation(node, True)
+
+    if scale:
+        # freeze scales by copying translations, zeroing out scales, then re-applying translates
+        worldMatrices = []
+        for node in nodes:
+            worldMatrices.append(node.wm.get())
+
+        for (node, mtx) in zip(nodes, worldMatrices):
+            node.s.set((1, 1, 1))
+            pm.xform(node, translation=mtx.translate, worldSpace=True)
 
 
 def getJointMatrices(jnt):
@@ -318,6 +349,28 @@ def orientIKJoints(endJoint, aimAxis='x', poleAxis='y', preserveChildren=False):
     orientJointCustom(midJoint, aimVector=midToEndVector, upVector=poleVector,
                       aimAxis=aimAxis, upAxis=poleAxis,
                       preserveChildren=preserveChildren)
+
+
+def orientJointToRotation(joint, preserveChildren=False):
+    """
+    Orient a joint to match it's current rotation.
+    This is synonymous with freezing a joint's rotation.
+
+    Args:
+        joint:
+        preserveChildren:
+    """
+    if preserveChildren:
+        children = getChildJoints(joint)
+        childMatrices = [getJointMatrices(j) for j in children]
+
+    wm, r, ra, jo = getJointMatrices(joint)
+    # set the joint matrices, using world matrix for joint orient, and clearing the rest
+    setJointMatrices(joint, wm, pm.dt.Matrix(), pm.dt.Matrix(), wm, translate=False)
+
+    if preserveChildren:
+        for child, childMtx in zip(children, childMatrices):
+            setJointMatrices(child, *childMtx)
 
 
 def fixupJointOrient(joint, aimAxis='x', keepAxis='y', preserveChildren=False):
