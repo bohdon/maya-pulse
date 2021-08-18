@@ -3,20 +3,16 @@
 Editor widgets for inspecting and editing BuildSteps and BuildActions.
 """
 
-import os
 import logging
+import os
 from functools import partial
+
 import maya.cmds as cmds
+
 from pulse.vendor.Qt import QtCore, QtWidgets, QtGui
-
-import pulse
-import pulse.names
-from pulse.core import serializeAttrValue
-from .core import PulseWindow
-from .core import BlueprintUIModel
-from . import utils as viewutils
 from .actionattrform import ActionAttrForm, BatchAttrForm
-
+from .core import BlueprintUIModel
+from .core import PulseWindow
 
 __all__ = [
     'ActionEditorWidget',
@@ -583,6 +579,7 @@ class ActionEditorWidget(QtWidgets.QWidget):
 
     def setupUi(self, parent):
         outerLayout = QtWidgets.QVBoxLayout(parent)
+        outerLayout.setMargin(0)
 
         self.scrollArea = QtWidgets.QScrollArea(parent)
         self.scrollArea.setFrameShape(QtWidgets.QScrollArea.NoFrame)
@@ -646,12 +643,11 @@ class ActionEditorWidget(QtWidgets.QWidget):
 
 
 class ActionEditorWindow(PulseWindow):
-
     OBJECT_NAME = 'pulseActionEditorWindow'
-    PREFERRED_SIZE = QtCore.QSize(400, 300)
-    STARTING_SIZE = QtCore.QSize(400, 300)
-    MINIMUM_SIZE = QtCore.QSize(400, 300)
-
+    PREFERRED_SIZE = QtCore.QSize(320, 300)
+    STARTING_SIZE = QtCore.QSize(320, 300)
+    MINIMUM_SIZE = QtCore.QSize(320, 300)
+    DEFAULT_TAB_CONTROL = 'ChannelBoxLayerEditor'
     WINDOW_MODULE = 'pulse.views.actioneditor'
 
     def __init__(self, parent=None):
@@ -660,6 +656,7 @@ class ActionEditorWindow(PulseWindow):
         self.setWindowTitle('Pulse Action Editor')
 
         layout = QtWidgets.QVBoxLayout(self)
+        layout.setMargin(0)
         self.setLayout(layout)
 
         widget = ActionEditorWidget(self)

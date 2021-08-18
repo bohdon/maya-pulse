@@ -57,7 +57,7 @@ class ControlsPanel(PulsePanelWidget):
 
         row = 0
         col = 0
-        columnCount = 5
+        columnCount = 4
         for s in shapes:
             btn = createControlShapeButton(s['name'], s)
             gridLayout.addWidget(btn, row, col, 1, 1)

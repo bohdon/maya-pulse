@@ -4,17 +4,10 @@ inspecting, and editing actions. Combines ActionEditorWidget, ActionTreeWidget
 and ActionPaletteWidget into one widget.
 """
 
-
-from functools import partial
-
-import pulse
 from pulse.vendor.Qt import QtCore, QtWidgets
-from pulse.prefs import optionVarProperty
-
-from .core import PulseWindow, BlueprintUIModel
-from .actiontree import ActionTreeWidget, ActionPaletteWidget
 from .actioneditor import ActionEditorWidget
-
+from .actiontree import ActionTreeWidget, ActionPaletteWidget
+from .core import PulseWindow, BlueprintUIModel
 
 __all__ = [
     'ActionsViewWidget',
@@ -41,30 +34,10 @@ class ActionsViewWidget(QtWidgets.QWidget):
         layout = QtWidgets.QVBoxLayout(parent)
         self.setLayout(layout)
 
-        actionsSplitter1 = QtWidgets.QSplitter(parent)
-        actionsSplitter1.setOrientation(QtCore.Qt.Orientation.Vertical)
-
-        actionsSplitter2 = QtWidgets.QSplitter(parent)
-        actionsSplitter2.setOrientation(QtCore.Qt.Orientation.Horizontal)
-
         # actions tree
         actionTree = ActionTreeWidget(parent)
         actionTree.layout().setMargin(0)
-        actionsSplitter2.addWidget(actionTree)
-
-        # actions palette
-        actionPalette = ActionPaletteWidget(parent)
-        actionPalette.layout().setMargin(0)
-        actionsSplitter2.addWidget(actionPalette)
-
-        actionsSplitter1.addWidget(actionsSplitter2)
-
-        # action editor
-        actionEditor = ActionEditorWidget(parent)
-        actionEditor.layout().setMargin(0)
-        actionsSplitter1.addWidget(actionEditor)
-
-        layout.addWidget(actionsSplitter1)
+        layout.addWidget(actionTree)
 
     def setupMenuBar(self, parent):
         self.menuBar = QtWidgets.QMenuBar(parent)

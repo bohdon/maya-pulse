@@ -155,8 +155,8 @@ class JointOrientsPanel(PulsePanelWidget):
         hlayout = QtWidgets.QHBoxLayout(parent)
         hlayout.setSpacing(4)
 
-        axisOrderLabel = QtWidgets.QLabel(parent)
-        axisOrderLabel.setText("Orient Axes")
+        # axisOrderLabel = QtWidgets.QLabel(parent)
+        # axisOrderLabel.setText("Orient Axes")
 
         self.axisOrderCombo = QtWidgets.QComboBox(parent)
         for option in self.AXIS_ORDER_OPTIONS:
@@ -177,7 +177,7 @@ class JointOrientsPanel(PulsePanelWidget):
             "The world axis that up vector of the joint should point towards")
         self.upAxisCombo.currentIndexChanged.connect(self.setOrientUpAxis)
 
-        hlayout.addWidget(axisOrderLabel)
+        # hlayout.addWidget(axisOrderLabel)
         hlayout.addWidget(self.axisOrderCombo)
         hlayout.addWidget(self.upAxisCombo)
         hlayout.addItem(viewutils.createHSpacer())

@@ -3,16 +3,14 @@ Toolbar for running main actions like validate and build.
 """
 
 import logging
+
 import maya.cmds as cmds
-import pymel.core as pm
 
 import pulse
-from pulse.vendor.Qt import QtCore, QtWidgets, QtGui
-from .core import PulseWindow
+from pulse.editorutils import saveSceneIfDirty
+from pulse.vendor.Qt import QtWidgets, QtGui
 from .core import BlueprintUIModel
 from .style import UIColors
-from pulse.editorutils import saveSceneIfDirty
-
 
 __all__ = [
     'BuildToolbarWidget',

@@ -1,12 +1,13 @@
-
-import sys
 import os
-import imp
 import subprocess
+import sys
+from importlib.machinery import SourceFileLoader
+
 import pymel.core as pm
-from pulse.vendor.Qt import QtCore, QtWidgets, QtGui
 
 import pulse
+from pulse.vendor.Qt import QtWidgets
+from pulse.views.actioneditor import BuildActionProxyForm
 
 
 class PythonAction(pulse.BuildAction):
@@ -48,7 +49,7 @@ class PythonAction(pulse.BuildAction):
         if moduleName in sys.modules:
             del sys.modules[moduleName]
 
-        module = imp.load_source(moduleName, moduleFilepath)
+        module = SourceFileLoader(moduleName, moduleFilepath).load_module()
 
         if hasattr(module, functionName):
             attr = getattr(module, functionName)
@@ -56,7 +57,7 @@ class PythonAction(pulse.BuildAction):
                 return attr
 
 
-class PythonActionForm(pulse.views.BuildActionProxyForm):
+class PythonActionForm(BuildActionProxyForm):
 
     def setupLayoutHeader(self, parent, layout):
         editBtn = QtWidgets.QPushButton(parent)

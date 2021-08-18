@@ -3,21 +3,21 @@ UI model classes, and base classes for common widgets.
 """
 
 
-from pulse.views.utils import CollapsibleFrame
-from pulse.vendor.Qt import QtWidgets, QtGui
-import os
 import logging
-import pymel.core as pm
-import maya.cmds as cmds
+import os
+
 import maya.OpenMaya as api
 import maya.OpenMayaUI as mui
+import maya.cmds as cmds
+import pymel.core as pm
 from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
-import pymetanode as meta
 
 import pulse
-from pulse.vendor.Qt import QtCore, QtWidgets, QtGui
+import pymetanode as meta
 from pulse.core import Blueprint, BuildStep, serializeAttrValue
 from pulse.prefs import optionVarProperty
+from pulse.vendor.Qt import QtCore, QtWidgets, QtGui
+from pulse.views.utils import CollapsibleFrame
 from .utils import dpiScale
 
 __all__ = [
@@ -129,6 +129,15 @@ class PulseWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
     # used to build the UI_SCRIPT and CLOSE_SCRIPT
     WINDOW_MODULE = None
 
+    # default area where this window should be docked, note that the 'areas' are large
+    # sections at the extremes of the maya window, and DEFAULT_TAB_CONTROL should be used
+    # when attempting to dock to smaller areas like the Channel Box
+    DEFAULT_DOCK_AREA = None
+
+    # if set, dock this window as a tab into the specified control
+    # options include "ChannelBoxLayerEditor", "AttributeEditor"
+    DEFAULT_TAB_CONTROL = None
+
     # a string of python code to run when the workspace control is shown
     UI_SCRIPT = 'from {module} import {cls}\n{cls}.createWindow(restore=True)'
 
@@ -165,11 +174,21 @@ class PulseWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 module=cls.WINDOW_MODULE, cls=cls.__name__)
 
             cls.INSTANCE.show(dockable=True,
+                              floating=(cls.DEFAULT_DOCK_AREA is None),
+                              area=cls.DEFAULT_DOCK_AREA,
                               uiScript=uiScript,
                               closeCallback=closeScript,
                               requiredPlugin=cls.REQUIRED_PLUGINS)
 
+            # if set, dock the control as a tab of an existing control
+            if cls.DEFAULT_TAB_CONTROL:
+                cmds.workspaceControl(cls.getWorkspaceControlName(), e=True, tabToControl=[cls.DEFAULT_TAB_CONTROL, -1])
+
         return cls.INSTANCE
+
+    @classmethod
+    def getWorkspaceControlName(cls):
+        return cls.OBJECT_NAME + 'WorkspaceControl'
 
     @classmethod
     def destroyWindow(cls):
@@ -180,8 +199,7 @@ class PulseWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
     @classmethod
     def showWindow(cls):
         if cls.windowExists():
-            cmds.workspaceControl(
-                cls.getWorkspaceControlName(), e=True, vis=True)
+            cmds.workspaceControl(cls.getWorkspaceControlName(), e=True, restore=True)
         else:
             cls.createWindow()
 
@@ -196,8 +214,8 @@ class PulseWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
 
     @classmethod
     def toggleWindow(cls):
-        if cls.windowVisible():
-            cls.hideWindow()
+        if cls.isRaised():
+            cls.destroyWindow()
         else:
             cls.showWindow()
 
@@ -210,17 +228,16 @@ class PulseWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         """
         Return True if an instance of this window exists
         """
-        return cmds.workspaceControl(
-            cls.getWorkspaceControlName(), q=True, ex=True)
+        return cmds.workspaceControl(cls.getWorkspaceControlName(), q=True, ex=True)
 
     @classmethod
-    def windowVisible(cls):
+    def isRaised(cls):
+        """
+        Return True if the window is visible and raised on screen.
+        False when collapsed, hidden, or not the active tab in a tab group.
+        """
         return cls.windowExists() and cmds.workspaceControl(
-            cls.getWorkspaceControlName(), q=True, vis=True)
-
-    @classmethod
-    def getWorkspaceControlName(cls):
-        return cls.OBJECT_NAME + 'WorkspaceControl'
+            cls.getWorkspaceControlName(), q=True, r=True)
 
     def __init__(self, parent=None):
         super(PulseWindow, self).__init__(parent=parent)

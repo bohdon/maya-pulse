@@ -1,18 +1,12 @@
-
-import sys
-import os
-import logging
 import importlib
+import logging
+import os
+import sys
 from fnmatch import fnmatch
+
 import pulse.vendor.yaml as yaml
-
 from . import core
-from . import views
-
-
-__all__ = [
-    'BuildActionLoader',
-]
+from .views.actioneditor import BuildActionProxyForm
 
 LOG = logging.getLogger(__name__)
 
@@ -86,7 +80,7 @@ class BuildActionLoader(object):
         if editorFormClsName:
             if hasattr(module, editorFormClsName):
                 obj = getattr(module, editorFormClsName)
-                if isinstance(obj, type) and issubclass(obj, views.BuildActionProxyForm):
+                if isinstance(obj, type) and issubclass(obj, BuildActionProxyForm):
                     # store the editor form class object in the config
                     actionConfig['editorFormClassObj'] = obj
                 else:

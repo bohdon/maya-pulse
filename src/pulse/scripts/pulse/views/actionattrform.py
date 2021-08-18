@@ -37,7 +37,7 @@ class ActionAttrForm(QtWidgets.QFrame):
 
     TYPEMAP = {}
 
-    LABEL_WIDTH = 140
+    LABEL_WIDTH = 120
     LABEL_HEIGHT = 20
     FORM_WIDTH_SMALL = 80
 

@@ -1,11 +1,9 @@
-
-import os
 import logging
+import os
 
-from .version import __version__
 from .core import *
-from .loader import *
-
+from .loader import BuildActionLoader
+from .version import __version__
 
 LOG = logging.getLogger("pulse")
 LOG.level = logging.DEBUG

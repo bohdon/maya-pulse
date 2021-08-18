@@ -3,20 +3,13 @@ The main editor window. Contains the build toolbar, and tabs for manage, design,
 and actions views.
 """
 
-
-from functools import partial
-
 import pulse
-from pulse.vendor.Qt import QtCore, QtWidgets
 from pulse.prefs import optionVarProperty
-
-from .core import PulseWindow, BlueprintUIModel
-from .buildtoolbar import BuildToolbarWidget
-from .manageview import ManageWidget
-from .designview import DesignViewWidget
-from .skinview import SkinViewWidget
+from pulse.vendor.Qt import QtCore, QtWidgets
 from .actionsview import ActionsViewWidget
-
+from .buildtoolbar import BuildToolbarWidget
+from .core import PulseWindow, BlueprintUIModel
+from .manageview import ManageWidget
 
 __all__ = [
     'PulseEditorWindow',
@@ -24,16 +17,8 @@ __all__ = [
 
 TAB_DEFINITIONS = [
     {
-        "name": "Manage",
+        "name": "Settings",
         "widgetClass": ManageWidget
-    },
-    {
-        "name": "Design",
-        "widgetClass": DesignViewWidget
-    },
-    {
-        "name": "Skin",
-        "widgetClass": SkinViewWidget
     },
     {
         "name": "Actions",
@@ -51,7 +36,7 @@ class PulseEditorWindow(PulseWindow):
     STARTING_SIZE = QtCore.QSize(400, 600)
     PREFERRED_SIZE = QtCore.QSize(400, 600)
     MINIMUM_SIZE = QtCore.QSize(400, 600)
-
+    DEFAULT_TAB_CONTROL = "Outliner"
     WINDOW_MODULE = 'pulse.views.pulseeditor'
 
     mainTabIndex = optionVarProperty('pulse.editor.mainTabIndex', 0)
@@ -100,6 +85,10 @@ class PulseEditorWindow(PulseWindow):
         self.menuBar = QtWidgets.QMenuBar(parent)
         self.layout().setMenuBar(self.menuBar)
 
+        self.setupFileMenu(parent)
+        self.setupWindowMenu(parent)
+
+    def setupFileMenu(self, parent):
         fileMenu = self.menuBar.addMenu("File")
 
         initBlueprint = QtWidgets.QAction("Initialize", parent)
@@ -144,6 +133,22 @@ class PulseEditorWindow(PulseWindow):
         autoloadCheck.setStatusTip(
             "Automatically load Blueprint files when a scene is opened")
         fileMenu.addAction(autoloadCheck)
+
+    def setupWindowMenu(self, parent):
+        from pulse.views.actioneditor import ActionEditorWindow
+        from pulse.views.designview import DesignToolkitWindow
+
+        windowMenu = self.menuBar.addMenu("Window")
+
+        toggleDesignToolkit = QtWidgets.QAction("Design Toolkit", parent)
+        toggleDesignToolkit.setStatusTip("Toggle the Design Toolkit window.")
+        toggleDesignToolkit.triggered.connect(DesignToolkitWindow.toggleWindow)
+        windowMenu.addAction(toggleDesignToolkit)
+
+        toggleEditor = QtWidgets.QAction("Action Editor", parent)
+        toggleEditor.setStatusTip("Toggle the Action Editor window.")
+        toggleEditor.triggered.connect(ActionEditorWindow.toggleWindow)
+        windowMenu.addAction(toggleEditor)
 
     def debugPrintSerialized(self):
         print(self.blueprintModel, self.blueprintModel.blueprint)

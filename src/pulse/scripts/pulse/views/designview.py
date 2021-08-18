@@ -3,16 +3,16 @@ A widget containing a collection of panels with tools
 for designing the rig blueprint.
 """
 
-
-from pulse.vendor.Qt import QtWidgets
+from pulse.vendor.Qt import QtWidgets, QtCore
+from .core import PulseWindow
 from .designviews.controls import ControlsPanel
 from .designviews.general import GeneralPanel
 from .designviews.joints import JointsPanel, JointOrientsPanel
-from .designviews.sym import SymmetryPanel
 from .designviews.layout import LayoutPanel
+from .designviews.sym import SymmetryPanel
 
 __all__ = [
-    "DesignViewWidget",
+    "DesignToolkitWidget",
 ]
 
 PANEL_DEFINITIONS = [
@@ -25,14 +25,14 @@ PANEL_DEFINITIONS = [
 ]
 
 
-class DesignViewWidget(QtWidgets.QWidget):
+class DesignToolkitWidget(QtWidgets.QWidget):
     """
     A widget containing a collection of panels with tools
     for designing the rig blueprint.
     """
 
     def __init__(self, parent=None):
-        super(DesignViewWidget, self).__init__(parent=parent)
+        super(DesignToolkitWidget, self).__init__(parent=parent)
 
         # list of panel widgets to add, in order
         self.panelDefinitions = PANEL_DEFINITIONS
@@ -77,3 +77,24 @@ class DesignViewWidget(QtWidgets.QWidget):
             20, 20, QtWidgets.QSizePolicy.Minimum,
             QtWidgets.QSizePolicy.Expanding)
         layout.addItem(spacer)
+
+
+class DesignToolkitWindow(PulseWindow):
+    OBJECT_NAME = 'pulseDesignToolkitWindow'
+    PREFERRED_SIZE = QtCore.QSize(280, 300)
+    STARTING_SIZE = QtCore.QSize(280, 300)
+    MINIMUM_SIZE = QtCore.QSize(280, 300)
+    DEFAULT_TAB_CONTROL = 'ChannelBoxLayerEditor'
+    WINDOW_MODULE = 'pulse.views.designview'
+
+    def __init__(self, parent=None):
+        super().__init__(parent=parent)
+
+        self.setWindowTitle('Pulse Design Toolkit')
+
+        layout = QtWidgets.QVBoxLayout(self)
+        layout.setMargin(0)
+        self.setLayout(layout)
+
+        widget = DesignToolkitWidget(self)
+        layout.addWidget(widget)

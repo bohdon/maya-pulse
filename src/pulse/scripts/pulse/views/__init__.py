@@ -1,51 +1,42 @@
-
-import maya.cmds as cmds
-
-from .core import *
-from .actionattrform import *
-from .actioneditor import *
-from .actionpalette import *
-from .actiontree import *
-from .buildtoolbar import *
-from .manageview import *
-from .pulseeditor import *
-from .quickcolor import *
-from .quickname import *
+from . import actioneditor
+from . import actiontree
+from . import core
+from . import designview
+from . import pulseeditor
+from . import quickcolor
+from . import quickname
+from .core import PulseWindow
 
 
 def toggleEditorUI():
-    PulseEditorWindow.toggleWindow()
+    pulseeditor.PulseEditorWindow.toggleWindow()
 
 
 def showEditorUI():
-    PulseEditorWindow.showWindow()
+    pulseeditor.PulseEditorWindow.showWindow()
 
 
 def hideEditorUI():
-    PulseEditorWindow.hideWindow()
+    pulseeditor.PulseEditorWindow.hideWindow()
 
 
 def tearDownUI():
     """
     Hide and delete UI elements and registered callbacks.
+    Intended for development reloading purposes.
     """
     hideEditorUI()
-    destroyEditorWorkspaceControls()
+    destroyAllPulseWindows()
+    destroyUIModelInstances()
 
 
-def destroyEditorWorkspaceControls():
+def destroyAllPulseWindows():
     """
-    Development util to destroy workspace controls
-    for all PulseWindows. Not intended for normal usage.
+    Destroy all PulseWindows and their workspace controls.
+    Intended for development reloading purposes.
     """
-    import designviews
-    designviews.destroyEditorWorkspaceControls()
-
-    ActionEditorWindow.destroyWindow()
-    ActionTreeWindow.destroyWindow()
-    PulseEditorWindow.destroyWindow()
-    QuickNameWindow.destroyWindow()
-    QuickColorWindow.destroyWindow()
+    for cls in PulseWindow.__subclasses__():
+        cls.destroyWindow()
 
 
 def destroyUIModelInstances():
@@ -53,4 +44,4 @@ def destroyUIModelInstances():
     Destroy all BlueprintUIModel instances, and
     unregister any scene callbacks.
     """
-    BlueprintUIModel.deleteAllSharedModels()
+    core.BlueprintUIModel.deleteAllSharedModels()
