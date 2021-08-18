@@ -113,7 +113,7 @@ def getRegisteredActions():
     Returns:
         A dict of {str: {'config': dict, 'class': BuildAction class}}
     """
-    return {k: v for k, v in BUILDACTIONMAP}
+    return {k: v for k, v in BUILDACTIONMAP.items()}
 
 
 def getRegisteredActionConfigs():
