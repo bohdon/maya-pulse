@@ -1,0 +1,27 @@
+FootControlAction:
+  id: Pulse.FootControl
+  displayName: Foot Control
+  description: Creates a classic attribute-driven foot roll and tilt control
+  color: [.85, .65, .4]
+  category: Controls
+  attrs:
+    - name: control
+      description: The main foot control which will contain the attributes
+      type: node
+    - name: toePivot
+      description: The toe pivot locator
+      type: node
+    - name: ballPivot
+      description: The ball pivot locator
+      type: node
+    - name: heelPivot
+      description: The heel pivot locator
+      type: node
+    - name: bendLimitDefault
+      description: The default value for the Bend Limit attribute
+      type: float
+      value: 50
+    - name: straightAngleDefault
+      description: The default value for the Straight Angle attribute
+      type: float
+      value: 70
