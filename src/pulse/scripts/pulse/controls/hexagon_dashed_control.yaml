@@ -1,6 +1,6 @@
 name: Hexagon Dashed
 icon: hexagonDashed.png
-sort: 7
+sort: 2
 curves:
 - degree: 1
   periodic: true

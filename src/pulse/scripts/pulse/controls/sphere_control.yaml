@@ -1,6 +1,6 @@
 name: Sphere
 icon: sphere.png
-sort: 9
+sort: 5
 curves:
 - degree: 3
   periodic: true

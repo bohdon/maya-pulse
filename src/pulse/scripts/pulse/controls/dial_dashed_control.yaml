@@ -1,6 +1,6 @@
 name: Dial Dashed
 icon: dialDashed.png
-sort: 8
+sort: 3
 curves:
 - degree: 1
   periodic: false

@@ -1,6 +1,6 @@
 icon: squareCorners.png
 name: Square Corners
-sort: 100
+sort: 7
 curves:
 - degree: 1
   knot: [0.0, 1.0, 2.0]
