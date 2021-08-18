@@ -1,5 +1,6 @@
 
 import logging
+
 import maya.cmds as cmds
 import pymel.core as pm
 
@@ -96,6 +97,7 @@ def getOutputAttr(input):
         'reverse': 'output',
         'setRange': 'outValue',
         'vectorProduct': 'output',
+        'floatMath': 'outFloat',
     }
 
     node = input.node()
@@ -330,6 +332,26 @@ def plusMinusAverage(inputs, operation):
         return getOutputAttr(multiattr)
     else:
         return getOutputAttr(node)
+
+
+# TODO: move internal functions to another module so these functions can shadow builtin names
+
+def min_float(a, b):
+    """
+    Return an attribute that represents min(a, b).
+    Only supports float values.
+    """
+    return _createUtilityAndReturnOutput(
+        'floatMath', floatA=a, floatB=b, operation=4)
+
+
+def max_float(a, b):
+    """
+    Return an attribute that represents max(a, b).
+    Only supports float values.
+    """
+    return _createUtilityAndReturnOutput(
+        'floatMath', floatA=a, floatB=b, operation=5)
 
 
 def multiply(a, b):

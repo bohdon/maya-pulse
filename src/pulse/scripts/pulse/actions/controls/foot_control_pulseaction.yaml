@@ -9,13 +9,19 @@ FootControlAction:
       description: The main foot control which will contain the attributes
       type: node
     - name: toePivot
-      description: The toe pivot locator
+      description: The toe pivot locator for rolling the foot
       type: node
     - name: ballPivot
-      description: The ball pivot locator
+      description: The ball pivot locator for rolling the foot
+      type: node
+    - name: outerTiltPivot
+      description: The outer pivot locator for tilting the foot
+      type: node
+    - name: innerTiltPivot
+      description: The inner pivot locator for tilting the foot
       type: node
     - name: heelPivot
-      description: The heel pivot locator
+      description: The heel pivot locator for rolling the foot
       type: node
     - name: bendLimitDefault
       description: The default value for the Bend Limit attribute
