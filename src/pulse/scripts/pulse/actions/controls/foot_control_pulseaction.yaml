@@ -5,8 +5,20 @@ FootControlAction:
   color: [.85, .65, .4]
   category: Controls
   attrs:
-    - name: control
-      description: The main foot control which will contain the attributes
+    - name: ankleFollower
+      description: The follower node representing the ankle of the foot
+      type: node
+    - name: toeFollower
+      description: The follower node representing the toe of the foot
+      type: node
+    - name: baseControl
+      description: The foot control to use when the foot is grounded
+      type: node
+    - name: liftControl
+      description: The ankle control to use when the foot is lifted
+      type: node
+    - name: liftToeControl
+      description: The toe control to use when the foot is lifted
       type: node
     - name: toePivot
       description: The toe pivot locator for rolling the foot

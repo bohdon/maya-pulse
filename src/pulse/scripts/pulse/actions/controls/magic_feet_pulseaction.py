@@ -3,6 +3,7 @@ import pymel.core as pm
 import pymetanode as meta
 
 import pulse
+import pulse.utilnodes
 
 MAGIC_FEET_CTL_METACLASSNAME = 'pulse_magicfeet_ctl'
 MAGIC_FEET_LIFT_CTL_METACLASSNAME = 'pulse_magicfeet_lift_ctl'

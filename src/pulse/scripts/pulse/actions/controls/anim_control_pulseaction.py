@@ -1,10 +1,11 @@
-
-import pymel.core as pm
-import pymetanode as meta
-import maya.cmds as cmds
-
 import pulse
 import pulse.nodes
+import pymetanode as meta
+
+try:
+    import resetter
+except ImportError:
+    resetter = None
 
 
 class AnimControlAction(pulse.BuildAction):
@@ -52,3 +53,7 @@ class AnimControlAction(pulse.BuildAction):
 
         # update rig meta data
         self.extendRigMetaDataList('animControls', [self.controlNode])
+
+        # set defaults for all keyable attributes
+        if resetter:
+            resetter.setDefaults(self.controlNode)
