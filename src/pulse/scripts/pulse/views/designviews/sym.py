@@ -1,15 +1,9 @@
-
-from pulse.vendor.Qt import QtCore, QtWidgets, QtGui
-import pymel.core as pm
-
-import pulse.nodes
-import pulse.sym
-
+from pulse import editorutils
 from pulse.prefs import optionVarProperty
+from pulse.vendor.Qt import QtWidgets
 from pulse.views import utils as viewutils
 from pulse.views.core import PulsePanelWidget
 from pulse.views.utils import undoAndRepeatPartial as cmd
-from pulse import editorutils
 
 __all__ = [
     "SymmetryPanel",

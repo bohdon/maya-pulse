@@ -1,10 +1,9 @@
-
 import os
+
 import maya.api.OpenMaya as om
 
-import pulse.views
-import pulse.core
 from pulse.core import serializeAttrValue, deserializeAttrValue
+from pulse.views.core import BlueprintUIModel
 
 # the list of all cmd classes in this plugin
 CMD_CLASSES = []
@@ -19,7 +18,7 @@ def maya_useNewAPI():
 
 
 def getBlueprintModel():
-    model = pulse.views.BlueprintUIModel.getDefaultModel()
+    model = BlueprintUIModel.getDefaultModel()
     return model
 
 

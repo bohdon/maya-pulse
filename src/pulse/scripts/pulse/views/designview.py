@@ -16,9 +16,9 @@ __all__ = [
 ]
 
 PANEL_DEFINITIONS = [
-    {"widgetClass": ControlsPanel},
     {"widgetClass": GeneralPanel},
     {"widgetClass": LayoutPanel},
+    {"widgetClass": ControlsPanel},
     {"widgetClass": JointsPanel},
     {"widgetClass": JointOrientsPanel},
     {"widgetClass": SymmetryPanel},

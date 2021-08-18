@@ -18,6 +18,7 @@ from pulse.nodes import *
 from pulse.shapes import *
 from pulse.sym import *
 from pulse.vendor.mayacoretools import preservedSelection
+from pulse.views.core import BlueprintUIModel
 
 LOG = logging.getLogger(__name__)
 
@@ -79,8 +80,7 @@ def getEditorBlueprint():
     """
     Return the shared Blueprint instance from the default UI model
     """
-    import pulse.views
-    return pulse.views.BlueprintUIModel.getDefaultModel().blueprint
+    return BlueprintUIModel.getDefaultModel().blueprint
 
 
 def getSelectedTransforms(includeChildren=False):
@@ -513,7 +513,7 @@ def mirrorSelected(
     Args:
         recursive (bool): Mirror the selected nodes and all children
         create (bool): Allow creation of new nodes if a pair is not found
-        curveShapes (bool): Flip curve shapes of newly created nodes
+        curveShapes (bool): Mirror control shape curves
         links (bool): Mirror links. See links.py
         reparent (bool): Mirror the parenting structure of the nodes
         transform (bool): Mirror the transform matrices of the nodes
@@ -551,26 +551,6 @@ def mirrorSelected(
         util.addOperation(MirrorLinks())
 
     util.run(nodes)
-
-
-def mirrorAndReplaceSelectedShapes():
-    def copyShape(src, dst):
-        shapes = src.getShapes()
-        for shape in shapes:
-            dupe = pm.duplicate(shape, addShape=True)
-            print(dupe)
-            pm.parent(dupe, dst, shape=True, relative=True)
-        pulse.sym.MirrorCurveShapes.flipAllCurveShapes(dst)
-        mappearance = pulse.sym.MirrorColors()
-        bm = pulse.views.core.BlueprintUIModel.getDefaultModel()
-        mappearance.blueprint = bm.blueprint
-        mappearance.mirrorNode(src, dst, False)
-
-    for s in pm.selected():
-        src = s
-        dst = pulse.sym.getPairedNode(src)
-        if dst:
-            copyShape(src, dst)
 
 
 def saveSkinWeightsForSelected(filePath=None):

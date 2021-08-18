@@ -1,14 +1,15 @@
 
 import logging
 import re
-import pymel.core as pm
-import pymetanode as meta
-from .vendor.mayacoretools import preservedSelection
 
+import pymel.core as pm
+
+import pymetanode as meta
 from . import colors
 from . import joints
 from . import links
 from . import nodes
+from .vendor.mayacoretools import preservedSelection
 
 __all__ = [
     'applyMirrorSettings',
@@ -526,10 +527,6 @@ class MirrorCurveShapes(MirrorOperation):
     Mirrors the NurbsCurve shapes of a node by simply
     flipping them, assuming MirrorTransformations would also
     be run on the mirrored nodes.
-
-    Only occurs on new nodes, since the shapes only need
-    to be flipped once. Does not copy shape information from
-    the source node (TODO: it should...)
     """
 
     def __init__(self):
@@ -537,13 +534,20 @@ class MirrorCurveShapes(MirrorOperation):
 
         self.mirrorMode = MirrorMode.Simple
 
+        # delete and replace curve shapes when mirroring
+        self.replaceExistingShapes = True
+
+        # the shape types to consider when replacing existing shapes
+        self.shapeTypes = ['nurbsCurve']
+
     def mirrorNode(self, sourceNode, destNode, isNewNode):
         # curve shape mirroring doesn't care about the actual
         # position, its only job is to flip the curve
-        # shapes the first time they are mirrored
         if isNewNode:
-            MirrorCurveShapes.flipAllCurveShapes(
-                destNode, self.axis, self.mirrorMode)
+            MirrorCurveShapes.flipAllCurveShapes(destNode, self.axis, self.mirrorMode)
+        elif self.replaceExistingShapes:
+            self.replaceCurveShapes(sourceNode, destNode)
+            MirrorCurveShapes.flipAllCurveShapes(destNode, self.axis, self.mirrorMode)
 
     @staticmethod
     def flipAllCurveShapes(node, axis=0, mirrorMode=MirrorMode.Simple):
@@ -578,6 +582,27 @@ class MirrorCurveShapes(MirrorOperation):
             s = [1, 1, 1]
             s[axis] = -1
             pm.scale(curveShape.cv, s)
+
+    def replaceCurveShapes(self, sourceNode, destNode):
+        """
+        Copy the curve shapes from one node to another, clearing out any curve shapes
+        in the destination node first.
+
+        Args:
+            sourceNode (pm.PyNode): The source node to copy shapes from
+            destNode (pm.PyNode): The destination node to copy shapes to
+        """
+        dstShapes = destNode.getShapes(type=self.shapeTypes)
+        # filter out any shapes that have connections
+        dstShapes = [s for s in dstShapes if not s.listConnections()]
+        if dstShapes:
+            pm.delete(dstShapes)
+
+        srcShapes = sourceNode.getShapes(type=self.shapeTypes)
+        for shape in srcShapes:
+            dupe = pm.duplicate(shape, addShape=True)
+            pm.parent(dupe, destNode, shape=True, relative=True)
+
 
 
 class MirrorJointDisplay(MirrorOperation):

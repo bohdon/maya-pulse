@@ -2,8 +2,7 @@
 import unittest
 import maya.cmds as cmds
 
-import pulse
-import pulse.views
+from pulse.views.core import BlueprintUIModel
 
 
 class TestPulseCmds(unittest.TestCase):
@@ -15,7 +14,7 @@ class TestPulseCmds(unittest.TestCase):
         cmds.loadPlugin('pulse', quiet=True)
 
     def test_create_step(self):
-        blueprintModel = pulse.views.BlueprintUIModel.getDefaultModel()
+        blueprintModel = BlueprintUIModel.getDefaultModel()
         bp = blueprintModel.blueprint
 
         result = cmds.pulseCreateStep("", 0, "{'name':'StepA'}")
