@@ -566,6 +566,8 @@ class ActionEditorWidget(QtWidgets.QWidget):
         self.selectionModel = self.blueprintModel.buildStepSelectionModel
         self.selectionModel.selectionChanged.connect(self.onSelectionChanged)
 
+        self.mainLayout.setEnabled(not self.blueprintModel.isReadOnly())
+
         self.setupItemsUiForSelection()
 
     def setupUi(self, parent):

@@ -264,16 +264,14 @@ class BlueprintUIModel(QtCore.QObject):
     INSTANCES = {}
 
     @classmethod
-    def getDefaultModel(cls):
-        # type: (class) -> BlueprintUIModel
+    def getDefaultModel(cls) -> 'BlueprintUIModel':
         """
         Return the default model instance used by editor views.
         """
         return cls.getSharedModel(None)
 
     @classmethod
-    def getSharedModel(cls, name):
-        # type: (class, str) -> BlueprintUIModel
+    def getSharedModel(cls, name) -> 'BlueprintUIModel':
         """
         Return a shared UI model by name, creating a new
         model if necessary. Will always return a valid
@@ -354,21 +352,21 @@ class BlueprintUIModel(QtCore.QObject):
         self.removeSceneCallbacks()
 
     @property
-    def blueprint(self):
+    def blueprint(self) -> Blueprint:
         """
         The Blueprint object represented by this Model.
         """
         return self._blueprint
 
-    def isReadOnly(self):
+    def isReadOnly(self) -> bool:
         """
         Return True if the Blueprint is not able to be modified.
         """
         return self.rigExists
 
-    def getBlueprintFilepath(self):
+    def getBlueprintFilepath(self) -> str:
         """
-        Return the filepath for the Blueprint being edited
+        Return the full path to the Blueprint file being edited.
         """
         sceneName = None
 
@@ -386,9 +384,9 @@ class BlueprintUIModel(QtCore.QObject):
             filepath = '%s.%s' % (baseName, BLUEPRINT_FILE_EXT)
             return filepath
 
-    def getBlueprintFilename(self):
+    def getBlueprintFilename(self) -> str:
         """
-        Return the filename for the Blueprint being edited
+        Return the base name of the Blueprint file being edited.
         """
         filepath = self.getBlueprintFilepath()
         if filepath:

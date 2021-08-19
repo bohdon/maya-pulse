@@ -32,7 +32,6 @@ class BuildToolbarWidget(QtWidgets.QWidget):
         # connect signals
         self.blueprintModel.readOnlyChanged.connect(self.onReadOnlyChanged)
         self.blueprintModel.rigNameChanged.connect(self.rigNameChanged)
-        self.blueprintModel.fileChanged.connect(self.onBlueprintFileChanged)
 
     @property
     def rigExists(self):
@@ -70,16 +69,9 @@ class BuildToolbarWidget(QtWidgets.QWidget):
         font = QtGui.QFont()
         font.setPointSize(9)
         font.setItalic(True)
-        self.blueprintFilenameLabel = QtWidgets.QLabel(parent)
-        self.blueprintFilenameLabel.setFont(font)
-        labelLayout.addWidget(self.blueprintFilenameLabel)
-
-        font = QtGui.QFont()
-        font.setPointSize(9)
-        font.setItalic(True)
         self.rigOrBlueprintLabel = QtWidgets.QLabel(parent)
         self.rigOrBlueprintLabel.setFont(font)
-        hlayout.addWidget(self.rigOrBlueprintLabel)
+        labelLayout.addWidget(self.rigOrBlueprintLabel)
 
         self.checkBtn = QtWidgets.QPushButton(parent)
         self.checkBtn.setText("Validate")
@@ -108,9 +100,6 @@ class BuildToolbarWidget(QtWidgets.QWidget):
         if not name:
             name = '(unnamed)'
         return name
-
-    def onBlueprintFileChanged(self):
-        self.blueprintFilenameLabel.setText(self.blueprintModel.getBlueprintFilename())
 
     def onRigExistsChanged(self):
         self.cleanState()
