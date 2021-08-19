@@ -1,13 +1,13 @@
-
 import os
-from maya import cmds
+
 import pymel.core as pm
+from maya import cmds
 
-import pulse
 import pulse.skins
+from pulse.core.buildItems import BuildAction
 
 
-class BindSkinAction(pulse.BuildAction):
+class BindSkinAction(BuildAction):
 
     @classmethod
     def util_fromSelection(cls):
@@ -24,9 +24,9 @@ class BindSkinAction(pulse.BuildAction):
 
     def validate(self):
         if not len(self.meshes):
-            raise pulse.BuildActionError('meshes must have at least one value')
+            raise BuildActionError('meshes must have at least one value')
         if not len(self.joints):
-            raise pulse.BuildActionError('joints must have at least one value')
+            raise BuildActionError('joints must have at least one value')
 
     def run(self):
         bindkwargs = dict(
@@ -55,14 +55,14 @@ class BindSkinAction(pulse.BuildAction):
             self.extendRigMetaDataList('bakeNodes', self.joints)
 
 
-class ApplySkinWeightsAction(pulse.BuildAction):
+class ApplySkinWeightsAction(BuildAction):
 
     def validate(self):
         if not len(self.meshes):
-            raise pulse.BuildActionError('meshes must have at least one value')
+            raise BuildActionError('meshes must have at least one value')
         filePath = self.getWeightsFilePath()
         if not os.path.isfile(filePath):
-            raise pulse.BuildActionError('file not found: %s' % filePath)
+            raise BuildActionError('file not found: %s' % filePath)
 
     def run(self):
         filePath = self.getWeightsFilePath()

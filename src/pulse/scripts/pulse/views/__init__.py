@@ -1,10 +1,5 @@
-from . import actioneditor
-from . import actiontree
 from . import core
-from . import designview
 from . import pulseeditor
-from . import quickcolor
-from . import quickname
 from .core import PulseWindow
 
 

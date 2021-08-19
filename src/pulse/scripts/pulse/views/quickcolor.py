@@ -2,21 +2,11 @@
 Widget for quickly editing the color of animation controls.
 """
 
-
-import pymel.core as pm
-from pulse.vendor.Qt import QtCore, QtWidgets, QtGui
-
-import pulse.core
-import pulse.colors
-import pulse.editorutils
+from . import style
 from .core import PulseWindow, BlueprintUIModel
 from .utils import undoAndRepeatPartial as cmd
-from . import style
-
-__all__ = [
-    "QuickColorWidget",
-    "QuickColorWindow",
-]
+from .. import colors, editorutils
+from ..vendor.Qt import QtCore, QtWidgets
 
 
 class QuickColorWidget(QtWidgets.QWidget):
@@ -51,11 +41,7 @@ class QuickColorWidget(QtWidgets.QWidget):
                 style.UIColors.asFGColor(style.UIColors.ERROR))
 
     def _getConfig(self):
-        # if self.blueprintModel.blueprintExists():
-        if True:
-            config = self.blueprintModel.blueprint.getConfig()
-        else:
-            config = pulse.core.blueprints.loadDefaultConfig()
+        config = self.blueprintModel.blueprint.getConfig()
         return config if config else {}
 
     def setupUi(self, parent):
@@ -65,7 +51,7 @@ class QuickColorWidget(QtWidgets.QWidget):
         clearBtn = QtWidgets.QPushButton(parent)
         clearBtn.setText("Remove Color")
         clearBtn.clicked.connect(
-            cmd(pulse.editorutils.disableColorOverrideForSelected))
+            cmd(editorutils.disableColorOverrideForSelected))
         layout.addWidget(clearBtn)
 
         bodyLayout = self.setupBodyUi(parent)
@@ -81,11 +67,11 @@ class QuickColorWidget(QtWidgets.QWidget):
     def setupBodyUi(self, parent):
         layout = QtWidgets.QVBoxLayout(parent)
 
-        colors = self.config.get('colors', [])
-        for colorData in colors:
+        config_colors = self.config.get('colors', [])
+        for colorData in config_colors:
             if 'name' in colorData and 'color' in colorData:
                 name = colorData['name']
-                color = pulse.colors.hexToRGB01(colorData['color'])
+                color = colors.hexToRGB01(colorData['color'])
                 btn = self.createColorButton(name, color, parent)
                 layout.addWidget(btn)
 
@@ -97,7 +83,7 @@ class QuickColorWidget(QtWidgets.QWidget):
         # colors are given in range 0..1, convert to 0..255 for Qt
         btn.setStyleSheet(style.UIColors.asBGColor([c * 255 for c in color]))
         btn.clicked.connect(
-            cmd(pulse.editorutils.setOverrideColorForSelected, color))
+            cmd(editorutils.setOverrideColorForSelected, color))
         return btn
 
 

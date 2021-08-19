@@ -4,8 +4,8 @@ import os
 import sys
 from fnmatch import fnmatch
 
-import pulse.vendor.yaml as yaml
-from . import core
+from .core.buildItems import BuildAction
+from .vendor import yaml
 from .views.actioneditor import BuildActionProxyForm
 
 LOG = logging.getLogger(__name__)
@@ -57,8 +57,7 @@ class BuildActionLoader(object):
         result = []
         for name in dir(module):
             obj = getattr(module, name)
-            if (isinstance(obj, type) and issubclass(obj, core.BuildAction) and
-                    obj is not core.BuildAction):
+            if (isinstance(obj, type) and issubclass(obj, BuildAction) and obj is not BuildAction):
                 # get config for the action class
                 configFile = os.path.splitext(module.__file__)[0] + '.yaml'
                 actionConfig = self.loadActionConfig(name, configFile)

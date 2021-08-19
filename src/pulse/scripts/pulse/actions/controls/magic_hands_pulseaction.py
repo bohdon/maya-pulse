@@ -1,18 +1,14 @@
-
-import pymel.core as pm
-import pymetanode as meta
-
-import pulse
 import pulse.nodes
+import pulse.utilnodes
+from pulse.core.buildItems import BuildAction, BuildActionError
 
 
-class MagicHandsAction(pulse.BuildAction):
-
+class MagicHandsAction(BuildAction):
     _offsetName = '{0}_magic'
 
     def validate(self):
         if not self.ctl1 and not self.ctl2 and not self.ctl3 and not self.ctl4:
-            raise pulse.BuildActionError("No controls were given")
+            raise BuildActionError("No controls were given")
 
     def run(self):
         fingerCtls = [self.ctl2, self.ctl3, self.ctl4]

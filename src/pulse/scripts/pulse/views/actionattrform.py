@@ -3,29 +3,14 @@ Form ui classes for any type of action attribute, e.g.
 float forms, node and node list forms, combo box forms, etc.
 """
 
-import pymel.core as pm
 import maya.cmds as cmds
+import pymel.core as pm
+
 import pymetanode as meta
-
-import pulse.names
-from pulse.core import serializeAttrValue
-from pulse.vendor.Qt import QtCore, QtWidgets
 from . import utils as viewutils
-
-__all__ = [
-    'ActionAttrForm',
-    'BatchAttrForm',
-    'BoolAttrForm',
-    'DefaultAttrForm',
-    'DefaultBatchAttrForm',
-    'FloatAttrForm',
-    'IntAttrForm',
-    'NodeAttrForm',
-    'NodeBatchAttrForm',
-    'NodeListAttrForm',
-    'OptionAttrForm',
-    'StringAttrForm',
-]
+from .. import names
+from ..core.serializer import serializeAttrValue
+from ..vendor.Qt import QtCore, QtWidgets
 
 
 class ActionAttrForm(QtWidgets.QFrame):
@@ -248,7 +233,7 @@ class ActionAttrForm(QtWidgets.QFrame):
             QtCore.Qt.AlignTop)
         # add some space above the label so it lines up
         self.label.setMargin(2)
-        self.label.setText(pulse.names.toTitle(self.attr['name']))
+        self.label.setText(names.toTitle(self.attr['name']))
         description = self.attr.get('description')
         if description:
             self.label.setStatusTip(description)
@@ -353,7 +338,7 @@ class BatchAttrForm(QtWidgets.QFrame):
             QtCore.Qt.AlignTop)
         # add some space above the label so it lines up
         self.label.setMargin(2)
-        self.label.setText(pulse.names.toTitle(self.attr['name']))
+        self.label.setText(names.toTitle(self.attr['name']))
         self.labelLayout.addWidget(self.label)
 
         self.formLayout.setLayout(

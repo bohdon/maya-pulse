@@ -1,14 +1,13 @@
-
 import pymel.core as pm
 
-import pulse
+from pulse.core.buildItems import BuildAction, BuildActionError
 
 
-class ObjectSetAction(pulse.BuildAction):
+class ObjectSetAction(BuildAction):
 
     def validate(self):
         if not len(self.name):
-            raise pulse.BuildActionError('name cannot be empty')
+            raise BuildActionError('name cannot be empty')
 
     def run(self):
         objectSet = pm.ls(self.name)

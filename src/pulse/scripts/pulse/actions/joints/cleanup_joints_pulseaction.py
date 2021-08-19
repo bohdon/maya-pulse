@@ -1,15 +1,13 @@
-
 import pymel.core as pm
 
-import pulse
-import pulse.nodes
 import pulse.joints
+from pulse.core.buildItems import BuildAction, BuildActionError
 
 
-class CleanupJointsAction(pulse.BuildAction):
+class CleanupJointsAction(BuildAction):
     def validate(self):
         if not self.rootJoint:
-            raise pulse.BuildActionError('rootJoint must be set')
+            raise BuildActionError('rootJoint must be set')
 
     def run(self):
         if self.removeEndJoints:

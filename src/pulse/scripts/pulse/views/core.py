@@ -2,7 +2,6 @@
 UI model classes, and base classes for common widgets.
 """
 
-
 import logging
 import os
 
@@ -12,21 +11,15 @@ import maya.cmds as cmds
 import pymel.core as pm
 from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
 
-import pulse
 import pymetanode as meta
-from pulse.core import Blueprint, BuildStep, serializeAttrValue
-from pulse.prefs import optionVarProperty
-from pulse.vendor.Qt import QtCore, QtWidgets, QtGui
-from pulse.views.utils import CollapsibleFrame
+from .utils import CollapsibleFrame
 from .utils import dpiScale
-
-__all__ = [
-    'BlueprintUIModel',
-    'BuildStepSelectionModel',
-    'BuildStepTreeModel',
-    'PulsePanelWidget',
-    'PulseWindow',
-]
+from ..core import rigs
+from ..core.blueprints import Blueprint
+from ..core.buildItems import BuildStep, BuildAction
+from ..core.serializer import serializeAttrValue
+from ..prefs import optionVarProperty
+from ..vendor.Qt import QtCore, QtWidgets, QtGui
 
 LOG = logging.getLogger(__name__)
 LOG.level = logging.DEBUG
@@ -379,11 +372,11 @@ class BlueprintUIModel(QtCore.QObject):
         """
         sceneName = None
 
-        allRigs = pulse.getAllRigs()
+        allRigs = rigs.getAllRigs()
         if len(allRigs) > 0:
             # get filepath from rig
             rig = allRigs[0]
-            rigdata = meta.getMetaData(rig, pulse.RIG_METACLASS)
+            rigdata = meta.getMetaData(rig, rigs.RIG_METACLASS)
             sceneName = rigdata.get('blueprintFile')
         else:
             sceneName = pm.sceneName()
@@ -496,7 +489,7 @@ class BlueprintUIModel(QtCore.QObject):
 
     def refreshRigExists(self):
         oldReadOnly = self.isReadOnly()
-        self.rigExists = len(pulse.getAllRigs()) > 0
+        self.rigExists = len(rigs.getAllRigs()) > 0
         self.rigExistsChanged.emit()
 
         if oldReadOnly != self.isReadOnly():
@@ -987,7 +980,7 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
             step = self.stepForIndex(index)
             if step:
                 steps.append(step)
-        steps = pulse.BuildStep.getTopmostSteps(steps)
+        steps = BuildStep.getTopmostSteps(steps)
 
         stepDataList = [step.serialize() for step in steps]
         datastr = meta.encodeMetaData(stepDataList)
@@ -1074,7 +1067,7 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
             step = self.stepForIndex(index)
             if step:
                 steps.append(step)
-        steps = pulse.BuildStep.getTopmostSteps(steps)
+        steps = BuildStep.getTopmostSteps(steps)
 
         paths = []
         for step in steps:
@@ -1150,7 +1143,7 @@ class BuildStepSelectionModel(QtCore.QItemSelectionModel):
         Return the currently selected BuildAction, if any.
         """
         items = self.getSelectedItems()
-        return [i for i in items if isinstance(i, pulse.BuildAction)]
+        return [i for i in items if isinstance(i, BuildAction)]
 
     def getSelectedItemPaths(self):
         """

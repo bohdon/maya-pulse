@@ -3,13 +3,8 @@ A widget containing a collection of panels with tools
 for working with skinned meshes.
 """
 
-from pulse.vendor.Qt import QtWidgets
-
 from .skinviews.manage import ManageWeightsPanel
-
-__all__ = [
-    'SkinViewWidget',
-]
+from ..vendor.Qt import QtWidgets
 
 PANEL_DEFINITIONS = [
     {"widgetClass": ManageWeightsPanel},

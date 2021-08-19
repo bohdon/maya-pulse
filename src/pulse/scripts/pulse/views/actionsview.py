@@ -4,15 +4,9 @@ inspecting, and editing actions. Combines ActionEditorWidget, ActionTreeWidget
 and ActionPaletteWidget into one widget.
 """
 
-from pulse.vendor.Qt import QtCore, QtWidgets
-from .actioneditor import ActionEditorWidget
-from .actiontree import ActionTreeWidget, ActionPaletteWidget
+from .actiontree import ActionTreeWidget
 from .core import PulseWindow, BlueprintUIModel
-
-__all__ = [
-    'ActionsViewWidget',
-    'ActionsViewWindow',
-]
+from ..vendor.Qt import QtCore, QtWidgets
 
 
 class ActionsViewWidget(QtWidgets.QWidget):

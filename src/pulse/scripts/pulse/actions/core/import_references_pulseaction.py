@@ -1,10 +1,8 @@
-
-import pymel.core as pm
-import pulse
 import pulse.references
+from pulse.core.buildItems import BuildAction
 
 
-class ImportReferencesAction(pulse.BuildAction):
+class ImportReferencesAction(BuildAction):
 
     def run(self):
         pulse.references.importAllReferences(
@@ -12,4 +10,3 @@ class ImportReferencesAction(pulse.BuildAction):
             depthLimit=self.depthLimit,
             removeNamespace=self.removeNamespace
         )
-

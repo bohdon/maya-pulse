@@ -1,28 +1,26 @@
-
 import pymel.core as pm
 
-import pulse
 import pulse.controlshapes
-import pulse.joints
 import pulse.nodes
 import pulse.utilnodes
+from pulse.core.buildItems import BuildAction, BuildActionError
 
 
-class ThreeBoneIKFKAction(pulse.BuildAction):
+class ThreeBoneIKFKAction(BuildAction):
 
     def validate(self):
         if not self.endJoint:
-            raise pulse.BuildActionError('endJoint must be set')
+            raise BuildActionError('endJoint must be set')
         if not self.rootCtl:
-            raise pulse.BuildActionError('rootCtl must be set')
+            raise BuildActionError('rootCtl must be set')
         if not self.midCtlIk:
-            raise pulse.BuildActionError('midCtlIk must be set')
+            raise BuildActionError('midCtlIk must be set')
         if not self.midCtlFk:
-            raise pulse.BuildActionError('midCtlFk must be set')
+            raise BuildActionError('midCtlFk must be set')
         if not self.endCtlIk:
-            raise pulse.BuildActionError('endCtlIk must be set')
+            raise BuildActionError('endCtlIk must be set')
         if not self.endCtlFk:
-            raise pulse.BuildActionError('endCtlFk must be set')
+            raise BuildActionError('endCtlFk must be set')
 
     def run(self):
         # retrieve mid and root joints

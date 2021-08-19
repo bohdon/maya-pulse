@@ -1,15 +1,8 @@
-
-from pulse.vendor.Qt import QtCore, QtWidgets, QtGui
-import pymel.core as pm
-
-from pulse.views import utils as viewutils
-from pulse.views.core import PulsePanelWidget
-from pulse.views.utils import undoAndRepeatPartial as cmd
-from pulse import editorutils
-
-__all__ = [
-    "ManageWeightsPanel",
-]
+from .. import utils as viewutils
+from ..core import PulsePanelWidget
+from ..utils import undoAndRepeatPartial as cmd
+from ... import editorutils
+from ...vendor.Qt import QtWidgets
 
 
 class ManageWeightsPanel(PulsePanelWidget):

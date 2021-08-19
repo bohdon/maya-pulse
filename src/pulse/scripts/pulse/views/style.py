@@ -1,14 +1,7 @@
-
-from pulse.vendor.Qt import QtGui
-
-__all__ = [
-    'UIColors',
-    'UIFonts',
-]
+from ..vendor.Qt import QtGui
 
 
 class UIColors(object):
-
     RED = (120, 60, 60, 1)
     GREEN = (60, 110, 60, 1)
     BLUE = (60, 80, 120, 1)

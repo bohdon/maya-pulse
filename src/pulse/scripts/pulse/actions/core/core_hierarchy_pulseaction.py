@@ -1,11 +1,10 @@
-
 import pymel.core as pm
 
-import pulse
 import pulse.nodes
+from pulse.core.buildItems import BuildAction
 
 
-class BuildCoreHierarchyAction(pulse.BuildAction):
+class BuildCoreHierarchyAction(BuildAction):
     """
     Builds a core hierarchy of the rig.
 

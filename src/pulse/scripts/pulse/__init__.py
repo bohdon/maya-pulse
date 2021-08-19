@@ -1,14 +1,13 @@
 import logging
 import os
 
-from .core import *
-from .loader import BuildActionLoader
 from .version import __version__
 
 LOG = logging.getLogger("pulse")
 LOG.level = logging.DEBUG
 
 BUILTIN_ACTIONS_LOADED = False
+
 
 def loadActionsFromDirectory(startDir):
     """
@@ -18,6 +17,9 @@ def loadActionsFromDirectory(startDir):
     Args:
         startDir: A str path of the directory to search
     """
+    from pulse.core.buildItems import registerAction
+    from pulse.loader import BuildActionLoader
+
     loader = BuildActionLoader()
     for config, action in loader.loadActionsFromDirectory(startDir):
         registerAction(config, action)

@@ -1,8 +1,8 @@
 import pymel.core as pm
 
-import pulse
 import pulse.nodes
 from pulse import utilnodes
+from pulse.core.buildItems import BuildAction, BuildActionError
 
 try:
     import resetter
@@ -12,29 +12,29 @@ except ImportError:
 FOOT_CTL_METACLASSNAME = 'pulse_foot_ctl'
 
 
-class FootControlAction(pulse.BuildAction):
+class FootControlAction(BuildAction):
 
     def validate(self):
         if not self.ankleFollower:
-            raise pulse.BuildActionError("ankleFollower is not set")
+            raise BuildActionError("ankleFollower is not set")
         if not self.toeFollower:
-            raise pulse.BuildActionError("toeFollower is not set")
+            raise BuildActionError("toeFollower is not set")
         if not self.baseControl:
-            raise pulse.BuildActionError("baseControl is not set")
+            raise BuildActionError("baseControl is not set")
         if not self.liftControl:
-            raise pulse.BuildActionError("liftControl is not set")
+            raise BuildActionError("liftControl is not set")
         if not self.liftToeControl:
-            raise pulse.BuildActionError("liftToeControl is not set")
+            raise BuildActionError("liftToeControl is not set")
         if not self.toePivot:
-            raise pulse.BuildActionError("toePivot is not set")
+            raise BuildActionError("toePivot is not set")
         if not self.ballPivot:
-            raise pulse.BuildActionError("ballPivot is not set")
+            raise BuildActionError("ballPivot is not set")
         if not self.outerTiltPivot:
-            raise pulse.BuildActionError("outerTiltPivot is not set")
+            raise BuildActionError("outerTiltPivot is not set")
         if not self.innerTiltPivot:
-            raise pulse.BuildActionError("innerTiltPivot is not set")
+            raise BuildActionError("innerTiltPivot is not set")
         if not self.heelPivot:
-            raise pulse.BuildActionError("heelPivot is not set")
+            raise BuildActionError("heelPivot is not set")
 
     def run(self):
         # add attrs
@@ -172,7 +172,7 @@ class FootControlAction(pulse.BuildAction):
         blendNode = pm.createNode('wtAddMatrix', n=name)
 
         mtxA >> blendNode.wtMatrix[0].matrixIn
-        pulse.utilnodes.reverse(blendAttr) >> blendNode.wtMatrix[0].weightIn
+        utilnodes.reverse(blendAttr) >> blendNode.wtMatrix[0].weightIn
 
         mtxB >> blendNode.wtMatrix[1].matrixIn
         blendAttr >> blendNode.wtMatrix[1].weightIn

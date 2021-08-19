@@ -1,17 +1,12 @@
-from pulse import editorutils
-from pulse.prefs import optionVarProperty
-from pulse.vendor.Qt import QtWidgets
-from pulse.views import utils as viewutils
-from pulse.views.core import PulsePanelWidget
-from pulse.views.utils import undoAndRepeatPartial as cmd
-
-__all__ = [
-    "SymmetryPanel",
-]
+from .. import utils as viewutils
+from ..core import PulsePanelWidget
+from ..utils import undoAndRepeatPartial as cmd
+from ... import editorutils
+from ...prefs import optionVarProperty
+from ...vendor.Qt import QtWidgets
 
 
 class SymmetryPanel(PulsePanelWidget):
-
     mirrorRecursive = optionVarProperty(
         'pulse.editor.mirrorRecursive', True)
     mirrorTransforms = optionVarProperty(

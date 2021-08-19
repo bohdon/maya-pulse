@@ -1,17 +1,16 @@
-
 import pymel.core as pm
 
-import pulse
 import pulse.nodes
+from pulse.core.buildItems import BuildAction, BuildActionError
 
 
-class SimpleConstrainAction(pulse.BuildAction):
+class SimpleConstrainAction(BuildAction):
 
     def validate(self):
         if not self.leader:
-            raise pulse.BuildActionError("leader must be set")
+            raise BuildActionError("leader must be set")
         if not self.follower:
-            raise pulse.BuildActionError("follower must be set")
+            raise BuildActionError("follower must be set")
 
     def run(self):
 

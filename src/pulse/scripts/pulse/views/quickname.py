@@ -3,21 +3,14 @@ Widget for quickly naming nodes using preset lists of
 keywords, prefixes, and suffixes
 """
 
-
 from functools import partial
+
 import pymel.core as pm
-from pulse.vendor.Qt import QtCore, QtWidgets, QtGui
 
-import pulse.core
-import pulse.names
-from .core import PulseWindow, BlueprintUIModel
-from .utils import undoAndRepeatPartial as cmd
 from . import style
-
-__all__ = [
-    "QuickNameWidget",
-    "QuickNameWindow",
-]
+from .core import PulseWindow, BlueprintUIModel
+from .. import names
+from ..vendor.Qt import QtCore, QtWidgets, QtGui
 
 
 class QuickNameWidget(QtWidgets.QWidget):
@@ -59,11 +52,7 @@ class QuickNameWidget(QtWidgets.QWidget):
                 style.UIColors.asFGColor(style.UIColors.ERROR))
 
     def _getConfig(self):
-        # if self.blueprintModel.blueprintExists():
-        if True:
-            config = self.blueprintModel.blueprint.getConfig()
-        else:
-            config = pulse.core.blueprints.loadDefaultConfig()
+        config = self.blueprintModel.blueprint.getConfig()
         return config if config else {}
 
     def setupUi(self, parent):
@@ -238,7 +227,7 @@ class QuickNameWidget(QtWidgets.QWidget):
         """
         layout = QtWidgets.QVBoxLayout(parent)
 
-        catLabel = self.createLabel(parent, pulse.names.toTitle(name))
+        catLabel = self.createLabel(parent, names.toTitle(name))
         catLabel.setStyleSheet(
             'background-color: rgba(255, 255, 255, 5); border-radius: 2px')
         layout.addWidget(catLabel)

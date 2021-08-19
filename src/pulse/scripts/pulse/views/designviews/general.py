@@ -1,18 +1,12 @@
-
-from pulse.vendor.Qt import QtCore, QtWidgets, QtGui
 import pymel.core as pm
 
-from pulse.views import utils as viewutils
-from pulse.views.core import PulsePanelWidget
-from pulse.views.utils import undoAndRepeatPartial as cmd
-from pulse import editorutils
-
-from ..quickname import QuickNameWindow
+from pulse.vendor.Qt import QtWidgets
+from .. import utils as viewutils
+from ..core import PulsePanelWidget
 from ..quickcolor import QuickColorWindow
-
-__all__ = [
-    "GeneralPanel",
-]
+from ..quickname import QuickNameWindow
+from ..utils import undoAndRepeatPartial as cmd
+from ... import editorutils
 
 
 class GeneralPanel(PulsePanelWidget):

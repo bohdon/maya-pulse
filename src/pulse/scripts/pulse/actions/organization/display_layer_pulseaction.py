@@ -1,14 +1,13 @@
-
 import pymel.core as pm
 
-import pulse
+from pulse.core.buildItems import BuildAction, BuildActionError
 
 
-class DisplayLayerAction(pulse.BuildAction):
+class DisplayLayerAction(BuildAction):
 
     def validate(self):
         if not len(self.name):
-            raise pulse.BuildActionError('name cannot be empty')
+            raise BuildActionError('name cannot be empty')
 
     def run(self):
         layer = pm.ls(self.name)

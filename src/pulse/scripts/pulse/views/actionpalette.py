@@ -2,19 +2,16 @@
 Palette for browsing actions that can be added to a blueprint.
 """
 
-import os
 import logging
+import os
 from functools import partial
+
 import maya.cmds as cmds
 
-import pulse
-from pulse.vendor.Qt import QtCore, QtWidgets
 from .core import BlueprintUIModel
 from .utils import createHeaderLabel
-
-__all__ = [
-    'ActionPaletteWidget',
-]
+from ..core.buildItems import getRegisteredActionConfigs
+from ..vendor.Qt import QtCore, QtWidgets
 
 LOG = logging.getLogger(__name__)
 LOG_LEVEL_KEY = 'PYLOG_%s' % LOG.name.split('.')[0].upper()
@@ -64,7 +61,7 @@ class ActionPaletteWidget(QtWidgets.QWidget):
         """ Build the action buttons UI """
         layout = QtWidgets.QVBoxLayout(parent)
 
-        allActionConfigs = pulse.getRegisteredActionConfigs()
+        allActionConfigs = getRegisteredActionConfigs()
 
         # make button for each action
         categories = [c.get('category', 'Default') for c in allActionConfigs]

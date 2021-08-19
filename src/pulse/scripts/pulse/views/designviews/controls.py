@@ -1,16 +1,10 @@
-
-from pulse.vendor.Qt import QtCore, QtWidgets, QtGui
-
-import pulse.controlshapes
-from pulse import editorutils
-from pulse.views.core import PulsePanelWidget
-from pulse.views.style import UIColors
-from pulse.views.utils import getIcon
-from pulse.views.utils import undoAndRepeatPartial as cmd
-
-__all__ = [
-    "ControlsPanel",
-]
+from ..core import PulsePanelWidget
+from ..style import UIColors
+from ..utils import getIcon
+from ..utils import undoAndRepeatPartial as cmd
+from ... import controlshapes
+from ... import editorutils
+from ...vendor.Qt import QtCore, QtWidgets
 
 
 class ControlsPanel(PulsePanelWidget):
@@ -39,7 +33,7 @@ class ControlsPanel(PulsePanelWidget):
         gridLayout.setMargin(0)
         gridLayout.setSpacing(2)
 
-        pulse.controlshapes.loadBuiltinControlShapes()
+        controlshapes.loadBuiltinControlShapes()
 
         def createControlShapeButton(text, shapeData):
             btn = QtWidgets.QPushButton(parent)
@@ -50,10 +44,10 @@ class ControlsPanel(PulsePanelWidget):
             else:
                 btn.setText(text)
             btn.clicked.connect(
-                cmd(pulse.controlshapes.createControlsForSelected, shapeData))
+                cmd(controlshapes.createControlsForSelected, shapeData))
             return btn
 
-        shapes = pulse.controlshapes.getControlShapes()
+        shapes = controlshapes.getControlShapes()
 
         row = 0
         col = 0

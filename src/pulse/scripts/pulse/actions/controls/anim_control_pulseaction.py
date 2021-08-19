@@ -1,6 +1,6 @@
-import pulse
 import pulse.nodes
 import pymetanode as meta
+from pulse.core.buildItems import BuildAction, BuildActionError
 
 try:
     import resetter
@@ -8,7 +8,7 @@ except ImportError:
     resetter = None
 
 
-class AnimControlAction(pulse.BuildAction):
+class AnimControlAction(BuildAction):
 
     def getMinApiVersion(self):
         if self.zeroOutMethod == 1:
@@ -17,7 +17,7 @@ class AnimControlAction(pulse.BuildAction):
 
     def validate(self):
         if not self.controlNode:
-            raise pulse.BuildActionError('controlNode is not set')
+            raise BuildActionError('controlNode is not set')
 
     def run(self):
         # add meta class to the control, making it

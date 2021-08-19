@@ -2,7 +2,7 @@ import os
 
 import maya.api.OpenMaya as om
 
-from pulse.core import serializeAttrValue, deserializeAttrValue
+from pulse.core.serializer import serializeAttrValue, deserializeAttrValue
 from pulse.views.core import BlueprintUIModel
 
 # the list of all cmd classes in this plugin

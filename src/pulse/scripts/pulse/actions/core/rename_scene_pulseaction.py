@@ -1,18 +1,18 @@
-
 import os
+
 import pymel.core as pm
 
-import pulse
+from pulse.core.buildItems import BuildAction, BuildActionError
 
 
-class RenameSceneAction(pulse.BuildAction):
+class RenameSceneAction(BuildAction):
     """
     Renames the current maya scene.
     """
 
     def validate(self):
         if not self.filename:
-            raise pulse.BuildActionError('Filename cannot be empty')
+            raise BuildActionError('Filename cannot be empty')
 
     def run(self):
         sceneName = pm.sceneName()

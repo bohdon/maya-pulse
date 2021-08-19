@@ -1,33 +1,32 @@
-
 import pymel.core as pm
-import pymetanode as meta
 
-import pulse
+import pulse.nodes
 import pulse.utilnodes
+import pymetanode as meta
+from pulse.core.buildItems import BuildAction, BuildActionError
 
 MAGIC_FEET_CTL_METACLASSNAME = 'pulse_magicfeet_ctl'
 MAGIC_FEET_LIFT_CTL_METACLASSNAME = 'pulse_magicfeet_lift_ctl'
 
 
-class MagicFeetAction(pulse.BuildAction):
-
+class MagicFeetAction(BuildAction):
     _offsetName = '{0}_magic'
 
     def validate(self):
         if not self.follower:
-            raise pulse.BuildActionError("follower is not set")
+            raise BuildActionError("follower is not set")
         if not self.toeFollower:
-            raise pulse.BuildActionError("toeFollower is not set")
+            raise BuildActionError("toeFollower is not set")
         if not self.control:
-            raise pulse.BuildActionError("control is not set")
+            raise BuildActionError("control is not set")
         if not self.liftControl:
-            raise pulse.BuildActionError("liftControl is not set")
+            raise BuildActionError("liftControl is not set")
         if not self.toePivot:
-            raise pulse.BuildActionError("toePivot is not set")
+            raise BuildActionError("toePivot is not set")
         if not self.ballPivot:
-            raise pulse.BuildActionError("ballPivot is not set")
+            raise BuildActionError("ballPivot is not set")
         if not self.heelPivot:
-            raise pulse.BuildActionError("heelPivot is not set")
+            raise BuildActionError("heelPivot is not set")
 
     def run(self):
         shouldCreateOffset = False

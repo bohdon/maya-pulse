@@ -3,17 +3,13 @@ A widget containing a collection of panels with tools
 for designing the rig blueprint.
 """
 
-from pulse.vendor.Qt import QtWidgets, QtCore
 from .core import PulseWindow
 from .designviews.controls import ControlsPanel
 from .designviews.general import GeneralPanel
 from .designviews.joints import JointsPanel, JointOrientsPanel
 from .designviews.layout import LayoutPanel
 from .designviews.sym import SymmetryPanel
-
-__all__ = [
-    "DesignToolkitWidget",
-]
+from ..vendor.Qt import QtWidgets, QtCore
 
 PANEL_DEFINITIONS = [
     {"widgetClass": GeneralPanel},

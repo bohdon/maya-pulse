@@ -6,15 +6,12 @@ import logging
 
 import maya.cmds as cmds
 
-import pulse
-from pulse.editorutils import saveSceneIfDirty
-from pulse.vendor.Qt import QtWidgets, QtGui
 from .core import BlueprintUIModel
 from .style import UIColors
-
-__all__ = [
-    'BuildToolbarWidget',
-]
+from .. import editorutils
+from ..core.blueprints import BlueprintBuilder, BlueprintValidator
+from ..core.rigs import openFirstRigBlueprint
+from ..vendor.Qt import QtWidgets, QtGui
 
 LOG = logging.getLogger(__name__)
 
@@ -148,31 +145,31 @@ class BuildToolbarWidget(QtWidgets.QWidget):
         self.rigOrBlueprintLabel.setText(stateText)
 
     def openBlueprintAndReload(self):
-        pulse.openFirstRigBlueprint()
+        openFirstRigBlueprint()
 
     def runValidation(self):
         blueprint = self.blueprintModel.blueprint
         if blueprint is not None:
-            if not pulse.BlueprintBuilder.preBuildValidate(blueprint):
+            if not BlueprintBuilder.preBuildValidate(blueprint):
                 return
 
-            validator = pulse.BlueprintValidator(blueprint, debug=True)
+            validator = BlueprintValidator(blueprint, debug=True)
             validator.start()
 
     def runBuild(self):
         blueprint = self.blueprintModel.blueprint
         if blueprint is not None:
-            if not pulse.BlueprintBuilder.preBuildValidate(blueprint):
+            if not BlueprintBuilder.preBuildValidate(blueprint):
                 return
 
             # TODO: expose prompt to save scene as option
-            if not saveSceneIfDirty(prompt=False):
+            if not editorutils.saveSceneIfDirty(prompt=False):
                 return
 
             # if autoSave:
             self.blueprintModel.save()
 
-            builder = pulse.BlueprintBuilder.createBuilderWithCurrentScene(
+            builder = BlueprintBuilder.createBuilderWithCurrentScene(
                 blueprint, debug=True)
             builder.showProgressUI = True
             builder.start()

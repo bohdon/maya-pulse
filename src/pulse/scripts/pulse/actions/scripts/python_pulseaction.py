@@ -5,34 +5,34 @@ from importlib.machinery import SourceFileLoader
 
 import pymel.core as pm
 
-import pulse
+from pulse.core.buildItems import BuildAction, BuildActionError
 from pulse.vendor.Qt import QtWidgets
 from pulse.views.actioneditor import BuildActionProxyForm
 
 
-class PythonAction(pulse.BuildAction):
+class PythonAction(BuildAction):
 
     def validate(self):
         if not self.function:
-            raise pulse.BuildActionError("function name cannot be empty")
+            raise BuildActionError("function name cannot be empty")
         blueprintFile = pm.sceneName()
         if not blueprintFile:
-            raise pulse.BuildActionError(
+            raise BuildActionError(
                 "File is not saved, could not determine scripts file path")
         moduleFilepath = os.path.splitext(blueprintFile)[0] + '_scripts.py'
         if not os.path.isfile(moduleFilepath):
-            raise pulse.BuildActionError(
+            raise BuildActionError(
                 "Scripts file does not exist: %s" % moduleFilepath)
 
         func = self.importFunction(self.function, moduleFilepath)
         if func is None:
-            raise pulse.BuildActionError(
+            raise BuildActionError(
                 "function '%s' was not found in scripts file: %s" % (self.function, moduleFilepath))
 
     def run(self):
         blueprintFile = self.builder.blueprintFile
         if not blueprintFile:
-            raise pulse.BuildActionError(
+            raise BuildActionError(
                 "Failed to get blueprint file name from builder")
 
         moduleFilepath = os.path.splitext(blueprintFile)[0] + '_scripts.py'

@@ -2,17 +2,10 @@
 A panel for displaying blueprint attributes and details
 """
 
-import pulse
-from pulse.vendor.Qt import QtCore, QtWidgets, QtGui
-from .core import PulseWindow
+from pulse.vendor.Qt import QtWidgets
 from .core import BlueprintUIModel
 from .utils import createHeaderLabel
-from .style import UIColors
 
-
-__all__ = [
-    'ManageWidget',
-]
 
 
 class ManageWidget(QtWidgets.QWidget):

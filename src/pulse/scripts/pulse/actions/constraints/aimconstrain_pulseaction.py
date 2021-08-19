@@ -1,20 +1,20 @@
 
 import pymel.core as pm
-import pymetanode as meta
 
-import pulse
 import pulse.nodes
+import pulse.utilnodes
+from pulse.core.buildItems import BuildAction, BuildActionError
 
 
-class AimConstrainAction(pulse.BuildAction):
+class AimConstrainAction(BuildAction):
 
     def validate(self):
         if not self.leader:
-            raise pulse.BuildActionError("leader must be set")
+            raise BuildActionError("leader must be set")
         if not self.follower:
-            raise pulse.BuildActionError("follower must be set")
+            raise BuildActionError("follower must be set")
         if not self.worldUpObject:
-            raise pulse.BuildActionError("worldUpObject must be set")
+            raise BuildActionError("worldUpObject must be set")
 
     def run(self):
         shouldCreateOffset = False

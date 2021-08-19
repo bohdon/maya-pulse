@@ -3,22 +3,16 @@ Tree widget for displaying the build step hierarchy of a blueprint.
 """
 
 import logging
+
 import maya.cmds as cmds
 
-import pulse
-import pulse.sym
-from pulse.vendor.Qt import QtCore, QtWidgets
-from .core import PulseWindow
-from .core import BlueprintUIModel
-
 from .actionpalette import ActionPaletteWidget
-
-
-__all__ = [
-    'ActionTreeWidget',
-    'ActionTreeWindow',
-    'MirrorActionUtil',
-]
+from .core import BlueprintUIModel
+from .core import PulseWindow
+from .. import sym
+from ..core.buildItems import BuildStep
+from ..core.serializer import serializeAttrValue
+from ..vendor.Qt import QtCore, QtWidgets
 
 LOG = logging.getLogger(__name__)
 
@@ -116,7 +110,7 @@ class ActionTreeWidget(QtWidgets.QWidget):
             step = self.model.stepForIndex(index)
             if step:
                 steps.append(step)
-        steps = pulse.BuildStep.getTopmostSteps(steps)
+        steps = BuildStep.getTopmostSteps(steps)
 
         paths = []
         for step in steps:
@@ -229,7 +223,7 @@ class MirrorActionUtil(object):
         Returns:
             The mirrored step name, or None if it cannot be mirrored
         """
-        destName = pulse.sym.getMirroredName(stepName, self.getConfig())
+        destName = sym.getMirroredName(stepName, self.getConfig())
         if destName != stepName:
             return destName
 
@@ -270,7 +264,7 @@ class MirrorActionUtil(object):
                 childIndex = sourceStep.indexInParent() + 1
                 newStepData = sourceStep.serialize()
                 newStepData['name'] = self.getMirroredStepName(sourceStep.name)
-                dataStr = pulse.core.serializeAttrValue(newStepData)
+                dataStr = serializeAttrValue(newStepData)
                 cmds.pulseCreateStep(
                     sourceStep.getParentPath(), childIndex, dataStr)
                 return self.blueprintModel.getStep(destStepPath)
@@ -322,7 +316,7 @@ class MirrorActionUtil(object):
                 value = sourceAction.getAttrValue(attr['name'])
                 mirroredValue = self.mirrorActionValue(attr, value)
                 attrPath = destStepPath + '.' + attr['name']
-                mirroredValueStr = pulse.serializeAttrValue(mirroredValue)
+                mirroredValueStr = serializeAttrValue(mirroredValue)
                 LOG.debug('%s -> %s', value, mirroredValue)
                 cmds.pulseSetActionAttr(attrPath, mirroredValueStr)
 
@@ -334,7 +328,7 @@ class MirrorActionUtil(object):
                 value = variant.getAttrValue(attrName)
                 mirroredValue = self.mirrorActionValue(attr, value)
                 attrPath = destStepPath + '.' + attr['name']
-                mirroredValueStr = pulse.serializeAttrValue(mirroredValue)
+                mirroredValueStr = serializeAttrValue(mirroredValue)
                 LOG.debug('%s -> %s', value, mirroredValue)
 
                 cmds.pulseSetActionAttr(attrPath, mirroredValueStr, v=i)
@@ -353,16 +347,16 @@ class MirrorActionUtil(object):
             return value
 
         if attr['type'] == 'node':
-            pairedNode = pulse.sym.getPairedNode(value)
+            pairedNode = sym.getPairedNode(value)
             if pairedNode:
                 return pairedNode
             else:
                 return value
 
         elif attr['type'] == 'string':
-            return pulse.sym.getMirroredName(value, self.getConfig())
+            return sym.getMirroredName(value, self.getConfig())
 
         elif attr['type'] == 'stringlist':
-            return [pulse.sym.getMirroredName(v, self.getConfig()) for v in value]
+            return [sym.getMirroredName(v, self.getConfig()) for v in value]
 
         return value

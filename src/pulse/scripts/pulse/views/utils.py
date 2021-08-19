@@ -2,33 +2,14 @@
 General UI utilities for simplifying UI creation code.
 """
 
-import os
 import logging
+import os
 import traceback
-from functools import partial, wraps
-from pulse.vendor.Qt import QtCore, QtWidgets, QtGui
+from functools import partial
 
 import maya.cmds as cmds
 
-
-__all__ = [
-    'addItemsToGrid',
-    'clearLayout',
-    'CollapsibleFrame',
-    'createHeaderLabel',
-    'createHSpacer',
-    'createVSpacer',
-    'dpiScale',
-    'getIcon',
-    'getIconPath',
-    'getIconPixmap',
-    'repeatable',
-    'repeatPartial',
-    'undoable',
-    'undoAndRepeatable',
-    'undoAndRepeatPartial',
-    'undoPartial',
-]
+from ..vendor.Qt import QtCore, QtWidgets, QtGui
 
 LOG = logging.getLogger(__name__)
 
@@ -38,7 +19,6 @@ ICON_DIR = os.path.join(os.path.dirname(__file__), 'icons')
 _REPEAT_COMMAND = 'python("{0}._repeatLastFunc()")'.format(__name__)
 # reference to the last repeatable func
 _REPEATABLE_FUNC = None
-
 
 _DPI_SCALE = 1.0
 if hasattr(cmds, "mayaDpiSetting"):
@@ -78,6 +58,7 @@ def repeatable(func):
     Decorator for making a function repeatable after it has
     been executed using Maya's repeatLast functionality.
     """
+
     @_softWraps(func)
     def wrapper(*args, **kwargs):
         global _REPEATABLE_FUNC
@@ -109,6 +90,7 @@ def undoable(func):
     Decorator for making a function that will execute
     as a single undo chunk.
     """
+
     @_softWraps(func)
     def wrapper(*args, **kwargs):
         cmds.undoInfo(openChunk=True)

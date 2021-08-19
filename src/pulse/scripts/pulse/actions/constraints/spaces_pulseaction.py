@@ -1,25 +1,22 @@
-
-import maya.cmds as cmds
-
-import pulse
-import pulse.spaces
 import pulse.nodes
+import pulse.spaces
+from pulse.core.buildItems import BuildAction, BuildActionError
 
 
-class CreateSpaceAction(pulse.BuildAction):
+class CreateSpaceAction(BuildAction):
 
     def validate(self):
         if not self.node:
-            raise pulse.BuildActionError("node must be set")
+            raise BuildActionError("node must be set")
         if not self.name:
-            raise pulse.BuildActionError("name cannot be empty")
+            raise BuildActionError("name cannot be empty")
 
     def run(self):
         pulse.spaces.createSpace(self.node, self.name)
         self.updateRigMetaDataDict('spaces', {self.name: self.node})
 
 
-class SpaceConstrainAction(pulse.BuildAction):
+class SpaceConstrainAction(BuildAction):
 
     def getMinApiVersion(self):
         if self.useOffsetMatrix:
@@ -28,9 +25,9 @@ class SpaceConstrainAction(pulse.BuildAction):
 
     def validate(self):
         if not self.node:
-            raise pulse.BuildActionError("node must be set")
+            raise BuildActionError("node must be set")
         if not self.spaces:
-            raise pulse.BuildActionError("spaces must have at least one value")
+            raise BuildActionError("spaces must have at least one value")
 
     def run(self):
         follower = None
@@ -43,7 +40,7 @@ class SpaceConstrainAction(pulse.BuildAction):
             self.node, self.spaces, follower=follower, useOffsetMatrix=self.useOffsetMatrix)
 
 
-class ApplySpacesAction(pulse.BuildAction):
+class ApplySpacesAction(BuildAction):
 
     def validate(self):
         pass

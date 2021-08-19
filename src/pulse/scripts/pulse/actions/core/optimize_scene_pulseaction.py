@@ -1,10 +1,10 @@
 
 import pymel.core as pm
 
-import pulse
+from pulse.core.buildItems import BuildAction
 
 
-class OptimizeSceneAction(pulse.BuildAction):
+class OptimizeSceneAction(BuildAction):
 
     def run(self):
         pm.mel.source('cleanUpScene')

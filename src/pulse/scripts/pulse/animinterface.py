@@ -1,5 +1,5 @@
-import pulse.vendor.yaml as yaml
 import pymetanode as meta
+from .vendor import yaml
 
 
 def getAllAnimControls():

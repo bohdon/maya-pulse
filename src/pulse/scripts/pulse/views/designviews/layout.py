@@ -1,20 +1,12 @@
-
+import pymel.core as pm
 from maya import OpenMaya as api
 
-from pulse.vendor.Qt import QtCore, QtWidgets, QtGui
-import pymel.core as pm
-
-from pulse.views import utils as viewutils
-from pulse.views.utils import undoAndRepeatPartial as cmd
-from pulse.views.core import PulseWindow, PulsePanelWidget
-from pulse import editorutils
-from pulse import links
-
-__all__ = [
-    "LayoutLinkEditorWidget",
-    "LayoutLinkEditorWindow",
-    "LayoutPanel",
-]
+from .. import utils as viewutils
+from ..core import PulseWindow, PulsePanelWidget
+from ..utils import undoAndRepeatPartial as cmd
+from ... import editorutils
+from ... import links
+from ...vendor.Qt import QtCore, QtWidgets, QtGui
 
 
 class LayoutPanel(PulsePanelWidget):
@@ -73,7 +65,8 @@ class LayoutLinkEditorWidget(QtWidgets.QWidget):
         super(LayoutLinkEditorWidget, self).showEvent(event)
         if self.selection_changed_cb is None:
             print('adding selection changed callback')
-            self.selection_changed_cb = api.MEventMessage.addEventCallback("SelectionChanged", self.onSceneSelectionChanged)
+            self.selection_changed_cb = api.MEventMessage.addEventCallback("SelectionChanged",
+                                                                           self.onSceneSelectionChanged)
         self.updateLinkInfoList()
 
     def hideEvent(self, event):
@@ -286,7 +279,6 @@ class LinkInfoWidget(QtWidgets.QWidget):
 
 
 class LayoutLinkEditorWindow(PulseWindow):
-
     OBJECT_NAME = 'pulseLayoutLinkEditorWindow'
     PREFERRED_SIZE = QtCore.QSize(400, 300)
     STARTING_SIZE = QtCore.QSize(400, 300)

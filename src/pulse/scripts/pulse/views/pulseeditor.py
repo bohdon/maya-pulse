@@ -4,16 +4,14 @@ and actions views.
 """
 
 import pulse
-from pulse.prefs import optionVarProperty
-from pulse.vendor.Qt import QtCore, QtWidgets
+from .actioneditor import ActionEditorWindow
 from .actionsview import ActionsViewWidget
 from .buildtoolbar import BuildToolbarWidget
 from .core import PulseWindow, BlueprintUIModel
+from .designview import DesignToolkitWindow
 from .manageview import ManageWidget
-
-__all__ = [
-    'PulseEditorWindow',
-]
+from ..prefs import optionVarProperty
+from ..vendor.Qt import QtCore, QtWidgets
 
 TAB_DEFINITIONS = [
     {
@@ -135,9 +133,6 @@ class PulseEditorWindow(PulseWindow):
         fileMenu.addAction(autoloadCheck)
 
     def setupWindowMenu(self, parent):
-        from pulse.views.actioneditor import ActionEditorWindow
-        from pulse.views.designview import DesignToolkitWindow
-
         windowMenu = self.menuBar.addMenu("Window")
 
         toggleDesignToolkit = QtWidgets.QAction("Design Toolkit", parent)
