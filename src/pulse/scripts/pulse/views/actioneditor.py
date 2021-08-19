@@ -566,7 +566,7 @@ class ActionEditorWidget(QtWidgets.QWidget):
         self.selectionModel = self.blueprintModel.buildStepSelectionModel
         self.selectionModel.selectionChanged.connect(self.onSelectionChanged)
 
-        self.mainLayout.setEnabled(not self.blueprintModel.isReadOnly())
+        self.scrollWidget.setEnabled(not self.blueprintModel.isReadOnly())
 
         self.setupItemsUiForSelection()
 
@@ -608,7 +608,7 @@ class ActionEditorWidget(QtWidgets.QWidget):
         self.setupItemsUiForSelection()
 
     def onReadOnlyChanged(self, isReadOnly):
-        self.setEnabled(not isReadOnly)
+        self.scrollWidget.setEnabled(not isReadOnly)
 
     def clearItemsUi(self):
         while True:
