@@ -10,8 +10,8 @@ from .actionpalette import ActionPaletteWidget
 from .core import BlueprintUIModel
 from .core import PulseWindow
 from .. import sym
-from ..core.buildItems import BuildStep
-from ..core.serializer import serializeAttrValue
+from ..buildItems import BuildStep
+from ..serializer import serializeAttrValue
 from ..vendor.Qt import QtCore, QtWidgets
 
 LOG = logging.getLogger(__name__)

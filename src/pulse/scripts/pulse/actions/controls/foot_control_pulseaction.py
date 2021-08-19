@@ -2,7 +2,7 @@ import pymel.core as pm
 
 import pulse.nodes
 from pulse import utilnodes
-from pulse.core.buildItems import BuildAction, BuildActionError
+from pulse.buildItems import BuildAction, BuildActionError
 
 try:
     import resetter

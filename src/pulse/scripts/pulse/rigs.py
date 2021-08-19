@@ -4,7 +4,7 @@ import pymel.core as pm
 from maya import cmds
 
 import pymetanode as meta
-from ..cameras import saveCameras, restoreCameras
+from .cameras import saveCameras, restoreCameras
 
 LOG = logging.getLogger(__name__)
 

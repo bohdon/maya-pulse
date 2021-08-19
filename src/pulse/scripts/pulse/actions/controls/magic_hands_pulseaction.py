@@ -1,6 +1,6 @@
 import pulse.nodes
 import pulse.utilnodes
-from pulse.core.buildItems import BuildAction, BuildActionError
+from pulse.buildItems import BuildAction, BuildActionError
 
 
 class MagicHandsAction(BuildAction):

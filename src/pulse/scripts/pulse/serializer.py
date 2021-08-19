@@ -3,16 +3,16 @@ from collections import OrderedDict
 import pymel.core as pm
 
 import pymetanode as meta
-from ..vendor import yaml
-from ..vendor.yaml.composer import Composer
-from ..vendor.yaml.constructor import SafeConstructor
-from ..vendor.yaml.emitter import Emitter
-from ..vendor.yaml.parser import Parser
-from ..vendor.yaml.reader import Reader
-from ..vendor.yaml.representer import SafeRepresenter
-from ..vendor.yaml.resolver import Resolver
-from ..vendor.yaml.scanner import Scanner
-from ..vendor.yaml.serializer import Serializer
+from .vendor import yaml
+from .vendor.yaml.composer import Composer
+from .vendor.yaml.constructor import SafeConstructor
+from .vendor.yaml.emitter import Emitter
+from .vendor.yaml.parser import Parser
+from .vendor.yaml.reader import Reader
+from .vendor.yaml.representer import SafeRepresenter
+from .vendor.yaml.resolver import Resolver
+from .vendor.yaml.scanner import Scanner
+from .vendor.yaml.serializer import Serializer
 
 
 class PulseDumper(Emitter, Serializer, SafeRepresenter, Resolver):

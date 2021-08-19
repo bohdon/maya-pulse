@@ -4,7 +4,7 @@ import pymel.core as pm
 from maya import cmds
 
 import pulse.skins
-from pulse.core.buildItems import BuildAction
+from pulse.buildItems import BuildAction
 
 
 class BindSkinAction(BuildAction):

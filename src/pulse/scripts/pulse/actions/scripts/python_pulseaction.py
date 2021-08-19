@@ -5,7 +5,7 @@ from importlib.machinery import SourceFileLoader
 
 import pymel.core as pm
 
-from pulse.core.buildItems import BuildAction, BuildActionError
+from pulse.buildItems import BuildAction, BuildActionError
 from pulse.vendor.Qt import QtWidgets
 from pulse.views.actioneditor import BuildActionProxyForm
 

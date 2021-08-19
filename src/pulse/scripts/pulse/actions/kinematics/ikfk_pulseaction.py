@@ -3,7 +3,7 @@ import pymel.core as pm
 import pulse.controlshapes
 import pulse.nodes
 import pulse.utilnodes
-from pulse.core.buildItems import BuildAction, BuildActionError
+from pulse.buildItems import BuildAction, BuildActionError
 
 
 class ThreeBoneIKFKAction(BuildAction):

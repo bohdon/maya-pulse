@@ -9,8 +9,8 @@ import maya.cmds as cmds
 from .core import BlueprintUIModel
 from .style import UIColors
 from .. import editorutils
-from ..core.blueprints import BlueprintBuilder, BlueprintValidator
-from ..core.rigs import openFirstRigBlueprint
+from ..blueprints import BlueprintBuilder, BlueprintValidator
+from ..rigs import openFirstRigBlueprint
 from ..vendor.Qt import QtWidgets, QtGui
 
 LOG = logging.getLogger(__name__)

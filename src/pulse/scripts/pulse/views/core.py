@@ -14,11 +14,11 @@ from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
 import pymetanode as meta
 from .utils import CollapsibleFrame
 from .utils import dpiScale
-from ..core import rigs
-from ..core.blueprints import Blueprint
-from ..core.buildItems import BuildStep, BuildAction
-from ..core.serializer import serializeAttrValue
+from .. import rigs
+from ..blueprints import Blueprint
+from ..buildItems import BuildStep, BuildAction
 from ..prefs import optionVarProperty
+from ..serializer import serializeAttrValue
 from ..vendor.Qt import QtCore, QtWidgets, QtGui
 
 LOG = logging.getLogger(__name__)

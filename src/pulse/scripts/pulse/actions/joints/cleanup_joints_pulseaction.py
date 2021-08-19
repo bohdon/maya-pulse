@@ -1,7 +1,7 @@
 import pymel.core as pm
 
 import pulse.joints
-from pulse.core.buildItems import BuildAction, BuildActionError
+from pulse.buildItems import BuildAction, BuildActionError
 
 
 class CleanupJointsAction(BuildAction):

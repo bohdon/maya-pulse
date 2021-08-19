@@ -1,7 +1,7 @@
 
 import pymel.core as pm
 
-from pulse.core.buildItems import BuildAction
+from pulse.buildItems import BuildAction
 
 
 class OptimizeSceneAction(BuildAction):

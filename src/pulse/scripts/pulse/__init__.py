@@ -17,8 +17,8 @@ def loadActionsFromDirectory(startDir):
     Args:
         startDir: A str path of the directory to search
     """
-    from pulse.core.buildItems import registerAction
-    from pulse.loader import BuildActionLoader
+    from .buildItems import registerAction
+    from .loader import BuildActionLoader
 
     loader = BuildActionLoader()
     for config, action in loader.loadActionsFromDirectory(startDir):

@@ -1,6 +1,6 @@
 import pymel.core as pm
 
-from pulse.core.buildItems import BuildAction, BuildActionError
+from pulse.buildItems import BuildAction, BuildActionError
 
 
 class DisplayLayerAction(BuildAction):

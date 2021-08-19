@@ -4,7 +4,7 @@ import os
 import sys
 from fnmatch import fnmatch
 
-from .core.buildItems import BuildAction
+from .buildItems import BuildAction
 from .vendor import yaml
 from .views.actioneditor import BuildActionProxyForm
 

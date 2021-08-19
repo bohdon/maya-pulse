@@ -8,11 +8,11 @@ import maya.cmds as cmds
 import pymel.core as pm
 
 import pymetanode as meta
+from . import version
 from .buildItems import BuildStep
 from .rigs import RIG_METACLASS, createRigNode
 from .serializer import PulseDumper, PulseLoader, UnsortableOrderedDict
-from .. import version
-from ..vendor import yaml
+from .vendor import yaml
 
 LOG = logging.getLogger(__name__)
 LOG.level = logging.DEBUG

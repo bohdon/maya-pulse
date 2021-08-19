@@ -9,7 +9,7 @@ import pymel.core as pm
 import pymetanode as meta
 from . import utils as viewutils
 from .. import names
-from ..core.serializer import serializeAttrValue
+from ..serializer import serializeAttrValue
 from ..vendor.Qt import QtCore, QtWidgets
 
 

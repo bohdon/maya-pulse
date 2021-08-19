@@ -1,5 +1,5 @@
 import pulse.references
-from pulse.core.buildItems import BuildAction
+from pulse.buildItems import BuildAction
 
 
 class ImportReferencesAction(BuildAction):

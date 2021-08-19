@@ -1,6 +1,6 @@
 import pulse.nodes
 import pymetanode as meta
-from pulse.core.buildItems import BuildAction, BuildActionError
+from pulse.buildItems import BuildAction, BuildActionError
 
 try:
     import resetter

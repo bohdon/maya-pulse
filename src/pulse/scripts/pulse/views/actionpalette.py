@@ -10,7 +10,7 @@ import maya.cmds as cmds
 
 from .core import BlueprintUIModel
 from .utils import createHeaderLabel
-from ..core.buildItems import getRegisteredActionConfigs
+from ..buildItems import getRegisteredActionConfigs
 from ..vendor.Qt import QtCore, QtWidgets
 
 LOG = logging.getLogger(__name__)
