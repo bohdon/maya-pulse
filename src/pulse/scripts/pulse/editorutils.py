@@ -11,14 +11,15 @@ import os
 import maya.cmds as cmds
 import pymel.core as pm
 
-import pulse.links
-import pulse.skins
-from pulse.joints import *
-from pulse.nodes import *
-from pulse.shapes import *
-from pulse.sym import *
-from pulse.vendor.mayacoretools import preservedSelection
-from pulse.views.core import BlueprintUIModel
+from . import colors
+from . import joints
+from . import links
+from . import nodes
+from . import shapes
+from . import skins
+from . import sym
+from .vendor.mayacoretools import preservedSelection
+from .views.core import BlueprintUIModel
 
 LOG = logging.getLogger(__name__)
 
@@ -110,7 +111,7 @@ def centerSelectedJoints():
     Center the selected joint
     """
     for s in pm.selected():
-        centerJoint(s)
+        joints.centerJoint(s)
 
 
 def disableSegmentScaleCompensateForSelected():
@@ -128,7 +129,7 @@ def insertJointForSelected(count=1):
     """
     result = []
     for s in pm.selected():
-        result.extend(insertJoints(s, count))
+        result.extend(joints.insertJoints(s, count))
     pm.select(result)
 
 
@@ -136,7 +137,7 @@ def createOffsetForSelected():
     """
     Create an offset group for the selected nodes
     """
-    pm.select([createOffsetTransform(s)
+    pm.select([nodes.createOffsetTransform(s)
                for s in pm.selected(type='transform')])
 
 
@@ -150,28 +151,28 @@ def freezeScalesForSelectedHierarchies(skipJoints=True):
             freezing joints if they are a child of one of the selected transforms.
     """
     with preservedSelection() as sel:
-        topNodes = getParentNodes(sel[:])
+        topNodes = nodes.getParentNodes(sel[:])
         for topNode in topNodes:
             if not skipJoints or topNode.nodeType() != 'joint':
-                freezeScalesForHierarchy(topNode)
+                nodes.freezeScalesForHierarchy(topNode)
 
 
 def freezePivotsForSelectedHierarchies():
     with preservedSelection() as sel:
         for s in sel:
-            freezePivotsForHierarchy(s)
+            nodes.freezePivotsForHierarchy(s)
 
 
 def freezeOffsetMatricesForSelectedHierarchies():
     with preservedSelection() as sel:
         for s in sel:
-            freezeOffsetMatrixForHierarchy(s)
+            nodes.freezeOffsetMatrixForHierarchy(s)
 
 
 def unfreezeOffsetMatricesForSelectedHierarchies():
     with preservedSelection() as sel:
         for s in sel:
-            unfreezeOffsetMatrixForHierarchy(s)
+            nodes.unfreezeOffsetMatrixForHierarchy(s)
 
 
 def freezeJointsForSelectedHierarchies():
@@ -179,10 +180,10 @@ def freezeJointsForSelectedHierarchies():
     Freeze rotates and scales on the selected joint hierarchies.
     """
     with preservedSelection() as sel:
-        topNodes = getParentNodes(sel[:])
+        topNodes = nodes.getParentNodes(sel[:])
         for topNode in topNodes:
             if topNode.nodeType() == 'joint':
-                freezeJoints(topNode)
+                joints.freezeJoints(topNode)
 
 
 def parentSelected():
@@ -195,7 +196,7 @@ def parentSelected():
     if len(sel) < 2:
         pm.warning('More that one node must be selected')
         return
-    setParent(sel[1:], sel[0])
+    nodes.setParent(sel[1:], sel[0])
     pm.select(sel)
 
 
@@ -205,7 +206,7 @@ def parentSelectedInOrder():
     Select from top of hierarchy downward, eg. [A, B, C] -> A|B|C
     """
     with preservedSelection() as sel:
-        parentInOrder(sel[:])
+        nodes.parentInOrder(sel[:])
 
 
 def rotateSelectedComponentsAroundAxis(axis, degrees=90):
@@ -222,7 +223,7 @@ def rotateSelectedComponentsAroundAxis(axis, degrees=90):
     rotation[axis] = degrees
     for node in pm.selected():
         for shape in node.getShapes():
-            rotateComponents(shape, rotation)
+            shapes.rotateComponents(shape, rotation)
 
 
 def orientToWorldForSelected(
@@ -238,9 +239,9 @@ def orientToWorldForSelected(
     sel = getSelectedTransforms(includeChildren)
     for node in sel:
         if node.nodeType() == 'joint':
-            orientJointToWorld(node)
+            joints.orientJointToWorld(node)
             if syncJointAxes:
-                matchJointRotationToOrient(node, preserveChildren)
+                joints.matchJointRotationToOrient(node, preserveChildren)
         else:
             pm.rotate(node, (0, 0, 0), a=True, ws=True, pcp=preserveChildren)
 
@@ -257,7 +258,7 @@ def orientToJointForSelected(
     sel = getSelectedTransforms(includeChildren)
     for node in sel:
         if node.nodeType() == 'joint':
-            orientJoint(node, axisOrder, upAxisStr)
+            joints.orientJoint(node, axisOrder, upAxisStr)
             # if syncJointAxes:
             #     matchJointRotationToOrient(node, preserveChildren)
 
@@ -265,8 +266,8 @@ def orientToJointForSelected(
 def orientIKJointsForSelected(aimAxis="x", poleAxis="y", preserveChildren=True):
     sel = pm.selected(type='joint')
     for node in sel:
-        orientIKJoints(node, aimAxis=aimAxis, poleAxis=poleAxis,
-                       preserveChildren=preserveChildren)
+        joints.orientIKJoints(node, aimAxis=aimAxis, poleAxis=poleAxis,
+                              preserveChildren=preserveChildren)
 
 
 def rotateSelectedOrientsAroundAxis(
@@ -293,8 +294,8 @@ def rotateSelectedOrientsAroundAxis(
     rotation = pm.dt.Vector()
     rotation[axis] = degrees
 
-    nodes = pm.selected()
-    for node in nodes:
+    sel_nodes = pm.selected()
+    for node in sel_nodes:
         rotateOrientOrTransform(
             node, rotation,
             preserveChildren, preserveShapes, syncJointAxes)
@@ -319,27 +320,27 @@ def rotateOrientOrTransform(
             translate and scale axes updated to match the new orientation
     """
     if node.nodeType() == 'joint':
-        rotateJointOrient(node, rotation)
+        joints.rotateJointOrient(node, rotation)
         if syncJointAxes:
-            matchJointRotationToOrient(node, preserveChildren)
+            joints.matchJointRotationToOrient(node, preserveChildren)
     else:
         pm.rotate(node, rotation, os=True, r=True, pcp=preserveChildren)
 
         # normalize eulers to 0..360, assumed as part of orienting
-        normalizeEulerRotations(node)
+        nodes.normalizeEulerRotations(node)
 
         if preserveShapes:
-            shapes = node.getShapes()
-            for shape in shapes:
-                rotateComponents(shape, -rotation)
+            nodeShapes = node.getShapes()
+            for shape in nodeShapes:
+                shapes.rotateComponents(shape, -rotation)
 
 
 def orientJointToRotationForSelected(includeChildren=False, preserveChildren=True):
-    nodes = getSelectedTransforms(includeChildren)
-    for node in nodes:
+    sel_nodes = getSelectedTransforms(includeChildren)
+    for node in sel_nodes:
         if node.nodeType() == 'joint':
             joint = node.node()
-            orientJointToRotation(joint, preserveChildren)
+            joints.orientJointToRotation(joint, preserveChildren)
 
 
 def interactiveOrientForSelected():
@@ -351,8 +352,9 @@ def interactiveOrientForSelected():
 def fixupJointOrientForSelected(aimAxis="x", keepAxis="y", preserveChildren=True):
     sel = pm.selected(type='joint')
     for node in sel:
-        fixupJointOrient(node, aimAxis=aimAxis, keepAxis=keepAxis,
-                         preserveChildren=preserveChildren)
+        joints.fixupJointOrient(node, aimAxis=aimAxis, keepAxis=keepAxis,
+                                preserveChildren=preserveChildren)
+
 
 def matchJointRotationToOrientForSelected(preserveChildren=True):
     # handle current selection containing both joints, and possibly pivots of joints
@@ -360,7 +362,7 @@ def matchJointRotationToOrientForSelected(preserveChildren=True):
     for s in sel:
         if s.nodeType() == 'joint':
             joint = s.node()
-            matchJointRotationToOrient(joint, preserveChildren)
+            joints.matchJointRotationToOrient(joint, preserveChildren)
 
 
 def getDetailedChannelBoxAttrs(node):
@@ -440,39 +442,39 @@ def toggleLocalRotationAxesForSelected(includeChildren=False):
         s.dla.set(not isEnabled)
 
 
-def linkSelected(linkType=pulse.links.LinkType.DEFAULT):
+def linkSelected(linkType=links.LinkType.DEFAULT):
     sel = pm.selected()
     if len(sel) != 2:
         LOG.warning("Select a leader then a follower")
         return
 
-    pulse.links.link(sel[0], sel[1], linkType)
+    links.link(sel[0], sel[1], linkType)
 
 
 def unlinkSelected():
     for s in pm.selected():
-        pulse.links.unlink(s)
+        links.unlink(s)
 
 
 def saveLinkOffsetsForSelected():
     for s in pm.selected():
-        pulse.links.saveLinkOffsets(s)
+        links.saveLinkOffsets(s)
 
 
 def clearLinkOffsetsForSelected():
     for s in pm.selected():
-        pulse.links.clearLinkOffsets(s)
+        links.clearLinkOffsets(s)
 
 
 def positionLinkForSelected():
     sel = pm.selected()
     if not sel:
-        sel = pulse.links.getAllLinkedNodes()
+        sel = links.getAllLinkedNodes()
         # TODO: sort by parenting hierarchy
     else:
         oldLen = len(sel)
         # filter for only linked nodes
-        sel = [s for s in sel if pulse.links.isLinked(s)]
+        sel = [s for s in sel if links.isLinked(s)]
         if oldLen > 0 and len(sel) == 0:
             # something was selected, but no linked nodes
             LOG.warning("No linked nodes were selected")
@@ -481,7 +483,7 @@ def positionLinkForSelected():
     if showProgress:
         pm.progressWindow(t='Positioning Links', min=0, max=len(sel))
     for node in sel:
-        pulse.links.positionLink(node)
+        links.positionLink(node)
         if showProgress:
             pm.progressWindow(e=True, step=1)
     if showProgress:
@@ -491,12 +493,12 @@ def positionLinkForSelected():
 def pairSelected():
     sel = pm.selected()
     if len(sel) == 2:
-        pairMirrorNodes(sel[0], sel[1])
+        sym.pairMirrorNodes(sel[0], sel[1])
 
 
 def unpairSelected():
     for s in pm.selected():
-        unpairMirrorNode(s)
+        sym.unpairMirrorNode(s)
 
 
 def mirrorSelected(
@@ -519,38 +521,38 @@ def mirrorSelected(
         transform (bool): Mirror the transform matrices of the nodes
         appearance (bool): Mirror the name and color of the nodes
     """
-    nodes = pm.selected()
-    if not nodes:
+    sel_nodes = pm.selected()
+    if not sel_nodes:
         LOG.warning("Select at least one node to mirror")
         return
 
-    util = MirrorUtil()
+    util = sym.MirrorUtil()
     util.isRecursive = recursive
     util.isCreationAllowed = create
 
     if curveShapes:
-        util.addOperation(MirrorCurveShapes())
+        util.addOperation(sym.MirrorCurveShapes())
     if reparent:
-        util.addOperation(MirrorParenting())
+        util.addOperation(sym.MirrorParenting())
     if transform:
         # TODO: configure the transform util with mirror mode, etc
-        util.addOperation(MirrorTransforms())
+        util.addOperation(sym.MirrorTransforms())
     if appearance:
         blueprint = getEditorBlueprint()
         if blueprint:
-            namesOp = MirrorNames()
+            namesOp = sym.MirrorNames()
             namesOp.blueprint = blueprint
             util.addOperation(namesOp)
-            colorsOp = MirrorColors()
+            colorsOp = sym.MirrorColors()
             colorsOp.blueprint = blueprint
             util.addOperation(colorsOp)
-            jointDisplayOp = MirrorJointDisplay()
+            jointDisplayOp = sym.MirrorJointDisplay()
             util.addOperation(jointDisplayOp)
     # run links last so that snapping to link targets has priority
     if links:
-        util.addOperation(MirrorLinks())
+        util.addOperation(sym.MirrorLinks())
 
-    util.run(nodes)
+    util.run(sel_nodes)
 
 
 def saveSkinWeightsForSelected(filePath=None):
@@ -568,14 +570,14 @@ def saveSkinWeightsForSelected(filePath=None):
             return
         filePath = os.path.splitext(sceneName)[0] + '.weights'
 
-    skins = [pulse.skins.getSkinFromMesh(m) for m in pm.selected()]
-    skins = [s for s in skins if s]
+    sel_skins = [skins.getSkinFromMesh(m) for m in pm.selected()]
+    sel_skins = [s for s in sel_skins if s]
 
-    if not skins:
+    if not sel_skins:
         LOG.warning("No skins were found to save")
         return
 
-    pulse.skins.saveSkinWeightsToFile(filePath, *skins)
+    skins.saveSkinWeightsToFile(filePath, *sel_skins)
 
 
 def saveAllSkinWeights(filePath=None):
@@ -593,13 +595,13 @@ def saveAllSkinWeights(filePath=None):
             return
         filePath = os.path.splitext(sceneName)[0] + '.weights'
 
-    skins = pm.ls(type='skinCluster')
+    all_skins = pm.ls(type='skinCluster')
 
-    if not skins:
+    if not all_skins:
         LOG.warning("No skins were found to save")
         return
 
-    pulse.skins.saveSkinWeightsToFile(filePath, *skins)
+    skins.saveSkinWeightsToFile(filePath, *all_skins)
 
 
 def getNamedColor(name):
@@ -621,9 +623,9 @@ def setOverrideColorForSelected(color):
     Set the display override color for the selected nodes
     """
     for node in pm.selected():
-        pulse.nodes.setOverrideColor(node, color)
+        nodes.setOverrideColor(node, color)
 
 
 def disableColorOverrideForSelected():
     for node in pm.selected():
-        pulse.nodes.disableColorOverride(node)
+        nodes.disableColorOverride(node)

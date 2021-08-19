@@ -1,7 +1,5 @@
-from __future__ import print_function
-
-import pymetanode as meta
 import pulse.vendor.yaml as yaml
+import pymetanode as meta
 
 __all__ = [
     'getAllAnimControls',
