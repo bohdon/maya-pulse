@@ -1,9 +1,4 @@
-
 import pymel.core as pm
-
-__all__ = [
-    'optionVarProperty',
-]
 
 
 def optionVarProperty(key, default):

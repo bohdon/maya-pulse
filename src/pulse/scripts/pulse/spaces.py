@@ -24,28 +24,14 @@ Space Switching Constraint Setup (2019 and older)
 
 """
 
-import os
 import logging
-from fnmatch import fnmatch
+
 import maya.cmds as cmds
 import pymel.core as pm
+
 import pymetanode as meta
-
-import pulse.nodes
-import pulse.utilnodes
-
-__all__ = [
-    'addDynamicSpace',
-    'connectSpaceConstraints',
-    'connectSpaceConstraint',
-    'createSpace',
-    'setupSpaceConstraint',
-    'getAllSpaceConstraints',
-    'getAllSpaces',
-    'getAllSpacesIndexedByName',
-    'isSpace',
-    'isSpaceConstraint',
-]
+from . import nodes
+from . import utilnodes
 
 LOG = logging.getLogger(__name__)
 
@@ -158,7 +144,7 @@ def setupSpaceConstraint(node, spaceNames, follower=None, useOffsetMatrix=True):
     # create utility nodes
     offsetChoice = pm.shadingNode('choice', n=offsetChoiceName, asUtility=True)
     spaceChoice = pm.shadingNode('choice', n=spaceChoiceName, asUtility=True)
-    pulse.utilnodes.loadMatrixPlugin()
+    utilnodes.loadMatrixPlugin()
     multMatrix = pm.shadingNode('multMatrix', n=multMatrixName, asUtility=True)
     if not useOffsetMatrix:
         decomp = pm.shadingNode(
@@ -314,7 +300,7 @@ def _connectSpaceToConstraint(spaceConstraintData, index, spaceNode):
     if useOffsetMatrix:
         # calculate an offset matrix that doesn't include the local matrix of the follower,
         # so that the result can be plugged into the offsetParentMatrix of the follower
-        offsetMtx = pulse.nodes.calculatePreservedOffsetMatrix(
+        offsetMtx = nodes.calculatePreservedOffsetMatrix(
             spaceNode.wm.get(), follower.wm.get(), follower.m.get())
     else:
         # the space constraint will go directly into the transform

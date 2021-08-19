@@ -2,31 +2,6 @@ import pymel.core as pm
 
 from . import math
 from . import nodes
-from .nodes import getDescendantsTopToBottom
-
-__all__ = [
-    'centerJoint',
-    'fixupJointOrient',
-    'freezeJoints',
-    'getChildJoints',
-    'getEndJoints',
-    'getIKPoleVectorAndMidPoint',
-    'getJointMatrices',
-    'getParentJoint',
-    'getRootJoint',
-    'insertJoints',
-    'matchJointRotationToOrient',
-    'orientIKJoints',
-    'orientJoint',
-    'orientJointCustom',
-    'orientJointToRotation',
-    'orientJointToWorld',
-    'rotateJointOrient',
-    'setJointMatrices',
-    'setJointParent',
-    'setJointRotationMatrix',
-]
-
 
 
 def getRootJoint(jnt):
@@ -173,21 +148,21 @@ def freezeJoints(joint, rotate=True, scale=True):
         scale (bool): If true, freeze scales
         joint (pm.PyNode): A Transform node
     """
-    nodes = [joint]
-    nodes.extend(getDescendantsTopToBottom(joint))
+    joints = [joint]
+    joints.extend(nodes.getDescendantsTopToBottom(joint))
 
     if rotate:
         # freeze rotates
-        for node in nodes:
+        for node in joints:
             orientJointToRotation(node, True)
 
     if scale:
         # freeze scales by copying translations, zeroing out scales, then re-applying translates
         worldMatrices = []
-        for node in nodes:
+        for node in joints:
             worldMatrices.append(node.wm.get())
 
-        for (node, mtx) in zip(nodes, worldMatrices):
+        for (node, mtx) in zip(joints, worldMatrices):
             node.s.set((1, 1, 1))
             pm.xform(node, translation=mtx.translate, worldSpace=True)
 

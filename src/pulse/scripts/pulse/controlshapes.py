@@ -1,30 +1,14 @@
-
-import os
 import functools
+import os
 from fnmatch import fnmatch
 
-import pulse.vendor.yaml as yaml
 import pymel.core as pm
+
+import pulse.vendor.yaml as yaml
 import pymetanode as meta
-
-import pulse.nodes
-import pulse.links
-import pulse.utilnodes
-
-
-__all__ = [
-    'addShapes',
-    'connectNodeToControlPoint',
-    'createControl',
-    'createControlsForSelected',
-    'createLineShape',
-    'getControlShapes',
-    'getShapeData',
-    'loadControlShapesFromDirectory',
-    'removeShapes',
-    'replaceShapes',
-    'saveControlShapeToFile',
-]
+from . import links
+from . import nodes
+from . import utilnodes
 
 CONTROLSHAPE_METACLASS = 'pulse_controlshape'
 BUILTIN_CONTROLSHAPES_LOADED = False
@@ -73,8 +57,8 @@ def connectNodeToControlPoint(node, curveShape, pointIndex):
         pointIndex (int): The index of a control point on the curve shape
     """
     # TODO: name the utility nodes
-    mmtx = pulse.utilnodes.multMatrix(node.wm, curveShape.pim)
-    decomp = pulse.utilnodes.decomposeMatrix(mmtx)
+    mmtx = utilnodes.multMatrix(node.wm, curveShape.pim)
+    decomp = utilnodes.decomposeMatrix(mmtx)
     decomp.outputTranslate >> curveShape.controlPoints[pointIndex]
 
 
@@ -85,6 +69,7 @@ def getControlShapes():
     """
     Return all available control shapes
     """
+
     def cmp(a, b):
         return (a > b) - (a < b)
 
@@ -215,9 +200,9 @@ def createControl(shapeData, name=None, targetNode=None,
     if targetNode:
         # match target node transform settings
         ctl.setAttr('rotateOrder', targetNode.getAttr('rotateOrder'))
-        pulse.nodes.matchWorldMatrix(targetNode, ctl)
+        nodes.matchWorldMatrix(targetNode, ctl)
         if link:
-            pulse.links.link(targetNode, ctl)
+            links.link(targetNode, ctl)
     # group to main ctls group
     if parent:
         ctl.setParent(parent)
@@ -292,11 +277,11 @@ def replaceShapes(node, shapeData):
         raise TypeError(
             'Expected a Transform node, got {0}'.format(type(node).__name__))
 
-    color = pulse.nodes.getOverrideColor(node)
+    color = nodes.getOverrideColor(node)
     removeShapes(node)
     addShapes(node, shapeData)
     if color:
-        pulse.nodes.setOverrideColor(node, color)
+        nodes.setOverrideColor(node, color)
 
 
 def getShapeData(node):

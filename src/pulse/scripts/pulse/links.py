@@ -13,21 +13,9 @@ using meta data.
 import logging
 
 import pymel.core as pm
+
 import pymetanode as meta
-
-import pulse.nodes
-
-__all__ = [
-    'cleanupLinks',
-    'clearLinkOffsets',
-    'getAllLinkedNodes',
-    'getLink',
-    'getLinkMetaData',
-    'link',
-    'positionLink',
-    'saveLinkOffsets',
-    'unlink',
-]
+from . import nodes
 
 LOG = logging.getLogger(__name__)
 
@@ -171,8 +159,8 @@ def cleanupLinks():
     """
     Cleanup all nodes in the scene that have broken links
     """
-    nodes = meta.findMetaNodes(className=LINK_METACLASS)
-    for node in nodes:
+    link_nodes = meta.findMetaNodes(className=LINK_METACLASS)
+    for node in link_nodes:
         if not getLink(node):
             unlink(node)
 
@@ -247,10 +235,10 @@ class DefaultLinkPositioner(LinkPositioner):
     """
 
     def updateTransform(self, leader, follower, linkData):
-        worldMtx = pulse.nodes.getWorldMatrix(leader)
+        worldMtx = nodes.getWorldMatrix(leader)
         offsetMtx = self.getOffsetMatrix(linkData)
         newMtx = offsetMtx * worldMtx
-        pulse.nodes.setWorldMatrix(
+        nodes.setWorldMatrix(
             follower, newMtx,
             translate=self.shouldTranslate,
             rotate=self.shouldRotate,

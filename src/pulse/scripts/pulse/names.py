@@ -1,10 +1,5 @@
-
 import re
 
-__all__ = [
-    'toCamel',
-    'toTitle',
-]
 
 def toTitle(name):
     """
@@ -13,6 +8,7 @@ def toTitle(name):
     if not isinstance(name, str):
         return
     return re.sub('([A-Z])', ' \\1', name).title()
+
 
 def toCamel(name):
     """

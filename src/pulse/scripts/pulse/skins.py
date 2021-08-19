@@ -1,23 +1,10 @@
-
 import logging
-import pymel.core as pm
+
 import maya.OpenMaya as api
 import maya.OpenMayaAnim as apianim
+import pymel.core as pm
 
 import pymetanode as meta
-
-__all__ = [
-    'applySkinWeightsFromFile',
-    'getMeshesFromSkin',
-    'getSkinFromMesh',
-    'getSkinInfluences',
-    'getSkinsFromJoint',
-    'getSkinWeights',
-    'normalizeSkinWeights',
-    'normalizeWeightsData',
-    'saveSkinWeightsToFile',
-    'setSkinWeights',
-]
 
 LOG = logging.getLogger(__name__)
 

@@ -1,11 +1,4 @@
-
 import pymel.core as pm
-
-__all__ = [
-    'saveCameras',
-    'restoreCameras',
-]
-
 
 CAM_NAMES = [
     'perspShape',

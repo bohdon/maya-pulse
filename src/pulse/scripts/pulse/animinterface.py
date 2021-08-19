@@ -1,14 +1,6 @@
 import pulse.vendor.yaml as yaml
 import pymetanode as meta
 
-__all__ = [
-    'getAllAnimControls',
-    'getAnimControlInterface',
-    'getApproximateValue',
-    'getRigAnimInterface',
-    'saveRigAnimInterface',
-]
-
 
 def getAllAnimControls():
     """

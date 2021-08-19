@@ -1,11 +1,6 @@
-
 import logging
+
 import pymel.core as pm
-
-
-__all__ = [
-    'rotateComponents',
-]
 
 LOG = logging.getLogger(__name__)
 
