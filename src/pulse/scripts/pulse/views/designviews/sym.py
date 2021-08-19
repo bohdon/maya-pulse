@@ -55,6 +55,7 @@ class SymmetryPanel(PulsePanelWidget):
 
     def setupContentUi(self, parent):
         layout = QtWidgets.QVBoxLayout(parent)
+        layout.setMargin(0)
 
         # mirror settings
         # ---------------

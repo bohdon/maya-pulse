@@ -5,13 +5,13 @@ from ... import editorutils
 from ...vendor.Qt import QtWidgets
 
 
-class ManageWeightsPanel(PulsePanelWidget):
+class WeightsPanel(PulsePanelWidget):
 
     def __init__(self, parent):
-        super(ManageWeightsPanel, self).__init__(parent=parent)
+        super(WeightsPanel, self).__init__(parent=parent)
 
     def getPanelDisplayName(self):
-        return "Manage"
+        return "Weights"
 
     def setupPanelUi(self, parent):
         layout = QtWidgets.QVBoxLayout(parent)

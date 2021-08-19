@@ -9,6 +9,7 @@ from .designviews.general import GeneralPanel
 from .designviews.joints import JointsPanel, JointOrientsPanel
 from .designviews.layout import LayoutPanel
 from .designviews.sym import SymmetryPanel
+from .designviews.weights import WeightsPanel
 from ..vendor.Qt import QtWidgets, QtCore
 
 PANEL_DEFINITIONS = [
@@ -18,6 +19,7 @@ PANEL_DEFINITIONS = [
     {"widgetClass": JointsPanel},
     {"widgetClass": JointOrientsPanel},
     {"widgetClass": SymmetryPanel},
+    {"widgetClass": WeightsPanel},
 ]
 
 

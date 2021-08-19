@@ -1,12 +1,12 @@
 import pymel.core as pm
 
-from pulse.vendor.Qt import QtWidgets
 from .. import utils as viewutils
 from ..core import PulsePanelWidget
 from ..quickcolor import QuickColorWindow
 from ..quickname import QuickNameWindow
 from ..utils import undoAndRepeatPartial as cmd
 from ... import editorutils
+from ...vendor.Qt import QtWidgets
 
 
 class GeneralPanel(PulsePanelWidget):
