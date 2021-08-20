@@ -1,5 +1,6 @@
 from . import core
 from . import pulseeditor
+from .contextmenus import unregisterContextMenu, registerContextMenu
 from .core import PulseWindow
 
 
@@ -7,8 +8,10 @@ def toggleEditorUI():
     pulseeditor.PulseEditorWindow.toggleWindow()
 
 
-def showEditorUI():
+def showEditorUI(enableContextMenus=True):
     pulseeditor.PulseEditorWindow.showWindow()
+    if enableContextMenus:
+        registerContextMenu()
 
 
 def hideEditorUI():
@@ -23,6 +26,7 @@ def tearDownUI():
     hideEditorUI()
     destroyAllPulseWindows()
     destroyUIModelInstances()
+    unregisterContextMenu()
 
 
 def destroyAllPulseWindows():

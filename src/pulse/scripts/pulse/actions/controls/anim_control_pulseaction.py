@@ -1,11 +1,18 @@
+import pymel.core as pm
+
 import pulse.nodes
 import pymetanode as meta
 from pulse.buildItems import BuildAction, BuildActionError
+from pulse.views.contextmenus import PulseNodeContextSubMenu
 
 try:
     import resetter
 except ImportError:
     resetter = None
+
+# TODO: move config into python, so this doesn't have to be defined twice
+# the meta class for anim controls, should match controlMetaClass in the action config
+ANIM_CTL_METACLASS = 'pulse_animcontrol'
 
 
 class AnimControlAction(BuildAction):
@@ -57,3 +64,23 @@ class AnimControlAction(BuildAction):
         # set defaults for all keyable attributes
         if resetter:
             resetter.setDefaults(self.controlNode)
+
+
+class AnimControlContextSubMenu(PulseNodeContextSubMenu):
+    """
+    Context menu for working with animation controls.
+    """
+
+    @classmethod
+    def shouldBuildSubMenu(cls, menu) -> bool:
+        # TODO: get access to config here, or move config into python for easier use
+        return cls.isNodeWithMetaClassSelected([ANIM_CTL_METACLASS])
+
+    def buildMenuItems(self):
+        pm.menuItem(l='Reset', rp=self.getSafeRadialPosition('N'), c=pm.Callback(self.resetSelected))
+
+    def resetSelected(self):
+        if resetter:
+            sel_ctls = self.getSelectedNodesWithMetaClass([ANIM_CTL_METACLASS])
+            if sel_ctls:
+                resetter.reset(sel_ctls)

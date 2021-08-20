@@ -694,6 +694,15 @@ def getWorldMatrix(node, negateRotateAxis=True):
 
 
 def setWorldMatrix(node, matrix, translate=True, rotate=True, scale=True, matchAxes=False):
+    """
+    Args:
+        node:
+        matrix:
+        translate:
+        rotate:
+        scale:
+        matchAxes: TODO: document
+    """
     if not isinstance(node, pm.PyNode):
         node = pm.PyNode(node)
 

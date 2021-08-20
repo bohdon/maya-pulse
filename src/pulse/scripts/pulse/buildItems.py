@@ -1335,7 +1335,7 @@ class BuildAction(BuildActionData):
         """
         if not self.rig:
             self.log.error('Cannot get rig meta data, no rig is set')
-            return
+            return {}
         return meta.getMetaData(self.rig, RIG_METACLASS)
 
     def updateRigMetaData(self, data):
