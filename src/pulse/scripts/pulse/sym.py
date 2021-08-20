@@ -621,9 +621,9 @@ def _generateMirrorNameReplacements(config):
     """
     replacements = []
     symConfig = config.get('symmetry', {})
-    prefixPairs = symConfig.get('pairs', [])
+    pairs = symConfig.get('pairs', [])
 
-    for pair in prefixPairs:
+    for pair in pairs:
         if 'left' in pair and 'right' in pair:
             left = pair['left']
             right = pair['right']
@@ -640,7 +640,7 @@ def _generateMirrorNameReplacements(config):
 def _getMirroredNameWithReplacements(name, replacements):
     mirroredName = name
     for regex, repl in replacements:
-        if regex.match(mirroredName):
+        if regex.search(mirroredName):
             mirroredName = regex.sub(repl, mirroredName)
             break
     return mirroredName
