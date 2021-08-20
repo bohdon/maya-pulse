@@ -24,7 +24,7 @@ def getDefaultConfigFile():
     """
     Return the path to the default blueprint config file
     """
-    pulseDir = os.path.dirname(os.path.dirname(os.path.join(__file__)))
+    pulseDir = os.path.dirname(version.__file__)
     return os.path.realpath(
         os.path.join(pulseDir, 'config/default_blueprint_config.yaml'))
 
