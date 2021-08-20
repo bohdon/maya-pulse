@@ -143,12 +143,12 @@ def setSkinWeights(skin, weights, prune=True):
 
         usedInfIds = []
         for inf, weight in vertWeights:
-            infId = infIdMap.get(inf)
-            if not infId:
+            infId = infIdMap.get(inf, None)
+            if infId is None:
                 # try retrieving by name
-                infId = infIdByNameMap.get(inf)
+                infId = infIdByNameMap.get(inf, None)
 
-            if not infId:
+            if infId is None:
                 missingInfluences.add(inf)
                 continue
 

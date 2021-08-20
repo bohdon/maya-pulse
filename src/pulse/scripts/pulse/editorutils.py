@@ -617,6 +617,8 @@ def saveAllSkinWeights(filePath=None):
         LOG.warning("No skins were found to save")
         return
 
+    LOG.info(f"Saving sking weights: {all_skins}")
+
     skins.saveSkinWeightsToFile(filePath, *all_skins)
 
 

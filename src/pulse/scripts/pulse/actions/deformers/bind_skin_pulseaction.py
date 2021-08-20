@@ -95,10 +95,17 @@ class ApplySkinWeightsAction(BuildAction):
 
     def run(self):
         filePath = self.getWeightsFilePath()
-        skins = [pulse.skins.getSkinFromMesh(m) for m in self.meshes]
-        # TODO: log error if no skin cluster is found on a mesh
-        skins = [s for s in skins if s]
+        skins = self.getSkinClusters()
         pulse.skins.applySkinWeightsFromFile(filePath, *skins)
+
+    def getSkinClusters(self):
+        result = []
+        for mesh in self.meshes:
+            skin = pulse.skins.getSkinFromMesh(mesh)
+            if not skin:
+                raise BuildActionError(f"No skin cluster found for mesh: {mesh}")
+            result.append(skin)
+        return result
 
     def getWeightsFilePath(self):
         blueprintPath = str(pm.sceneName())
