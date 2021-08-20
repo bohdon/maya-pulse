@@ -368,6 +368,7 @@ class MirrorTransforms(MirrorOperation):
         # used when getting mirrored matrices
         self.mirrorTranslate = True
         self.mirrorRotate = True
+        self.mirrorRotateOrder = True
 
         # used when applying mirrored matrices
         self.setTranslate = True
@@ -409,6 +410,9 @@ class MirrorTransforms(MirrorOperation):
             destNode (PyNode): The node to modify
             isNewNode (bool): Is the destination node newly created?
         """
+        if self.mirrorRotateOrder:
+            destNode.rotateOrder.set(sourceNode.rotateOrder.get())
+
         settings = getMirrorSettings(
             sourceNode, destNode, **self._kwargsForGet())
         if settings:
