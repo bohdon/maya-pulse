@@ -1,4 +1,5 @@
 names:
+  numberFormat: "_{num:02}"
   keywords:
     general:
     - main
@@ -12,6 +13,8 @@ names:
     - clavicle
     - shoulder
     - elbow
+    - upperarm
+    - lowerarm
     - hand
     - wrist
     - pointfinger
@@ -23,6 +26,8 @@ names:
     - hip
     - leg
     - knee
+    - thigh
+    - calf
     - foot
     - toe
     - toes
@@ -40,21 +45,7 @@ names:
     - teeth
     - tongue
     - cheek
-  prefixes:
-  - name: l
-    sort: 0
-  - name: r
-    sort: 0
-  - name: top
-    sort: 1
-  - name: bot
-    sort: 1
-  - name: f
-    sort: 2
-  - name: b
-    sort: 2
-  - name: c
-    sort: 3
+  prefixes: {}
   suffixes:
   - name: jnt
     sort: 10
@@ -70,6 +61,20 @@ names:
     sort: 6
   - name: end
     sort: 6
+  - name: top
+    sort: 100
+  - name: bot
+    sort: 100
+  - name: f
+    sort: 101
+  - name: b
+    sort: 101
+  - name: c
+    sort: 102
+  - name: l
+    sort: 103
+  - name: r
+    sort: 103
 colors:
   - name: root
     color: "#f6bd15"

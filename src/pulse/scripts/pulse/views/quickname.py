@@ -362,7 +362,8 @@ class QuickNameWidget(QtWidgets.QWidget):
         # keyword
         keyword = self.activeKeyword if self.activeKeyword else '*'
         if includeNumber:
-            keyword += '{num}'
+            num_fmt = self.namesConfig.get('numberFormat', '_{num:02}')
+            keyword += num_fmt
         components.append(keyword)
         # suffix
         suffix = self.evaluateSuffix()
