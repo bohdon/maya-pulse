@@ -148,7 +148,7 @@ class PulseNodeContextSubMenu(object):
                     return True
             return False
 
-        for s in pm.selected():
+        for s in pm.selected(type='transform'):
             if hasAnyMetaClass(s, metaClassNames):
                 return True
         return False
@@ -165,4 +165,4 @@ class PulseNodeContextSubMenu(object):
                     return True
             return False
 
-        return [s for s in pm.selected() if hasAnyMetaClass(s, metaClassNames)]
+        return [s for s in pm.selected(type='transform') if hasAnyMetaClass(s, metaClassNames)]
