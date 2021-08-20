@@ -236,6 +236,7 @@ class ActionAttrForm(QtWidgets.QFrame):
         self.label.setText(names.toTitle(self.attr['name']))
         description = self.attr.get('description')
         if description:
+            self.label.setToolTip(description)
             self.label.setStatusTip(description)
         self.labelLayout.addWidget(self.label)
 
@@ -339,6 +340,10 @@ class BatchAttrForm(QtWidgets.QFrame):
         # add some space above the label so it lines up
         self.label.setMargin(2)
         self.label.setText(names.toTitle(self.attr['name']))
+        description = self.attr.get('description')
+        if description:
+            self.label.setToolTip(description)
+            self.label.setStatusTip(description)
         self.labelLayout.addWidget(self.label)
 
         self.formLayout.setLayout(

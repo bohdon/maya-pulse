@@ -8,7 +8,7 @@ from functools import partial
 
 import maya.cmds as cmds
 
-from .core import BlueprintUIModel
+from .core import BlueprintUIModel, PulseWindow
 from .utils import createHeaderLabel
 from ..buildItems import getRegisteredActionConfigs
 from ..vendor.Qt import QtCore, QtWidgets
@@ -176,3 +176,23 @@ class ActionPaletteWidget(QtWidgets.QWidget):
         stepData = "{'action':{'id':'%s'}}" % actionId
         newPaths = self.createStepsForSelection(stepData=stepData)
         self.selectionModel.setSelectedItemPaths(newPaths)
+
+
+class ActionPaletteWindow(PulseWindow):
+    OBJECT_NAME = 'pulseActionPaletteWindow'
+    PREFERRED_SIZE = QtCore.QSize(320, 300)
+    STARTING_SIZE = QtCore.QSize(320, 300)
+    MINIMUM_SIZE = QtCore.QSize(320, 300)
+    WINDOW_MODULE = 'pulse.views.actionpalette'
+
+    def __init__(self, parent=None):
+        super(ActionPaletteWindow, self).__init__(parent=parent)
+
+        self.setWindowTitle('Pulse Action Editor')
+
+        layout = QtWidgets.QVBoxLayout(self)
+        layout.setMargin(0)
+        self.setLayout(layout)
+
+        widget = ActionPaletteWidget(self)
+        layout.addWidget(widget)

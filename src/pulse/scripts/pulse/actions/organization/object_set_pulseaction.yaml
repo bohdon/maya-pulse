@@ -7,9 +7,9 @@ ObjectSetAction:
   attrs:
 
     - name: name
-      desc: The name of the set
+      description: The name of the set
       type: string
 
     - name: objects
-      desc: List of objects to add to the set
+      description: List of objects to add to the set
       type: nodelist

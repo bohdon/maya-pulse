@@ -5,6 +5,7 @@ and actions views.
 
 import pulse
 from .actioneditor import ActionEditorWindow
+from .actionpalette import ActionPaletteWindow
 from .actionsview import ActionsViewWidget
 from .buildtoolbar import BuildToolbarWidget
 from .core import PulseWindow, BlueprintUIModel
@@ -135,15 +136,20 @@ class PulseEditorWindow(PulseWindow):
     def setupWindowMenu(self, parent):
         windowMenu = self.menuBar.addMenu("Window")
 
-        toggleDesignToolkit = QtWidgets.QAction("Design Toolkit", parent)
-        toggleDesignToolkit.setStatusTip("Toggle the Design Toolkit window.")
-        toggleDesignToolkit.triggered.connect(DesignToolkitWindow.toggleWindow)
-        windowMenu.addAction(toggleDesignToolkit)
+        designToolkit = QtWidgets.QAction("Design Toolkit", parent)
+        designToolkit.setStatusTip("Toggle the Design Toolkit window.")
+        designToolkit.triggered.connect(DesignToolkitWindow.toggleWindow)
+        windowMenu.addAction(designToolkit)
 
-        toggleEditor = QtWidgets.QAction("Action Editor", parent)
-        toggleEditor.setStatusTip("Toggle the Action Editor window.")
-        toggleEditor.triggered.connect(ActionEditorWindow.toggleWindow)
-        windowMenu.addAction(toggleEditor)
+        actionEditor = QtWidgets.QAction("Action Editor", parent)
+        actionEditor.setStatusTip("Toggle the Action Editor window.")
+        actionEditor.triggered.connect(ActionEditorWindow.toggleWindow)
+        windowMenu.addAction(actionEditor)
+
+        actionPalette = QtWidgets.QAction("Action Palette", parent)
+        actionPalette.setStatusTip("Toggle the Action Palette window.")
+        actionPalette.triggered.connect(ActionPaletteWindow.toggleWindow)
+        windowMenu.addAction(actionPalette)
 
     def debugPrintSerialized(self):
         print(self.blueprintModel, self.blueprintModel.blueprint)
