@@ -365,6 +365,22 @@ def matchJointRotationToOrientForSelected(preserveChildren=True):
             joints.matchJointRotationToOrient(joint, preserveChildren)
 
 
+def markEndJointsForSelected():
+    """
+    Find all end joints, and rename them to END_jnt, and set their override colors
+    Returns:
+
+    """
+    sel = pm.selected()
+    for s in sel:
+        end_joints = joints.getEndJoints(s)
+        for end_joint in end_joints:
+            end_joint.rename('END_jnt')
+            end_joint.overrideEnabled.set(True)
+            end_joint.overrideRGBColors.set(True)
+            end_joint.overrideColorRGB.set((0.35, 0, 0))
+
+
 def getDetailedChannelBoxAttrs(node):
     """
     Return the list of attributes that are included

@@ -58,10 +58,17 @@ class JointsPanel(PulsePanelWidget):
         freezeBtn.clicked.connect(
             cmd(editorutils.freezeJointsForSelectedHierarchies))
 
+        markEndJntsBtn = QPushButton(parent)
+        markEndJntsBtn.setText("Mark End Joints")
+        markEndJntsBtn.setStatusTip("Find all end joints in the selected hierarchy and rename and color them")
+        markEndJntsBtn.clicked.connect(
+            cmd(editorutils.markEndJointsForSelected))
+
         gridItems = [
             [jointToolBtn, insertToolBtn],
             [centerBtn, insertBtn],
             [disableSSCBtn, freezeBtn],
+            [markEndJntsBtn],
         ]
         viewutils.addItemsToGrid(gridLayout, gridItems)
 
