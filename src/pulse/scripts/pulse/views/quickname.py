@@ -78,143 +78,166 @@ class QuickNameWidget(QtWidgets.QWidget):
         self.namePreviewBtn.clicked.connect(self.onPreviewBtnClicked)
         layout.addWidget(self.namePreviewBtn)
 
-        # prefixes / suffixes
-        self.prefixSuffixLayout = QtWidgets.QHBoxLayout()
+        # prefixes / names / suffixes
+        self.partsLayout = QtWidgets.QHBoxLayout()
 
         prefixLayout = self.setupPrefixesUi(parent)
-        self.prefixSuffixLayout.addLayout(prefixLayout)
+        self.partsLayout.addLayout(prefixLayout)
+
+        keywordsLayout = self.setupKeywordsUi(parent)
+        self.partsLayout.addLayout(keywordsLayout, stretch=1)
 
         suffixLayout = self.setupSuffixesUi(parent)
-        self.prefixSuffixLayout.addLayout(suffixLayout)
+        self.partsLayout.addLayout(suffixLayout)
 
-        layout.addLayout(self.prefixSuffixLayout)
-
-        # keywords
-        keywordsLayout = self.setupKeywordsUi(parent)
-        layout.addLayout(keywordsLayout)
+        layout.addLayout(self.partsLayout)
 
         # help text
         self.helpText = QtWidgets.QLabel()
         self.helpText.setFont(style.UIFonts.getHelpTextFont())
         layout.addWidget(self.helpText)
 
-        layout.setStretch(2, 1)
+        layout.setStretch(1, 1)
 
     def setupPrefixesUi(self, parent):
         """
         Build the prefixes layout and button grid.
         Returns the layout.
         """
-        prefixLayout = QtWidgets.QVBoxLayout(parent)
+        # ensure property is initialized
+        self.prefixBtns = {}
 
-        prefixesLabel = self.createLabel(parent, "Prefixes", bold=True)
-        prefixLayout.addWidget(prefixesLabel)
+        prefixes = self.namesConfig.get('prefixes', {})
+
+        layout = QtWidgets.QVBoxLayout(parent)
+        layout.setSpacing(2)
+
+        headerLabel = self.createLabel(parent, "Prefixes", bold=True)
+        layout.addWidget(headerLabel)
 
         self.prefixBtnGrid = QtWidgets.QGridLayout()
         self.prefixBtnGrid.setObjectName("prefixBtnGrid")
 
-        # create button for all prefixes
-        self.prefixBtns = {}
-        prefixes = self.namesConfig.get('prefixes', {})
-        x = 0
-        y = 0
-        for prefix in prefixes:
-            name = prefix['name']
-            btn = QtWidgets.QPushButton()
-            btn.setText(name)
-            btn.setCheckable(True)
-            btn.clicked.connect(self.onPrefixOrSuffixClicked)
-            self.prefixBtnGrid.addWidget(btn, y, x, 1, 1)
-            self.prefixBtns[name] = btn
+        if prefixes:
+            # create button for all prefixes
+            x = 0
+            y = 0
+            for prefix in prefixes:
+                name = prefix['name']
+                btn = QtWidgets.QPushButton()
+                btn.setText(name)
+                btn.setCheckable(True)
+                btn.clicked.connect(self.onPrefixOrSuffixClicked)
+                self.prefixBtnGrid.addWidget(btn, y, x, 1, 1)
+                self.prefixBtns[name] = btn
 
-            x += 1
-            if x > 1:
-                x = 0
-                y += 1
+                x += 1
+                if x > 1:
+                    x = 0
+                    y += 1
 
-        prefixLayout.addLayout(self.prefixBtnGrid)
+            layout.addLayout(self.prefixBtnGrid)
 
-        spacerItem = QtWidgets.QSpacerItem(
-            0, 2, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
-        prefixLayout.addItem(spacerItem)
+        else:
+            noNamesLabel = QtWidgets.QLabel(parent)
+            noNamesLabel.setText('no prefixes')
+            noNamesLabel.setStyleSheet(style.UIColors.asFGColor(style.UIColors.HELPTEXT))
+            layout.addWidget(noNamesLabel)
 
-        return prefixLayout
+        spacerItem = QtWidgets.QSpacerItem(0, 2, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
+        layout.addItem(spacerItem)
+
+        return layout
 
     def setupSuffixesUi(self, parent):
         """
         Build the suffixes layout and button grid.
         Returns the layout.
         """
-        suffixLayout = QtWidgets.QVBoxLayout(parent)
+        # ensure property is initialized
+        self.suffixBtns = {}
 
-        suffixesLabel = self.createLabel(parent, "Suffixes", bold=True)
-        suffixLayout.addWidget(suffixesLabel)
+        suffixes = self.namesConfig.get('suffixes', {})
+
+        layout = QtWidgets.QVBoxLayout(parent)
+        layout.setSpacing(2)
+
+        headerLabel = self.createLabel(parent, "Suffixes", bold=True)
+        layout.addWidget(headerLabel)
 
         self.suffixBtnGrid = QtWidgets.QGridLayout()
         self.suffixBtnGrid.setObjectName("suffixBtnGrid")
 
-        # create button for all suffixes
-        self.suffixBtns = {}
-        suffixes = self.namesConfig.get('suffixes', {})
-        x = 0
-        y = 0
-        for suffix in suffixes:
-            name = suffix['name']
-            btn = QtWidgets.QPushButton()
-            btn.setText(name)
-            btn.setCheckable(True)
-            btn.clicked.connect(self.onPrefixOrSuffixClicked)
-            self.suffixBtnGrid.addWidget(btn, y, x, 1, 1)
-            self.suffixBtns[name] = btn
+        if suffixes:
+            # create button for all suffixes
+            x = 0
+            y = 0
+            for suffix in suffixes:
+                name = suffix['name']
+                btn = QtWidgets.QPushButton()
+                btn.setText(name)
+                btn.setCheckable(True)
+                btn.clicked.connect(self.onPrefixOrSuffixClicked)
+                self.suffixBtnGrid.addWidget(btn, y, x, 1, 1)
+                self.suffixBtns[name] = btn
 
-            x += 1
-            if x > 1:
-                x = 0
-                y += 1
+                x += 1
+                if x > 1:
+                    x = 0
+                    y += 1
 
-        suffixLayout.addLayout(self.suffixBtnGrid)
+            layout.addLayout(self.suffixBtnGrid)
 
-        spacerItem = QtWidgets.QSpacerItem(
-            0, 2, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
-        suffixLayout.addItem(spacerItem)
+        else:
+            noNamesLabel = QtWidgets.QLabel(parent)
+            noNamesLabel.setText('no suffixes')
+            noNamesLabel.setStyleSheet(style.UIColors.asFGColor(style.UIColors.HELPTEXT))
+            layout.addWidget(noNamesLabel)
 
-        return suffixLayout
+        spacerItem = QtWidgets.QSpacerItem(0, 2, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
+        layout.addItem(spacerItem)
+
+        return layout
 
     def setupKeywordsUi(self, parent):
         """
         Build the keywords layout and all categories and button grids.
         Returns the layout.
         """
-        keywordsLayout = QtWidgets.QVBoxLayout(parent)
-
-        keywordsLabel = self.createLabel(parent, "Names", bold=True)
-        keywordsLayout.addWidget(keywordsLabel)
-
-        scrollArea = QtWidgets.QScrollArea(parent)
-        scrollArea.setFrameShape(QtWidgets.QScrollArea.NoFrame)
-        scrollArea.setWidgetResizable(True)
-        scrollWidget = QtWidgets.QWidget()
-
-        scrollLayout = QtWidgets.QVBoxLayout(scrollWidget)
-
-        # create category and btn grid for all keywords
+        # ensure property is initialized
         self.keywordBtns = {}
+
         keywords = self.namesConfig.get('keywords', {})
-        categoryNames = sorted(keywords.keys())
-        for catName in categoryNames:
-            catKeywords = keywords[catName]
-            catLayout = self.setupKeywordCategoryUi(
-                scrollWidget, catName, catKeywords)
-            scrollLayout.addLayout(catLayout)
 
-        keywordsSpacer = QtWidgets.QSpacerItem(
-            20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
-        scrollLayout.addItem(keywordsSpacer)
+        layout = QtWidgets.QVBoxLayout(parent)
+        layout.setSpacing(2)
 
-        scrollArea.setWidget(scrollWidget)
-        keywordsLayout.addWidget(scrollArea)
+        headerLabel = self.createLabel(parent, "Keywords", bold=True)
+        layout.addWidget(headerLabel)
 
-        return keywordsLayout
+        if keywords:
+            categoriesLayout = QtWidgets.QHBoxLayout(parent)
+
+            # create category and btn grid for all keywords
+            categoryNames = sorted(keywords.keys())
+            for catName in categoryNames:
+                catKeywords = keywords[catName]
+                catLayout = self.setupKeywordCategoryUi(
+                    parent, catName, catKeywords)
+                categoriesLayout.addLayout(catLayout)
+
+            layout.addLayout(categoriesLayout)
+
+        else:
+            noNamesLabel = QtWidgets.QLabel(parent)
+            noNamesLabel.setText('no keywords')
+            noNamesLabel.setStyleSheet(style.UIColors.asFGColor(style.UIColors.HELPTEXT))
+            layout.addWidget(noNamesLabel)
+
+        spacerItem = QtWidgets.QSpacerItem(0, 2, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
+        layout.addItem(spacerItem)
+
+        return layout
 
     def setupKeywordCategoryUi(self, parent, name, keywords):
         """
@@ -226,38 +249,27 @@ class QuickNameWidget(QtWidgets.QWidget):
             keywords: A list of string names of the keywords in the category
         """
         layout = QtWidgets.QVBoxLayout(parent)
+        layout.setSpacing(2)
 
         catLabel = self.createLabel(parent, names.toTitle(name))
         catLabel.setStyleSheet(
             'background-color: rgba(255, 255, 255, 5); border-radius: 2px')
         layout.addWidget(catLabel)
 
-        catBtnGrid = QtWidgets.QGridLayout()
-
         # create button for all keywords
-        x = 0
-        y = 0
         for name in keywords:
             btn = QtWidgets.QPushButton()
             btn.setObjectName('keywordBtn_' + name)
             btn.setText(name)
-            catBtnGrid.addWidget(btn, y, x, 1, 1)
+            # catBtnGrid.addWidget(btn, y, x, 1, 1)
+            layout.addWidget(btn)
             self.keywordBtns[name] = btn
             btn.installEventFilter(self)
             btn.clicked.connect(partial(self.onKeywordClicked, name))
 
-            x += 1
-            if x > 3:
-                x = 0
-                y += 1
+        spacer = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
+        layout.addItem(spacer)
 
-        if y == 0:
-            while x <= 3:
-                spacer = QtWidgets.QLabel()
-                catBtnGrid.addWidget(spacer, y, x, 1, 1)
-                x += 1
-
-        layout.addLayout(catBtnGrid)
         return layout
 
     def createLabel(self, parent, text, bold=False):
@@ -403,14 +415,13 @@ class QuickNameWidget(QtWidgets.QWidget):
             isMultipleNodes = len(sel) > 1
             name = self.evaluateName(includeNumber=isMultipleNodes)
             for i, s in enumerate(pm.selected()):
-                s.rename(name.format(num=i+1))
+                s.rename(name.format(num=i + 1))
 
 
 class QuickNameWindow(PulseWindow):
-
     OBJECT_NAME = 'pulseQuickNameWindow'
     PREFERRED_SIZE = QtCore.QSize(400, 300)
-    STARTING_SIZE = QtCore.QSize(400, 300)
+    STARTING_SIZE = QtCore.QSize(600, 300)
     MINIMUM_SIZE = QtCore.QSize(400, 300)
 
     WINDOW_MODULE = 'pulse.views.quickname'

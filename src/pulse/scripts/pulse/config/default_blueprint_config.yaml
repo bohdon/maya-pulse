@@ -2,13 +2,13 @@ names:
   numberFormat: "_{num:02}"
   keywords:
     general:
-    - main
-    - root
     - world
-    body:
-    - chest
+    - root
+    - main
+    - pelvis
     - spine
     - torso
+    - chest
     arms:
     - clavicle
     - shoulder
