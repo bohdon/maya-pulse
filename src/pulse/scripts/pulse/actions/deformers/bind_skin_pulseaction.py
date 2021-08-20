@@ -3,8 +3,9 @@ import os
 import pymel.core as pm
 from maya import cmds
 
+import pulse.joints
 import pulse.skins
-from pulse.buildItems import BuildAction
+from pulse.buildItems import BuildAction, BuildActionError
 
 
 class BindSkinAction(BuildAction):
@@ -25,15 +26,19 @@ class BindSkinAction(BuildAction):
     def validate(self):
         if not len(self.meshes):
             raise BuildActionError('meshes must have at least one value')
-        if not len(self.joints):
-            raise BuildActionError('joints must have at least one value')
+        bind_jnts = self.getBindJoints()
+        if not len(bind_jnts):
+            raise BuildActionError('no bind joints were set')
 
     def run(self):
+        bind_jnts = self.getBindJoints()
+
         bindkwargs = dict(
-            toSelectedBones=(self.bindTo == 2),
-            toSkeletonAndTransforms=(self.bindTo == 1),
+            toSelectedBones=True,
+            toSkeletonAndTransforms=False,
             bindMethod=self.bindMethod,
             dropoffRate=self.dropoffRate,
+            heatmapFalloff=self.heatmapFalloff,
             maximumInfluences=self.maxInfluences,
             normalizeWeights=self.normalizeWeights,
             obeyMaxInfluences=self.maintainMaxInfuence,
@@ -41,18 +46,42 @@ class BindSkinAction(BuildAction):
             skinMethod=self.skinMethod,
             weightDistribution=self.weightDistribution,
         )
-        # TODO: work around bad binding when using toSelectedBones
-        jntNames = [j.longName() for j in self.joints]
-        for m in self.meshes:
-            pm.select(cl=True)
-            skin = cmds.skinCluster(m.longName(), jntNames, **bindkwargs)
-            pm.rename(skin, '{0}_skcl'.format(m))
+
+        for mesh in self.meshes:
+            pm.select(bind_jnts + [mesh])
+            skin = cmds.skinCluster(**bindkwargs)
+            pm.rename(skin, '{0}_skcl'.format(mesh))
 
         # TODO: support geomBind when using geodesic voxel binding
 
         if self.isRenderGeo:
             self.extendRigMetaDataList('renderGeo', self.meshes)
-            self.extendRigMetaDataList('bakeNodes', self.joints)
+            self.extendRigMetaDataList('bakeNodes', bind_jnts)
+
+    def getBindJoints(self):
+        """
+        Return the array of joints that should be bound.
+        """
+        result = set()
+
+        # add hierarchies
+        roots = self.jointHierarchies
+        for jnt in roots:
+            result.add(jnt)
+            result.update(jnt.listRelatives(ad=True, typ='joint'))
+
+        # remove excluded joints
+        exclude = self.excludeJoints
+        for jnt in exclude:
+            if jnt in result:
+                result.remove(jnt)
+
+        # add explicit joints
+        explicit = self.explicitJoints
+        for jnt in explicit:
+            result.add(jnt)
+
+        return list(result)
 
 
 class ApplySkinWeightsAction(BuildAction):
@@ -67,6 +96,8 @@ class ApplySkinWeightsAction(BuildAction):
     def run(self):
         filePath = self.getWeightsFilePath()
         skins = [pulse.skins.getSkinFromMesh(m) for m in self.meshes]
+        # TODO: log error if no skin cluster is found on a mesh
+        skins = [s for s in skins if s]
         pulse.skins.applySkinWeightsFromFile(filePath, *skins)
 
     def getWeightsFilePath(self):

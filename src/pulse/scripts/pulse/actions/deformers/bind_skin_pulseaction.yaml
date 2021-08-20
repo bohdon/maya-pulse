@@ -7,32 +7,31 @@ BindSkinAction:
   attrs:
 
     - name: meshes
-      desc: List of meshes to bind
+      description: List of meshes to bind
       type: nodelist
 
-    - name: joints
-      desc: List of joints to bind the meshes to
+    - name: jointHierarchies
+      description: List of joint hierarchies to bind.
+      type: nodelist
+
+    - name: excludeJoints
+      description: List of joints to exclude from Joint Hierarchies
+      type: nodelist
+
+    - name: explicitJoints
+      description: List of explicit joints to bind. If Joint Hierarchies is also used, both sets of joints will be combined.
       type: nodelist
 
     - name: isRenderGeo
-      desc: Whether the bound meshes represent rendered geometry, will affect
+      description: Whether the bound meshes represent rendered geometry, will affect
             how joints are stored in the rigs meta data
       type: bool
       value: true
 
-    - name: bindTo
-      desc: Which joints or influences should be used
-      type: option
-      value: 0
-      options:
-        - Joint Hierarchy
-        - Joint and Transform Hierarchy
-        - Listed Joints Only
-
     - name: bindMethod
-      desc: Binding algorithm to use
+      description: Binding algorithm to use
       type: option
-      value: 0
+      value: 1
       options:
         - Closest Distance
         - Closest in Hierarchy
@@ -41,7 +40,7 @@ BindSkinAction:
 
     - name: skinMethod
       type: option
-      desc: Skinning method to use
+      description: Skinning method to use
       value: 0
       advanced: true
       options:
@@ -59,8 +58,9 @@ BindSkinAction:
         - Post
 
     - name: weightDistribution
+      description: How to redistribute weights when normalizing, such as when painting subtractive values.
       type: option
-      value: 0
+      value: 1
       options:
         - Distance
         - Neighbors
@@ -84,6 +84,13 @@ BindSkinAction:
       max: 10.0
       advanced: true
 
+    - name: heatmapFalloff
+      type: float
+      value: 0.68
+      min: 0.0
+      max: 1.0
+      advanced: true
+
     - name: removeUnusedInfluences
       type: bool
       value: false
@@ -98,8 +105,8 @@ ApplySkinWeightsAction:
   attrs:
     - name: meshes
       type: nodelist
-      desc: The meshes to apply the skin weights to
+      description: The meshes to apply the skin weights to
 
     - name: fileName
       type: string
-      desc: The name of the .weights file, relative to the blueprint
+      description: The name of the .weights file, relative to the blueprint
