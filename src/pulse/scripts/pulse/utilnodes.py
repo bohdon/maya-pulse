@@ -1,4 +1,5 @@
 import logging
+from enum import IntEnum
 
 import maya.cmds as cmds
 import pymel.core as pm
@@ -9,6 +10,86 @@ LOG = logging.getLogger(__name__)
 
 IS_MATRIX_PLUGIN_LOADED = False
 IS_QUAT_PLUGIN_LOADED = False
+
+# Map of utility node types to default output attribute names.
+# Used to determine which attribute to return by default when creating utility nodes.
+OUTPUT_ATTR_NAMES = {
+    'addDoubleLinear': 'output',
+    'aimMatrix': 'outputMatrix',
+    'angleBetween': 'angle',
+    'blendColors': 'output',
+    'blendMatrix': 'outputMatrix',
+    'choice': 'output',
+    'clamp': 'output',
+    'composeMatrix': 'outputMatrix',
+    'condition': 'outColor',
+    'distanceBetween': 'distance',
+    'floatMath': 'outFloat',
+    'multMatrix': 'matrixSum',
+    'multiplyDivide': 'output',
+    'reverse': 'output',
+    'setRange': 'outValue',
+    'vectorProduct': 'output',
+}
+
+# Map of node types to functions used to retrieve the output attribute names.
+# If the function is a string, attempts to resolve it from globals().
+OUTPUT_ATTR_NAME_FUNCS = {
+    'plusMinusAverage': 'getPlusMinusAverageOutputAttr'
+}
+
+
+class PlusMinusAverageOperation(IntEnum):
+    NO_OPERATION = 0
+    SUM = 1
+    SUBTRACT = 2
+    AVERAGE = 3
+
+
+class MultiplyDivideOperation(IntEnum):
+    NO_OPERATION = 0
+    MULTIPLY = 1
+    DIVIDE = 2
+    POWER = 3
+
+
+class FloatMathOperation(IntEnum):
+    ADD = 0
+    SUBTRACT = 1
+    MULTIPLY = 2
+    DIVIDE = 3
+    MIN = 4
+    MAX = 5
+    POWER = 6
+
+
+class ConditionOperation(IntEnum):
+    EQUAL = 0
+    NOT_EQUAL = 1
+    GREATER_THAN = 2
+    GREATER_OR_EQUAL = 3
+    LESS_THAN = 4
+    LESS_OR_EQUAL = 5
+
+
+class VectorProductOperation(IntEnum):
+    NO_OPERATION = 0
+    DOT_PRODUCT = 1
+    CROSS_PRODUCT = 2
+    VECTOR_MATRIX_PRODUCT = 3
+    POINT_MATRIX_PRODUCT = 4
+
+
+class AlignMatrixPrimaryMode(IntEnum):
+    LOCK_AXIS = 0
+    AIM = 1
+    ALIGN = 2
+
+
+class AlignMatrixSecondaryMode(IntEnum):
+    NONE = 0
+    AIM = 1
+    ALIGN = 2
 
 
 def loadMatrixPlugin():
@@ -69,30 +150,20 @@ def getOutputAttr(input):
     Returns:
         An Attribute that matches the input, or None if the input is unhandled
     """
-    # map of node types to special output retrieval functions
-    outputFuncs = {
-        'plusMinusAverage': getPlusMinusAverageOutputAttr
-    }
 
-    # map of node types to output attribute names
-    outputAttrs = {
-        'addDoubleLinear': 'output',
-        'angleBetween': 'angle',
-        'blendColors': 'output',
-        'choice': 'output',
-        'clamp': 'output',
-        'condition': 'outColor',
-        'distanceBetween': 'distance',
-        'multiplyDivide': 'output',
-        'reverse': 'output',
-        'setRange': 'outValue',
-        'vectorProduct': 'output',
-        'floatMath': 'outFloat',
-    }
+    def resolveOutputFunc(func):
+        if callable(func):
+            return func
+        elif func in globals():
+            return globals()[func]
+        return None
+
+    outputFuncs = {name: resolveOutputFunc(func) for name, func in OUTPUT_ATTR_NAME_FUNCS.items()}
+    outputFuncs = {name: func for name, func in outputFuncs.items() if func}
 
     node = input.node()
     nodeType = node.nodeType()
-    if nodeType not in outputAttrs and nodeType not in outputFuncs:
+    if nodeType not in OUTPUT_ATTR_NAMES and nodeType not in outputFuncs:
         LOG.warning(
             "No output found for utility type '{0}'".format(nodeType))
         return None
@@ -101,8 +172,8 @@ def getOutputAttr(input):
         fnc = outputFuncs[nodeType]
         return fnc(input)
 
-    elif nodeType in outputAttrs:
-        outputAttrName = outputAttrs[nodeType]
+    elif nodeType in OUTPUT_ATTR_NAMES:
+        outputAttrName = OUTPUT_ATTR_NAMES[nodeType]
         outputAttr = nodes.safeGetAttr(node, outputAttrName)
 
         if outputAttr and outputAttr.isCompound():
@@ -219,7 +290,7 @@ def getInputConnections(inputVal, destAttr):
         inputVal: An Attribute or value to set or connect to destAttr
         destAttr (Attribute): The attribute that to receive the inputVal
     """
-    if not inputVal:
+    if inputVal is None:
         return []
 
     def _child(obj, index):
@@ -283,7 +354,7 @@ def setOrConnectAttr(attr, val):
 
 def add(*inputs):
     """ Return an attribute that represents the given inputs added together. """
-    return plusMinusAverage(inputs, 1)
+    return plusMinusAverage(inputs, PlusMinusAverageOperation.SUM)
 
 
 def subtract(*inputs):
@@ -293,12 +364,12 @@ def subtract(*inputs):
     Eg. input[0] - input[1] - ... - input[n]
     All inputs can be either attributes or values.
     """
-    return plusMinusAverage(inputs, 2)
+    return plusMinusAverage(inputs, PlusMinusAverageOperation.SUBTRACT)
 
 
 def average(*inputs):
     """ Return an attribute that represents the average of the given inputs. """
-    return plusMinusAverage(inputs, 3)
+    return plusMinusAverage(inputs, PlusMinusAverageOperation.AVERAGE)
 
 
 def plusMinusAverage(inputs, operation):
@@ -332,7 +403,7 @@ def min_float(a, b):
     Only supports float values.
     """
     return _createUtilityAndReturnOutput(
-        'floatMath', floatA=a, floatB=b, operation=4)
+        'floatMath', floatA=a, floatB=b, operation=FloatMathOperation.MIN)
 
 
 def max_float(a, b):
@@ -341,30 +412,30 @@ def max_float(a, b):
     Only supports float values.
     """
     return _createUtilityAndReturnOutput(
-        'floatMath', floatA=a, floatB=b, operation=5)
+        'floatMath', floatA=a, floatB=b, operation=FloatMathOperation.MAX)
 
 
 def multiply(a, b):
     """ Return an attribute that represents a * b. """
-    return multiplyDivide(a, b, 1)
+    return multiplyDivide(a, b, MultiplyDivideOperation.MULTIPLY)
 
 
 def divide(a, b):
     """ Return an attribute that represents a / b. """
-    return multiplyDivide(a, b, 2)
+    return multiplyDivide(a, b, MultiplyDivideOperation.DIVIDE)
 
 
 def pow(a, b):
     """ Return an attribute that represents a ^ b. """
-    return multiplyDivide(a, b, 3)
+    return multiplyDivide(a, b, MultiplyDivideOperation.POWER)
 
 
 def sqrt(a):
     """ Return an attribute that represents the square root of a. """
-    return multiplyDivide(a, 0.5, 3)
+    return multiplyDivide(a, 0.5, MultiplyDivideOperation.POWER)
 
 
-def multiplyDivide(input1, input2, operation=1):
+def multiplyDivide(input1, input2, operation=MultiplyDivideOperation.DIVIDE):
     return _createUtilityAndReturnOutput(
         'multiplyDivide', input1=input1, input2=input2, operation=operation)
 
@@ -433,7 +504,7 @@ def equal(a, b, trueVal, falseVal):
     Return an attribute that represents trueVal if a == b else falseVal.
     Inputs can be either attributes or values.
     """
-    return condition(a, b, trueVal, falseVal, 0)
+    return condition(a, b, trueVal, falseVal, ConditionOperation.EQUAL)
 
 
 def notEqual(a, b, trueVal, falseVal):
@@ -441,7 +512,7 @@ def notEqual(a, b, trueVal, falseVal):
     Return an attribute that represents trueVal if a != b else falseVal.
     Inputs can be either attributes or values.
     """
-    return condition(a, b, trueVal, falseVal, 1)
+    return condition(a, b, trueVal, falseVal, ConditionOperation.NOT_EQUAL)
 
 
 def greaterThan(a, b, trueVal, falseVal):
@@ -449,7 +520,7 @@ def greaterThan(a, b, trueVal, falseVal):
     Return an attribute that represents trueVal if a > b else falseVal.
     Inputs can be either attributes or values.
     """
-    return condition(a, b, trueVal, falseVal, 2)
+    return condition(a, b, trueVal, falseVal, ConditionOperation.GREATER_THAN)
 
 
 def greaterOrEqual(a, b, trueVal, falseVal):
@@ -457,7 +528,7 @@ def greaterOrEqual(a, b, trueVal, falseVal):
     Return an attribute that represents trueVal if a >= b else falseVal.
     Inputs can be either attributes or values.
     """
-    return condition(a, b, trueVal, falseVal, 3)
+    return condition(a, b, trueVal, falseVal, ConditionOperation.GREATER_OR_EQUAL)
 
 
 def lessThan(a, b, trueVal, falseVal):
@@ -465,7 +536,7 @@ def lessThan(a, b, trueVal, falseVal):
     Return an attribute that represents trueVal if a < b else falseVal.
     Inputs can be either attributes or values.
     """
-    return condition(a, b, trueVal, falseVal, 4)
+    return condition(a, b, trueVal, falseVal, ConditionOperation.LESS_THAN)
 
 
 def lessOrEqual(a, b, trueVal, falseVal):
@@ -473,7 +544,7 @@ def lessOrEqual(a, b, trueVal, falseVal):
     Return an attribute that represents trueVal if a <= b else falseVal.
     Inputs can be either attributes or values.
     """
-    return condition(a, b, trueVal, falseVal, 5)
+    return condition(a, b, trueVal, falseVal, ConditionOperation.LESS_OR_EQUAL)
 
 
 def condition(firstTerm, secondTerm, trueVal, falseVal, operation):
@@ -482,13 +553,7 @@ def condition(firstTerm, secondTerm, trueVal, falseVal, operation):
     on the comparison of firstTerm and secondTerm.
 
     Args:
-        operaiton (int): An int value representing the type of comparison:
-            0 - Equal
-            1 - Not Equal
-            2 - Greater Than
-            3 - Greater or Equal
-            4 - Less Than
-            5 - Less or Equal
+        operation (ConditionOperation): The condition node operation to use
     """
     return _createUtilityAndReturnOutput(
         'condition', firstTerm=firstTerm, secondTerm=secondTerm,
@@ -503,12 +568,79 @@ def choice(selector, *inputs):
     return choiceNode.output
 
 
+def dot(a, b) -> pm.Attribute:
+    """
+    Calculate the dot product of two vectors using a `vectorProduct` node
+
+    Args:
+        a: A vector value or attribute
+        b: A vector value or attribute
+    """
+    return _createUtilityAndReturnOutput('vectorProduct', input1=a, input2=b,
+                                         operation=VectorProductOperation.DOT_PRODUCT)
+
+
+def cross(a, b) -> pm.Attribute:
+    """
+    Calculate the cross product of two vectors using a `vectorProduct` node
+
+    Args:
+        a: A vector value or attribute
+        b: A vector value or attribute
+    """
+    return _createUtilityAndReturnOutput('vectorProduct', input1=a, input2=b,
+                                         operation=VectorProductOperation.CROSS_PRODUCT)
+
+
+def matrixMultiplyVector(matrix, vector) -> pm.Attribute:
+    """
+    Multiply a direction vector by a matrix using a `vectorProduct` node
+
+    Args:
+        matrix: A transformation matrix value or attribute
+        vector: A vector value or attribute representing a direction
+    """
+    return _createUtilityAndReturnOutput('vectorProduct', input1=vector, matrix=matrix,
+                                         operation=VectorProductOperation.VECTOR_MATRIX_PRODUCT)
+
+
+def matrixMultiplyPoint(matrix, point) -> pm.Attribute:
+    """
+    Multiply a point vector by a matrix using a `vectorProduct` node
+
+    Args:
+        matrix: A transformation matrix value or attribute
+        point: A vector value or attribute representing a location
+    """
+    return _createUtilityAndReturnOutput('vectorProduct', input1=point, matrix=matrix,
+                                         operation=VectorProductOperation.POINT_MATRIX_PRODUCT)
+
+
 def multMatrix(*matrices):
     loadMatrixPlugin()
     mmtx = pm.shadingNode('multMatrix', asUtility=True)
     for i, matrix in enumerate(matrices):
         setOrConnectAttr(mmtx.matrixIn[i], matrix)
     return mmtx.matrixSum
+
+
+def composeMatrix(translate=None, rotate=None, scale=None) -> pm.Attribute:
+    """
+    Compose a matrix using separate translate, rotate, and scale values using a `composeMatrix` utility node
+
+    Args:
+        translate: A translation vector or attribute
+        rotate: A euler rotation vector or attribute
+        scale: A scale vector or attribute
+    """
+    kwargs = {}
+    if translate is not None:
+        kwargs['inputTranslate'] = translate
+    if rotate is not None:
+        kwargs['inputRotate'] = rotate
+    if scale is not None:
+        kwargs['inputScale'] = scale
+    return _createUtilityAndReturnOutput('composeMatrix', useEulerRotation=True, **kwargs)
 
 
 def decomposeMatrix(matrix):
@@ -559,6 +691,71 @@ def connectMatrix(matrix, transform):
     else:
         transform.inheritsTransform.set(False)
         decomposeMatrixAndConnect(matrix, transform)
+
+
+# TODO: add aimMatrix functions
+
+def alignMatrixToDirection(matrix, keepAxis, alignAxis, alignDirection, alignMatrix) -> pm.Attribute:
+    """
+    Align a matrix by pointing a secondary axis in a direction, while preserving a primary axis.
+
+    Args:
+        matrix: A transformation matrix value or attribute
+        keepAxis: A vector value or attribute representing the primary aim axis to keep locked
+        alignAxis: A vector value or attribute representing the secondary align axis to try to adjust
+        alignDirection: The direction vector value or attribute that the secondary axis should align to
+        alignMatrix: A matrix applied to the direction vector
+    """
+    return _createUtilityAndReturnOutput('aimMatrix', inputMatrix=matrix,
+                                         primaryInputAxis=keepAxis, primaryMode=AlignMatrixPrimaryMode.LOCK_AXIS,
+                                         secondaryInputAxis=alignAxis, secondaryMode=AlignMatrixSecondaryMode.ALIGN,
+                                         secondaryTargetVector=alignDirection, secondaryTargetMatrix=alignMatrix)
+
+
+def alignMatrixToPoint(matrix, keepAxis, alignAxis, alignTargetPoint, alignMatrix):
+    """
+    Align a matrix by pointing a secondary axis at a location, while preserving a primary axis.
+
+    Args:
+        matrix: A transformation matrix value or attribute
+        keepAxis: A vector value or attribute representing the primary aim axis to keep locked
+        alignAxis: A vector value or attribute representing the secondary align axis to try to adjust
+        alignTargetPoint: The point value or attribute that the secondary axis should aim at
+        alignMatrix: A matrix applied to the alignTargetPoint
+
+    Returns:
+    """
+    return _createUtilityAndReturnOutput('aimMatrix', inputMatrix=matrix,
+                                         primaryInputAxis=keepAxis, primaryMode=AlignMatrixPrimaryMode.LOCK_AXIS,
+                                         secondaryInputAxis=alignAxis, secondaryMode=AlignMatrixSecondaryMode.AIM,
+                                         secondaryTargetVector=alignTargetPoint, secondaryTargetMatrix=alignMatrix)
+
+
+def blendMatrix(inputMatrix, targetMatrix, weight):
+    """
+    Args:
+        inputMatrix: A matrix value or attribute
+        targetMatrix: A matrix value or attribute
+        weight: A weight value or attribute (0..1)
+    """
+    return blendMatrixMulti(inputMatrix, (targetMatrix, weight))
+
+
+def blendMatrixMulti(inputMatrix, *targetsAndWeights):
+    """
+    Blend a matrix towards one or more target matrices using a `blendMatrix` node.
+    The order matters, since blends are calculated in a stack, i.e. the results of
+    the previous blend get blended with next target and so on.
+
+    Args:
+        inputMatrix: A transformation matrix value or attribute
+        *targetsAndWeights: A list of tuples containing (targetMatrix, weight) values or attributes
+    """
+    blend = pm.shadingNode('blendMatrix', asUtility=True)
+    setOrConnectAttr(blend.inputMatrix, inputMatrix)
+    for i, (matrix, weight) in enumerate(targetsAndWeights):
+        setOrConnectAttr(blend.target[i].targetMatrix, matrix)
+    return blend.outputMatrix
 
 
 def createUtilityNode(nodeType, **kwargs):
