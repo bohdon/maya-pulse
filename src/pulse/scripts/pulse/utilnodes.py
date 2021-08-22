@@ -755,6 +755,7 @@ def blendMatrixMulti(inputMatrix, *targetsAndWeights):
     setOrConnectAttr(blend.inputMatrix, inputMatrix)
     for i, (matrix, weight) in enumerate(targetsAndWeights):
         setOrConnectAttr(blend.target[i].targetMatrix, matrix)
+        setOrConnectAttr(blend.target[i].weight, weight)
     return blend.outputMatrix
 
 
