@@ -121,29 +121,27 @@ class FootControlAction(BuildAction):
         # add lift blend
         # --------------
 
-        # create ankle targets and matrix blend
+        # create target transforms and matrix blends for planted and lifted ankle and toe
         planted_ankle_tgt = pm.group(em=True, p=self.ankleFollower,
                                      name='{0}_anklePlanted_tgt'.format(self.ankleFollower.nodeName()))
         planted_ankle_tgt.setParent(None)
         lifted_ankle_tgt = pm.group(em=True, p=self.ankleFollower,
                                     name='{0}_ankleLifted_tgt'.format(self.ankleFollower.nodeName()))
         lifted_ankle_tgt.setParent(None)
-
-        pulse.nodes.connectOffsetMatrix(self.ballPivot.wm, planted_ankle_tgt, offset_connect_method)
-        pulse.nodes.connectOffsetMatrix(self.liftControl.wm, lifted_ankle_tgt, offset_connect_method)
-
-        lift_ankle_mtxblend = self.createMatrixBlend(planted_ankle_tgt.wm, lifted_ankle_tgt.wm, lift,
-                                                     name='{0}_ankle_liftBlend'.format(self.ankleFollower.nodeName()))
-        utilnodes.connectMatrix(lift_ankle_mtxblend, self.ankleFollower)
-
-        # create toe targets and matrix blend
         planted_toe_tgt = pm.group(em=True, p=self.toeFollower,
                                    name='{0}_toePlanted_tgt'.format(self.toeFollower.nodeName()))
         lifted_toe_tgt = pm.group(em=True, p=self.toeFollower,
                                   name='{0}_toeLifted_tgt'.format(self.toeFollower.nodeName()))
 
+        pulse.nodes.connectOffsetMatrix(self.ballPivot.wm, planted_ankle_tgt, offset_connect_method)
         pulse.nodes.connectOffsetMatrix(self.toePivot.wm, planted_toe_tgt, offset_connect_method)
-        pulse.nodes.connectOffsetMatrix(self.liftToeControl.wm, lifted_toe_tgt, offset_connect_method)
+
+        pulse.nodes.connectOffsetMatrix(self.liftControl.wm, lifted_ankle_tgt, offset_connect_method)
+        pulse.nodes.connectOffsetMatrix(self.liftControl.wm, lifted_toe_tgt, offset_connect_method)
+
+        lift_ankle_mtxblend = self.createMatrixBlend(planted_ankle_tgt.wm, lifted_ankle_tgt.wm, lift,
+                                                     name='{0}_ankle_liftBlend'.format(self.ankleFollower.nodeName()))
+        utilnodes.connectMatrix(lift_ankle_mtxblend, self.ankleFollower)
 
         lift_toe_mtxblend = self.createMatrixBlend(planted_toe_tgt.wm, lifted_toe_tgt.wm, lift,
                                                    name='{0}_toe_liftBlend'.format(self.toeFollower.nodeName()))
