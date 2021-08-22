@@ -2,6 +2,7 @@
 Form ui classes for any type of action attribute, e.g.
 float forms, node and node list forms, combo box forms, etc.
 """
+import logging
 
 import maya.cmds as cmds
 import pymel.core as pm
@@ -11,6 +12,8 @@ from . import utils as viewutils
 from .. import names
 from ..serializer import serializeAttrValue
 from ..vendor.Qt import QtCore, QtWidgets
+
+LOG = logging.getLogger(__name__)
 
 
 class ActionAttrForm(QtWidgets.QFrame):
@@ -36,7 +39,12 @@ class ActionAttrForm(QtWidgets.QFrame):
             index: A QModelIndex pointing to the BuildStep being edited
             attr: A dict representing the config of a BuildAction attribute
         """
-        attrType = attr['type']
+        attrType = attr.get('type', None)
+        if attrType is None:
+            LOG.error(f"Attribute is missing 'type' field: {attr}")
+            # TODO: create a generic attribute form that just displays the error
+            attrType = 'bool'
+
         if attrType in ActionAttrForm.TYPEMAP:
             return ActionAttrForm.TYPEMAP[attrType](
                 index, attr, variantIndex, parent=parent)
@@ -268,9 +276,9 @@ class BatchAttrForm(QtWidgets.QFrame):
 
     TYPEMAP = {}
 
-    LABEL_WIDTH = 140
-    LABEL_HEIGHT = 20
-    FORM_WIDTH_SMALL = 80
+    LABEL_WIDTH = ActionAttrForm.LABEL_WIDTH
+    LABEL_HEIGHT = ActionAttrForm.LABEL_HEIGHT
+    FORM_WIDTH_SMALL = ActionAttrForm.FORM_WIDTH_SMALL
 
     @staticmethod
     def doesFormExist(attr):

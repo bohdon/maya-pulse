@@ -325,6 +325,9 @@ class MirrorActionUtil(object):
             variant = sourceAction.getVariant(i)
             for attrName in sourceAction.getVariantAttrs():
                 attr = variant.getAttrConfig(attrName)
+                if not attr:
+                    # possibly stale or removed attribute
+                    continue
                 value = variant.getAttrValue(attrName)
                 mirroredValue = self.mirrorActionValue(attr, value)
                 attrPath = destStepPath + '.' + attr['name']
@@ -343,15 +346,24 @@ class MirrorActionUtil(object):
             attr (dict): The attribute config
             value: The attribute value, of varying type
         """
+
+        def getPairedNodeOrSelf(node):
+            """
+            Return the paired node of a node, if one exists, otherwise return the node.
+            """
+            paired_node = sym.getPairedNode(node)
+            if paired_node:
+                return paired_node
+            return node
+
         if not value:
             return value
 
         if attr['type'] == 'node':
-            pairedNode = sym.getPairedNode(value)
-            if pairedNode:
-                return pairedNode
-            else:
-                return value
+            return getPairedNodeOrSelf(value)
+
+        elif attr['type'] == 'nodelist':
+            return [getPairedNodeOrSelf(node) for node in value]
 
         elif attr['type'] == 'string':
             return sym.getMirroredName(value, self.getConfig())

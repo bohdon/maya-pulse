@@ -212,7 +212,7 @@ class BuildActionDataForm(QtWidgets.QWidget):
         parent = self
 
         # remove forms for non existent attrs
-        for attrName, attrForm in self._attrForms.items():
+        for attrName, attrForm in list(self._attrForms.items()):
             if not actionData.hasAttr(attrName):
                 self.attrListLayout.removeWidget(attrForm)
                 attrForm.setParent(None)
