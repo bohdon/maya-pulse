@@ -1,5 +1,6 @@
 import pymel.core as pm
 
+import pulse.nodes
 import pulse.utilnodes
 from pulse.buildItems import BuildAction, BuildActionError
 
@@ -16,13 +17,21 @@ class TwistJointsAction(BuildAction):
         self.twistJoint.addAttr('twistBlend', at='double', min=0, max=1, keyable=True, defaultValue=1)
         twist_blend = self.twistJoint.attr('twistBlend')
 
+        # add proxy attribute to twist controls
+        for twist_ctl in self.twistControls:
+            twist_ctl.addAttr('twistBlend', proxy=twist_blend)
+
         # get parent world matrix
         parent_mtx = self.getParentMatrix(self.twistJoint)
 
         if self.alignToRestPose:
-            # calculate the resting position of the align joint, including joint orients
+            # calculate the resting position of the align joint, including joint orients.
+            # note that the parentMatrix can't be used here, because the joint's worldMatrix may be
+            # driven by a control directly via offsetParentMatrix, so the parent node should be used instead.
             jo_matrix = pulse.utilnodes.composeMatrix(rotate=self.alignJoint.jo)
-            align_tgt_mtx = pulse.utilnodes.multMatrix(jo_matrix, self.alignJoint.parentMatrix)
+            align_parent = self.alignJoint.getParent()
+            align_parent_mtx = align_parent.wm if align_parent else pm.dt.Matrix()
+            align_tgt_mtx = pulse.utilnodes.multMatrix(jo_matrix, align_parent_mtx)
         else:
             # use the align joint world matrix directly
             align_tgt_mtx = self.alignJoint.wm
@@ -34,9 +43,7 @@ class TwistJointsAction(BuildAction):
         # blend aligned matrix with default parent matrix
         blend_mtx = pulse.utilnodes.blendMatrix(parent_mtx, aligned_pm, twist_blend)
 
-        # TODO: what if offsetParentMatrix is already connected? how do we incorporate it as the new parent matrix?
-        blend_mtx >> self.twistJoint.offsetParentMatrix
-        self.twistJoint.inheritsTransform.set(False)
+        pulse.nodes.connectOffsetMatrix(blend_mtx, self.twistJoint, True, False)
 
     def getParentMatrix(self, node):
         """
