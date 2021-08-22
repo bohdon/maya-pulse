@@ -356,6 +356,10 @@ def getAttrOrValueDimension(attrOrValue):
     """
     if isinstance(attrOrValue, pm.Attribute):
         return getAttrDimension(attrOrValue)
+    elif isinstance(attrOrValue, pm.dt.Matrix):
+        # matrices need to be treated as single dimension, since
+        # matrix attributes are singular
+        return 1
     else:
         # support duck-typed lists
         if not isinstance(attrOrValue, str):

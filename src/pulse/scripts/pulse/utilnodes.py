@@ -560,7 +560,7 @@ def condition(firstTerm, secondTerm, trueVal, falseVal, operation):
         colorIfTrue=trueVal, colorIfFalse=falseVal, operation=operation)
 
 
-def choice(selector, *inputs):
+def choice(selector, *inputs) -> pm.Attribute:
     choiceNode = pm.shadingNode('choice', asUtility=True)
     setOrConnectAttr(choiceNode.selector, selector)
     for i, input in enumerate(inputs):
