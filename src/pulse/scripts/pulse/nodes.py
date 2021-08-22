@@ -1,5 +1,6 @@
 import logging
 import os
+from enum import IntEnum
 
 import maya.cmds as cmds
 import pymel.core as pm
@@ -7,6 +8,22 @@ import pymel.core as pm
 LOG = logging.getLogger(__name__)
 LOG_LEVEL_KEY = 'PYLOG_%s' % LOG.name.split('.')[0].upper()
 LOG.setLevel(os.environ.get(LOG_LEVEL_KEY, 'INFO').upper())
+
+IDENTITY_MATRIX_FLAT = [1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0]
+
+
+class ConnectMatrixMethod(IntEnum):
+    """
+    Options for connecting a matrix to a nodes offsetParentMatrix attribute
+    """
+    # only connect the offset parent matrix, keep all other attributes the same
+    CONNECT_ONLY = 0
+    # zero out all relative transform values once connected
+    SNAP = 1
+    # restore the previous world position once connected, modifying relative transform values if necessary
+    KEEP_WORLD = 2
+    # create an offset to preserve the current world position, as well as the current relative transform values
+    CREATE_OFFSET = 3
 
 
 # Node Retrieval
@@ -437,81 +454,50 @@ def fullConstraint(leader, follower):
     return pc, sc
 
 
-def connectOffsetMatrix(leader, follower, preservePosition=True,
-                        preserveTransformValues=True, keepInheritTransform=False):
+def connectOffsetMatrix(matrix: pm.Attribute, node: pm.nt.Transform,
+                        method: ConnectMatrixMethod = ConnectMatrixMethod.KEEP_WORLD):
     """
-    Connect the world matrix of a node to the offsetParentMatrix of another node,
-    and disable inheritsTransform on the follower, effectively changing the parent
-    matrix to the new leader.
-    (Maya 2020 and higher)
+    Set or connect the offsetParentMatrix of a node, optionally preserving or changing
+    transform attributes to adjust accordingly. See `ConnectMatrixMethod`. Note that for all
+    methods, inheritsTransform will be disabled, assuming the incoming matrix will replace the node's parent.
 
     Args:
-        leader (PyNode or matrix Attribute): A node to use as the leader
-        follower (PyNode): A node to use as the follower
-        preservePosition (bool): If true, preserve the followers world space position
-        preserveTransformValues (bool): If true, preservePosition will not affect the
-            current translate, rotate, and scale values of the follower by inserting
-            a multMatrix node to handle any existing offsets. This is necessary
-            if offsetParentMatrix has a non-identity value, in which case the value
-            will be moved into the multMatrix node.
-        keepInheritTransform (bool): If true, inheritsTransform will not be changed
+        matrix: A matrix attribute
+        node: A transform node
+        method: The method to use for adjusting the node's transform after connecting
     """
-    # this order is important because Attributes are subclasses of PyNodes
-    if isinstance(leader, pm.Attribute):
-        if not leader.type() == 'matrix':
-            raise ValueError(
-                'Expected matrix attribute, got %s' % leader.type())
-        inputMatrix = leader
-    elif isinstance(leader, pm.PyNode):
-        inputMatrix = leader.wm
-    else:
-        raise ValueError(
-            'Expected PyNode or Attribute for leader, got: %s' % type(leader))
+    if method == ConnectMatrixMethod.CONNECT_ONLY:
+        # make the connection
+        matrix >> node.offsetParentMatrix
+        node.inheritsTransform.set(False)
 
-    if not preservePosition:
-        inputMatrix >> follower.offsetParentMatrix
-        if not keepInheritTransform:
-            follower.inheritsTransform.set(False)
-    else:
-        # remember world matrix
-        wm = getWorldMatrix(follower)
+    elif method == ConnectMatrixMethod.SNAP:
+        # make the connection
+        matrix >> node.offsetParentMatrix
+        node.inheritsTransform.set(False)
+        # zero out joint orients first (if this is a joint)
+        if node.hasAttr('jo'):
+            node.jo.set((0, 0, 0))
+        # zero out transform values
+        cmds.xform(node.longName(), matrix=IDENTITY_MATRIX_FLAT, worldSpace=False)
 
-        # disable inherit transform to make the connection
-        # effectively replace any previous parent matrix
-        # contributors, so that the new connection is absolute
-        if not keepInheritTransform:
-            follower.inheritsTransform.set(False)
+    elif method == ConnectMatrixMethod.KEEP_WORLD:
+        # remember the node's world matrix
+        world_mtx = node.wm.get()
+        # make the connection
+        matrix >> node.offsetParentMatrix
+        node.inheritsTransform.set(False)
+        # restore the world matrix
+        setWorldMatrix(node, world_mtx)
 
-        if preserveTransformValues:
-            # calculate offset between new leader and follower
-            offsetMtx = calculatePreservedOffsetMatrix(
-                inputMatrix.get(), wm, follower.m.get())
-            # store offset in a new multMatrix node, and connect
-            mult = pm.createNode('multMatrix', n='multMatrix_opm_con')
-            mult.matrixIn[0].set(offsetMtx)
-            inputMatrix >> mult.matrixIn[1]
-            mult.matrixSum >> follower.offsetParentMatrix
-        else:
-            inputMatrix >> follower.offsetParentMatrix
-            # restore world matrix (absorbed into local matrix)
-            setWorldMatrix(follower, wm)
-
-
-def calculatePreservedOffsetMatrix(leaderWorldMtx, followerWorldMtx, followerMtx):
-    """
-    Return an offset matrix between a leader and follower, such that:
-        follower.matrix * offsetMatrix * leader.worldMatrix == follower.worldMatrix
-
-    Args:
-        leaderWorldMtx (matrix): The matrix to which the new offset will be relative
-        followerWorldMtx (matrix): The world matrix that should be preserved
-        followerMtx (matrix): The local matrix of the follower node
-
-    Returns:
-        A matrix that represents the offset between leaderMatrix and the follower,
-        without the follower's local matrix being included.
-    """
-    return followerMtx.inverse() * followerWorldMtx * leaderWorldMtx.inverse()
+    elif method == ConnectMatrixMethod.CREATE_OFFSET:
+        # calculate and store offset using a multMatrix node
+        offset_mtx = node.pm.get() * matrix.get().inverse()
+        mult_mtx = pm.createNode('multMatrix', n=f"{node.nodeName()}_opm_offset_multMatrix")
+        mult_mtx.matrixIn[0].set(offset_mtx)
+        matrix >> mult_mtx.matrixIn[1]
+        mult_mtx.matrixSum >> node.offsetParentMatrix
+        node.inheritsTransform.set(False)
 
 
 def disconnectOffsetMatrix(follower, preservePosition=True,

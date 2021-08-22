@@ -683,11 +683,7 @@ def connectMatrix(matrix, transform):
     is world space, and will disable inheritsTransform on the target.
     """
     if cmds.about(api=True) >= 20200000:
-        transform.t.set(0, 0, 0)
-        transform.r.set(0, 0, 0)
-        transform.s.set(1, 1, 1)
-        nodes.connectOffsetMatrix(
-            matrix, transform, preservePosition=False, preserveTransformValues=False)
+        nodes.connectOffsetMatrix(matrix, transform, nodes.ConnectMatrixMethod.SNAP)
     else:
         transform.inheritsTransform.set(False)
         decomposeMatrixAndConnect(matrix, transform)

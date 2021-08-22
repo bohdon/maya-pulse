@@ -77,15 +77,18 @@ class ThreeBoneIKFKAction(BuildAction):
         # create choices for world matrix from ik and fk targets
         rootChoice = pulse.utilnodes.choice(
             ikAttr, self.rootCtl.wm, rootIkJoint.wm)
+        rootChoice.node().rename(f"{rootJoint.nodeName()}_ikfk_choice")
         midChoice = pulse.utilnodes.choice(
             ikAttr, self.midCtlFk.wm, midIkJoint.wm)
+        midChoice.node().rename(f"{midJoint.nodeName()}_ikfk_choice")
         endChoice = pulse.utilnodes.choice(
             ikAttr, self.endCtlFk.wm, endIkJoint.wm)
+        endChoice.node().rename(f"{self.endJoint.nodeName()}_ikfk_choice")
 
         # connect the target matrices to the joints
-        pulse.nodes.connectOffsetMatrix(rootChoice, rootJoint, preservePosition=True, preserveTransformValues=False)
-        pulse.nodes.connectOffsetMatrix(midChoice, midJoint, preservePosition=True, preserveTransformValues=False)
-        pulse.nodes.connectOffsetMatrix(endChoice, self.endJoint, preservePosition=True, preserveTransformValues=False)
+        pulse.nodes.connectOffsetMatrix(rootChoice, rootJoint, pulse.nodes.ConnectMatrixMethod.SNAP)
+        pulse.nodes.connectOffsetMatrix(midChoice, midJoint, pulse.nodes.ConnectMatrixMethod.SNAP)
+        pulse.nodes.connectOffsetMatrix(endChoice, self.endJoint, pulse.nodes.ConnectMatrixMethod.SNAP)
 
         # connect visibility
         self.midCtlIk.v.setLocked(False)

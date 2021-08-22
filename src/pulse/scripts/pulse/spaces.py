@@ -30,7 +30,6 @@ import maya.cmds as cmds
 import pymel.core as pm
 
 import pymetanode as meta
-from . import nodes
 from . import utilnodes
 
 LOG = logging.getLogger(__name__)
@@ -196,7 +195,7 @@ def setupSpaceConstraint(node, spaceNames, follower=None, useOffsetMatrix=True):
 
 
 def _setupSpaceConstraintAttrs(node, spaceNames):
-     # setup space switching attr
+    # setup space switching attr
     if not node.hasAttr(SPACESWITCH_ATTR):
         enumNames = ':'.join(spaceNames)
         node.addAttr(SPACESWITCH_ATTR, at='enum', en=enumNames)
@@ -300,8 +299,7 @@ def _connectSpaceToConstraint(spaceConstraintData, index, spaceNode):
     if useOffsetMatrix:
         # calculate an offset matrix that doesn't include the local matrix of the follower,
         # so that the result can be plugged into the offsetParentMatrix of the follower
-        offsetMtx = nodes.calculatePreservedOffsetMatrix(
-            spaceNode.wm.get(), follower.wm.get(), follower.m.get())
+        offsetMtx = follower.pm.get() * spaceNode.wim.get()
     else:
         # the space constraint will go directly into the transform
         # attrs of the follower, so it should include all of the follower world matrix
