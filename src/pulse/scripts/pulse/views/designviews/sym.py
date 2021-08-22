@@ -17,26 +17,31 @@ class SymmetryPanel(PulsePanelWidget):
         'pulse.editor.mirrorLinks', True)
     mirrorAppearance = optionVarProperty(
         'pulse.editor.mirrorAppearance', True)
+    mirrorCurveShapes = optionVarProperty(
+        'pulse.editor.mirrorCurveShapes', True)
     mirrorAllowCreate = optionVarProperty(
         'pulse.editor.mirrorAllowCreate', True)
 
     def setMirrorRecursive(self, value):
-        self.mirrorRecursive = value
+        self.mirrorRecursive = True if value > 0 else False
 
     def setMirrorTransforms(self, value):
-        self.mirrorTransforms = value
+        self.mirrorTransforms = True if value > 0 else False
 
     def setMirrorParenting(self, value):
-        self.mirrorParenting = value
+        self.mirrorParenting = True if value > 0 else False
 
     def setMirrorLinks(self, value):
-        self.mirrorLinks = value
+        self.mirrorLinks = True if value > 0 else False
 
     def setMirrorAppearance(self, value):
-        self.mirrorAppearance = value
+        self.mirrorAppearance = True if value > 0 else False
+
+    def setMirrorCurveShapes(self, value):
+        self.mirrorCurveShapes = True if value > 0 else False
 
     def setMirrorAllowCreate(self, value):
-        self.mirrorAllowCreate = value
+        self.mirrorAllowCreate = True if value > 0 else False
 
     def __init__(self, parent):
         super(SymmetryPanel, self).__init__(parent=parent)
@@ -60,6 +65,8 @@ class SymmetryPanel(PulsePanelWidget):
         # mirror settings
         # ---------------
 
+        settingsGrid = QtWidgets.QGridLayout(parent)
+
         check = QtWidgets.QCheckBox(parent)
         check.setText("Include All Children")
         check.setStatusTip(
@@ -67,43 +74,7 @@ class SymmetryPanel(PulsePanelWidget):
         check.setChecked(self.mirrorRecursive)
         check.stateChanged.connect(
             self.setMirrorRecursive)
-        layout.addWidget(check)
-
-        check = QtWidgets.QCheckBox(parent)
-        check.setText("Transforms")
-        check.setStatusTip(
-            "Mirror the transform matrices of the nodes")
-        check.setChecked(self.mirrorTransforms)
-        check.stateChanged.connect(
-            self.setMirrorTransforms)
-        layout.addWidget(check)
-
-        check = QtWidgets.QCheckBox(parent)
-        check.setText("Parenting")
-        check.setStatusTip(
-            "Mirror the parenting structure of the nodes")
-        check.setChecked(self.mirrorParenting)
-        check.stateChanged.connect(
-            self.setMirrorParenting)
-        layout.addWidget(check)
-
-        check = QtWidgets.QCheckBox(parent)
-        check.setText("Links")
-        check.setStatusTip(
-            "Mirror the layout links of the nodes, allowing mirrored nodes to snap to their linked mirror nodes")
-        check.setChecked(self.mirrorLinks)
-        check.stateChanged.connect(
-            self.setMirrorLinks)
-        layout.addWidget(check)
-
-        check = QtWidgets.QCheckBox(parent)
-        check.setText("Appearance")
-        check.setStatusTip(
-            "Mirror the name and color of the nodes")
-        check.setChecked(self.mirrorAppearance)
-        check.stateChanged.connect(
-            self.setMirrorAppearance)
-        layout.addWidget(check)
+        settingsGrid.addWidget(check, 0, 0, 1, 1)
 
         check = QtWidgets.QCheckBox(parent)
         check.setText("Allow Node Creation")
@@ -112,7 +83,53 @@ class SymmetryPanel(PulsePanelWidget):
         check.setChecked(self.mirrorAllowCreate)
         check.stateChanged.connect(
             self.setMirrorAllowCreate)
-        layout.addWidget(check)
+        settingsGrid.addWidget(check, 1, 0, 1, 1)
+
+        check = QtWidgets.QCheckBox(parent)
+        check.setText("Transforms")
+        check.setStatusTip(
+            "Mirror the transform matrices of the nodes")
+        check.setChecked(self.mirrorTransforms)
+        check.stateChanged.connect(
+            self.setMirrorTransforms)
+        settingsGrid.addWidget(check, 2, 0, 1, 1)
+
+        check = QtWidgets.QCheckBox(parent)
+        check.setText("Parenting")
+        check.setStatusTip(
+            "Mirror the parenting structure of the nodes")
+        check.setChecked(self.mirrorParenting)
+        check.stateChanged.connect(
+            self.setMirrorParenting)
+        settingsGrid.addWidget(check, 3, 0, 1, 1)
+
+        check = QtWidgets.QCheckBox(parent)
+        check.setText("Links")
+        check.setStatusTip(
+            "Mirror the layout links of the nodes, allowing mirrored nodes to snap to their linked mirror nodes")
+        check.setChecked(self.mirrorLinks)
+        check.stateChanged.connect(
+            self.setMirrorLinks)
+        settingsGrid.addWidget(check, 4, 0, 1, 1)
+
+        check = QtWidgets.QCheckBox(parent)
+        check.setText("Appearance")
+        check.setStatusTip(
+            "Mirror the name and color of the nodes")
+        check.setChecked(self.mirrorAppearance)
+        check.stateChanged.connect(
+            self.setMirrorAppearance)
+        settingsGrid.addWidget(check, 0, 1, 1, 1)
+
+        check = QtWidgets.QCheckBox(parent)
+        check.setText("Curve Shapes")
+        check.setStatusTip(
+            "Mirror curve shapes")
+        check.setChecked(self.mirrorCurveShapes)
+        check.stateChanged.connect(
+            self.setMirrorCurveShapes)
+        settingsGrid.addWidget(check, 1, 1, 1, 1)
+        layout.addLayout(settingsGrid)
 
         # mirror axis
 
@@ -153,7 +170,7 @@ class SymmetryPanel(PulsePanelWidget):
         kw = dict(
             recursive=self.mirrorRecursive,
             create=self.mirrorAllowCreate,
-            curveShapes=True,
+            curveShapes=self.mirrorCurveShapes,
             links=self.mirrorLinks,
             reparent=self.mirrorParenting,
             transform=self.mirrorTransforms,

@@ -128,7 +128,6 @@ def duplicateAndPairNode(sourceNode):
         The newly created node.
     """
     with preservedSelection():
-
         destNode = pm.duplicate(
             [sourceNode] + sourceNode.getChildren(s=True), po=True)[0]
         # handle bug in recent maya versions where extra empty
@@ -569,7 +568,6 @@ class MirrorCurveShapes(MirrorOperation):
             pm.parent(dupe, destNode, shape=True, relative=True)
 
 
-
 class MirrorJointDisplay(MirrorOperation):
     """
     Mirrors the display settings of joints
@@ -779,7 +777,7 @@ class MirrorLinks(BlueprintMirrorOperation):
 class MirrorUtil(object):
     """
     A util class for performing MirrorOperations.
-    Provides functionality for duplicat nodes that aren't paired,
+    Provides functionality for duplicating nodes that aren't paired,
     as well as performing the operations recursively on a node and
     all of its children.
     """
@@ -827,7 +825,7 @@ class MirrorUtil(object):
                 operation.mirrorNode(pair[0], pair[1], isNewNode)
         self._newNodes = []
 
-    def shouldMirrorNode(self, sourceNode):
+    def shouldMirrorNode(self, sourceNode) -> bool:
         """
         Return whether the node sould be mirrored, or skipped.
 
@@ -902,7 +900,7 @@ class MirrorUtil(object):
 
         return pairs
 
-    def _getOrCreatePairNode(self, sourceNode):
+    def _getOrCreatePairNode(self, sourceNode) -> pm.nt.Transform:
         """
         Return the pair node of a node, and if none exists,
         create a new pair node. Does not check isCreationAllowed.
@@ -918,13 +916,10 @@ class MirrorUtil(object):
             destNode = duplicateAndPairNode(sourceNode)
             return destNode, True
 
-    def getOrCreatePairNode(self, sourceNode):
+    def getOrCreatePairNode(self, sourceNode) -> pm.nt.Transform:
         """
         Return the pair node of a node, and if none exists,
         create a new pair node. Does not check isCreationAllowed.
-
-        Returns:
-            The pair node (PyNode).
         """
         return self._getOrCreatePairNode(sourceNode)[0]
 
