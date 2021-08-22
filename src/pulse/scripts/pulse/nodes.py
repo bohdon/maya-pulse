@@ -693,54 +693,36 @@ def getWorldMatrix(node, negateRotateAxis=True):
         return pm.dt.TransformationMatrix()
 
 
-def setWorldMatrix(node, matrix, translate=True, rotate=True, scale=True, matchAxes=False):
+def setWorldMatrix(node, matrix, translate=True, rotate=True, scale=True):
     """
-    Args:
-        node:
-        matrix:
-        translate:
-        rotate:
-        scale:
-        matchAxes: TODO: document
+    Set the world matrix of a node.
     """
-    if not isinstance(node, pm.PyNode):
-        node = pm.PyNode(node)
+    if translate and rotate and scale:
+        # set the full matrix
+        cmds.xform(node.longName(), matrix=[c for r in matrix for c in r], worldSpace=True)
+    else:
+        # note that setting the components individually is more expensive, especially calculating scale
+        if not isinstance(matrix, pm.dt.TransformationMatrix):
+            matrix = pm.dt.TransformationMatrix(matrix)
 
-    if not isinstance(matrix, pm.dt.TransformationMatrix):
-        matrix = pm.dt.TransformationMatrix(matrix)
-
-    # Convert the rotation order
-    ro = node.getRotationOrder()
-    if ro != matrix.rotationOrder():
-        matrix.reorderRotation(ro)
-
-    if translate:
-        cmds.xform(node.longName(), ws=True,
-                   t=matrix.getTranslation('world'))
-    if rotate:
-        if matchAxes and any(node.ra.get()):
-            # Get the source's rotation matrix
-            source_rotMtx = pm.dt.TransformationMatrix(
-                getEulerRotationFromMatrix(matrix).asMatrix())
-            # Get the target transform's inverse rotation matrix
-            target_invRaMtx = pm.dt.EulerRotation(
-                node.ra.get()).asMatrix().inverse()
-            # Multiply the source's rotation matrix by the inverse of the
-            # target's rotation axis to get just the difference in rotation
-            target_rotMtx = target_invRaMtx * source_rotMtx
-            # Get the new rotation value as a Euler in the correct rotation order
-            target_rotation = getEulerRotationFromMatrix(target_rotMtx)
-            rotation = target_rotation.reorder(node.getRotationOrder())
-            rotation.setDisplayUnit('degrees')
-        else:
+        # only set some components
+        if translate:
+            cmds.xform(node.longName(), translation=matrix.getTranslation('world'), worldSpace=True)
+        if rotate:
+            # convert the rotation order
+            rotate_order = node.getRotationOrder()
+            if rotate_order != matrix.rotationOrder():
+                matrix.reorderRotation(rotate_order)
+            # note that this method does not handle matching the global rotation with non-zero rotate axis,
+            # if that is needed, set the full matrix instead
             rotation = getEulerRotationFromMatrix(matrix)
-        cmds.xform(node.longName(), ws=True, ro=rotation)
-    if scale:
-        localScaleMatrix = matrix * node.pim.get()
-        cmds.xform(node.longName(), s=localScaleMatrix.getScale('world'))
+            cmds.xform(node.longName(), rotation=rotation, worldSpace=True)
+        if scale:
+            localScaleMatrix = matrix * node.pim.get()
+            cmds.xform(node.longName(), scale=localScaleMatrix.getScale('world'))
 
 
-def matchWorldMatrix(leader, *followers):
+def matchWorldMatrix(leader: pm.nt.Transform, *followers: pm.nt.Transform):
     """
     Set the world matrix of one or more nodes to match a leader's world matrix.
 
@@ -748,14 +730,9 @@ def matchWorldMatrix(leader, *followers):
         leader: A transform
         followers: One or more transforms to update
     """
-    m = getWorldMatrix(leader)
-    # handle joint orientations
-    p = pm.xform(leader, q=True, ws=True, rp=True)
-    r = pm.xform(leader, q=True, ws=True, ro=True)
-    for f in followers:
-        setWorldMatrix(f, m)
-        pm.xform(f, t=p, ws=True)
-        pm.xform(f, ro=r, ws=True)
+    world_mtx = leader.wm.get()
+    for follower in followers:
+        setWorldMatrix(follower, world_mtx)
 
 
 def getRelativeMatrix(node, baseNode):

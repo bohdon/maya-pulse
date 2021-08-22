@@ -241,7 +241,8 @@ class FootControlUtils(object):
             return
 
         mtx = planted_ankle_tgt.wm.get()
-        nodes.setWorldMatrix(lift_ctl, mtx, scale=False)
+        mtx.scale = (1, 1, 1)
+        nodes.setWorldMatrix(lift_ctl, mtx)
 
     @staticmethod
     def setLift(ctl: pm.PyNode, lift: float):

@@ -166,7 +166,7 @@ def cleanupLinks():
             unlink(node)
 
 
-def positionLink(node, translate=True, rotate=True, scale=False, quiet=False):
+def positionLink(node, quiet=False):
     linkData = getLinkMetaData(node)
 
     if not linkData:
@@ -188,9 +188,6 @@ def positionLink(node, translate=True, rotate=True, scale=False, quiet=False):
         raise ValueError("Could not find a LinkPositioner for type: %s" % linkType)
 
     positioner = positionerCls()
-    positioner.shouldTranslate = translate
-    positioner.shouldRotate = rotate
-    positioner.shouldScale = scale
     positioner.updateTransform(leader, node, linkData)
 
 
@@ -201,9 +198,7 @@ class LinkPositioner(object):
     """
 
     def __init__(self):
-        self.shouldTranslate = True
-        self.shouldRotate = True
-        self.shouldScale = False
+        pass
 
     def getOffsetMatrix(self, linkData):
         """
@@ -239,11 +234,7 @@ class DefaultLinkPositioner(LinkPositioner):
         worldMtx = nodes.getWorldMatrix(leader)
         offsetMtx = self.getOffsetMatrix(linkData)
         newMtx = offsetMtx * worldMtx
-        nodes.setWorldMatrix(
-            follower, newMtx,
-            translate=self.shouldTranslate,
-            rotate=self.shouldRotate,
-            scale=self.shouldScale)
+        nodes.setWorldMatrix(follower, newMtx)
 
 
 POSITIONER_CLASS_MAP[LinkType.DEFAULT] = DefaultLinkPositioner

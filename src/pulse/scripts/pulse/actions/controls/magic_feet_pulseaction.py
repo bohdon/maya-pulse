@@ -105,9 +105,9 @@ class MagicFeetAction(BuildAction):
         # update pivots to match world rotation of control and create
         # offset so that direct connect rotations will match up
         for node in (self.toePivot, self.ballPivot, self.heelPivot):
-            pulse.nodes.setWorldMatrix(
-                node, followerMtx,
-                translate=False, rotate=True, scale=False)
+            followerMtx.translate = (0, 0, 0)
+            followerMtx.scale = (1, 1, 1)
+            pulse.nodes.setWorldMatrix(node, followerMtx)
             pulse.nodes.createOffsetTransform(node)
             if node == self.toePivot:
                 # after orienting toe pivot, re-parent ballPivot

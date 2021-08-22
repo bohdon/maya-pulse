@@ -1111,17 +1111,10 @@ def setMirroredMatrices(node, mirroredMatrices,
     """
     if mirroredMatrices['type'] == 'joint':
         LOG.debug("Applying Joint Matrices")
-        joints.setJointMatrices(node, *mirroredMatrices['matrices'],
-                                translate=translate,
-                                rotate=rotate
-                                )
+        joints.setJointMatrices(node, *mirroredMatrices['matrices'], translate=translate, rotate=rotate)
     else:
         LOG.debug("Applying Transform Matrix")
-        nodes.setWorldMatrix(node, *mirroredMatrices['matrices'],
-                             translate=translate,
-                             rotate=rotate,
-                             scale=scale
-                             )
+        nodes.setWorldMatrix(node, *mirroredMatrices['matrices'], translate=translate, rotate=rotate, scale=scale)
 
 
 def getMirroredTransformMatrix(matrix,
