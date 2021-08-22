@@ -74,11 +74,12 @@ class FootControlAction(BuildAction):
         # ---------------
 
         # baseControl / heel / outerTilt / innerTilt / toe / ball
-        pulse.nodes.connectOffsetMatrix(self.baseControl.wm, self.heelPivot)
-        pulse.nodes.connectOffsetMatrix(self.heelPivot.wm, self.outerTiltPivot)
-        pulse.nodes.connectOffsetMatrix(self.outerTiltPivot.wm, self.innerTiltPivot)
-        pulse.nodes.connectOffsetMatrix(self.innerTiltPivot.wm, self.toePivot)
-        pulse.nodes.connectOffsetMatrix(self.toePivot.wm, self.ballPivot)
+        offset_connect_method = pulse.nodes.ConnectMatrixMethod.CREATE_OFFSET
+        pulse.nodes.connectOffsetMatrix(self.baseControl.wm, self.heelPivot, offset_connect_method)
+        pulse.nodes.connectOffsetMatrix(self.heelPivot.wm, self.outerTiltPivot, offset_connect_method)
+        pulse.nodes.connectOffsetMatrix(self.outerTiltPivot.wm, self.innerTiltPivot, offset_connect_method)
+        pulse.nodes.connectOffsetMatrix(self.innerTiltPivot.wm, self.toePivot, offset_connect_method)
+        pulse.nodes.connectOffsetMatrix(self.toePivot.wm, self.ballPivot, offset_connect_method)
 
         # calculate custom foot attrs
         # ---------------------------
@@ -123,11 +124,13 @@ class FootControlAction(BuildAction):
         # create ankle targets and matrix blend
         planted_ankle_tgt = pm.group(em=True, p=self.ankleFollower,
                                      name='{0}_anklePlanted_tgt'.format(self.ankleFollower.nodeName()))
+        planted_ankle_tgt.setParent(None)
         lifted_ankle_tgt = pm.group(em=True, p=self.ankleFollower,
                                     name='{0}_ankleLifted_tgt'.format(self.ankleFollower.nodeName()))
+        lifted_ankle_tgt.setParent(None)
 
-        pulse.nodes.connectOffsetMatrix(self.ballPivot.wm, planted_ankle_tgt)
-        pulse.nodes.connectOffsetMatrix(self.liftControl.wm, lifted_ankle_tgt)
+        pulse.nodes.connectOffsetMatrix(self.ballPivot.wm, planted_ankle_tgt, offset_connect_method)
+        pulse.nodes.connectOffsetMatrix(self.liftControl.wm, lifted_ankle_tgt, offset_connect_method)
 
         lift_ankle_mtxblend = self.createMatrixBlend(planted_ankle_tgt.wm, lifted_ankle_tgt.wm, lift,
                                                      name='{0}_ankle_liftBlend'.format(self.ankleFollower.nodeName()))
@@ -139,8 +142,8 @@ class FootControlAction(BuildAction):
         lifted_toe_tgt = pm.group(em=True, p=self.toeFollower,
                                   name='{0}_toeLifted_tgt'.format(self.toeFollower.nodeName()))
 
-        pulse.nodes.connectOffsetMatrix(self.toePivot.wm, planted_toe_tgt)
-        pulse.nodes.connectOffsetMatrix(self.liftToeControl.wm, lifted_toe_tgt)
+        pulse.nodes.connectOffsetMatrix(self.toePivot.wm, planted_toe_tgt, offset_connect_method)
+        pulse.nodes.connectOffsetMatrix(self.liftToeControl.wm, lifted_toe_tgt, offset_connect_method)
 
         lift_toe_mtxblend = self.createMatrixBlend(planted_toe_tgt.wm, lifted_toe_tgt.wm, lift,
                                                    name='{0}_toe_liftBlend'.format(self.toeFollower.nodeName()))
