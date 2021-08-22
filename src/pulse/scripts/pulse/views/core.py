@@ -875,8 +875,7 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
             else:
                 return 0
 
-        flags = QtCore.Qt.ItemIsEnabled \
-            | QtCore.Qt.ItemIsSelectable \
+        flags = QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
 
         if not self.isReadOnly():
             flags |= QtCore.Qt.ItemIsDragEnabled | QtCore.Qt.ItemIsEditable
@@ -981,20 +980,36 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
         steps = BuildStep.getTopmostSteps(steps)
 
         stepDataList = [step.serialize() for step in steps]
-        datastr = meta.encodeMetaData(stepDataList)
-        result.setData('text/plain', datastr)
+        data_str = meta.encodeMetaData(stepDataList)
+        result.setData('text/plain', data_str.encode())
         return result
 
     def supportedDropActions(self):
         return QtCore.Qt.CopyAction | QtCore.Qt.MoveAction
 
-    def canDropMimeData(self, data, action, row, column, parentIndex):
-        try:
-            stepDataList = meta.decodeMetaData(str(data.data('text/plain')))
-        except Exception:
-            return False
-        else:
-            return isinstance(stepDataList, list)
+    def getStepDataListFromMimeData(self, data: QtCore.QMimeData):
+        data_str = data.data('text/plain').data().decode()
+        if data_str:
+            try:
+                meta_data = meta.decodeMetaData(data_str)
+            except Exception as e:
+                LOG.debug(e)
+                return None
+            else:
+                if self.isStepData(meta_data):
+                    return meta_data
+        return None
+
+    def isStepData(self, decodedData):
+        # TODO: implement to detect if the data is in a valid format
+        return True
+
+    def canDropMimeData(self, data: QtCore.QMimeData, action, row, column, parentIndex):
+        if action == QtCore.Qt.MoveAction or action == QtCore.Qt.CopyAction:
+            step_data = self.getStepDataListFromMimeData(data)
+            return step_data is not None
+
+        return False
 
     def dropMimeData(self, data, action, row, column, parentIndex):
         if not self.canDropMimeData(data, action, row, column, parentIndex):
@@ -1003,13 +1018,12 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
         if action == QtCore.Qt.IgnoreAction:
             return True
 
-        try:
-            stepDataList = meta.decodeMetaData(str(data.data('text/plain')))
-        except Exception as e:
-            LOG.error(e)
+        step_data = self.getStepDataListFromMimeData(data)
+        if step_data is None:
+            # TODO: log error here, even though we shouldn't in canDropMimeData
             return False
 
-        print('dropData', stepDataList, data, action, row, column, parentIndex)
+        print('dropData', step_data, data, action, row, column, parentIndex)
 
         beginRow = 0
         parentPath = None
@@ -1036,21 +1050,21 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
         self.isMoveActionOpen = True
         cmds.evalDeferred(self._deferredMoveUndoClose)
 
-        # create dropped steps
-        count = len(stepDataList)
+        count = len(step_data)
         for i in range(count):
-            stepDataStr = serializeAttrValue(stepDataList[i])
-            newStepPath = cmds.pulseCreateStep(
-                parentPath, beginRow + i, stepDataStr)
+            step_data_str = serializeAttrValue(step_data[i])
+            newStepPath = cmds.pulseCreateStep(parentPath, beginRow + i, step_data_str)
             if newStepPath:
                 newStepPath = newStepPath[0]
 
-                if action == QtCore.Qt.MoveAction:
-                    # create queue of renames to perform after source
-                    # steps have been removed
-                    targetName = stepDataList[i].get('name', '')
-                    self.dragRenameQueue.append((newStepPath, targetName))
+            if action == QtCore.Qt.MoveAction:
+                # hacky, but because steps are removed after the new ones are created,
+                # we need to rename the steps back to their original names in case they
+                # were auto-renamed to avoid conflicts
+                targetName = step_data[i].get('name', '')
+                self.dragRenameQueue.append((newStepPath, targetName))
 
+        # always return false, since we don't need the item view to handle removing moved items
         return True
 
     def removeRows(self, row, count, parent):

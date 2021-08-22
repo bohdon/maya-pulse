@@ -12,7 +12,7 @@ from .core import PulseWindow
 from .. import sym
 from ..buildItems import BuildStep
 from ..serializer import serializeAttrValue
-from ..vendor.Qt import QtCore, QtWidgets
+from ..vendor.Qt import QtCore, QtWidgets, QtGui
 
 LOG = logging.getLogger(__name__)
 
@@ -40,74 +40,64 @@ class ActionTreeStyledItemDelegate(QtWidgets.QStyledItemDelegate):
         return self.blueprintModel.isReadOnly()
 
 
-class ActionTreeWidget(QtWidgets.QWidget):
+class ActionTreeView(QtWidgets.QTreeView):
     """
-    A tree view that displays all BuildActions in a Blueprint.
-    Items can be selected, and the shared selection model
-    can then be used to display info about selected BuildActions
-    in other UI.
+    A tree view for displaying BuildActions in a Blueprint
     """
 
-    def __init__(self, parent=None):
-        super(ActionTreeWidget, self).__init__(parent=parent)
+    def __init__(self, blueprintModel=None, parent=None):
+        super().__init__(parent=parent)
 
-        # get shared models
-        self.blueprintModel = BlueprintUIModel.getDefaultModel()
-        self.model = self.blueprintModel.buildStepTreeModel
-        self.selectionModel = self.blueprintModel.buildStepSelectionModel
+        self.blueprintModel = blueprintModel
 
-        self.setupUi(self)
+        self.setItemDelegate(ActionTreeStyledItemDelegate(parent))
+        self.setHeaderHidden(True)
+        self.setAcceptDrops(True)
+        self.setDefaultDropAction(QtCore.Qt.MoveAction)
+        self.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.ExtendedSelection)
+        self.setIndentation(14)
 
-        # connect signals
-        self.model.modelReset.connect(self.onModelReset)
+    def keyPressEvent(self, event):
+        key = event.key()
 
-    def eventFilter(self, widget, event):
-        if widget is self.treeView:
-            if event.type() == QtCore.QEvent.KeyPress:
-                key = event.key()
-                if key == QtCore.Qt.Key_Delete:
-                    self.deleteSelectedItems()
-                    return True
-                elif key == QtCore.Qt.Key_D:
-                    self.toggleSelectedItemsDisabled()
-                elif key == QtCore.Qt.Key_M:
-                    self.mirrorSelectedItems()
-                    return True
-        return QtWidgets.QWidget.eventFilter(self, widget, event)
+        if key == QtCore.Qt.Key_Delete:
+            self.deleteSelectedItems()
+            return True
 
-    def setupUi(self, parent):
-        layout = QtWidgets.QVBoxLayout(parent)
+        elif key == QtCore.Qt.Key_D:
+            self.toggleSelectedItemsDisabled()
+            return True
 
-        self.treeView = QtWidgets.QTreeView(parent)
-        self.treeView.setItemDelegate(ActionTreeStyledItemDelegate(parent))
-        self.treeView.setHeaderHidden(True)
-        self.treeView.setDragEnabled(True)
-        self.treeView.setAcceptDrops(True)
-        self.treeView.setDragDropMode(
-            QtWidgets.QAbstractItemView.DragDropMode.DragDrop)
-        self.treeView.setDefaultDropAction(
-            QtCore.Qt.DropAction.MoveAction)
-        self.treeView.setSelectionMode(
-            QtWidgets.QAbstractItemView.SelectionMode.ExtendedSelection)
-        self.treeView.setIndentation(14)
-        self.treeView.installEventFilter(self)
-        self.treeView.setModel(self.model)
-        self.treeView.setSelectionModel(self.selectionModel)
-        self.treeView.expandAll()
-        layout.addWidget(self.treeView)
+        elif key == QtCore.Qt.Key_M:
+            self.mirrorSelectedItems()
+            return True
 
-    def onModelReset(self):
-        self.treeView.expandAll()
+        return super().keyPressEvent(event)
+
+    def mousePressEvent(self, event: QtGui.QMouseEvent):
+        # don't perform selection changes on middle mouse press
+        if event.buttons() & QtCore.Qt.MiddleButton:
+            return True
+
+        return super().mousePressEvent(event)
+
+    def mouseMoveEvent(self, event: QtGui.QMouseEvent):
+        # start dragging when using middle mouse
+        if event.buttons() & QtCore.Qt.MiddleButton:
+            self.startDrag(QtCore.Qt.CopyAction | QtCore.Qt.MoveAction)
+            return True
+
+        return super().mouseMoveEvent(event)
 
     def deleteSelectedItems(self):
-        indexes = self.selectionModel.selectedIndexes()
+        indexes = self.selectedIndexes()
 
         if not indexes:
             return
 
         steps = []
         for index in indexes:
-            step = self.model.stepForIndex(index)
+            step = self.model().stepForIndex(index)
             if step:
                 steps.append(step)
         steps = BuildStep.getTopmostSteps(steps)
@@ -129,35 +119,31 @@ class ActionTreeWidget(QtWidgets.QWidget):
         Toggle the disabled state of the selected items.
         If item disable states are mismatched, will disable all items.
         """
-        indexes = self.selectionModel.selectedIndexes()
+        indexes = self.selectedIndexes()
 
         if not indexes:
             return
 
         steps = []
         for index in indexes:
-            step = self.model.stepForIndex(index)
+            step = self.model().stepForIndex(index)
             if step:
                 steps.append((index, step))
 
-        allDisabled = all([s.isDisabled for i, s in steps])
-        newDisabled = False if allDisabled else True
+        all_disabled = all([s.isDisabled for i, s in steps])
+        newDisabled = False if all_disabled else True
         for index, step in steps:
-            self.model.setData(index, newDisabled, QtCore.Qt.CheckStateRole)
-            # step.isDisabled = newDisabled
-
-        # for index in indexes:
-        #     self.model.dataChanged.emit(index, index, [])
+            self.model().setData(index, newDisabled, QtCore.Qt.CheckStateRole)
 
     def mirrorSelectedItems(self):
-        indexes = self.selectionModel.selectedIndexes()
+        indexes = self.selectedIndexes()
 
         if not indexes:
             return
 
         steps = []
         for index in indexes:
-            step = self.model.stepForIndex(index)
+            step = self.model().stepForIndex(index)
             if step:
                 steps.append(step)
 
@@ -165,6 +151,40 @@ class ActionTreeWidget(QtWidgets.QWidget):
         for step in steps:
             if step.isAction():
                 mirrorUtil.mirrorAction(step)
+
+
+class ActionTreeWidget(QtWidgets.QWidget):
+    """
+    A widget that displays a all BuildActions in a Blueprint.
+    Items can be selected, and the shared selection model
+    can then be used to display info about selected BuildActions
+    in other UI.
+    """
+
+    def __init__(self, parent=None):
+        super(ActionTreeWidget, self).__init__(parent=parent)
+
+        # get shared models
+        self.blueprintModel = BlueprintUIModel.getDefaultModel()
+        self.model = self.blueprintModel.buildStepTreeModel
+        self.selectionModel = self.blueprintModel.buildStepSelectionModel
+
+        self.setupUi(self)
+
+        # connect signals
+        self.model.modelReset.connect(self.onModelReset)
+
+    def setupUi(self, parent):
+        layout = QtWidgets.QVBoxLayout(parent)
+
+        self.treeView = ActionTreeView(self.blueprintModel, parent)
+        self.treeView.setModel(self.model)
+        self.treeView.setSelectionModel(self.selectionModel)
+        self.treeView.expandAll()
+        layout.addWidget(self.treeView)
+
+    def onModelReset(self):
+        self.treeView.expandAll()
 
 
 class ActionTreeWindow(PulseWindow):
