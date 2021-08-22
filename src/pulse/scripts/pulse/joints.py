@@ -103,7 +103,7 @@ def insertJoints(childJnt, count=1):
     rad = parentJnt.radius.get()
     for i in range(count):
         jointPos = (endPosition - startPosition) * \
-            (float(i+1)/float(count+1)) + startPosition
+                   (float(i + 1) / float(count + 1)) + startPosition
         j = pm.joint(p=jointPos)
         setJointParent(j, joints[-1])
         j.radius.set(rad)
@@ -324,6 +324,27 @@ def orientIKJoints(endJoint, aimAxis='x', poleAxis='y', preserveChildren=False):
     orientJointCustom(midJoint, aimVector=midToEndVector, upVector=poleVector,
                       aimAxis=aimAxis, upAxis=poleAxis,
                       preserveChildren=preserveChildren)
+
+
+def orientJointToParent(joint, preserveChildren=False):
+    """
+    Orient a joint to match it's parent joint orientation.
+    """
+    if preserveChildren:
+        children = getChildJoints(joint)
+        childMatrices = [getJointMatrices(j) for j in children]
+
+    parent = joint.getParent()
+    if parent:
+        wm = parent.wm.get()
+    else:
+        wm = pm.dt.Matrix()
+
+    setJointMatrices(joint, wm, pm.dt.Matrix(), pm.dt.Matrix(), wm, translate=False)
+
+    if preserveChildren:
+        for child, childMtx in zip(children, childMatrices):
+            setJointMatrices(child, *childMtx)
 
 
 def orientJointToRotation(joint, preserveChildren=False):

@@ -196,11 +196,10 @@ class JointOrientsPanel(PulsePanelWidget):
         layout.addWidget(self.includeChildrenCheck)
         layout.addLayout(hlayout)
 
-        # button grid
-        # -----------
-        gridLayout = QtWidgets.QGridLayout(parent)
-        gridLayout.setMargin(0)
-        gridLayout.setSpacing(2)
+        # display btn grid
+        displayGridLayout = QtWidgets.QGridLayout(parent)
+        displayGridLayout.setMargin(0)
+        displayGridLayout.setSpacing(2)
 
         toggleCBBtn = QPushButton(parent)
         toggleCBBtn.setText('Toggle Channel Box Attrs')
@@ -216,6 +215,37 @@ class JointOrientsPanel(PulsePanelWidget):
             "Toggle the display of local rotation axes")
         toggleLRABtn.clicked.connect(
             cmd(self.toggleLocalRotationAxesForSelected))
+
+        gridItems = [
+            [toggleLRABtn, toggleCBBtn]
+        ]
+        viewutils.addItemsToGrid(displayGridLayout, gridItems)
+        layout.addLayout(displayGridLayout)
+
+        # orient btn grid
+        orientGridLayout = QtWidgets.QGridLayout(parent)
+        orientGridLayout.setMargin(0)
+        orientGridLayout.setSpacing(2)
+
+        orientToJointBtn = QtWidgets.QPushButton(parent)
+        orientToJointBtn.setText("Orient to Joint")
+        orientToJointBtn.clicked.connect(self.orientToJointForSelected)
+
+        orientToParentBtn = QtWidgets.QPushButton(parent)
+        orientToParentBtn.setText("Orient to Parent")
+        orientToParentBtn.clicked.connect(self.orientToParentForSelected)
+
+        orientToWorldBtn = QtWidgets.QPushButton(parent)
+        orientToWorldBtn.setText("Orient to World")
+        orientToWorldBtn.clicked.connect(self.orientToWorldForSelected)
+
+        orientIKJointsBtn = QtWidgets.QPushButton(parent)
+        orientIKJointsBtn.setText("Orient IK Joints")
+        orientIKJointsBtn.clicked.connect(self.orientIKJointsForSelected)
+
+        interactiveOrientBtn = QtWidgets.QPushButton(parent)
+        interactiveOrientBtn.setText("Interactive Orient")
+        interactiveOrientBtn.clicked.connect(self.interactiveOrientForSelected)
 
         fixupOrientBtn = QtWidgets.QPushButton(parent)
         fixupOrientBtn.setText("Fixup Orient")
@@ -233,33 +263,16 @@ class JointOrientsPanel(PulsePanelWidget):
             "joint to its orientation")
         syncAxesBtn.clicked.connect(self.matchJointRotationToOrientForSelected)
 
-        orientToJointBtn = QtWidgets.QPushButton(parent)
-        orientToJointBtn.setText("Orient to Joint")
-        orientToJointBtn.clicked.connect(self.orientToJointForSelected)
-
-        orientToWorldBtn = QtWidgets.QPushButton(parent)
-        orientToWorldBtn.setText("Orient to World")
-        orientToWorldBtn.clicked.connect(self.orientToWorldForSelected)
-
-        interactiveOrientBtn = QtWidgets.QPushButton(parent)
-        interactiveOrientBtn.setText("Interactive Orient")
-        interactiveOrientBtn.clicked.connect(self.interactiveOrientForSelected)
-
-        orientIKJointsBtn = QtWidgets.QPushButton(parent)
-        orientIKJointsBtn.setText("Orient IK Joints")
-        orientIKJointsBtn.clicked.connect(self.orientIKJointsForSelected)
-
         gridItems = [
-            [orientToJointBtn, orientToWorldBtn],
+            [orientToJointBtn, orientToParentBtn],
+            [orientToWorldBtn, orientIKJointsBtn],
             [fixupOrientBtn, syncAxesBtn],
-            [toggleCBBtn, toggleLRABtn],
-            [interactiveOrientBtn, orientIKJointsBtn]
+            [interactiveOrientBtn],
         ]
-        viewutils.addItemsToGrid(gridLayout, gridItems)
-        layout.addLayout(gridLayout)
+        viewutils.addItemsToGrid(orientGridLayout, gridItems)
+        layout.addLayout(orientGridLayout)
 
         # rotate orient buttons
-        # ---------------------
         rotateForm = self.createRotateAxisForm(parent)
         layout.addWidget(rotateForm)
 
@@ -352,6 +365,13 @@ class JointOrientsPanel(PulsePanelWidget):
             syncJointAxes=self.syncJointAxes,
         )
         cmd(editorutils.orientToJointForSelected, **kw)()
+
+    def orientToParentForSelected(self):
+        kw = dict(
+            includeChildren=self.orientIncludeChildren,
+            preserveChildren=self.orientPreserveChildren,
+        )
+        cmd(editorutils.orientToParentForSelected, **kw)()
 
     def orientIKJointsForSelected(self):
         kw = dict(

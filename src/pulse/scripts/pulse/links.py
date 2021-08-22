@@ -16,6 +16,7 @@ import pymel.core as pm
 
 import pymetanode as meta
 from . import nodes
+from . import joints
 
 LOG = logging.getLogger(__name__)
 
@@ -255,7 +256,7 @@ class IKPoleLinkPositioner(LinkPositioner):
     """
 
     def updateTransform(self, leader, follower, linkData):
-        poleVector, midPoint = pulse.joints.getIKPoleVectorAndMidPoint(leader)
+        poleVector, midPoint = joints.getIKPoleVectorAndMidPoint(leader)
 
         distance = linkData.get('ikpoleDistance')
         if not distance:

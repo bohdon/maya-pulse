@@ -263,6 +263,15 @@ def orientToJointForSelected(
             #     matchJointRotationToOrient(node, preserveChildren)
 
 
+def orientToParentForSelected(includeChildren=False, preserveChildren=True):
+    """
+    """
+    sel = getSelectedTransforms(includeChildren)
+    for node in sel:
+        if node.nodeType() == 'joint':
+            joints.orientJointToParent(node, preserveChildren)
+
+
 def orientIKJointsForSelected(aimAxis="x", poleAxis="y", preserveChildren=True):
     sel = pm.selected(type='joint')
     for node in sel:
