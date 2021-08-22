@@ -27,3 +27,6 @@ ThreeBoneIKFKAction:
       description: Add a curve shape to the mid FK control that draws a line to the bone
       value: true
       type: bool
+    - name: extraControls
+      description: Additional controls to add ikfk meta data to, so they can be used with ikfk switching utils
+      type: nodelist

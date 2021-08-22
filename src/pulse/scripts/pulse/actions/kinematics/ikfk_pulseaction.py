@@ -136,11 +136,11 @@ class ThreeBoneIKFKAction(BuildAction):
             'end_joint': self.endJoint,
         }
 
-        meta.setMetaData(self.rootCtl, IKFK_CONTROL_METACLASS, ikfk_ctl_data)
-        meta.setMetaData(self.midCtlIk, IKFK_CONTROL_METACLASS, ikfk_ctl_data)
-        meta.setMetaData(self.endCtlIk, IKFK_CONTROL_METACLASS, ikfk_ctl_data)
-        meta.setMetaData(self.midCtlFk, IKFK_CONTROL_METACLASS, ikfk_ctl_data)
-        meta.setMetaData(self.endCtlFk, IKFK_CONTROL_METACLASS, ikfk_ctl_data)
+        ikfk_ctls = {self.rootCtl, self.midCtlIk, self.endCtlIk, self.midCtlFk, self.endCtlFk}
+        if self.extraControls:
+            ikfk_ctls.update(self.extraControls)
+        for ctl in ikfk_ctls:
+            meta.setMetaData(ctl, IKFK_CONTROL_METACLASS, ikfk_ctl_data)
 
         # set defaults for 'ik' and 'twist' attrs
         if resetter:
@@ -275,8 +275,8 @@ class IKFKControlContextSubmenu(PulseNodeContextSubMenu):
         return cls.isNodeWithMetaClassSelected(IKFK_CONTROL_METACLASS)
 
     def buildMenuItems(self):
-        pm.menuItem('Switch To IK', rp=self.getSafeRadialPosition('NW'), c=pm.Callback(self.switchToIKForSelected))
-        pm.menuItem('Switch To FK', rp=self.getSafeRadialPosition('SW'), c=pm.Callback(self.switchToFKForSelected))
+        pm.menuItem('Switch To FK', rp=self.getSafeRadialPosition('NW'), c=pm.Callback(self.switchToFKForSelected))
+        pm.menuItem('Switch To IK', rp=self.getSafeRadialPosition('SW'), c=pm.Callback(self.switchToIKForSelected))
 
     def switchToIKForSelected(self):
         sel_ctls = self.getSelectedNodesWithMetaClass(IKFK_CONTROL_METACLASS)
