@@ -286,11 +286,11 @@ class FootControlContextSubMenu(PulseNodeContextSubMenu):
 
     @classmethod
     def shouldBuildSubMenu(cls, menu) -> bool:
-        return cls.isNodeWithMetaClassSelected([
+        return cls.isNodeWithMetaClassSelected(
             FOOT_BASE_CTL_METACLASSNAME,
             FOOT_LIFT_CTL_METACLASSNAME,
             FOOT_LIFT_TOE_CTL_METACLASSNAME
-        ])
+        )
 
     def buildMenuItems(self):
         pm.menuItem(l='Snap To Ankle', rp=self.getSafeRadialPosition('S'), c=pm.Callback(self.snapToAnkleForSelected))
@@ -298,20 +298,20 @@ class FootControlContextSubMenu(PulseNodeContextSubMenu):
         pm.menuItem(l='Plant', rp=self.getSafeRadialPosition('SE'), c=pm.Callback(self.setFootLiftedForSelected, False))
 
     def snapToAnkleForSelected(self):
-        sel_ctls = self.getSelectedNodesWithMetaClass([
+        sel_ctls = self.getSelectedNodesWithMetaClass(
             FOOT_BASE_CTL_METACLASSNAME,
             FOOT_LIFT_CTL_METACLASSNAME,
             FOOT_LIFT_TOE_CTL_METACLASSNAME
-        ])
+        )
         for ctl in sel_ctls:
             FootControlUtils.snapLiftControlToAnkle(ctl)
 
     def setFootLiftedForSelected(self, lifted: bool):
-        sel_ctls = self.getSelectedNodesWithMetaClass([
+        sel_ctls = self.getSelectedNodesWithMetaClass(
             FOOT_BASE_CTL_METACLASSNAME,
             FOOT_LIFT_CTL_METACLASSNAME,
             FOOT_LIFT_TOE_CTL_METACLASSNAME
-        ])
+        )
         for ctl in sel_ctls:
             if lifted:
                 FootControlUtils.liftFoot(ctl)

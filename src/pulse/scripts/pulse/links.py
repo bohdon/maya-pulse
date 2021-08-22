@@ -256,7 +256,7 @@ class IKPoleLinkPositioner(LinkPositioner):
     """
 
     def updateTransform(self, leader, follower, linkData):
-        poleVector, midPoint = joints.getIKPoleVectorAndMidPoint(leader)
+        poleVector, midPoint = joints.getIKPoleVectorAndMidPointForJoint(leader)
 
         distance = linkData.get('ikpoleDistance')
         if not distance:

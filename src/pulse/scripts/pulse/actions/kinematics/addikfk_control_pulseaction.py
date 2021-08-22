@@ -20,6 +20,10 @@ class AddIKFKControlAction(BuildAction):
         if not ik_attr:
             raise BuildActionError(f"ikfkControl has no IK attribute: {self.ikfkControl}")
 
-        mtx_choice = pulse.utilnodes.choice(ik_attr, self.fkLeader.wm, self.ikLeader.wm)
+        # TODO: calculate preserved position offsets before the choice
+        if self.preservePosition:
+            mtx_choice = pulse.utilnodes.choice(ik_attr, self.fkLeader.wm, self.ikLeader.wm)
+        else:
+            mtx_choice = pulse.utilnodes.choice(ik_attr, self.fkLeader.wm, self.ikLeader.wm)
 
         pulse.nodes.connectOffsetMatrix(mtx_choice, self.follower, preservePosition=self.preservePosition)

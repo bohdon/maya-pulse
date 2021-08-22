@@ -316,7 +316,7 @@ def orientIKJoints(endJoint, aimAxis='x', poleAxis='y', preserveChildren=False):
     midToEndVector = endPos - midPos
 
     # get the pole vector
-    poleVector, _ = getIKPoleVectorAndMidPoint(endJoint)
+    poleVector, _ = getIKPoleVectorAndMidPointForJoint(endJoint)
 
     orientJointCustom(rootJoint, aimVector=rootToMidVector, upVector=poleVector,
                       aimAxis=aimAxis, upAxis=poleAxis,
@@ -412,10 +412,13 @@ def matchJointRotationToOrient(joint, preserveChildren=False):
             setJointMatrices(child, *childm)
 
 
-def getIKPoleVectorAndMidPoint(endJoint):
+def getIKPoleVectorAndMidPointForJoint(endJoint):
     """
     Return the pole vector and corresponding mid point between the root of an ik joint
     setup and the given end joint
+
+    Returns:
+        Tuple of (pole_vector, pole_mid_point)
     """
     midJoint = endJoint.getParent()
     if not midJoint:
@@ -424,17 +427,33 @@ def getIKPoleVectorAndMidPoint(endJoint):
     if not rootJoint:
         raise ValueError("%s has no parent joint" % rootJoint)
 
-    endPos = endJoint.getTranslation(space='world')
-    midPos = midJoint.getTranslation(space='world')
-    rootPos = rootJoint.getTranslation(space='world')
+    end = endJoint.getTranslation(space='world')
+    mid = midJoint.getTranslation(space='world')
+    root = rootJoint.getTranslation(space='world')
 
-    # get the direction betwen root and end
-    ikDirection = (endPos - rootPos).normal()
+    return getIKPoleVectorAndMidPoint(root, mid, end)
+
+
+def getIKPoleVectorAndMidPoint(root: pm.dt.Vector, mid: pm.dt.Vector, end: pm.dt.Vector):
+    """
+    Return the pole vector and corresponding mid point between the root and end positions
+    of an ik joint chain.
+
+    Args:
+        root: The location of the root joint
+        mid: The location of the mid joint
+        end: The location of the end joint
+
+    Returns:
+        Tuple of (pole_vector, pole_mid_point)
+    """
+    # get the direction between root and end
+    ik_direction = (end - root).normal()
     # these are also the point-down-bone vectors
-    rootToMidVector = midPos - rootPos
+    root_to_mid_vector = mid - root
     # get point along the line between root..end that lines up with mid joint
-    midPoint = rootPos + ikDirection.dot(rootToMidVector) * ikDirection
-    # use poleVector for pole axis for both mid and root joint orientation
-    poleVector = (midPos - midPoint).normal()
+    pole_mid_point = root + ik_direction.dot(root_to_mid_vector) * ik_direction
+    # get vector from mid point towards the mid joint location
+    pole_vector = (mid - pole_mid_point).normal()
 
-    return poleVector, midPoint
+    return pole_vector, pole_mid_point

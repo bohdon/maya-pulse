@@ -137,7 +137,7 @@ class PulseNodeContextSubMenu(object):
         return self.menu.getSafeRadialPosition(radialPosition)
 
     @staticmethod
-    def isNodeWithMetaClassSelected(metaClassNames: List[str]) -> bool:
+    def isNodeWithMetaClassSelected(*metaClassNames: str) -> bool:
         """
         Return True if any node exists in the selection with one of the given meta classes
         """
@@ -154,7 +154,7 @@ class PulseNodeContextSubMenu(object):
         return False
 
     @staticmethod
-    def getSelectedNodesWithMetaClass(metaClassNames: List[str]) -> List[pm.PyNode]:
+    def getSelectedNodesWithMetaClass(*metaClassNames: str) -> List[pm.PyNode]:
         """
         Return all selected nodes that have any of the given meta classes
         """
