@@ -25,13 +25,20 @@ class TwistJointsAction(BuildAction):
         parent_mtx = self.getParentMatrix(self.twistJoint)
 
         if self.alignToRestPose:
-            # calculate the resting position of the align joint, including joint orients.
-            # note that the parentMatrix can't be used here, because the joint's worldMatrix may be
-            # driven by a control directly via offsetParentMatrix, so the parent node should be used instead.
-            jo_matrix = pulse.utilnodes.composeMatrix(rotate=self.alignJoint.jo)
+            # Use the current world matrix of the align joint to calculate and store the resting position as
+            # an offset applied to the joints parent node. The align joint's parentMatrix attr can't be used here,
+            # since it may be driven directly by a control, and would then be equal to the animated world matrix.
+            # TODO: might want to expose an option for selecting the parent node explicitly.
             align_parent = self.alignJoint.getParent()
-            align_parent_mtx = align_parent.wm if align_parent else pm.dt.Matrix()
-            align_tgt_mtx = pulse.utilnodes.multMatrix(jo_matrix, align_parent_mtx)
+            if align_parent:
+                # get align joint matrix relative to it's parent,
+                # don't trust the local matrix since inheritsTransform may not be used
+                offset_mtx = self.alignJoint.wm.get() * align_parent.wim.get()
+                align_tgt_mtx = pulse.utilnodes.multMatrix(offset_mtx, align_parent.wm)
+                pass
+            else:
+                # no parent node, just store the current 'resting' matrix in a multMatrix
+                align_tgt_mtx = pulse.utilnodes.multMatrix(self.alignJoint.wm.get())
         else:
             # use the align joint world matrix directly
             align_tgt_mtx = self.alignJoint.wm
