@@ -64,6 +64,7 @@ class ThreeBoneIKFKAction(BuildAction):
         # parent ik handle to end control
         handle.setParent(self.endCtlIk)
 
+        # TODO: use pick matrix and mult matrix to combine location from ik system with rotation/scale of ctl
         # constraint end joint scale and rotation to end control
         pm.orientConstraint(self.endCtlIk, endIkJoint, mo=True)
         pm.scaleConstraint(self.endCtlIk, endIkJoint, mo=True)
@@ -73,14 +74,6 @@ class ThreeBoneIKFKAction(BuildAction):
                              defaultValue=1, keyable=1)
         ikAttr = self.rootCtl.attr("ik")
 
-        # create target transforms driven by ikfk switching
-        rootTargetName = n = '{}_ikfk_target'.format(rootJoint)
-        rootTarget = pm.group(n=rootTargetName, em=True, p=self.rootCtl)
-        midTargetName = n = '{}_ikfk_target'.format(midJoint)
-        midTarget = pm.group(n=midTargetName, em=True, p=self.rootCtl)
-        endTargetName = n = '{}_ikfk_target'.format(self.endJoint)
-        endTarget = pm.group(n=endTargetName, em=True, p=self.rootCtl)
-
         # create choices for world matrix from ik and fk targets
         rootChoice = pulse.utilnodes.choice(
             ikAttr, self.rootCtl.wm, rootIkJoint.wm)
@@ -89,14 +82,10 @@ class ThreeBoneIKFKAction(BuildAction):
         endChoice = pulse.utilnodes.choice(
             ikAttr, self.endCtlFk.wm, endIkJoint.wm)
 
-        # connect the target matrices to the target transform nodes
-        pulse.utilnodes.connectMatrix(rootChoice, rootTarget)
-        pulse.utilnodes.connectMatrix(midChoice, midTarget)
-        pulse.utilnodes.connectMatrix(endChoice, endTarget)
-
-        pulse.nodes.fullConstraint(rootTarget, rootJoint)
-        pulse.nodes.fullConstraint(midTarget, midJoint)
-        pulse.nodes.fullConstraint(endTarget, self.endJoint)
+        # connect the target matrices to the joints
+        pulse.nodes.connectOffsetMatrix(rootChoice, rootJoint, preservePosition=True, preserveTransformValues=False)
+        pulse.nodes.connectOffsetMatrix(midChoice, midJoint, preservePosition=True, preserveTransformValues=False)
+        pulse.nodes.connectOffsetMatrix(endChoice, self.endJoint, preservePosition=True, preserveTransformValues=False)
 
         # connect visibility
         self.midCtlIk.v.setLocked(False)
