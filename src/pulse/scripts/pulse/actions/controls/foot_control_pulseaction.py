@@ -6,11 +6,6 @@ from pulse import utilnodes, nodes
 from pulse.buildItems import BuildAction, BuildActionError
 from pulse.views.contextmenus import PulseNodeContextSubMenu
 
-try:
-    import resetter
-except ImportError:
-    resetter = None
-
 FOOT_CTL_METACLASSNAME = 'pulse_foot_ctl'
 
 
@@ -124,10 +119,6 @@ class FootControlAction(BuildAction):
                 attr = pivot.attr(a)
                 attr.setLocked(True)
                 attr.setKeyable(False)
-
-        # re-set defaults for the new keyable attributes
-        if resetter:
-            resetter.setDefaults(self.control)
 
         # setup meta data
         # ---------------

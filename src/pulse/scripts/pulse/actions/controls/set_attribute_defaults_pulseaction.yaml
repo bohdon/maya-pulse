@@ -1,0 +1,22 @@
+SetAttributeDefaultsAction:
+  id: Pulse.SetAttributeDefaults
+  displayName: Set Attribute Defaults
+  description: Sets the default attribute values for use with Resetter
+  color: [ .85, .65, .4 ]
+  category: Controls
+  attrs:
+    - name: useAnimControls
+      description: If true, set defaults for all animation controls, works in addition to the explicit Nodes list.
+      type: bool
+      value: True
+    - name: nodes
+      description: The list of nodes to set defaults on
+      type: nodelist
+    - name: extraAttrs
+      description: List of extra attributes to set defaults for
+      type: strlist
+      value: [ 'space' ]
+    - name: includeNonKeyable
+      description: If true, set defaults for all keyable and non-keyable as well. Does not prevent non-keyable attributes from being added in extraAttrs.
+      type: bool
+      value: False

@@ -61,10 +61,6 @@ class AnimControlAction(BuildAction):
         # update rig meta data
         self.extendRigMetaDataList('animControls', [self.controlNode])
 
-        # set defaults for all keyable attributes
-        if resetter:
-            resetter.setDefaults(self.controlNode)
-
 
 class AnimControlContextSubMenu(PulseNodeContextSubMenu):
     """

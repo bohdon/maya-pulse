@@ -5,7 +5,6 @@ import pulse.joints
 import pulse.nodes
 import pulse.utilnodes
 import pymetanode as meta
-import resetter
 from pulse.buildItems import BuildAction, BuildActionError
 from pulse.views.contextmenus import PulseNodeContextSubMenu
 
@@ -133,11 +132,6 @@ class ThreeBoneIKFKAction(BuildAction):
             ikfk_ctls.update(self.extraControls)
         for ctl in ikfk_ctls:
             meta.setMetaData(ctl, IKFK_CONTROL_METACLASS, ikfk_ctl_data)
-
-        # set defaults for 'ik' and 'twist' attrs
-        if resetter:
-            resetter.setDefaults(self.rootCtl)
-            resetter.setDefaults(self.endCtlIk)
 
 
 class IKFKControlUtils(object):
