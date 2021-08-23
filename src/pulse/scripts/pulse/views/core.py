@@ -289,10 +289,10 @@ class BlueprintUIModel(QtCore.QObject):
 
     @classmethod
     def deleteAllSharedModels(cls):
-        keys = cls.INSTANCES.keys()
-        for key in keys:
-            cls.INSTANCES[key].onDelete()
-            del cls.INSTANCES[key]
+        instances = cls.INSTANCES.values()
+        for instance in instances:
+            instance.onDelete()
+        cls.INSTANCES.clear()
 
     # a config property on the blueprint changed
     # TODO: add more generic blueprint property data model
