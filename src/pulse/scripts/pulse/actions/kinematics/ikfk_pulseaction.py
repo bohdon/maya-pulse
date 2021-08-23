@@ -220,11 +220,6 @@ class IKFKControlUtils(object):
         end_ik_move_ctl = IKFKControlUtils.getDelegateControl(end_ik_ctl)
         pulse.nodes.setWorldMatrix(end_ik_move_ctl, end_mtx)
 
-        # try 'lifting' the end ik ctl, just in case its a foot ctl
-        from foot_control_pulseaction import FootControlUtils
-        if FootControlUtils.getBaseControl(end_ik_move_ctl):
-            FootControlUtils.setLift(end_ik_move_ctl, 1)
-
         # move ik pole ctl
         new_pole_pos = IKFKControlUtils.calculateIKPoleControlLocation(
             mid_ik_ctl, root_mtx.translate, mid_mtx.translate, end_mtx.translate)

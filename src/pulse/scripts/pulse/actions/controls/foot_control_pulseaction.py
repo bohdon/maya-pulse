@@ -11,9 +11,7 @@ try:
 except ImportError:
     resetter = None
 
-FOOT_BASE_CTL_METACLASSNAME = 'pulse_foot_base_ctl'
-FOOT_LIFT_CTL_METACLASSNAME = 'pulse_foot_lift_ctl'
-FOOT_LIFT_TOE_CTL_METACLASSNAME = 'pulse_foot_lift_toe_ctl'
+FOOT_CTL_METACLASSNAME = 'pulse_foot_ctl'
 
 
 class FootControlAction(BuildAction):
@@ -23,12 +21,8 @@ class FootControlAction(BuildAction):
             raise BuildActionError("ankleFollower is not set")
         if not self.toeFollower:
             raise BuildActionError("toeFollower is not set")
-        if not self.baseControl:
-            raise BuildActionError("baseControl is not set")
-        if not self.liftControl:
-            raise BuildActionError("liftControl is not set")
-        if not self.liftToeControl:
-            raise BuildActionError("liftToeControl is not set")
+        if not self.control:
+            raise BuildActionError("control is not set")
         if not self.toePivot:
             raise BuildActionError("toePivot is not set")
         if not self.ballPivot:
@@ -44,28 +38,25 @@ class FootControlAction(BuildAction):
         # add attrs
         # ---------
 
-        self.baseControl.addAttr('lift', at='double', keyable=True, minValue=0, maxValue=1)
-        lift = self.baseControl.attr('lift')
+        self.control.addAttr('roll', at='double', keyable=True)
+        roll = self.control.attr('roll')
 
-        self.baseControl.addAttr('roll', at='double', keyable=True)
-        roll = self.baseControl.attr('roll')
+        self.control.addAttr('tilt', at='double', keyable=True)
+        tilt = self.control.attr('tilt')
 
-        self.baseControl.addAttr('tilt', at='double', keyable=True)
-        tilt = self.baseControl.attr('tilt')
+        self.control.addAttr('toeSwivel', at='double', keyable=True)
+        toeSwivel = self.control.attr('toeSwivel')
 
-        self.baseControl.addAttr('toeSwivel', at='double', keyable=True)
-        toeSwivel = self.baseControl.attr('toeSwivel')
+        self.control.addAttr('heelSwivel', at='double', keyable=True)
+        heelSwivel = self.control.attr('heelSwivel')
 
-        self.baseControl.addAttr('heelSwivel', at='double', keyable=True)
-        heelSwivel = self.baseControl.attr('heelSwivel')
+        self.control.addAttr('bendLimit', at='double', keyable=True,
+                             defaultValue=self.bendLimitDefault, minValue=0)
+        bend_limit = self.control.attr('bendLimit')
 
-        self.baseControl.addAttr('bendLimit', at='double', keyable=True,
-                                 defaultValue=self.bendLimitDefault, minValue=0)
-        bend_limit = self.baseControl.attr('bendLimit')
-
-        self.baseControl.addAttr('straightAngle', at='double', keyable=True,
-                                 defaultValue=self.straightAngleDefault, minValue=0)
-        straight_angle = self.baseControl.attr('straightAngle')
+        self.control.addAttr('straightAngle', at='double', keyable=True,
+                             defaultValue=self.straightAngleDefault, minValue=0)
+        straight_angle = self.control.attr('straightAngle')
 
         # keep evaluated Bend Limit below Straight Angle to avoid zero division and flipping problems
         clamped_bend_limit = utilnodes.min_float(bend_limit, utilnodes.subtract(straight_angle, 0.001))
@@ -73,13 +64,19 @@ class FootControlAction(BuildAction):
         # setup hierarchy
         # ---------------
 
-        # baseControl / heel / outerTilt / innerTilt / toe / ball
+        # control > heel > outerTilt > innerTilt > toe > ball
         offset_connect_method = pulse.nodes.ConnectMatrixMethod.CREATE_OFFSET
-        pulse.nodes.connectOffsetMatrix(self.baseControl.wm, self.heelPivot, offset_connect_method)
+        pulse.nodes.connectOffsetMatrix(self.control.wm, self.heelPivot, offset_connect_method)
         pulse.nodes.connectOffsetMatrix(self.heelPivot.wm, self.outerTiltPivot, offset_connect_method)
         pulse.nodes.connectOffsetMatrix(self.outerTiltPivot.wm, self.innerTiltPivot, offset_connect_method)
         pulse.nodes.connectOffsetMatrix(self.innerTiltPivot.wm, self.toePivot, offset_connect_method)
         pulse.nodes.connectOffsetMatrix(self.toePivot.wm, self.ballPivot, offset_connect_method)
+
+        # ballPivot > ankleFollower
+        pulse.nodes.connectOffsetMatrix(self.ballPivot.wm, self.ankleFollower, offset_connect_method)
+
+        # toePivot > toeFollower
+        pulse.nodes.connectOffsetMatrix(self.toePivot.wm, self.toeFollower, offset_connect_method)
 
         # calculate custom foot attrs
         # ---------------------------
@@ -108,8 +105,8 @@ class FootControlAction(BuildAction):
 
         # TODO: mirror swivel values (since roll cannot be flipped, we can't just re-orient the pivot nodes)
 
-        # swivels are mostly direct
-        toeSwivel >> self.toePivot.rotateZ
+        # swivels are mostly direct, toe swivel positive values should move the heel outwards
+        utilnodes.multiply(toeSwivel, -1) >> self.toePivot.rotateZ
         heelSwivel >> self.heelPivot.rotateZ
 
         # inner and outer tilt simply need clamped connections
@@ -117,35 +114,6 @@ class FootControlAction(BuildAction):
         outer_tilt >> self.outerTiltPivot.rotateY
         inner_tilt = utilnodes.clamp(tilt, -180, 0)
         inner_tilt >> self.innerTiltPivot.rotateY
-
-        # add lift blend
-        # --------------
-
-        # create target transforms and matrix blends for planted and lifted ankle and toe
-        planted_ankle_tgt = pm.group(em=True, p=self.ankleFollower,
-                                     name='{0}_anklePlanted_tgt'.format(self.ankleFollower.nodeName()))
-        planted_ankle_tgt.setParent(None)
-        lifted_ankle_tgt = pm.group(em=True, p=self.ankleFollower,
-                                    name='{0}_ankleLifted_tgt'.format(self.ankleFollower.nodeName()))
-        lifted_ankle_tgt.setParent(None)
-        planted_toe_tgt = pm.group(em=True, p=self.toeFollower,
-                                   name='{0}_toePlanted_tgt'.format(self.toeFollower.nodeName()))
-        lifted_toe_tgt = pm.group(em=True, p=self.toeFollower,
-                                  name='{0}_toeLifted_tgt'.format(self.toeFollower.nodeName()))
-
-        pulse.nodes.connectOffsetMatrix(self.ballPivot.wm, planted_ankle_tgt, offset_connect_method)
-        pulse.nodes.connectOffsetMatrix(self.toePivot.wm, planted_toe_tgt, offset_connect_method)
-
-        pulse.nodes.connectOffsetMatrix(self.liftControl.wm, lifted_ankle_tgt, offset_connect_method)
-        pulse.nodes.connectOffsetMatrix(self.liftControl.wm, lifted_toe_tgt, offset_connect_method)
-
-        lift_ankle_mtxblend = self.createMatrixBlend(planted_ankle_tgt.wm, lifted_ankle_tgt.wm, lift,
-                                                     name='{0}_ankle_liftBlend'.format(self.ankleFollower.nodeName()))
-        utilnodes.connectMatrix(lift_ankle_mtxblend, self.ankleFollower)
-
-        lift_toe_mtxblend = self.createMatrixBlend(planted_toe_tgt.wm, lifted_toe_tgt.wm, lift,
-                                                   name='{0}_toe_liftBlend'.format(self.toeFollower.nodeName()))
-        utilnodes.connectMatrix(lift_toe_mtxblend, self.toeFollower)
 
         # lock up nodes
         # -------------
@@ -159,26 +127,22 @@ class FootControlAction(BuildAction):
 
         # re-set defaults for the new keyable attributes
         if resetter:
-            resetter.setDefaults(self.baseControl)
+            resetter.setDefaults(self.control)
 
         # setup meta data
         # ---------------
 
-        base_ctl_data = {
-            'lift_ctl': self.liftControl,
-            'lift_toe_ctl': self.liftToeControl,
-            'planted_ankle_tgt': planted_ankle_tgt,
-            'lifted_ankle_tgt': lifted_ankle_tgt,
-            'planted_toe_tgt': planted_toe_tgt,
-            'lifted_toe_tgt': lifted_toe_tgt,
+        foot_ctl_data = {
+            'foot_ctl': self.control,
+            'ball_ctl': self.ballControl,
+            'ankle_follower': self.ankleFollower,
+            'toe_follower': self.toeFollower,
         }
-        meta.setMetaData(self.baseControl, FOOT_BASE_CTL_METACLASSNAME, base_ctl_data)
 
-        lift_ctl_data = {
-            'base_ctl': self.baseControl
-        }
-        meta.setMetaData(self.liftControl, FOOT_LIFT_CTL_METACLASSNAME, lift_ctl_data)
-        meta.setMetaData(self.liftToeControl, FOOT_LIFT_TOE_CTL_METACLASSNAME, lift_ctl_data)
+        meta_nodes = {self.control, self.ballControl}
+        meta_nodes.update(self.extraControls)
+        for node in meta_nodes:
+            meta.setMetaData(node, FOOT_CTL_METACLASSNAME, foot_ctl_data)
 
     def createMatrixBlend(self, mtxA, mtxB, blendAttr, name):
         """
@@ -205,59 +169,21 @@ class FootControlAction(BuildAction):
 
 
 class FootControlUtils(object):
-    @staticmethod
-    def getBaseControl(ctl: pm.PyNode):
-        """
-        Args:
-            ctl: A base, lift, or lift-toe foot control
-        """
-        if meta.hasMetaClass(ctl, FOOT_BASE_CTL_METACLASSNAME):
-            return ctl
-        elif meta.hasMetaClass(ctl, FOOT_LIFT_CTL_METACLASSNAME):
-            return meta.getMetaData(ctl, FOOT_LIFT_CTL_METACLASSNAME).get('base_ctl')
-        elif meta.hasMetaClass(ctl, FOOT_LIFT_TOE_CTL_METACLASSNAME):
-            return meta.getMetaData(ctl, FOOT_LIFT_TOE_CTL_METACLASSNAME).get('base_ctl')
 
     @staticmethod
-    def snapLiftControlToAnkle(ctl: pm.PyNode):
-        """
-        Args:
-            ctl: A foot control
-        """
-        base_ctl = FootControlUtils.getBaseControl(ctl)
-        if not base_ctl:
-            pm.warning(f"Couldn't get foot base control from: {ctl}")
-            return
-
-        base_ctl_data = meta.getMetaData(base_ctl, FOOT_BASE_CTL_METACLASSNAME)
-        lift_ctl = base_ctl_data.get('lift_ctl')
-        planted_ankle_tgt = base_ctl_data.get('planted_ankle_tgt')
-
-        if not lift_ctl:
-            pm.warning(f"Couldn't get foot lift control from base ctl: {base_ctl}")
-            return
-
-        if not planted_ankle_tgt:
-            pm.warning(f"Couldn't get foot planted ankle target from base ctl: {base_ctl}")
-            return
-
-        mtx = planted_ankle_tgt.wm.get()
-        mtx.scale = (1, 1, 1)
-        nodes.setWorldMatrix(lift_ctl, mtx)
+    def getFootControlData(ctl):
+        return meta.getMetaData(ctl, FOOT_CTL_METACLASSNAME)
 
     @staticmethod
-    def setLift(ctl: pm.PyNode, lift: float):
+    def getFootControl(ctl: pm.PyNode):
         """
-        Args:
-            ctl: A foot control
-            lift: The amount of lift (0..1)
-        """
-        base_ctl = FootControlUtils.getBaseControl(ctl)
-        if not base_ctl:
-            pm.warning(f"Couldn't get foot base control from: {ctl}")
-            return
+        Return the main foot control for a foot control system
 
-        base_ctl.attr('lift').set(lift)
+        Args:
+            ctl: A control with foot control meta data
+        """
+        if meta.hasMetaClass(ctl, FOOT_CTL_METACLASSNAME):
+            return meta.getMetaData(ctl, FOOT_CTL_METACLASSNAME).get('foot_ctl')
 
     @staticmethod
     def liftFoot(ctl: pm.PyNode):
@@ -267,55 +193,56 @@ class FootControlUtils(object):
         Args:
             ctl: A foot control
         """
-        FootControlUtils.snapLiftControlToAnkle(ctl)
-        FootControlUtils.setLift(ctl, 1)
+        ctl_data = FootControlUtils.getFootControlData(ctl)
+        if not ctl_data:
+            pm.warning(f"Couldn't get foot control data from: {ctl}")
 
-    @staticmethod
-    def plantFoot(ctl: pm.PyNode):
-        """
-        Set lift to 0
+        foot_ctl = ctl_data.get('foot_ctl')
+        if not foot_ctl:
+            pm.warning(f"Foot control meta data is missing foot control: {ctl_data}")
+            return
 
-        Args:
-            ctl: A foot control
-        """
-        FootControlUtils.setLift(ctl, 0)
+        ankle_follower = ctl_data.get('ankle_follower')
+        if not ankle_follower:
+            pm.warning(f"Foot control meta data is missing ankle follower: {ctl_data}")
+            return
+
+        # get optional ball ctl, if set, we can match ball rotations
+        ball_ctl = ctl_data.get('ball_ctl')
+        toe_follower = ctl_data.get('toe_follower')
+        if ball_ctl and toe_follower:
+            # store toe mtx now, then restore it after everythings been  updated
+            toe_mtx = toe_follower.wm.get()
+
+        # move foot control to current ankle position
+        ankle_mtx = ankle_follower.wm.get()
+        ankle_mtx.scale = (1, 1, 1)
+        nodes.setWorldMatrix(foot_ctl, ankle_mtx)
+
+        # clear foot control values to ensure no extra transformations are in effect
+        foot_ctl.attr('roll').set(0)
+        foot_ctl.attr('tilt').set(0)
+        foot_ctl.attr('toeSwivel').set(0)
+        foot_ctl.attr('heelSwivel').set(0)
+
+        if ball_ctl and toe_follower:
+            # update ball ctl rotation to match last known rotation
+            nodes.setWorldMatrix(ball_ctl, toe_mtx, translate=False, rotate=True, scale=False)
 
 
 class FootControlContextSubMenu(PulseNodeContextSubMenu):
     """
-    Context menu for snapping a lift control to the current position of the planted ankle.
+    Context menu for working with foot controls
     """
 
     @classmethod
     def shouldBuildSubMenu(cls, menu) -> bool:
-        return cls.isNodeWithMetaClassSelected(
-            FOOT_BASE_CTL_METACLASSNAME,
-            FOOT_LIFT_CTL_METACLASSNAME,
-            FOOT_LIFT_TOE_CTL_METACLASSNAME
-        )
+        return cls.isNodeWithMetaClassSelected(FOOT_CTL_METACLASSNAME)
 
     def buildMenuItems(self):
-        pm.menuItem(l='Snap To Ankle', rp=self.getSafeRadialPosition('S'), c=pm.Callback(self.snapToAnkleForSelected))
-        pm.menuItem(l='Lift', rp=self.getSafeRadialPosition('NE'), c=pm.Callback(self.setFootLiftedForSelected, True))
-        pm.menuItem(l='Plant', rp=self.getSafeRadialPosition('SE'), c=pm.Callback(self.setFootLiftedForSelected, False))
+        pm.menuItem(l='Lift', rp=self.getSafeRadialPosition('NE'), c=pm.Callback(self.liftFootForSelected))
 
-    def snapToAnkleForSelected(self):
-        sel_ctls = self.getSelectedNodesWithMetaClass(
-            FOOT_BASE_CTL_METACLASSNAME,
-            FOOT_LIFT_CTL_METACLASSNAME,
-            FOOT_LIFT_TOE_CTL_METACLASSNAME
-        )
+    def liftFootForSelected(self):
+        sel_ctls = self.getSelectedNodesWithMetaClass(FOOT_CTL_METACLASSNAME)
         for ctl in sel_ctls:
-            FootControlUtils.snapLiftControlToAnkle(ctl)
-
-    def setFootLiftedForSelected(self, lifted: bool):
-        sel_ctls = self.getSelectedNodesWithMetaClass(
-            FOOT_BASE_CTL_METACLASSNAME,
-            FOOT_LIFT_CTL_METACLASSNAME,
-            FOOT_LIFT_TOE_CTL_METACLASSNAME
-        )
-        for ctl in sel_ctls:
-            if lifted:
-                FootControlUtils.liftFoot(ctl)
-            else:
-                FootControlUtils.plantFoot(ctl)
+            FootControlUtils.liftFoot(ctl)

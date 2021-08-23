@@ -11,14 +11,8 @@ FootControlAction:
     - name: toeFollower
       description: The follower node representing the toe of the foot
       type: node
-    - name: baseControl
-      description: The foot control to use when the foot is grounded
-      type: node
-    - name: liftControl
-      description: The ankle control to use when the foot is lifted
-      type: node
-    - name: liftToeControl
-      description: The toe control to use when the foot is lifted
+    - name: control
+      description: The control to use as the parent for the foot systems and attributes.
       type: node
     - name: toePivot
       description: The toe pivot locator for rolling the foot
@@ -43,3 +37,9 @@ FootControlAction:
       description: The default value for the Straight Angle attribute
       type: float
       value: 70
+    - name: ballControl
+      description: The optional control that drives the ball joint. Used only in meta data so that it can be found by utils.
+      type: node
+    - name: extraControls
+      description: Extra controls that should be marked for use with foot control utils
+      type: nodelist
