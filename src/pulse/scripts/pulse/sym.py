@@ -557,8 +557,6 @@ class MirrorCurveShapes(MirrorOperation):
             destNode (pm.PyNode): The destination node to copy shapes to
         """
         dstShapes = destNode.getShapes(type=self.shapeTypes)
-        # filter out any shapes that have connections
-        dstShapes = [s for s in dstShapes if not s.listConnections()]
         if dstShapes:
             pm.delete(dstShapes)
 
