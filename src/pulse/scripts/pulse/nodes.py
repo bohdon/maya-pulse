@@ -454,34 +454,50 @@ def fullConstraint(leader, follower):
     return pc, sc
 
 
-def connectOffsetMatrix(matrix: pm.Attribute, node: pm.nt.Transform,
-                        method: ConnectMatrixMethod = ConnectMatrixMethod.KEEP_WORLD):
+def connectMatrix(matrix: pm.Attribute, node: pm.nt.Transform,
+                  method: ConnectMatrixMethod = ConnectMatrixMethod.KEEP_WORLD, keepJointHierarchy=True):
     """
-    Set or connect the offsetParentMatrix of a node, optionally preserving or changing
-    transform attributes to adjust accordingly. See `ConnectMatrixMethod`. Note that for all
-    methods, inheritsTransform will be disabled, assuming the incoming matrix will replace the node's parent.
+    Connect a world matrix to a node, optionally preserving or changing transform
+    attributes to adjust accordingly (see `ConnectMatrixMethod`).
+
+    Uses either the offsetParentMatrix, or decomposes and connects via transform attributes.
+
+    When using offsetParentMatrix, inheritsTransform will be disabled to keep the connection simple.
+
 
     Args:
         matrix: A matrix attribute
         node: A transform node
         method: The method to use for adjusting the node's transform after connecting
+        keepJointHierarchy: When true, joints are handled specially, and instead of connecting to the
+            offsetParentMatrix and disabling inheritsTransform, a joint matrix constrain is used.
+            This is necessary if joint animation baking and export will be used.
     """
+    # TODO: allow the user to specify whether they want to decompose or use offsetParentMatrix (while also
+    #       providing special case joint handling). Use ConnectMatrixMethod for this, and rename the current
+    #       ConnectMatrixMethod to something like ConnectMatrixAdjustMethod
+
     if method == ConnectMatrixMethod.CONNECT_ONLY:
         # make the connection
-        matrix >> node.offsetParentMatrix
-        node.inheritsTransform.set(False)
+        _makeMatrixConnection(matrix, node, keepJointHierarchy)
 
     elif method == ConnectMatrixMethod.SNAP:
         # make the connection
-        matrix >> node.offsetParentMatrix
-        node.inheritsTransform.set(False)
-        # zero out joint orients first (if this is a joint)
-        if node.hasAttr('jo'):
-            node.jo.set((0, 0, 0))
+        _makeMatrixConnection(matrix, node, keepJointHierarchy)
+        # TODO: also zero out rotate axis?
+        # TODO: unlock/re-lock ra and jo when doing this
+        # zero out joint orients
+        if node.hasAttr('jointOrient'):
+            node.jointOrient.set((0, 0, 0))
         # zero out transform values
         cmds.xform(node.longName(), matrix=IDENTITY_MATRIX_FLAT, worldSpace=False)
 
     elif method == ConnectMatrixMethod.KEEP_WORLD:
+        if keepJointHierarchy and node.nodeType() == 'joint':
+            raise ValueError(
+                "ConnectMatrixMethod.KEEP_WORLD is not supported with joints and keepJointHierarchy=True, "
+                "use CREATE_OFFSET instead")
+
         # remember the node's world matrix
         world_mtx = node.wm.get()
         # make the connection
@@ -493,11 +509,71 @@ def connectOffsetMatrix(matrix: pm.Attribute, node: pm.nt.Transform,
     elif method == ConnectMatrixMethod.CREATE_OFFSET:
         # calculate and store offset using a multMatrix node
         offset_mtx = node.pm.get() * matrix.get().inverse()
-        mult_mtx = pm.createNode('multMatrix', n=f"{node.nodeName()}_opm_offset_multMatrix")
+        mult_mtx = pm.createNode('multMatrix', n=f"{node.nodeName()}_mtxcon_offset_multMatrix")
         mult_mtx.matrixIn[0].set(offset_mtx)
         matrix >> mult_mtx.matrixIn[1]
-        mult_mtx.matrixSum >> node.offsetParentMatrix
+        # make the connection
+        _makeMatrixConnection(mult_mtx.matrixSum, node, keepJointHierarchy)
+
+
+def _makeMatrixConnection(matrix: pm.Attribute, node: pm.nt.Transform, keepJointHierarchy=True):
+    """
+    Perform the actual matrix connection of a node, either connecting offsetParentMatrix or decomposing
+    if the node is a joint and `keepJointHierarchy` is True. See `connectMatrix`
+    """
+    if keepJointHierarchy and node.nodeType() == 'joint':
+        decomposeAndConnectMatrix(matrix, node, inheritsTransform=True)
+    else:
+        matrix >> node.offsetParentMatrix
         node.inheritsTransform.set(False)
+
+
+def decomposeAndConnectMatrix(matrix: pm.Attribute, node: pm.nt.Transform, inheritsTransform: bool = False):
+    """
+    Decompose a matrix and connect it to the translate, rotate, scale, and shear of a transform node.
+
+    Args:
+        matrix: A world space matrix attribute
+        node: A transform node
+        inheritsTransform: If true, add a `multMatrix` node to compute the local matrix before decomposing,
+            If false, disable inheritsTransform on the node and connect the world space matrix directly.
+
+    Returns:
+        The `decomposeMatrix` node
+    """
+    from pulse import utilnodes
+
+    if inheritsTransform:
+        # get local space matrix, and ensure inheritsTransform is enabled
+        mtx = utilnodes.multMatrix(matrix, node.pim)
+        mtx.node().rename(f"{node.nodeName()}_worldToLocal_multMatrix")
+        node.inheritsTransform.set(True)
+    else:
+        # decompose world space matrix directly, so any parent transformations must be removed
+        mtx = matrix
+        node.inheritsTransform.set(False)
+
+    decomp = utilnodes.decomposeMatrix(mtx)
+    node.rotateOrder >> decomp.inputRotateOrder
+    decomp.outputTranslate >> node.translate
+    decomp.outputRotate >> node.rotate
+    decomp.outputScale >> node.scale
+    decomp.outputShear >> node.shear
+
+    node.translate.setLocked(True)
+    node.rotate.setLocked(True)
+    node.scale.setLocked(True)
+    node.shear.setLocked(True)
+
+    # TODO: handle locked attrs
+
+    if not node.rotateAxis.isLocked():
+        node.rotateAxis.set((0, 0, 0))
+
+    if node.hasAttr('jointOrient') and not node.jointOrient.isLocked():
+        node.jointOrient.set((0, 0, 0))
+
+    return decomp
 
 
 def disconnectOffsetMatrix(follower, preservePosition=True,

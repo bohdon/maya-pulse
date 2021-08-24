@@ -46,7 +46,7 @@ class AimConstrainAction(BuildAction):
             wtAdd = pm.createNode('wtAddMatrix')
             aimOnNode.worldMatrix >> wtAdd.wtMatrix[0].matrixIn
             aimOffNode.worldMatrix >> wtAdd.wtMatrix[1].matrixIn
-            pulse.utilnodes.connectMatrix(wtAdd.matrixSum, _follower)
+            pulse.nodes.connectMatrix(wtAdd.matrixSum, _follower, pulse.nodes.ConnectMatrixMethod.SNAP)
 
             # create blend attr and connect to matrix blend
             self.follower.addAttr("aimBlend", min=0, max=1, at='double',

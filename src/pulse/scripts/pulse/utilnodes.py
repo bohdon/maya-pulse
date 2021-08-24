@@ -1,7 +1,6 @@
 import logging
 from enum import IntEnum
 
-import maya.cmds as cmds
 import pymel.core as pm
 
 from . import nodes
@@ -25,6 +24,7 @@ OUTPUT_ATTR_NAMES = {
     'condition': 'outColor',
     'distanceBetween': 'distance',
     'floatMath': 'outFloat',
+    'inverseMatrix': 'outputMatrix',
     'multMatrix': 'matrixSum',
     'multiplyDivide': 'output',
     'reverse': 'output',
@@ -624,6 +624,16 @@ def multMatrix(*matrices):
     return mmtx.matrixSum
 
 
+def inverseMatrix(matrix) -> pm.Attribute:
+    """
+    Invert a matrix using a `inverseMatrix` node
+
+    Args:
+        matrix: A matrix value or attribute
+    """
+    return _createUtilityAndReturnOutput('inverseMatrix', inputMatrix=matrix)
+
+
 def composeMatrix(translate=None, rotate=None, scale=None) -> pm.Attribute:
     """
     Compose a matrix using separate translate, rotate, and scale values using a `composeMatrix` utility node
@@ -653,40 +663,6 @@ def decomposeMatrix(matrix):
     loadMatrixPlugin()
     return createUtilityNode(
         'decomposeMatrix', inputMatrix=matrix)
-
-
-def decomposeMatrixAndConnect(matrix, transform):
-    """
-    Decompose a matrix and connect it to the translate, rotate,
-    and scales of a transform node.
-
-    Args:
-        matrix (Attribute): A matrix attribute
-        transform (PyNode): A transform node
-
-    Returns:
-        the decomposeMatrix node
-    """
-    decomp = decomposeMatrix(matrix)
-    decomp.outputTranslate >> transform.translate
-    decomp.outputRotate >> transform.rotate
-    decomp.outputScale >> transform.scale
-    return decomp
-
-
-def connectMatrix(matrix, transform):
-    """
-    A generalized function for connecting a matrix to a transform.
-    For Maya 2020 and higher this uses offsetParentMatrix connections.
-    For Maya 2019 and below this uses a decompose matrix node and
-    connections to translate, rotate, and scale. Assumes the connect
-    is world space, and will disable inheritsTransform on the target.
-    """
-    if cmds.about(api=True) >= 20200000:
-        nodes.connectOffsetMatrix(matrix, transform, nodes.ConnectMatrixMethod.SNAP)
-    else:
-        transform.inheritsTransform.set(False)
-        decomposeMatrixAndConnect(matrix, transform)
 
 
 # TODO: add aimMatrix functions

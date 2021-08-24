@@ -85,9 +85,9 @@ class ThreeBoneIKFKAction(BuildAction):
         endChoice.node().rename(f"{self.endJoint.nodeName()}_ikfk_choice")
 
         # connect the target matrices to the joints
-        pulse.nodes.connectOffsetMatrix(rootChoice, rootJoint, pulse.nodes.ConnectMatrixMethod.SNAP)
-        pulse.nodes.connectOffsetMatrix(midChoice, midJoint, pulse.nodes.ConnectMatrixMethod.SNAP)
-        pulse.nodes.connectOffsetMatrix(endChoice, self.endJoint, pulse.nodes.ConnectMatrixMethod.SNAP)
+        pulse.nodes.connectMatrix(rootChoice, rootJoint, pulse.nodes.ConnectMatrixMethod.SNAP)
+        pulse.nodes.connectMatrix(midChoice, midJoint, pulse.nodes.ConnectMatrixMethod.SNAP)
+        pulse.nodes.connectMatrix(endChoice, self.endJoint, pulse.nodes.ConnectMatrixMethod.SNAP)
 
         # connect visibility
         self.midCtlIk.v.setLocked(False)

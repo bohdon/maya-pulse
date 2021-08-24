@@ -61,17 +61,17 @@ class FootControlAction(BuildAction):
 
         # control > heel > outerTilt > innerTilt > toe > ball
         offset_connect_method = pulse.nodes.ConnectMatrixMethod.CREATE_OFFSET
-        pulse.nodes.connectOffsetMatrix(self.control.wm, self.heelPivot, offset_connect_method)
-        pulse.nodes.connectOffsetMatrix(self.heelPivot.wm, self.outerTiltPivot, offset_connect_method)
-        pulse.nodes.connectOffsetMatrix(self.outerTiltPivot.wm, self.innerTiltPivot, offset_connect_method)
-        pulse.nodes.connectOffsetMatrix(self.innerTiltPivot.wm, self.toePivot, offset_connect_method)
-        pulse.nodes.connectOffsetMatrix(self.toePivot.wm, self.ballPivot, offset_connect_method)
+        pulse.nodes.connectMatrix(self.control.wm, self.heelPivot, offset_connect_method)
+        pulse.nodes.connectMatrix(self.heelPivot.wm, self.outerTiltPivot, offset_connect_method)
+        pulse.nodes.connectMatrix(self.outerTiltPivot.wm, self.innerTiltPivot, offset_connect_method)
+        pulse.nodes.connectMatrix(self.innerTiltPivot.wm, self.toePivot, offset_connect_method)
+        pulse.nodes.connectMatrix(self.toePivot.wm, self.ballPivot, offset_connect_method)
 
         # ballPivot > ankleFollower
-        pulse.nodes.connectOffsetMatrix(self.ballPivot.wm, self.ankleFollower, offset_connect_method)
+        pulse.nodes.connectMatrix(self.ballPivot.wm, self.ankleFollower, offset_connect_method)
 
         # toePivot > toeFollower
-        pulse.nodes.connectOffsetMatrix(self.toePivot.wm, self.toeFollower, offset_connect_method)
+        pulse.nodes.connectMatrix(self.toePivot.wm, self.toeFollower, offset_connect_method)
 
         # calculate custom foot attrs
         # ---------------------------

@@ -149,7 +149,7 @@ class MagicFeetAction(BuildAction):
             isToeRollAttr, heel_tgt.wm, ballToe_tgt.wm)
 
         # connect final planted ankle matrix to ankle target transform
-        pulse.utilnodes.connectMatrix(plantedMtxAttr, planted_tgt)
+        pulse.nodes.connectMatrix(plantedMtxAttr, planted_tgt, pulse.nodes.ConnectMatrixMethod.SNAP)
         planted_tgt.t.lock()
         planted_tgt.r.lock()
         planted_tgt.s.lock()
@@ -164,7 +164,7 @@ class MagicFeetAction(BuildAction):
         # TODO(bsayre): this connect eliminates all transform inheritance, is
         #   world space control what we want? or do we need to inject offsets and
         #   allow parent transforms to come through
-        pulse.utilnodes.connectMatrix(plantedLiftedBlendAttr, _follower)
+        pulse.nodes.connectMatrix(plantedLiftedBlendAttr, _follower, pulse.nodes.ConnectMatrixMethod.SNAP)
 
         # create toe up/down matrix blend, (0 == toe-up, 1 == toe-down/ball pivot)
         # in order to do this, reverse ballToe attr, then multiply by isToeRoll
@@ -183,7 +183,7 @@ class MagicFeetAction(BuildAction):
 
         # connect final toe rotations to toeFollower
         # TODO(bsayre): parent both tgts to ankle somehow to prevent locking
-        pulse.utilnodes.connectMatrix(ballToeMtxBlendAttr, _toeFollower)
+        pulse.nodes.connectMatrix(ballToeMtxBlendAttr, _toeFollower, pulse.nodes.ConnectMatrixMethod.SNAP)
 
         # add meta data to controls
         ctlData = {

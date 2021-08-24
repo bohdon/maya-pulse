@@ -30,6 +30,7 @@ import maya.cmds as cmds
 import pymel.core as pm
 
 import pymetanode as meta
+from . import nodes
 from . import utilnodes
 
 LOG = logging.getLogger(__name__)
@@ -267,15 +268,16 @@ def _connectSpaceConstraint(node, spaceNodesByName):
 
         if useOffsetMatrix:
             multMatrix = data['multMatrix']
-            multMatrix.matrixSum >> follower.offsetParentMatrix
+            nodes.connectMatrix(multMatrix.matrixSum, follower, nodes.ConnectMatrixMethod.CONNECT_ONLY)
         else:
+            # TODO: support joint matrix constraints that don't disable inheritsTransform,
+            #       or just remove this path altogether
             decomp = data['decompose']
             decomp.outputTranslate >> follower.translate
             decomp.outputRotate >> follower.rotate
             decomp.outputScale >> follower.scale
-
-        # no longer need to inherit transform
-        follower.inheritsTransform.set(False)
+            # no longer need to inherit transform
+            follower.inheritsTransform.set(False)
 
 
 def _connectSpaceToConstraint(spaceConstraintData, index, spaceNode):
