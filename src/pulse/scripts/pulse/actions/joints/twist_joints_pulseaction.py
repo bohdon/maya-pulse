@@ -13,13 +13,19 @@ class TwistJointsAction(BuildAction):
             raise BuildActionError('alignJoint must be set')
 
     def run(self):
-        # add keyable twist attribute to control the blend
-        self.twistJoint.addAttr('twistBlend', at='double', min=0, max=1, keyable=True, defaultValue=1)
-        twist_blend = self.twistJoint.attr('twistBlend')
-
-        # add proxy attribute to twist controls
-        for twist_ctl in self.twistControls:
-            twist_ctl.addAttr('twistBlend', proxy=twist_blend)
+        twist_blend = None
+        if self.twistControls:
+            # add attr to first control, then add proxy to the rest
+            for twist_ctl in self.twistControls:
+                if twist_blend is None:
+                    twist_ctl.addAttr('twistBlend', at='double', min=0, max=1, keyable=True, defaultValue=1)
+                    twist_blend = twist_ctl.attr('twistBlend')
+                else:
+                    twist_ctl.addAttr('twistBlend', proxy=twist_blend)
+        else:
+            # add attr directly to joint, not usually desired because this can export with the joints as a curve
+            self.twistJoint.addAttr('twistBlend', at='double', min=0, max=1, keyable=True, defaultValue=1)
+            twist_blend = self.twistJoint.attr('twistBlend')
 
         # get parent world matrix
         parent_mtx = self.getParentMatrix(self.twistJoint)
