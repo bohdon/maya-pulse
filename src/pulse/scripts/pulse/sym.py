@@ -754,22 +754,28 @@ class MirrorLinks(BlueprintMirrorOperation):
         # get link meta data
         sourceLinkData = links.getLinkMetaData(sourceNode)
         destLinkData = links.getLinkMetaData(destNode)
+
         if sourceLinkData:
-            # look for mirror of the target node
-            sourceTargetNode = sourceLinkData.get('targetNode')
-            if sourceTargetNode:
-                destTargetNode = getPairedNode(sourceTargetNode)
-                if destTargetNode:
-                    # if no destination link data already exists, create
-                    # a copy of the source link data, otherwise only affect the target node
-                    if not destLinkData:
-                        destLinkData = sourceLinkData
-                    # update target node in the destination link data
-                    destLinkData['targetNode'] = destTargetNode
+            # if no destination link data already exists, create
+            # a copy of the source link data, otherwise only affect the target node
+            if not destLinkData:
+                destLinkData = sourceLinkData
+
+            # TODO: provide a layer of abstraction, mirroring shouldn't have to know the details
+
+            sourceTargetNodes = sourceLinkData.get('targetNodes')
+            if sourceTargetNodes:
+                destTargetNodes = [getPairedNode(n) for n in sourceTargetNodes]
+                if destTargetNodes:
+                    destLinkData['targetNodes'] = destTargetNodes
                     links.setLinkMetaData(destNode, destLinkData)
 
-                    # position the dest node using the link
-                    links.positionLink(destNode)
+            # position the dest node using the link
+            links.applyLinkPosition(destNode)
+
+        elif destLinkData:
+            # remove link data from dest node
+            links.unlink(destNode)
 
 
 class MirrorUtil(object):

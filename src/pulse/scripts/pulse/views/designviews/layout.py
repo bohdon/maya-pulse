@@ -79,15 +79,22 @@ class LayoutLinkEditorWidget(QtWidgets.QWidget):
     def onSceneSelectionChanged(self, *args, **kwargs):
         self.updateLinkInfoList()
 
+    @property
+    def keepOffsets(self):
+        return self.keepOffsetsCheck.isChecked()
+
     def setupUi(self, parent):
         layout = QtWidgets.QVBoxLayout(parent)
         layout.setMargin(0)
         layout.setSpacing(2)
 
+        self.keepOffsetsCheck = QtWidgets.QCheckBox(parent)
+        self.keepOffsetsCheck.setText("Keep Offsets")
+        layout.addWidget(self.keepOffsetsCheck)
+
         gridLayout = QtWidgets.QGridLayout(parent)
         gridLayout.setMargin(0)
         gridLayout.setSpacing(2)
-        layout.addLayout(gridLayout)
 
         linkDefaultBtn = QtWidgets.QPushButton(parent)
         linkDefaultBtn.setText("Link")
@@ -99,27 +106,38 @@ class LayoutLinkEditorWidget(QtWidgets.QWidget):
         linkIkPoleBtn.clicked.connect(
             cmd(self.linkSelected, linkType=links.LinkType.IKPOLE))
 
-        saveOffsetBtn = QtWidgets.QPushButton(parent)
-        saveOffsetBtn.setText("Save Offsets")
-        saveOffsetBtn.clicked.connect(
-            cmd(self.saveLinkOffsetsForSelected))
-
-        clearOffsetBtn = QtWidgets.QPushButton(parent)
-        clearOffsetBtn.setText("Clear Offsets")
-        clearOffsetBtn.clicked.connect(
-            cmd(self.clearLinkOffsetsForSelected))
+        linkCenterBtn = QtWidgets.QPushButton(parent)
+        linkCenterBtn.setText("Link Centered")
+        linkCenterBtn.clicked.connect(
+            cmd(self.linkSelectedWeighted))
 
         gridItems = [
-            [linkDefaultBtn, linkIkPoleBtn],
-            [saveOffsetBtn, clearOffsetBtn],
+            [linkDefaultBtn, linkIkPoleBtn, linkCenterBtn],
         ]
         viewutils.addItemsToGrid(gridLayout, gridItems)
+        layout.addLayout(gridLayout)
+
+        gridLayout2 = QtWidgets.QGridLayout(parent)
+        gridLayout2.setMargin(0)
+        gridLayout2.setSpacing(2)
+
+        recreateBtn = QtWidgets.QPushButton(parent)
+        recreateBtn.setText("Recreate Link")
+        recreateBtn.setStatusTip("Recreate links for the selected nodes, updating or removing offsets.")
+        recreateBtn.clicked.connect(
+            cmd(self.recreateLinksForSelected))
 
         unlinkBtn = QtWidgets.QPushButton(parent)
         unlinkBtn.setText("Unlink")
         unlinkBtn.clicked.connect(
             cmd(self.unlinkSelected))
         layout.addWidget(unlinkBtn)
+
+        gridItems = [
+            [recreateBtn, unlinkBtn],
+        ]
+        viewutils.addItemsToGrid(gridLayout2, gridItems)
+        layout.addLayout(gridLayout2)
 
         snapBtn = QtWidgets.QPushButton(parent)
         snapBtn.setText("Snap to Targets")
@@ -172,15 +190,15 @@ class LayoutLinkEditorWidget(QtWidgets.QWidget):
         self.linkInfoScrollArea.setWidget(self.linkInfoList)
 
     def linkSelected(self, linkType):
-        editorutils.linkSelected(linkType=linkType)
+        editorutils.linkSelected(linkType, self.keepOffsets)
         self.updateLinkInfoList()
 
-    def saveLinkOffsetsForSelected(self):
-        editorutils.saveLinkOffsetsForSelected()
+    def linkSelectedWeighted(self):
+        editorutils.linkSelectedWeighted(self.keepOffsets)
         self.updateLinkInfoList()
 
-    def clearLinkOffsetsForSelected(self):
-        editorutils.clearLinkOffsetsForSelected()
+    def recreateLinksForSelected(self):
+        editorutils.recreateLinksForSelected(self.keepOffsets)
         self.updateLinkInfoList()
 
     def unlinkSelected(self):
@@ -225,9 +243,12 @@ class LinkInfoWidget(QtWidgets.QWidget):
 
     def __init__(self, parent, node, linkData):
         super(LinkInfoWidget, self).__init__(parent=parent)
-
         if not node:
             raise ValueError("Node must be a valid PyNode")
+
+        if not isinstance(linkData, dict):
+            linkData = {}
+
         self.node = node
         self.linkData = linkData
 
@@ -252,19 +273,13 @@ class LinkInfoWidget(QtWidgets.QWidget):
         layout.addLayout(gridLayout)
         gridItems = []
 
-        # get link data keys, sorted with `targetNode` and `type` first
-        keys = ['targetNode', 'type']
+        # get link data keys, sorted with `type` and `targetNodes` first
+        keys = ['type', 'targetNodes']
         keys += [k for k in self.linkData.keys() if k not in keys]
 
         # create labels for each piece of data
         for key in keys:
             value = self.linkData.get(key)
-            if not value:
-                if key == 'targetNode':
-                    value = '(missing)'
-                elif key == 'type':
-                    value = links.LinkType.DEFAULT
-
             nameLabel = QtWidgets.QLabel(parent)
             nameLabel.setText(key)
             valueLabel = QtWidgets.QLabel(parent)

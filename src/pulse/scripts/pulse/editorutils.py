@@ -467,13 +467,31 @@ def toggleLocalRotationAxesForSelected(includeChildren=False):
         s.dla.set(not isEnabled)
 
 
-def linkSelected(linkType=links.LinkType.DEFAULT):
+def linkSelected(linkType=links.LinkType.DEFAULT, keepOffset=False):
     sel = pm.selected()
-    if len(sel) != 2:
-        LOG.warning("Select a leader then a follower")
+    if len(sel) < 2:
+        LOG.warning("Select at least one leader, then a follower last")
         return
 
-    links.link(sel[0], sel[1], linkType)
+    positioner = links.getPositioner(linkType)
+    positioner.keepOffset = keepOffset
+    follower = sel[-1]
+    leaders = sel[:-1]
+    positioner.createLink(follower, leaders)
+
+
+def linkSelectedWeighted(keepOffset=False):
+    sel = pm.selected()
+    if len(sel) < 2:
+        LOG.warning("Select at least one leader, then a follower last")
+        return
+
+    positioner = links.getPositioner(links.LinkType.WEIGHTED)
+    positioner.keepOffset = keepOffset
+    follower = sel[-1]
+    leaders = sel[:-1]
+    positioner.weights = [1] * len(leaders)
+    positioner.createLink(follower, leaders)
 
 
 def unlinkSelected():
@@ -481,14 +499,40 @@ def unlinkSelected():
         links.unlink(s)
 
 
-def saveLinkOffsetsForSelected():
+def recreateLinksForSelected(keepOffset=False):
     for s in pm.selected():
-        links.saveLinkOffsets(s)
+        links.recreateLink(s, keepOffset=keepOffset)
 
 
-def clearLinkOffsetsForSelected():
-    for s in pm.selected():
-        links.clearLinkOffsets(s)
+def upgradeAllLinks():
+    """
+    Update all links in the scene, fixing up old data as necessary.
+    """
+    for n in pm.ls():
+        linkData = links.getLinkMetaData(n)
+        if linkData:
+            changed = False
+
+            # support legacy data of just a target node, not a dict
+            if isinstance(linkData, pm.PyNode):
+                linkData = {'targetNodes': [linkData]}
+                changed = True
+
+            # ensure link type key exists
+            if 'type' not in linkData:
+                linkData['type'] = links.LinkType.DEFAULT
+                changed = True
+
+            # upgrade targetNode (single target) to targetNodes (list of targets)
+            if 'targetNode' in linkData:
+                targetNode = linkData['targetNode']
+                del linkData['targetNode']
+                linkData['targetNodes'] = [targetNode]
+                changed = True
+
+            if changed:
+                LOG.info('Updated link data for %s', n)
+                links.setLinkMetaData(n, linkData)
 
 
 def positionLinkForSelected():
@@ -508,7 +552,7 @@ def positionLinkForSelected():
     if showProgress:
         pm.progressWindow(t='Positioning Links', min=0, max=len(sel))
     for node in sel:
-        links.positionLink(node)
+        links.applyLinkPosition(node)
         if showProgress:
             pm.progressWindow(e=True, step=1)
     if showProgress:

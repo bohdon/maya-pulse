@@ -202,7 +202,7 @@ def createControl(shapeData, name=None, targetNode=None,
         ctl.setAttr('rotateOrder', targetNode.getAttr('rotateOrder'))
         nodes.matchWorldMatrix(targetNode, ctl)
         if link:
-            links.link(targetNode, ctl)
+            links.createDefaultLink(ctl, targetNode)
     # group to main ctls group
     if parent:
         ctl.setParent(parent)
