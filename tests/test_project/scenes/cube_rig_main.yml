@@ -1,0 +1,16 @@
+rigName: cube
+steps:
+  children:
+  - action:
+      id: Pulse.ImportReferences
+    name: Import References
+  - action:
+      allNodes: true
+      id: Pulse.BuildCoreHierarchy
+    name: Build Core Hierarchy
+  - name: Main
+  - action:
+      id: Pulse.RenameScene
+    name: Rename Scene
+  name: Root
+version: 0.2.0
