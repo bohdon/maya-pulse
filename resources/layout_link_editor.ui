@@ -14,17 +14,8 @@
    <string>Form</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
-   <property name="leftMargin">
-    <number>0</number>
-   </property>
-   <property name="topMargin">
-    <number>0</number>
-   </property>
-   <property name="rightMargin">
-    <number>0</number>
-   </property>
-   <property name="bottomMargin">
-    <number>0</number>
+   <property name="spacing">
+    <number>2</number>
    </property>
    <item>
     <widget class="QCheckBox" name="keep_offsets_check">
@@ -38,6 +29,9 @@
    </item>
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout">
+     <property name="spacing">
+      <number>2</number>
+     </property>
      <item>
       <widget class="QPushButton" name="link_center_btn">
        <property name="text">
@@ -63,6 +57,9 @@
    </item>
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout_2">
+     <property name="spacing">
+      <number>2</number>
+     </property>
      <item>
       <widget class="QPushButton" name="recreate_link_btn">
        <property name="toolTip">
@@ -145,8 +142,8 @@
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>402</width>
-        <height>242</height>
+        <width>384</width>
+        <height>248</height>
        </rect>
       </property>
      </widget>

@@ -11,3 +11,15 @@ QLabel[cssClasses~="section-title"] {
     background-color: rgba(0, 0, 0, 20%);
     border-radius: 2px;
 }
+
+/* Help text, usually at the bottom of a window, italic and dimmed. */
+QLabel[cssClasses~="help"] {
+    font-style: italic;
+    color: rgba(255, 255, 255, 40%);
+}
+
+/* A large important button, usually for committing the main operation of something dynamic */
+QPushButton[cssClasses~="large"] {
+    font-size: 11pt;
+    font-weight: bold;
+}

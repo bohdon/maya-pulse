@@ -1,13 +1,13 @@
 import pymel.core as pm
 from maya import OpenMaya as api
 
+from ...vendor.Qt import QtCore, QtWidgets, QtGui
+from ... import editorutils
+from ... import links
 from .. import utils as viewutils
 from ..core import PulseWindow, PulsePanelWidget
 from ..gen.layout_link_editor import Ui_LayoutLinkEditor
 from ..utils import undoAndRepeatPartial as cmd
-from ... import editorutils
-from ... import links
-from ...vendor.Qt import QtCore, QtWidgets, QtGui
 
 
 class LayoutPanel(PulsePanelWidget):
@@ -225,7 +225,7 @@ class LayoutLinkEditorWindow(PulseWindow):
         self.setWindowTitle('Layout Link Editor')
 
         layout = QtWidgets.QVBoxLayout(self)
-        layout.setMargin(10)
+        layout.setMargin(0)
         self.setLayout(layout)
 
         widget = LayoutLinkEditorWidget(self)

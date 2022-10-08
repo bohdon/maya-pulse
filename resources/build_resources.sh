@@ -31,6 +31,7 @@ build_res() {
 
 # build all UIs
 echo "Building ui files..."
+build_ui quick_name_editor
 build_ui layout_link_editor
 
 # build all resources

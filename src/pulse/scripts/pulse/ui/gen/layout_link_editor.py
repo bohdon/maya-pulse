@@ -19,14 +19,15 @@ class Ui_LayoutLinkEditor(object):
             LayoutLinkEditor.setObjectName(u"LayoutLinkEditor")
         LayoutLinkEditor.resize(404, 415)
         self.verticalLayout = QVBoxLayout(LayoutLinkEditor)
+        self.verticalLayout.setSpacing(2)
         self.verticalLayout.setObjectName(u"verticalLayout")
-        self.verticalLayout.setContentsMargins(0, 0, 0, 0)
         self.keep_offsets_check = QCheckBox(LayoutLinkEditor)
         self.keep_offsets_check.setObjectName(u"keep_offsets_check")
 
         self.verticalLayout.addWidget(self.keep_offsets_check)
 
         self.horizontalLayout = QHBoxLayout()
+        self.horizontalLayout.setSpacing(2)
         self.horizontalLayout.setObjectName(u"horizontalLayout")
         self.link_center_btn = QPushButton(LayoutLinkEditor)
         self.link_center_btn.setObjectName(u"link_center_btn")
@@ -47,6 +48,7 @@ class Ui_LayoutLinkEditor(object):
         self.verticalLayout.addLayout(self.horizontalLayout)
 
         self.horizontalLayout_2 = QHBoxLayout()
+        self.horizontalLayout_2.setSpacing(2)
         self.horizontalLayout_2.setObjectName(u"horizontalLayout_2")
         self.recreate_link_btn = QPushButton(LayoutLinkEditor)
         self.recreate_link_btn.setObjectName(u"recreate_link_btn")
@@ -95,7 +97,7 @@ class Ui_LayoutLinkEditor(object):
         self.link_info_scroll_area.setWidgetResizable(True)
         self.link_info_scroll_area_widget = QWidget()
         self.link_info_scroll_area_widget.setObjectName(u"link_info_scroll_area_widget")
-        self.link_info_scroll_area_widget.setGeometry(QRect(0, 0, 402, 242))
+        self.link_info_scroll_area_widget.setGeometry(QRect(0, 0, 384, 248))
         self.link_info_scroll_area.setWidget(self.link_info_scroll_area_widget)
 
         self.verticalLayout.addWidget(self.link_info_scroll_area)

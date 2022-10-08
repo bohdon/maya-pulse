@@ -7,10 +7,11 @@ from functools import partial
 
 import pymel.core as pm
 
+from ..vendor.Qt import QtCore, QtWidgets
+from .. import names
 from . import style
 from .core import PulseWindow, BlueprintUIModel
-from .. import names
-from ..vendor.Qt import QtCore, QtWidgets, QtGui
+from .gen.quick_name_editor import Ui_QuickNameEditor
 
 
 class QuickNameWidget(QtWidgets.QWidget):
@@ -22,101 +23,52 @@ class QuickNameWidget(QtWidgets.QWidget):
     def __init__(self, parent=None):
         super(QuickNameWidget, self).__init__(parent=parent)
 
-        self.blueprintModel = BlueprintUIModel.getDefaultModel()
+        self.blueprint_model = BlueprintUIModel.getDefaultModel()
 
         # the blueprint config
-        self.config = self._getConfig()
-        # the section of the config that contains naming keywoards
-        self.namesConfig = self.config.get('names', {})
+        self.config = self._get_config()
+        # the section of the config that contains naming keywords
+        self.names_config = self.config.get('names', {})
 
-        self.activeKeyword = None
-        self.activeKeywordColor = style.UIColors.DARKGRAY
+        self.active_keyword = None
+        self.active_keyword_color = style.UIColors.DARKGRAY
 
-        self.setupUi(self)
-        self.refreshPreviewLabel()
+        self.prefix_btns = {}
+        self.keyword_btns = {}
+        self.suffix_btns = {}
 
-        if True:  # TODO: replace with 'is blueprint initialized' or similar
-            self.helpText.setText(
-                "Edit the Blueprint Config to modify naming keywords")
-            self.helpText.setStyleSheet(
-                style.UIColors.asFGColor(style.UIColors.HELPTEXT))
-        elif self.config:
-            self.helpText.setText(
-                "No Blueprint exists, using the default config")
-            self.helpText.setStyleSheet(
-                style.UIColors.asFGColor(style.UIColors.WARNING))
-        else:
-            self.helpText.setText(
-                "No Blueprint config was found")
-            self.helpText.setStyleSheet(
-                style.UIColors.asFGColor(style.UIColors.ERROR))
+        self.ui = Ui_QuickNameEditor()
+        self.ui.setupUi(self)
+        self.setup_prefixes_ui(parent, self.ui.prefixes_vbox)
+        self.setup_keywords_ui(parent, self.ui.keywords_vbox)
+        self.setup_suffixes_ui(parent, self.ui.suffixes_vbox)
 
-    def _getConfig(self):
-        config = self.blueprintModel.blueprint.getConfig()
+        self.ui.set_name_btn.clicked.connect(self._on_preview_btn_clicked)
+
+        self.refresh_preview_label()
+        self._update_help_text()
+
+    def _update_help_text(self):
+        msg_config = "Edit the blueprint config to modify naming keywords"
+        msg_no_bp = "No Blueprint exists, using the default config"
+        msg_no_config = "No Blueprint config was found"
+
+        # TODO(bsayre): check whether the config is actually available and valid
+        self.ui.help_label.setText(msg_config)
+
+    def _get_config(self):
+        config = self.blueprint_model.blueprint.getConfig()
         return config if config else {}
 
-    def setupUi(self, parent):
-        """
-        Build the UI for the main body of the window
-        """
-        layout = QtWidgets.QVBoxLayout(parent)
-
-        # preview text
-        self.namePreviewBtn = QtWidgets.QPushButton(parent)
-        font = QtGui.QFont()
-        font.setPointSize(10)
-        font.setWeight(75)
-        font.setBold(True)
-        self.namePreviewBtn.setFont(font)
-        self.namePreviewBtn.setStatusTip(
-            "The current constructed name. "
-            "Click to apply to the selected node")
-        # self.namePreviewBtn.setAlignment(QtCore.Qt.AlignCenter)
-        self.namePreviewBtn.setContentsMargins(10, 10, 10, 10)
-        # self.namePreviewBtn.setStyleSheet(
-        #     'background-color: rgba(0, 0, 0, 40); border-radius: 2px')
-        self.namePreviewBtn.clicked.connect(self.onPreviewBtnClicked)
-        layout.addWidget(self.namePreviewBtn)
-
-        # prefixes / names / suffixes
-        self.partsLayout = QtWidgets.QHBoxLayout()
-
-        prefixLayout = self.setupPrefixesUi(parent)
-        self.partsLayout.addLayout(prefixLayout)
-
-        keywordsLayout = self.setupKeywordsUi(parent)
-        self.partsLayout.addLayout(keywordsLayout, stretch=1)
-
-        suffixLayout = self.setupSuffixesUi(parent)
-        self.partsLayout.addLayout(suffixLayout)
-
-        layout.addLayout(self.partsLayout)
-
-        # help text
-        self.helpText = QtWidgets.QLabel()
-        self.helpText.setFont(style.UIFonts.getHelpTextFont())
-        layout.addWidget(self.helpText)
-
-        layout.setStretch(1, 1)
-
-    def setupPrefixesUi(self, parent):
+    def setup_prefixes_ui(self, parent, layout):
         """
         Build the prefixes layout and button grid.
         Returns the layout.
         """
-        # ensure property is initialized
-        self.prefixBtns = {}
+        prefixes = self.names_config.get('prefixes', {})
 
-        prefixes = self.namesConfig.get('prefixes', {})
-
-        layout = QtWidgets.QVBoxLayout(parent)
-        layout.setSpacing(2)
-
-        headerLabel = self.createLabel(parent, "Prefixes", bold=True)
-        layout.addWidget(headerLabel)
-
-        self.prefixBtnGrid = QtWidgets.QGridLayout()
-        self.prefixBtnGrid.setObjectName("prefixBtnGrid")
+        btn_grid = QtWidgets.QGridLayout()
+        btn_grid.setObjectName("prefixBtnGrid")
 
         if prefixes:
             # create button for all prefixes
@@ -127,46 +79,32 @@ class QuickNameWidget(QtWidgets.QWidget):
                 btn = QtWidgets.QPushButton()
                 btn.setText(name)
                 btn.setCheckable(True)
-                btn.clicked.connect(self.onPrefixOrSuffixClicked)
-                self.prefixBtnGrid.addWidget(btn, y, x, 1, 1)
-                self.prefixBtns[name] = btn
+                btn.clicked.connect(self._on_prefix_or_suffix_clicked)
+                btn_grid.addWidget(btn, y, x, 1, 1)
+                self.prefix_btns[name] = btn
 
                 x += 1
                 if x > 1:
                     x = 0
                     y += 1
 
-            layout.addLayout(self.prefixBtnGrid)
+            layout.addLayout(btn_grid)
 
         else:
-            noNamesLabel = QtWidgets.QLabel(parent)
-            noNamesLabel.setText('no prefixes')
-            noNamesLabel.setStyleSheet(style.UIColors.asFGColor(style.UIColors.HELPTEXT))
-            layout.addWidget(noNamesLabel)
+            no_names_label = QtWidgets.QLabel(parent)
+            no_names_label.setText('no prefixes')
+            no_names_label.setStyleSheet(style.UIColors.asFGColor(style.UIColors.HELPTEXT))
+            layout.addWidget(no_names_label)
 
-        spacerItem = QtWidgets.QSpacerItem(0, 2, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
-        layout.addItem(spacerItem)
-
-        return layout
-
-    def setupSuffixesUi(self, parent):
+    def setup_suffixes_ui(self, parent, layout):
         """
         Build the suffixes layout and button grid.
         Returns the layout.
         """
-        # ensure property is initialized
-        self.suffixBtns = {}
+        suffixes = self.names_config.get('suffixes', {})
 
-        suffixes = self.namesConfig.get('suffixes', {})
-
-        layout = QtWidgets.QVBoxLayout(parent)
-        layout.setSpacing(2)
-
-        headerLabel = self.createLabel(parent, "Suffixes", bold=True)
-        layout.addWidget(headerLabel)
-
-        self.suffixBtnGrid = QtWidgets.QGridLayout()
-        self.suffixBtnGrid.setObjectName("suffixBtnGrid")
+        btn_grid = QtWidgets.QGridLayout()
+        btn_grid.setObjectName("suffixBtnGrid")
 
         if suffixes:
             # create button for all suffixes
@@ -177,67 +115,47 @@ class QuickNameWidget(QtWidgets.QWidget):
                 btn = QtWidgets.QPushButton()
                 btn.setText(name)
                 btn.setCheckable(True)
-                btn.clicked.connect(self.onPrefixOrSuffixClicked)
-                self.suffixBtnGrid.addWidget(btn, y, x, 1, 1)
-                self.suffixBtns[name] = btn
+                btn.clicked.connect(self._on_prefix_or_suffix_clicked)
+                btn_grid.addWidget(btn, y, x, 1, 1)
+                self.suffix_btns[name] = btn
 
                 x += 1
                 if x > 1:
                     x = 0
                     y += 1
 
-            layout.addLayout(self.suffixBtnGrid)
+            layout.addLayout(btn_grid)
 
         else:
-            noNamesLabel = QtWidgets.QLabel(parent)
-            noNamesLabel.setText('no suffixes')
-            noNamesLabel.setStyleSheet(style.UIColors.asFGColor(style.UIColors.HELPTEXT))
-            layout.addWidget(noNamesLabel)
+            no_names_label = QtWidgets.QLabel(parent)
+            no_names_label.setText('no suffixes')
+            no_names_label.setStyleSheet(style.UIColors.asFGColor(style.UIColors.HELPTEXT))
+            layout.addWidget(no_names_label)
 
-        spacerItem = QtWidgets.QSpacerItem(0, 2, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
-        layout.addItem(spacerItem)
-
-        return layout
-
-    def setupKeywordsUi(self, parent):
+    def setup_keywords_ui(self, parent, layout):
         """
         Build the keywords layout and all categories and button grids.
         Returns the layout.
         """
-        # ensure property is initialized
-        self.keywordBtns = {}
-
-        keywords = self.namesConfig.get('keywords', {})
-
-        layout = QtWidgets.QVBoxLayout(parent)
-        layout.setSpacing(2)
-
-        headerLabel = self.createLabel(parent, "Keywords", bold=True)
-        layout.addWidget(headerLabel)
+        keywords = self.names_config.get('keywords', {})
 
         if keywords:
-            categoriesLayout = QtWidgets.QHBoxLayout(parent)
+            cats_layout = QtWidgets.QHBoxLayout(parent)
 
             # create category and btn grid for all keywords
-            categoryNames = sorted(keywords.keys())
-            for catName in categoryNames:
-                catKeywords = keywords[catName]
-                catLayout = self.setupKeywordCategoryUi(
-                    parent, catName, catKeywords)
-                categoriesLayout.addLayout(catLayout)
+            cat_names = sorted(keywords.keys())
+            for catName in cat_names:
+                cat_keywords = keywords[catName]
+                cat_layout = self.setupKeywordCategoryUi(parent, catName, cat_keywords)
+                cats_layout.addLayout(cat_layout)
 
-            layout.addLayout(categoriesLayout)
+            layout.addLayout(cats_layout)
 
         else:
-            noNamesLabel = QtWidgets.QLabel(parent)
-            noNamesLabel.setText('no keywords')
-            noNamesLabel.setStyleSheet(style.UIColors.asFGColor(style.UIColors.HELPTEXT))
-            layout.addWidget(noNamesLabel)
-
-        spacerItem = QtWidgets.QSpacerItem(0, 2, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
-        layout.addItem(spacerItem)
-
-        return layout
+            no_names_label = QtWidgets.QLabel(parent)
+            no_names_label.setText('no keywords')
+            no_names_label.setStyleSheet(style.UIColors.asFGColor(style.UIColors.HELPTEXT))
+            layout.addWidget(no_names_label)
 
     def setupKeywordCategoryUi(self, parent, name, keywords):
         """
@@ -251,10 +169,10 @@ class QuickNameWidget(QtWidgets.QWidget):
         layout = QtWidgets.QVBoxLayout(parent)
         layout.setSpacing(2)
 
-        catLabel = self.createLabel(parent, names.toTitle(name))
-        catLabel.setStyleSheet(
-            'background-color: rgba(255, 255, 255, 5); border-radius: 2px')
-        layout.addWidget(catLabel)
+        cat_label = QtWidgets.QLabel(parent)
+        cat_label.setText(names.toTitle(name))
+        cat_label.setProperty('cssClasses', 'section-title')
+        layout.addWidget(cat_label)
 
         # create button for all keywords
         for name in keywords:
@@ -263,28 +181,14 @@ class QuickNameWidget(QtWidgets.QWidget):
             btn.setText(name)
             # catBtnGrid.addWidget(btn, y, x, 1, 1)
             layout.addWidget(btn)
-            self.keywordBtns[name] = btn
+            self.keyword_btns[name] = btn
             btn.installEventFilter(self)
-            btn.clicked.connect(partial(self.onKeywordClicked, name))
+            btn.clicked.connect(partial(self._on_keyword_clicked, name))
 
         spacer = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
         layout.addItem(spacer)
 
         return layout
-
-    def createLabel(self, parent, text, bold=False):
-        label = QtWidgets.QLabel(parent)
-        label.setText(text)
-        if bold:
-            font = QtGui.QFont()
-            font.setWeight(75)
-            font.setBold(True)
-            label.setFont(font)
-        label.setMinimumHeight(20)
-        label.setContentsMargins(10, 2, 2, 2)
-        label.setStyleSheet(
-            'background-color: rgba(0, 0, 0, 40); border-radius: 2px')
-        return label
 
     def eventFilter(self, widget, event):
         # if (event.type() == QtCore.QEvent.Enter and
@@ -293,25 +197,25 @@ class QuickNameWidget(QtWidgets.QWidget):
         #     self.refreshPreviewLabel()
         return QtWidgets.QWidget.eventFilter(self, widget, event)
 
-    def setActiveKeyword(self, newKeyword):
-        self.activeKeyword = newKeyword
-        self.refreshPreviewLabel()
+    def set_active_keyword(self, new_keyword):
+        self.active_keyword = new_keyword
+        self.refresh_preview_label()
         # color the clicked btn
-        for btnKey, btn in self.keywordBtns.items():
-            if btnKey == self.activeKeyword:
+        for btnKey, btn in self.keyword_btns.items():
+            if btnKey == self.active_keyword:
                 btn.setStyleSheet(
-                    style.UIColors.asBGColor(self.activeKeywordColor))
+                    style.UIColors.asBGColor(self.active_keyword_color))
             else:
                 btn.setStyleSheet('')
 
-    def refreshPreviewLabel(self):
+    def refresh_preview_label(self):
         """
         Update the name preview label to match the name
         that would be applied to a node.
         """
-        self.namePreviewBtn.setText(self.evaluateName())
+        self.ui.set_name_btn.setText(self.evaluate_name())
 
-    def sortOrderedNames(self, names, category):
+    def sort_ordered_names(self, names, category):
         """
         Sort a list of names using the defined orders in the config
 
@@ -319,111 +223,107 @@ class QuickNameWidget(QtWidgets.QWidget):
             names (list of str): A list of names
             category (str): The name category, e.g. 'prefixes'
         """
-        categoryItems = self.namesConfig.get(category, [])
-        if not categoryItems:
+        cat_items = self.names_config.get(category, [])
+        if not cat_items:
             return names
 
-        namePairs = []
+        name_pairs = []
         for name in names:
-            isFound = False
-            for item in categoryItems:
+            is_found = False
+            for item in cat_items:
                 if item['name'] == name:
-                    namePairs.append((item['sort'], item['name']))
-                    isFound = True
+                    name_pairs.append((item['sort'], item['name']))
+                    is_found = True
                     break
-            if not isFound:
+            if not is_found:
                 # unknown name, sort order = 0
-                namePairs.append((0, name))
-        namePairs.sort()
+                name_pairs.append((0, name))
+        name_pairs.sort()
 
-        return [p[1] for p in namePairs]
+        return [p[1] for p in name_pairs]
 
-    def evaluatePrefix(self):
+    def evaluate_prefix(self):
         """
         Return the combined prefix
         """
         # TODO: sort using config
         prefixes = []
-        for name, btn in self.prefixBtns.items():
+        for name, btn in self.prefix_btns.items():
             if btn.isChecked():
                 prefixes.append(name)
-        prefixes = self.sortOrderedNames(prefixes, 'prefixes')
+        prefixes = self.sort_ordered_names(prefixes, 'prefixes')
         return '_'.join(prefixes)
 
-    def evaluateSuffix(self):
+    def evaluate_suffix(self):
         """
         Return the combined suffix
         """
         # TODO: sort using config
         suffixes = []
-        for name, btn in self.suffixBtns.items():
+        for name, btn in self.suffix_btns.items():
             if btn.isChecked():
                 suffixes.append(name)
-        suffixes = self.sortOrderedNames(suffixes, 'suffixes')
+        suffixes = self.sort_ordered_names(suffixes, 'suffixes')
         return '_'.join(suffixes)
 
-    def evaluateName(self, includeNumber=False):
+    def evaluate_name(self, include_number=False):
         """
         Return the fully combined name, including suffixes and prefixes
         """
         components = []
         # prefix
-        prefix = self.evaluatePrefix()
+        prefix = self.evaluate_prefix()
         if prefix:
             components.append(prefix)
         # keyword
-        keyword = self.activeKeyword if self.activeKeyword else '*'
-        if includeNumber:
-            num_fmt = self.namesConfig.get('numberFormat', '_{num:02}')
+        keyword = self.active_keyword if self.active_keyword else '*'
+        if include_number:
+            num_fmt = self.names_config.get('numberFormat', '_{num:02}')
             keyword += num_fmt
         components.append(keyword)
         # suffix
-        suffix = self.evaluateSuffix()
+        suffix = self.evaluate_suffix()
         if suffix:
             components.append(suffix)
         return '_'.join(components)
 
-    def onPrefixOrSuffixClicked(self, *args, **kwargs):
+    def _on_prefix_or_suffix_clicked(self, *args, **kwargs):
         """
         Called when a prefix or suffix is clicked. Refreshes the preview.
         """
-        self.refreshPreviewLabel()
+        self.refresh_preview_label()
 
-    def onKeywordClicked(self, keyword):
+    def _on_keyword_clicked(self, keyword):
         """
         Called when a keyword is clicked. Performs actual renaming of nodes.
         """
         # save the active keyword
-        self.setActiveKeyword(keyword)
+        self.set_active_keyword(keyword)
         # rename the nodes
-        self.renameSelectedNodes()
+        self.rename_selected_nodes()
 
-    def onPreviewBtnClicked(self):
+    def _on_preview_btn_clicked(self):
         """
         Called when the preview button is clicked. Performs renaming of nodes
         using the last used keyword. Does nothing if no keyword is set.
         """
-        self.renameSelectedNodes()
+        self.rename_selected_nodes()
 
-    def renameSelectedNodes(self):
+    def rename_selected_nodes(self):
         """
         Perform the renaming of all selected nodes based on the
         active prefix, suffix, and selected keyword.
         """
-        if self.activeKeyword:
+        if self.active_keyword:
             sel = pm.selected()
-            isMultipleNodes = len(sel) > 1
-            name = self.evaluateName(includeNumber=isMultipleNodes)
+            is_multiple_nodes = len(sel) > 1
+            name = self.evaluate_name(include_number=is_multiple_nodes)
             for i, s in enumerate(pm.selected()):
                 s.rename(name.format(num=i + 1))
 
 
 class QuickNameWindow(PulseWindow):
     OBJECT_NAME = 'pulseQuickNameWindow'
-    PREFERRED_SIZE = QtCore.QSize(400, 300)
-    STARTING_SIZE = QtCore.QSize(600, 300)
-    MINIMUM_SIZE = QtCore.QSize(400, 300)
-
     WINDOW_MODULE = 'pulse.ui.quickname'
 
     def __init__(self, parent=None):
