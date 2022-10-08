@@ -1,7 +1,6 @@
 from . import core
 from . import pulseeditor
 from .contextmenus import unregisterContextMenu, registerContextMenu
-from .core import PulseWindow
 
 
 def toggleEditorUI():
@@ -34,7 +33,7 @@ def destroyAllPulseWindows():
     Destroy all PulseWindows and their workspace controls.
     Intended for development reloading purposes.
     """
-    for cls in PulseWindow.__subclasses__():
+    for cls in core.PulseWindow.__subclasses__():
         cls.destroyWindow()
 
 

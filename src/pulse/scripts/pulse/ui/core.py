@@ -114,12 +114,14 @@ class PulseWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
     """
 
     OBJECT_NAME = None
-    PREFERRED_SIZE = QtCore.QSize(200, 400)
-    STARTING_SIZE = QtCore.QSize(200, 400)
-    MINIMUM_SIZE = QtCore.QSize(200, 400)
 
-    # the name of the module in which this window class can be found
-    # used to build the UI_SCRIPT and CLOSE_SCRIPT
+    # window size hints, set to a QtCore.QSize to override, otherwise define in the .ui
+    PREFERRED_SIZE = None
+    STARTING_SIZE = None
+    MINIMUM_SIZE = None
+
+    # the name of the module in which this window class can be found,
+    # used to build the UI_SCRIPT and CLOSE_SCRIPT that Maya uses to restore windows on startup
     WINDOW_MODULE = None
 
     # default area where this window should be docked, note that the 'areas' are large
@@ -238,16 +240,22 @@ class PulseWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.setObjectName(self.OBJECT_NAME)
 
         self.preferredSize = self.PREFERRED_SIZE
-        self.resize(dpiScale(self.STARTING_SIZE))
+
+        if self.STARTING_SIZE:
+            self.resize(dpiScale(self.STARTING_SIZE))
 
     def setSizeHint(self, size):
         self.preferredSize = size
 
     def sizeHint(self):
-        return self.preferredSize
+        if self.preferredSize:
+            return self.preferredSize
+        return super().sizeHint()
 
     def minimumSizeHint(self):
-        return self.MINIMUM_SIZE
+        if self.MINIMUM_SIZE:
+            return self.MINIMUM_SIZE
+        return super().minimumSizeHint()
 
 
 class BlueprintUIModel(QtCore.QObject):
