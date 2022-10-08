@@ -1,0 +1,13 @@
+/*
+Common styling applied to all Pulse windows.
+Makes use of `cssClasses` custom property to allow multiple classes per object like html.
+*/
+
+
+/* Use section-title class to create headers with a dark background. */
+QLabel[cssClasses~="section-title"] {
+    font-weight: bold;
+    padding: 4px;
+    background-color: rgba(0, 0, 0, 20%);
+    border-radius: 2px;
+}

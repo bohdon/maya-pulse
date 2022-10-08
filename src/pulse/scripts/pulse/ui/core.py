@@ -144,6 +144,9 @@ class PulseWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
     # reference to singleton instance
     INSTANCE = None
 
+    # the file path to the stylesheet for this window, relative to this module
+    STYLESHEET_PATH = 'style/window_style.qss'
+
     @classmethod
     def createWindow(cls, restore=False):
         if restore:
@@ -244,6 +247,8 @@ class PulseWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         if self.STARTING_SIZE:
             self.resize(dpiScale(self.STARTING_SIZE))
 
+        self._apply_stylesheet()
+
     def setSizeHint(self, size):
         self.preferredSize = size
 
@@ -256,6 +261,19 @@ class PulseWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         if self.MINIMUM_SIZE:
             return self.MINIMUM_SIZE
         return super().minimumSizeHint()
+
+    def _apply_stylesheet(self):
+        if self.STYLESHEET_PATH:
+            # combine style sheet path with this module's directory
+            module_dir = os.path.dirname(__file__)
+            full_path = os.path.join(module_dir, self.STYLESHEET_PATH)
+
+            if os.path.isfile(full_path):
+                # found the stylesheet, apply it
+                with open(full_path, 'r') as fp:
+                    self.setStyleSheet(fp.read())
+            else:
+                LOG.warning(f'Could not find stylesheet: {full_path}')
 
 
 class BlueprintUIModel(QtCore.QObject):

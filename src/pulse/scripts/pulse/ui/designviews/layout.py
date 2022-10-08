@@ -97,20 +97,6 @@ class LayoutLinkEditorWidget(QtWidgets.QWidget):
     def keep_offsets(self):
         return self.ui.keep_offsets_check.isChecked()
 
-    def createSectionLabel(self, parent, text, bold=False):
-        label = QtWidgets.QLabel(parent)
-        label.setText(text)
-        if bold:
-            font = QtGui.QFont()
-            font.setWeight(75)
-            font.setBold(True)
-            label.setFont(font)
-        label.setMinimumHeight(20)
-        label.setContentsMargins(10, 2, 2, 2)
-        label.setStyleSheet(
-            'background-color: rgba(0, 0, 0, 40); border-radius: 2px')
-        return label
-
     def update_link_info_list(self):
         if self.link_info_list:
             self.link_info_list.deleteLater()
