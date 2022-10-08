@@ -3,6 +3,7 @@ from maya import OpenMaya as api
 
 from .. import utils as viewutils
 from ..core import PulseWindow, PulsePanelWidget
+from ..gen.layout_link_editor import Ui_LayoutLinkEditor
 from ..utils import undoAndRepeatPartial as cmd
 from ... import editorutils
 from ... import links
@@ -10,6 +11,9 @@ from ...vendor.Qt import QtCore, QtWidgets, QtGui
 
 
 class LayoutPanel(PulsePanelWidget):
+    """
+    The layout utils panel shown in the Design Toolkit.
+    """
 
     def __init__(self, parent):
         super(LayoutPanel, self).__init__(parent=parent)
@@ -50,16 +54,26 @@ class LayoutPanel(PulsePanelWidget):
 
 
 class LayoutLinkEditorWidget(QtWidgets.QWidget):
+    """
+    The link editor widget shown when launching Link Editor from the design panel.
+    """
 
     def __init__(self, parent):
         super(LayoutLinkEditorWidget, self).__init__(parent=parent)
 
-        self.linkInfoScrollArea = None
-        self.linkInfoList = None
-
-        self.setupUi(self)
-
         self.selection_changed_cb = None
+        self.link_info_list = None
+
+        self.ui = Ui_LayoutLinkEditor()
+        self.ui.setupUi(self)
+
+        self.ui.link_btn.clicked.connect(cmd(self.link_selected, linkType=links.LinkType.DEFAULT))
+        self.ui.link_ikpole_btn.clicked.connect(cmd(self.link_selected, linkType=links.LinkType.IKPOLE))
+        self.ui.link_center_btn.clicked.connect(cmd(self.link_selected_weighted))
+        self.ui.recreate_link_btn.clicked.connect(cmd(self.recreate_links_for_selected))
+        self.ui.unlink_btn.clicked.connect(cmd(self.unlink_selected))
+        self.ui.snap_to_targets_btn.clicked.connect(cmd(editorutils.positionLinkForSelected))
+        self.ui.refresh_btn.clicked.connect(self.update_link_info_list)
 
     def showEvent(self, event):
         super(LayoutLinkEditorWidget, self).showEvent(event)
@@ -67,7 +81,7 @@ class LayoutLinkEditorWidget(QtWidgets.QWidget):
             print('adding selection changed callback')
             self.selection_changed_cb = api.MEventMessage.addEventCallback("SelectionChanged",
                                                                            self.onSceneSelectionChanged)
-        self.updateLinkInfoList()
+        self.update_link_info_list()
 
     def hideEvent(self, event):
         super(LayoutLinkEditorWidget, self).hideEvent(event)
@@ -77,93 +91,11 @@ class LayoutLinkEditorWidget(QtWidgets.QWidget):
             self.selection_changed_cb = None
 
     def onSceneSelectionChanged(self, *args, **kwargs):
-        self.updateLinkInfoList()
+        self.update_link_info_list()
 
     @property
-    def keepOffsets(self):
-        return self.keepOffsetsCheck.isChecked()
-
-    def setupUi(self, parent):
-        layout = QtWidgets.QVBoxLayout(parent)
-        layout.setMargin(0)
-        layout.setSpacing(2)
-
-        self.keepOffsetsCheck = QtWidgets.QCheckBox(parent)
-        self.keepOffsetsCheck.setText("Keep Offsets")
-        layout.addWidget(self.keepOffsetsCheck)
-
-        gridLayout = QtWidgets.QGridLayout(parent)
-        gridLayout.setMargin(0)
-        gridLayout.setSpacing(2)
-
-        linkDefaultBtn = QtWidgets.QPushButton(parent)
-        linkDefaultBtn.setText("Link")
-        linkDefaultBtn.clicked.connect(
-            cmd(self.linkSelected, linkType=links.LinkType.DEFAULT))
-
-        linkIkPoleBtn = QtWidgets.QPushButton(parent)
-        linkIkPoleBtn.setText("Link IK Pole")
-        linkIkPoleBtn.clicked.connect(
-            cmd(self.linkSelected, linkType=links.LinkType.IKPOLE))
-
-        linkCenterBtn = QtWidgets.QPushButton(parent)
-        linkCenterBtn.setText("Link Centered")
-        linkCenterBtn.clicked.connect(
-            cmd(self.linkSelectedWeighted))
-
-        gridItems = [
-            [linkDefaultBtn, linkIkPoleBtn, linkCenterBtn],
-        ]
-        viewutils.addItemsToGrid(gridLayout, gridItems)
-        layout.addLayout(gridLayout)
-
-        gridLayout2 = QtWidgets.QGridLayout(parent)
-        gridLayout2.setMargin(0)
-        gridLayout2.setSpacing(2)
-
-        recreateBtn = QtWidgets.QPushButton(parent)
-        recreateBtn.setText("Recreate Link")
-        recreateBtn.setStatusTip("Recreate links for the selected nodes, updating or removing offsets.")
-        recreateBtn.clicked.connect(
-            cmd(self.recreateLinksForSelected))
-
-        unlinkBtn = QtWidgets.QPushButton(parent)
-        unlinkBtn.setText("Unlink")
-        unlinkBtn.clicked.connect(
-            cmd(self.unlinkSelected))
-        layout.addWidget(unlinkBtn)
-
-        gridItems = [
-            [recreateBtn, unlinkBtn],
-        ]
-        viewutils.addItemsToGrid(gridLayout2, gridItems)
-        layout.addLayout(gridLayout2)
-
-        snapBtn = QtWidgets.QPushButton(parent)
-        snapBtn.setText("Snap to Targets")
-        snapBtn.clicked.connect(
-            cmd(editorutils.positionLinkForSelected))
-        layout.addWidget(snapBtn)
-
-        spacer = QtWidgets.QSpacerItem(
-            20, 20, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum)
-        layout.addItem(spacer)
-
-        linkInfoLabel = self.createSectionLabel(parent, "Links", True)
-        layout.addWidget(linkInfoLabel)
-
-        self.linkInfoScrollArea = QtWidgets.QScrollArea(parent)
-        self.linkInfoScrollArea.setFrameShape(QtWidgets.QScrollArea.NoFrame)
-        self.linkInfoScrollArea.setWidgetResizable(True)
-        layout.addWidget(self.linkInfoScrollArea)
-
-        refreshBtn = QtWidgets.QPushButton(parent)
-        refreshBtn.setText("Refresh")
-        refreshBtn.setToolTip("Show the link data for the selected nodes")
-        refreshBtn.clicked.connect(self.updateLinkInfoList)
-        layout.addWidget(refreshBtn)
-
-        self.setLayout(layout)
+    def keep_offsets(self):
+        return self.ui.keep_offsets_check.isChecked()
 
     def createSectionLabel(self, parent, text, bold=False):
         label = QtWidgets.QLabel(parent)
@@ -179,31 +111,31 @@ class LayoutLinkEditorWidget(QtWidgets.QWidget):
             'background-color: rgba(0, 0, 0, 40); border-radius: 2px')
         return label
 
-    def updateLinkInfoList(self):
-        if self.linkInfoList:
-            self.linkInfoList.deleteLater()
-            self.linkInfoList = None
+    def update_link_info_list(self):
+        if self.link_info_list:
+            self.link_info_list.deleteLater()
+            self.link_info_list = None
 
         # get selected nodes and link data
-        selNodes = pm.selected()
-        self.linkInfoList = LinkInfoListWidget(self, selNodes)
-        self.linkInfoScrollArea.setWidget(self.linkInfoList)
+        sel_nodes = pm.selected()
+        self.link_info_list = LinkInfoListWidget(self, sel_nodes)
+        self.ui.link_info_scroll_area.setWidget(self.link_info_list)
 
-    def linkSelected(self, linkType):
-        editorutils.linkSelected(linkType, self.keepOffsets)
-        self.updateLinkInfoList()
+    def link_selected(self, linkType):
+        editorutils.linkSelected(linkType, self.keep_offsets)
+        self.update_link_info_list()
 
-    def linkSelectedWeighted(self):
-        editorutils.linkSelectedWeighted(self.keepOffsets)
-        self.updateLinkInfoList()
+    def link_selected_weighted(self):
+        editorutils.linkSelectedWeighted(self.keep_offsets)
+        self.update_link_info_list()
 
-    def recreateLinksForSelected(self):
-        editorutils.recreateLinksForSelected(self.keepOffsets)
-        self.updateLinkInfoList()
+    def recreate_links_for_selected(self):
+        editorutils.recreateLinksForSelected(self.keep_offsets)
+        self.update_link_info_list()
 
-    def unlinkSelected(self):
+    def unlink_selected(self):
         editorutils.unlinkSelected()
-        self.updateLinkInfoList()
+        self.update_link_info_list()
 
 
 class LinkInfoListWidget(QtWidgets.QWidget):
@@ -294,18 +226,17 @@ class LinkInfoWidget(QtWidgets.QWidget):
 
 
 class LayoutLinkEditorWindow(PulseWindow):
-    OBJECT_NAME = 'pulseLayoutLinkEditorWindow'
-    PREFERRED_SIZE = QtCore.QSize(400, 300)
-    STARTING_SIZE = QtCore.QSize(400, 300)
-    MINIMUM_SIZE = QtCore.QSize(400, 300)
+    """
+    Window containing the LayoutLinkEditorWidget.
+    """
 
+    OBJECT_NAME = 'pulseLayoutLinkEditorWindow'
     WINDOW_MODULE = 'pulse.ui.designviews.layout'
 
     def __init__(self, parent=None):
         super(LayoutLinkEditorWindow, self).__init__(parent=parent)
 
         self.setWindowTitle('Layout Link Editor')
-        self.setMinimumSize(300, 300)
 
         layout = QtWidgets.QVBoxLayout(self)
         layout.setMargin(10)

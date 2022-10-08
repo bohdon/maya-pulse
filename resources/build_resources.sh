@@ -31,7 +31,7 @@ build_res() {
 
 # build all UIs
 echo "Building ui files..."
-build_ui test
+build_ui layout_link_editor
 
 # build all resources
 echo "Building resource files..."
