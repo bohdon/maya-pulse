@@ -36,7 +36,7 @@ class PulseEditorWindow(PulseWindow):
     PREFERRED_SIZE = QtCore.QSize(260, 600)
     MINIMUM_SIZE = QtCore.QSize(260, 600)
     DEFAULT_TAB_CONTROL = "Outliner"
-    WINDOW_MODULE = 'pulse.views.pulseeditor'
+    WINDOW_MODULE = 'pulse.ui.pulseeditor'
 
     mainTabIndex = optionVarProperty('pulse.editor.mainTabIndex', 0)
 

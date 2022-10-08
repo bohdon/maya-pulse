@@ -6,7 +6,7 @@ from fnmatch import fnmatch
 
 from .buildItems import BuildAction
 from .vendor import yaml
-from .views.actioneditor import BuildActionProxyForm
+from .ui.actioneditor import BuildActionProxyForm
 
 LOG = logging.getLogger(__name__)
 

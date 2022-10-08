@@ -4,7 +4,7 @@ import pulse.nodes
 import pulse.spaces
 import pymetanode as meta
 from pulse.buildItems import BuildAction, BuildActionError
-from pulse.views.contextmenus import PulseNodeContextSubMenu
+from pulse.ui.contextmenus import PulseNodeContextSubMenu
 
 
 class CreateSpaceAction(BuildAction):

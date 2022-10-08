@@ -54,7 +54,7 @@ class ActionsViewWindow(PulseWindow):
     STARTING_SIZE = QtCore.QSize(400, 300)
     MINIMUM_SIZE = QtCore.QSize(400, 300)
 
-    WINDOW_MODULE = 'pulse.views.actionsview'
+    WINDOW_MODULE = 'pulse.ui.actionsview'
 
     def __init__(self, parent=None):
         super(ActionsViewWindow, self).__init__(parent=parent)

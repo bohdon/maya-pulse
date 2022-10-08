@@ -19,7 +19,7 @@ from . import shapes
 from . import skins
 from . import sym
 from .vendor.mayacoretools import preservedSelection
-from .views.core import BlueprintUIModel
+from .ui.core import BlueprintUIModel
 
 LOG = logging.getLogger(__name__)
 

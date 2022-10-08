@@ -299,7 +299,7 @@ class LayoutLinkEditorWindow(PulseWindow):
     STARTING_SIZE = QtCore.QSize(400, 300)
     MINIMUM_SIZE = QtCore.QSize(400, 300)
 
-    WINDOW_MODULE = 'pulse.views.designviews.layout'
+    WINDOW_MODULE = 'pulse.ui.designviews.layout'
 
     def __init__(self, parent=None):
         super(LayoutLinkEditorWindow, self).__init__(parent=parent)

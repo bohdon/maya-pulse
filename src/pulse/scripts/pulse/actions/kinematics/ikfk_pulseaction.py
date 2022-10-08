@@ -6,7 +6,7 @@ import pulse.nodes
 import pulse.utilnodes
 import pymetanode as meta
 from pulse.buildItems import BuildAction, BuildActionError
-from pulse.views.contextmenus import PulseNodeContextSubMenu
+from pulse.ui.contextmenus import PulseNodeContextSubMenu
 
 IKFK_CONTROL_METACLASS = 'pulse_ikfk_control'
 

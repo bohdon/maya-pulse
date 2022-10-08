@@ -641,7 +641,7 @@ class ActionEditorWindow(PulseWindow):
     STARTING_SIZE = QtCore.QSize(320, 300)
     MINIMUM_SIZE = QtCore.QSize(320, 300)
     DEFAULT_TAB_CONTROL = 'ChannelBoxLayerEditor'
-    WINDOW_MODULE = 'pulse.views.actioneditor'
+    WINDOW_MODULE = 'pulse.ui.actioneditor'
 
     def __init__(self, parent=None):
         super(ActionEditorWindow, self).__init__(parent=parent)

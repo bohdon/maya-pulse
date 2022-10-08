@@ -2,7 +2,7 @@
 import unittest
 import maya.cmds as cmds
 
-from pulse.views.core import BlueprintUIModel
+from pulse.ui.core import BlueprintUIModel
 
 
 class TestPulseCmds(unittest.TestCase):

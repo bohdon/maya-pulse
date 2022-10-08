@@ -198,7 +198,7 @@ class ActionTreeWindow(PulseWindow):
     STARTING_SIZE = QtCore.QSize(400, 300)
     MINIMUM_SIZE = QtCore.QSize(400, 300)
 
-    WINDOW_MODULE = 'pulse.views.actiontree'
+    WINDOW_MODULE = 'pulse.ui.actiontree'
 
     def __init__(self, parent=None):
         super(ActionTreeWindow, self).__init__(parent=parent)

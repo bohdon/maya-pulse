@@ -9,31 +9,36 @@ Pulse is still in early development, but if you want to try it out here's the en
 
 ```python
 # toggle the Pulse UI
-import pulse.views
-pulse.views.toggleEditorUI()
+import pulse.ui
+
+pulse.ui.toggleEditorUI()
 ```
 
 ```python
 # development reload Pulse
+import pulse.ui
 try:
-    pulse.views.tearDownUI()
+    pulse.ui.tearDownUI()
 except:
     pass
 
 import pymel.core as pm
+
 pm.newFile(force=True)
 pm.unloadPlugin('pulse')
 
 try:
-    pulse.views.destroyUIModelInstances()
+    pulse.ui.destroyUIModelInstances()
 except:
     pass
 
 import pulse.vendor.mayacoretools as tools
+
 tools.deleteModules('pulse*')
 
-import pulse.views
-pulse.views.showEditorUI()
+import pulse.ui
+
+pulse.ui.showEditorUI()
 ```
 
 ## Roadmap

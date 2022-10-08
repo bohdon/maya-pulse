@@ -190,7 +190,7 @@ class CopyPasteMatrixWindow(PulseWindow):
     STARTING_SIZE = QtCore.QSize(220, 160)
     MINIMUM_SIZE = QtCore.QSize(220, 160)
     REQUIRED_PLUGINS = []
-    WINDOW_MODULE = 'pulse.views.utilviews'
+    WINDOW_MODULE = 'pulse.ui.utilviews'
 
     def __init__(self, parent=None):
         super(CopyPasteMatrixWindow, self).__init__(parent=parent)

@@ -94,7 +94,7 @@ class QuickColorWindow(PulseWindow):
     STARTING_SIZE = QtCore.QSize(400, 300)
     MINIMUM_SIZE = QtCore.QSize(400, 300)
 
-    WINDOW_MODULE = 'pulse.views.quickcolor'
+    WINDOW_MODULE = 'pulse.ui.quickcolor'
 
     def __init__(self, parent=None):
         super(QuickColorWindow, self).__init__(parent=parent)

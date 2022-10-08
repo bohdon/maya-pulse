@@ -183,7 +183,7 @@ class ActionPaletteWindow(PulseWindow):
     PREFERRED_SIZE = QtCore.QSize(320, 300)
     STARTING_SIZE = QtCore.QSize(320, 300)
     MINIMUM_SIZE = QtCore.QSize(320, 300)
-    WINDOW_MODULE = 'pulse.views.actionpalette'
+    WINDOW_MODULE = 'pulse.ui.actionpalette'
 
     def __init__(self, parent=None):
         super(ActionPaletteWindow, self).__init__(parent=parent)

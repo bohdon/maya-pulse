@@ -7,7 +7,7 @@ import pymel.core as pm
 
 from pulse.buildItems import BuildAction, BuildActionError
 from pulse.vendor.Qt import QtWidgets
-from pulse.views.actioneditor import BuildActionProxyForm
+from pulse.ui.actioneditor import BuildActionProxyForm
 
 
 class PythonAction(BuildAction):

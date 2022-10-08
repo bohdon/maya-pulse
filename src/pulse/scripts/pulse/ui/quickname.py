@@ -424,7 +424,7 @@ class QuickNameWindow(PulseWindow):
     STARTING_SIZE = QtCore.QSize(600, 300)
     MINIMUM_SIZE = QtCore.QSize(400, 300)
 
-    WINDOW_MODULE = 'pulse.views.quickname'
+    WINDOW_MODULE = 'pulse.ui.quickname'
 
     def __init__(self, parent=None):
         super(QuickNameWindow, self).__init__(parent=parent)
