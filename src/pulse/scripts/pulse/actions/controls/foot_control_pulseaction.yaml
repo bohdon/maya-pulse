@@ -2,7 +2,7 @@ FootControlAction:
   id: Pulse.FootControl
   displayName: Foot Control
   description: Creates a classic attribute-driven foot roll and tilt control
-  color: [.85, .65, .4]
+  color: [ .85, .65, .4 ]
   category: Controls
   attrs:
     - name: ankleFollower

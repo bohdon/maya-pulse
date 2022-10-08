@@ -2,7 +2,7 @@ AddIKFKControlAction:
   id: Pulse.AddIKFKControl
   displayName: Add IKFK Control
   description: Adds a control to an existing IKFK switch, allowing it to have different parent spaces for IK and FK
-  color: [.4, .6, .8]
+  color: [ .4, .6, .8 ]
   category: Kinematics
   attrs:
     - name: ikfkControl

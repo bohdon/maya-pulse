@@ -2,31 +2,31 @@ icon: squareCorners.png
 name: Square Corners
 sort: 7
 curves:
-- degree: 1
-  knot: [0.0, 1.0, 2.0]
-  periodic: false
-  point:
-  - [0.375, 0.0, 0.5]
-  - [0.5, 0.0, 0.5]
-  - [0.5, 0.0, 0.375]
-- degree: 1
-  knot: [0.0, 1.0, 2.0]
-  periodic: false
-  point:
-  - [0.5, 0.0, -0.375]
-  - [0.5, 0.0, -0.5]
-  - [0.375, 0.0, -0.5]
-- degree: 1
-  knot: [0.0, 1.0, 2.0]
-  periodic: false
-  point:
-  - [-0.375, 0.0, -0.5]
-  - [-0.5, 0.0, -0.5]
-  - [-0.5, 0.0, -0.375]
-- degree: 1
-  knot: [0.0, 1.0, 2.0]
-  periodic: false
-  point:
-  - [-0.5, 0.0, 0.375]
-  - [-0.5, 0.0, 0.5]
-  - [-0.375, 0.0, 0.5]
+  - degree: 1
+    knot: [ 0.0, 1.0, 2.0 ]
+    periodic: false
+    point:
+      - [ 0.375, 0.0, 0.5 ]
+      - [ 0.5, 0.0, 0.5 ]
+      - [ 0.5, 0.0, 0.375 ]
+  - degree: 1
+    knot: [ 0.0, 1.0, 2.0 ]
+    periodic: false
+    point:
+      - [ 0.5, 0.0, -0.375 ]
+      - [ 0.5, 0.0, -0.5 ]
+      - [ 0.375, 0.0, -0.5 ]
+  - degree: 1
+    knot: [ 0.0, 1.0, 2.0 ]
+    periodic: false
+    point:
+      - [ -0.375, 0.0, -0.5 ]
+      - [ -0.5, 0.0, -0.5 ]
+      - [ -0.5, 0.0, -0.375 ]
+  - degree: 1
+    knot: [ 0.0, 1.0, 2.0 ]
+    periodic: false
+    point:
+      - [ -0.5, 0.0, 0.375 ]
+      - [ -0.5, 0.0, 0.5 ]
+      - [ -0.375, 0.0, 0.5 ]

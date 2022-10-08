@@ -2,7 +2,7 @@ AnimControlAction:
   id: Pulse.AnimControl
   displayName: Anim Control
   description: Configures a node to be used as an animation control
-  color: [.85, .65, .4]
+  color: [ .85, .65, .4 ]
   category: Controls
   controlMetaClass: pulse_animcontrol
   attrs:
@@ -20,4 +20,4 @@ AnimControlAction:
     - name: keyableAttrs
       description: Defines attributes that can be animated. All others will be locked
       type: stringlist
-      value: ["t", "r", "s"]
+      value: [ "t", "r", "s" ]

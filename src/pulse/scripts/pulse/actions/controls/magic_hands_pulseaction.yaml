@@ -2,7 +2,7 @@ MagicHandsAction:
   id: Pulse.MagicHands
   displayName: Magic Hands
   description: Controls all fingers of a hand using individual rotate axes for quick posing
-  color: [.85, .65, .4]
+  color: [ .85, .65, .4 ]
   category: Controls
   attrs:
     - name: control

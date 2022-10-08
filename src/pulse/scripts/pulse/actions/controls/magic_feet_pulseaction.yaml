@@ -2,7 +2,7 @@ MagicFeetAction:
   id: Pulse.MagicFeet
   displayName: Magic Feet
   description: Allows controlling foot rotation, blending pivots between toe, heel and ankle
-  color: [.85, .65, .4]
+  color: [ .85, .65, .4 ]
   category: Controls
   attrs:
     - name: follower

@@ -2,147 +2,147 @@ name: Circle Dashed
 icon: circleDashed.png
 sort: 0
 curves:
-- degree: 1
-  periodic: false
-  knot: [0.0, 1.0]
-  point:
-  - [0.0, 0.0, -0.4984]
-  - [-0.0655, 0.0, -0.494]
-- degree: 1
-  periodic: false
-  knot: [0.0, 1.0]
-  point:
-  - [-0.2492, 0.0, -0.4316]
-  - [-0.3038, 0.0, -0.395]
-- degree: 1
-  periodic: false
-  knot: [0.0, 1.0]
-  point:
-  - [-0.4316, 0.0, -0.2492]
-  - [-0.4606, 0.0, -0.1902]
-- degree: 1
-  periodic: false
-  knot: [0.0, 1.0]
-  point:
-  - [-0.4984, 0.0, 0.0]
-  - [-0.494, 0.0, 0.0655]
-- degree: 1
-  periodic: false
-  knot: [0.0, 1.0]
-  point:
-  - [-0.4316, 0.0, 0.2492]
-  - [-0.395, 0.0, 0.3038]
-- degree: 1
-  periodic: false
-  knot: [0.0, 1.0]
-  point:
-  - [-0.2492, 0.0, 0.4316]
-  - [-0.1902, 0.0, 0.4606]
-- degree: 1
-  periodic: false
-  knot: [0.0, 1.0]
-  point:
-  - [0.0, 0.0, 0.4984]
-  - [0.0655, 0.0, 0.494]
-- degree: 1
-  periodic: false
-  knot: [0.0, 1.0]
-  point:
-  - [0.2492, 0.0, 0.4316]
-  - [0.3038, 0.0, 0.395]
-- degree: 1
-  periodic: false
-  knot: [0.0, 1.0]
-  point:
-  - [0.4316, 0.0, 0.2492]
-  - [0.4606, 0.0, 0.1902]
-- degree: 1
-  periodic: false
-  knot: [0.0, 1.0]
-  point:
-  - [0.4984, 0.0, 0.0]
-  - [0.494, 0.0, -0.0655]
-- degree: 1
-  periodic: false
-  knot: [0.0, 1.0]
-  point:
-  - [0.4316, 0.0, -0.2492]
-  - [0.395, 0.0, -0.3038]
-- degree: 1
-  periodic: false
-  knot: [0.0, 1.0]
-  point:
-  - [0.2492, 0.0, -0.4316]
-  - [0.1902, 0.0, -0.4606]
-- degree: 1
-  periodic: false
-  knot: [0.0, 1.0]
-  point:
-  - [-0.1289, 0.0, -0.4814]
-  - [-0.1912, 0.0, -0.4602]
-- degree: 1
-  periodic: false
-  knot: [0.0, 1.0]
-  point:
-  - [-0.3524, 0.0, -0.3524]
-  - [-0.3957, 0.0, -0.3029]
-- degree: 1
-  periodic: false
-  knot: [0.0, 1.0]
-  point:
-  - [-0.4814, 0.0, -0.1289]
-  - [-0.4942, 0.0, -0.0645]
-- degree: 1
-  periodic: false
-  knot: [0.0, 1.0]
-  point:
-  - [-0.4814, 0.0, 0.1289]
-  - [-0.4602, 0.0, 0.1912]
-- degree: 1
-  periodic: false
-  knot: [0.0, 1.0]
-  point:
-  - [-0.3524, 0.0, 0.3524]
-  - [-0.3029, 0.0, 0.3957]
-- degree: 1
-  periodic: false
-  knot: [0.0, 1.0]
-  point:
-  - [-0.1289, 0.0, 0.4814]
-  - [-0.0645, 0.0, 0.4942]
-- degree: 1
-  periodic: false
-  knot: [0.0, 1.0]
-  point:
-  - [0.1289, 0.0, 0.4814]
-  - [0.1912, 0.0, 0.4602]
-- degree: 1
-  periodic: false
-  knot: [0.0, 1.0]
-  point:
-  - [0.3524, 0.0, 0.3524]
-  - [0.3957, 0.0, 0.3029]
-- degree: 1
-  periodic: false
-  knot: [0.0, 1.0]
-  point:
-  - [0.4814, 0.0, 0.1289]
-  - [0.4942, 0.0, 0.0645]
-- degree: 1
-  periodic: false
-  knot: [0.0, 1.0]
-  point:
-  - [0.4814, 0.0, -0.1289]
-  - [0.4602, 0.0, -0.1912]
-- degree: 1
-  periodic: false
-  knot: [0.0, 1.0]
-  point:
-  - [0.3524, 0.0, -0.3524]
-  - [0.3029, 0.0, -0.3957]
-- degree: 1
-  periodic: false
-  knot: [0.0, 1.0]
-  point:
-  - [0.1289, 0.0, -0.4814]
-  - [0.0645, 0.0, -0.4942]
+  - degree: 1
+    periodic: false
+    knot: [ 0.0, 1.0 ]
+    point:
+      - [ 0.0, 0.0, -0.4984 ]
+      - [ -0.0655, 0.0, -0.494 ]
+  - degree: 1
+    periodic: false
+    knot: [ 0.0, 1.0 ]
+    point:
+      - [ -0.2492, 0.0, -0.4316 ]
+      - [ -0.3038, 0.0, -0.395 ]
+  - degree: 1
+    periodic: false
+    knot: [ 0.0, 1.0 ]
+    point:
+      - [ -0.4316, 0.0, -0.2492 ]
+      - [ -0.4606, 0.0, -0.1902 ]
+  - degree: 1
+    periodic: false
+    knot: [ 0.0, 1.0 ]
+    point:
+      - [ -0.4984, 0.0, 0.0 ]
+      - [ -0.494, 0.0, 0.0655 ]
+  - degree: 1
+    periodic: false
+    knot: [ 0.0, 1.0 ]
+    point:
+      - [ -0.4316, 0.0, 0.2492 ]
+      - [ -0.395, 0.0, 0.3038 ]
+  - degree: 1
+    periodic: false
+    knot: [ 0.0, 1.0 ]
+    point:
+      - [ -0.2492, 0.0, 0.4316 ]
+      - [ -0.1902, 0.0, 0.4606 ]
+  - degree: 1
+    periodic: false
+    knot: [ 0.0, 1.0 ]
+    point:
+      - [ 0.0, 0.0, 0.4984 ]
+      - [ 0.0655, 0.0, 0.494 ]
+  - degree: 1
+    periodic: false
+    knot: [ 0.0, 1.0 ]
+    point:
+      - [ 0.2492, 0.0, 0.4316 ]
+      - [ 0.3038, 0.0, 0.395 ]
+  - degree: 1
+    periodic: false
+    knot: [ 0.0, 1.0 ]
+    point:
+      - [ 0.4316, 0.0, 0.2492 ]
+      - [ 0.4606, 0.0, 0.1902 ]
+  - degree: 1
+    periodic: false
+    knot: [ 0.0, 1.0 ]
+    point:
+      - [ 0.4984, 0.0, 0.0 ]
+      - [ 0.494, 0.0, -0.0655 ]
+  - degree: 1
+    periodic: false
+    knot: [ 0.0, 1.0 ]
+    point:
+      - [ 0.4316, 0.0, -0.2492 ]
+      - [ 0.395, 0.0, -0.3038 ]
+  - degree: 1
+    periodic: false
+    knot: [ 0.0, 1.0 ]
+    point:
+      - [ 0.2492, 0.0, -0.4316 ]
+      - [ 0.1902, 0.0, -0.4606 ]
+  - degree: 1
+    periodic: false
+    knot: [ 0.0, 1.0 ]
+    point:
+      - [ -0.1289, 0.0, -0.4814 ]
+      - [ -0.1912, 0.0, -0.4602 ]
+  - degree: 1
+    periodic: false
+    knot: [ 0.0, 1.0 ]
+    point:
+      - [ -0.3524, 0.0, -0.3524 ]
+      - [ -0.3957, 0.0, -0.3029 ]
+  - degree: 1
+    periodic: false
+    knot: [ 0.0, 1.0 ]
+    point:
+      - [ -0.4814, 0.0, -0.1289 ]
+      - [ -0.4942, 0.0, -0.0645 ]
+  - degree: 1
+    periodic: false
+    knot: [ 0.0, 1.0 ]
+    point:
+      - [ -0.4814, 0.0, 0.1289 ]
+      - [ -0.4602, 0.0, 0.1912 ]
+  - degree: 1
+    periodic: false
+    knot: [ 0.0, 1.0 ]
+    point:
+      - [ -0.3524, 0.0, 0.3524 ]
+      - [ -0.3029, 0.0, 0.3957 ]
+  - degree: 1
+    periodic: false
+    knot: [ 0.0, 1.0 ]
+    point:
+      - [ -0.1289, 0.0, 0.4814 ]
+      - [ -0.0645, 0.0, 0.4942 ]
+  - degree: 1
+    periodic: false
+    knot: [ 0.0, 1.0 ]
+    point:
+      - [ 0.1289, 0.0, 0.4814 ]
+      - [ 0.1912, 0.0, 0.4602 ]
+  - degree: 1
+    periodic: false
+    knot: [ 0.0, 1.0 ]
+    point:
+      - [ 0.3524, 0.0, 0.3524 ]
+      - [ 0.3957, 0.0, 0.3029 ]
+  - degree: 1
+    periodic: false
+    knot: [ 0.0, 1.0 ]
+    point:
+      - [ 0.4814, 0.0, 0.1289 ]
+      - [ 0.4942, 0.0, 0.0645 ]
+  - degree: 1
+    periodic: false
+    knot: [ 0.0, 1.0 ]
+    point:
+      - [ 0.4814, 0.0, -0.1289 ]
+      - [ 0.4602, 0.0, -0.1912 ]
+  - degree: 1
+    periodic: false
+    knot: [ 0.0, 1.0 ]
+    point:
+      - [ 0.3524, 0.0, -0.3524 ]
+      - [ 0.3029, 0.0, -0.3957 ]
+  - degree: 1
+    periodic: false
+    knot: [ 0.0, 1.0 ]
+    point:
+      - [ 0.1289, 0.0, -0.4814 ]
+      - [ 0.0645, 0.0, -0.4942 ]

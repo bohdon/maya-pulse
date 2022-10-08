@@ -17,4 +17,4 @@ BuildCoreHierarchyAction:
       value: False
     - name: nodes
       type: nodelist
-      value: []
+      value: [ ]

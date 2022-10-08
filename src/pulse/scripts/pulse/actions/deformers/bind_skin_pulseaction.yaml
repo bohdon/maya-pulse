@@ -2,7 +2,7 @@ BindSkinAction:
   id: Pulse.BindSkin
   displayName: Bind Skin
   description: Binds a mesh to a joint hierarchy
-  color: [1.0, .85, 0.5]
+  color: [ 1.0, .85, 0.5 ]
   category: Deformers
   attrs:
 
@@ -24,7 +24,7 @@ BindSkinAction:
 
     - name: isRenderGeo
       description: Whether the bound meshes represent rendered geometry, will affect
-            how joints are stored in the rigs meta data
+        how joints are stored in the rigs meta data
       type: bool
       value: true
 
@@ -100,7 +100,7 @@ ApplySkinWeightsAction:
   id: Pulse.ApplySkinWeights
   displayName: Apply Skin Weights
   description: Applies data from a .weights file to a skinned mesh
-  color: [1.0, .85, 0.5]
+  color: [ 1.0, .85, 0.5 ]
   category: Deformers
   attrs:
     - name: meshes

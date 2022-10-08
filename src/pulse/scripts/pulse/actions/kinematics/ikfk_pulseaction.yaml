@@ -2,7 +2,7 @@ ThreeBoneIKFKAction:
   id: Pulse.ThreeBoneIKFK
   displayName: 3-Bone IK FK
   description: Creates a 3-bone IK chain that can switch to FK
-  color: [.4, .6, .8]
+  color: [ .4, .6, .8 ]
   category: Kinematics
   attrs:
     - name: endJoint

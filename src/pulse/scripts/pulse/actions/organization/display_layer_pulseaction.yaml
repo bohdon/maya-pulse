@@ -2,18 +2,18 @@ DisplayLayerAction:
   id: Pulse.DisplayLayer
   displayName: Display Layer
   description: Creates a display layer
-  color: [1.0, 1.0, 1.0]
+  color: [ 1.0, 1.0, 1.0 ]
   category: Organization
   attrs:
 
     - name: name
       description: The name of the display layer
       type: string
-    
+
     - name: objects
       description: List of objects to add to the display layer
       type: nodelist
-    
+
     - name: displayType
       description: The display mode to set on the layer
       type: option
@@ -22,19 +22,19 @@ DisplayLayerAction:
         - Template
         - Reference
       value: 0
-    
+
     - name: visible
       type: bool
       value: true
-    
+
     - name: shading
       type: bool
       value: true
-    
+
     - name: texturing
       type: bool
       value: true
-    
+
     - name: playback
       type: bool
       value: true
