@@ -1,5 +1,6 @@
 from . import core
 from . import pulseeditor
+from .gen import resources_rc
 from .contextmenus import unregisterContextMenu, registerContextMenu
 
 
@@ -26,6 +27,7 @@ def tearDownUI():
     destroyAllPulseWindows()
     destroyUIModelInstances()
     unregisterContextMenu()
+    resources_rc.qCleanupResources()
 
 
 def destroyAllPulseWindows():
