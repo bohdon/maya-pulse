@@ -1,8 +1,9 @@
 """
-A widget containing a collection of panels with tools
-for designing the rig blueprint.
+A toolkit for setting up pulse blueprints including control and joint creation,
+joint orienting, symmetry and other design tools.
 """
 
+from ..vendor.Qt import QtWidgets
 from .core import PulseWindow, PulsePanelWidget
 from .designviews.controls import ControlsDesignPanel
 from .designviews.general import GeneralDesignPanel
@@ -10,7 +11,8 @@ from .designviews.joints import JointsDesignPanel, DesignPanelJointOrients
 from .designviews.layout import LayoutDesignPanel
 from .designviews.sym import SymmetryDesignPanel
 from .designviews.weights import WeightsDesignPanel
-from ..vendor.Qt import QtWidgets, QtCore
+
+from .gen.design_toolkit import Ui_DesignToolkit
 
 PANEL_DEFINITIONS = [
     {
@@ -44,44 +46,22 @@ PANEL_DEFINITIONS = [
 ]
 
 
-class DesignToolkitWidget(QtWidgets.QWidget):
+class DesignToolkit(QtWidgets.QWidget):
     """
     A widget containing a collection of panels with tools
     for designing the rig blueprint.
     """
 
     def __init__(self, parent=None):
-        super(DesignToolkitWidget, self).__init__(parent=parent)
+        super(DesignToolkit, self).__init__(parent=parent)
 
         # list of panel widgets to add, in order
         self.panelDefinitions = PANEL_DEFINITIONS
 
-        self.setupUi(self)
+        self.ui = Ui_DesignToolkit()
+        self.ui.setupUi(self)
 
-    def setupUi(self, parent):
-        layout = QtWidgets.QVBoxLayout(parent)
-
-        self.scrollArea = QtWidgets.QScrollArea(parent)
-        self.scrollArea.setFrameShape(QtWidgets.QScrollArea.NoFrame)
-        self.scrollArea.setWidgetResizable(True)
-        layout.addWidget(self.scrollArea)
-
-        self.scrollWidget = QtWidgets.QWidget()
-        self.scrollArea.setWidget(self.scrollWidget)
-
-        # scroll layout contains the main layout and a spacer item
-        self.scrollLayout = QtWidgets.QVBoxLayout(self.scrollWidget)
-        self.scrollLayout.setMargin(0)
-        self.scrollLayout.setSpacing(8)
-
-        self.setup_panels_ui(self.scrollLayout, self.scrollWidget)
-
-        spacer = QtWidgets.QSpacerItem(
-            20, 20, QtWidgets.QSizePolicy.Minimum,
-            QtWidgets.QSizePolicy.Expanding)
-        self.scrollLayout.addItem(spacer)
-
-        self.scrollWidget.setLayout(self.scrollLayout)
+        self.setup_panels_ui(self.ui.main_layout, self.ui.scroll_area_widget)
 
     def setup_panels_ui(self, layout, parent):
         """
@@ -98,15 +78,10 @@ class DesignToolkitWidget(QtWidgets.QWidget):
 
             layout.addWidget(panel_widget)
 
-        spacer = QtWidgets.QSpacerItem(
-            20, 20, QtWidgets.QSizePolicy.Minimum,
-            QtWidgets.QSizePolicy.Expanding)
-        layout.addItem(spacer)
-
 
 class DesignToolkitWindow(PulseWindow):
     OBJECT_NAME = 'pulseDesignToolkitWindow'
-    WINDOW_MODULE = 'pulse.ui.designview'
+    WINDOW_MODULE = 'pulse.ui.designtoolkit'
 
     def __init__(self, parent=None):
         super().__init__(parent=parent)
@@ -117,5 +92,5 @@ class DesignToolkitWindow(PulseWindow):
         layout.setMargin(0)
         self.setLayout(layout)
 
-        widget = DesignToolkitWidget(self)
+        widget = DesignToolkit(self)
         layout.addWidget(widget)

@@ -3,6 +3,10 @@ Common styling applied to all Pulse windows.
 Makes use of `cssClasses` custom property to allow multiple classes per object like html.
 */
 
+/* Hide frame on scroll areas by default. */
+QScrollArea {
+    border: none;
+}
 
 /* Use section-title class to create headers with a dark background. */
 QLabel[cssClasses~="section-title"] {

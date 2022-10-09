@@ -8,7 +8,7 @@ import maya.cmds as cmds
 
 from .core import BlueprintUIModel
 from .actioneditor import ActionEditorWindow
-from .designview import DesignToolkitWindow
+from .designtoolkit import DesignToolkitWindow
 from .style import UIColors
 from .. import editorutils
 from ..blueprints import BlueprintBuilder, BlueprintValidator

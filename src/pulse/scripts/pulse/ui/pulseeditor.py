@@ -9,7 +9,7 @@ from .actionpalette import ActionPaletteWindow
 from .actionsview import ActionsViewWidget
 from .buildtoolbar import BuildToolbarWidget
 from .core import PulseWindow, BlueprintUIModel
-from .designview import DesignToolkitWindow
+from .designtoolkit import DesignToolkitWindow
 from .manageview import ManageWidget
 from ..prefs import optionVarProperty
 from ..vendor.Qt import QtCore, QtWidgets
