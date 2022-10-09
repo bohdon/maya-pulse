@@ -3,10 +3,33 @@ Common styling applied to all Pulse windows.
 Makes use of `cssClasses` custom property to allow multiple classes per object like html.
 */
 
-/* Hide frame on scroll areas by default. */
-QScrollArea {
+
+/* Hide frame on frames and scroll areas by default. */
+QFrame, QScrollArea {
     border: none;
 }
+QFrame {
+    border-radius: 2px;
+}
+
+/* Consistent look for all tool buttons. */
+QToolButton {
+    border: none;
+    color: red;
+}
+
+QToolButton:hover {
+    border: none;
+    border-radius: 2px;
+    background-color: rgba(200, 200, 200, 18%);
+}
+
+QToolButton:pressed {
+    border: none;
+    border-radius: 2px;
+    background-color: rgba(200, 200, 200, 35%);
+}
+
 
 /* Use section-title class to create headers with a dark background. */
 QLabel[cssClasses~="section-title"] {
@@ -14,6 +37,20 @@ QLabel[cssClasses~="section-title"] {
     padding: 4px;
     background-color: rgba(0, 0, 0, 20%);
     border-radius: 2px;
+}
+
+/* Title text, large and bold. */
+QLabel[cssClasses~="title"] {
+    font-size: 12pt;
+    font-weight: bold;
+}
+
+/* A smaller and italic title. */
+QLabel[cssClasses~="mode-title"] {
+    font-size: 12pt;
+    font-weight: 500;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 20%);
 }
 
 /* Help text, usually at the bottom of a window, italic and dimmed. */
@@ -40,4 +77,14 @@ QPushButton[cssClasses~="y-axis"] {
 
 QPushButton[cssClasses~="z-axis"] {
     background-color: rgb(25%, 30%, 45%);
+}
+
+
+/* Color coded toolbars to indicate blueprint vs rig mode. */
+QFrame[cssClasses~="toolbar-blueprint"] {
+    background-color: rgba(60, 80, 120, 50%);
+}
+
+QFrame[cssClasses~="toolbar-rig"] {
+    background-color: rgba(120, 60, 60, 50%);
 }

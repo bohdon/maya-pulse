@@ -1,9 +1,13 @@
 """
-The main editor window. Contains the build toolbar, and tabs for manage, design,
-and actions views.
+The main editor that contains the build toolbar, blueprint settings,
+and the list of pulse actions.
 """
 
+from ..vendor.Qt import QtWidgets
+from ..prefs import optionVarProperty
+
 import pulse
+
 from .actioneditor import ActionEditorWindow
 from .actionpalette import ActionPaletteWindow
 from .actionsview import ActionsViewWidget
@@ -11,8 +15,8 @@ from .buildtoolbar import BuildToolbarWidget
 from .core import PulseWindow, BlueprintUIModel
 from .designtoolkit import DesignToolkitWindow
 from .manageview import ManageWidget
-from ..prefs import optionVarProperty
-from ..vendor.Qt import QtCore, QtWidgets
+
+from .gen.main_editor import Ui_MainEditor
 
 TAB_DEFINITIONS = [
     {
@@ -26,86 +30,73 @@ TAB_DEFINITIONS = [
 ]
 
 
-class PulseEditorWindow(PulseWindow):
+class MainEditor(QtWidgets.QWidget):
     """
-    An all-in-one window that contains all pulse editors.
+    The main editor that contains the build toolbar, blueprint settings,
+    and the list of pulse actions.
     """
 
-    OBJECT_NAME = 'pulseEditorWindow'
-    STARTING_SIZE = QtCore.QSize(260, 600)
-    PREFERRED_SIZE = QtCore.QSize(260, 600)
-    MINIMUM_SIZE = QtCore.QSize(260, 600)
-    DEFAULT_TAB_CONTROL = "Outliner"
-    WINDOW_MODULE = 'pulse.ui.pulseeditor'
+    # the current tab index
+    tab_index = optionVarProperty('pulse.editor.mainTabIndex', 0)
 
-    mainTabIndex = optionVarProperty('pulse.editor.mainTabIndex', 0)
+    def set_tab_index(self, index):
+        self.tab_index = index
 
-    def setMainTabIndex(self, index):
-        self.mainTabIndex = index
-
-    def __init__(self, parent=None):
-        super(PulseEditorWindow, self).__init__(parent=parent)
-
-        self.setWindowTitle('Pulse')
-        self.tabDefinitions = TAB_DEFINITIONS
+    def __init__(self, parent):
+        super(MainEditor, self).__init__(parent)
 
         pulse.loadBuiltinActions()
 
+        self._tab_definitions = TAB_DEFINITIONS
         self.blueprintModel = BlueprintUIModel.getDefaultModel()
 
-        self.setupUi(self)
-        self.setupMenuBar(self)
+        self.ui = Ui_MainEditor()
+        self.ui.setupUi(self)
+        self.setup_tabs_ui(self)
 
-        self.mainTabWidget.setCurrentIndex(self.mainTabIndex)
+        # add build toolbar
+        self.ui.build_toolbar = BuildToolbarWidget(self)
+        self.ui.toolbar_layout.addWidget(self.ui.build_toolbar)
+
+        # setup main menu bar
+        self.setup_menu_bar(self)
+
+        # apply current tab index
+        self.ui.main_tab_widget.setCurrentIndex(self.tab_index)
 
         # connect signals
-        self.mainTabWidget.currentChanged.connect(self.setMainTabIndex)
+        self.ui.main_tab_widget.currentChanged.connect(self.set_tab_index)
 
-    def setupUi(self, parent):
-        layout = QtWidgets.QVBoxLayout(parent)
-        layout.setMargin(0)
-        self.setLayout(layout)
-
-        buildToolbar = BuildToolbarWidget(parent)
-        layout.addWidget(buildToolbar)
-
-        tabWidget = QtWidgets.QTabWidget(parent)
-
-        # create a widget for each entry in self.tabDefinitions
-        for tabDef in self.tabDefinitions:
+    def setup_tabs_ui(self, parent):
+        """
+        Create a widget for each tab definition.
+        """
+        for tabDef in self._tab_definitions:
             widget = tabDef['widgetClass'](parent)
-            tabWidget.addTab(widget, tabDef['name'])
+            self.ui.main_tab_widget.addTab(widget, tabDef['name'])
 
-        layout.addWidget(tabWidget)
+    def setup_menu_bar(self, parent):
+        self.menu_bar = QtWidgets.QMenuBar(parent)
+        self.layout().setMenuBar(self.menu_bar)
 
-        self.mainTabWidget = tabWidget
+        self.setup_file_menu(parent)
+        self.setup_window_menu(parent)
 
-    def setupMenuBar(self, parent):
-        self.menuBar = QtWidgets.QMenuBar(parent)
-        self.layout().setMenuBar(self.menuBar)
-
-        self.setupFileMenu(parent)
-        self.setupWindowMenu(parent)
-
-    def setupFileMenu(self, parent):
-        fileMenu = self.menuBar.addMenu("File")
+    def setup_file_menu(self, parent):
+        fileMenu = self.menu_bar.addMenu("File")
 
         initBlueprint = QtWidgets.QAction("Initialize", parent)
-        initBlueprint.setStatusTip(
-            "Delete all actions and reset the Blueprint.")
-        initBlueprint.triggered.connect(
-            self.blueprintModel.initializeBlueprint)
+        initBlueprint.setStatusTip("Delete all actions and reset the Blueprint.")
+        initBlueprint.triggered.connect(self.blueprintModel.initializeBlueprint)
         fileMenu.addAction(initBlueprint)
 
         saveAction = QtWidgets.QAction("Save", parent)
-        saveAction.setStatusTip(
-            "Save the Blueprint as a yaml file associated with the current maya scene file")
+        saveAction.setStatusTip("Save the Blueprint as a yaml file associated with the current maya scene file")
         saveAction.triggered.connect(self.blueprintModel.save)
         fileMenu.addAction(saveAction)
 
         reloadAction = QtWidgets.QAction("Reload", parent)
-        reloadAction.setStatusTip(
-            "Reload the Blueprint from the yaml file associated with the current maya scene file")
+        reloadAction.setStatusTip("Reload the Blueprint from the yaml file associated with the current maya scene file")
         reloadAction.triggered.connect(self.blueprintModel.load)
         fileMenu.addAction(reloadAction)
 
@@ -121,20 +112,18 @@ class PulseEditorWindow(PulseWindow):
         autosaveCheck.setCheckable(True)
         autosaveCheck.setChecked(self.blueprintModel.autoSave)
         autosaveCheck.toggled.connect(self.blueprintModel.setAutoSave)
-        autosaveCheck.setStatusTip(
-            "Automatically save Blueprint files when a scene is saved")
+        autosaveCheck.setStatusTip("Automatically save Blueprint files when a scene is saved")
         fileMenu.addAction(autosaveCheck)
 
         autoloadCheck = QtWidgets.QAction("Auto Load", parent)
         autoloadCheck.setCheckable(True)
         autoloadCheck.setChecked(self.blueprintModel.autoLoad)
         autoloadCheck.toggled.connect(self.blueprintModel.setAutoLoad)
-        autoloadCheck.setStatusTip(
-            "Automatically load Blueprint files when a scene is opened")
+        autoloadCheck.setStatusTip("Automatically load Blueprint files when a scene is opened")
         fileMenu.addAction(autoloadCheck)
 
-    def setupWindowMenu(self, parent):
-        windowMenu = self.menuBar.addMenu("Window")
+    def setup_window_menu(self, parent):
+        windowMenu = self.menu_bar.addMenu("Window")
 
         designToolkit = QtWidgets.QAction("Design Toolkit", parent)
         designToolkit.setStatusTip("Toggle the Design Toolkit window.")
@@ -155,3 +144,25 @@ class PulseEditorWindow(PulseWindow):
         print(self.blueprintModel, self.blueprintModel.blueprint)
         print(self.blueprintModel.getBlueprintFilepath())
         print(self.blueprintModel.blueprint.dumpYaml())
+
+
+class PulseEditorWindow(PulseWindow):
+    """
+    The main editor window that contains the build toolbar, blueprint settings,
+    and the list of pulse actions.
+    """
+    OBJECT_NAME = 'pulseEditorWindow'
+    DEFAULT_TAB_CONTROL = "Outliner"
+    WINDOW_MODULE = 'pulse.ui.pulseeditor'
+
+    def __init__(self, parent=None):
+        super(PulseEditorWindow, self).__init__(parent=parent)
+
+        self.setWindowTitle('Pulse')
+
+        layout = QtWidgets.QVBoxLayout(self)
+        layout.setMargin(0)
+        self.setLayout(layout)
+
+        widget = MainEditor(self)
+        layout.addWidget(widget)

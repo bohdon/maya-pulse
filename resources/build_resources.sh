@@ -26,13 +26,12 @@ build_ui() {
 
 # compile a .qrc to a .py
 build_res() {
-    build_qt "pyside2-rcc" "$1.qrc" "$1"
+    build_qt "pyside2-rcc" "$1.qrc" "$1_rc"
 }
 
 # build all UIs
 echo "Building ui files..."
-build_ui quick_name_editor
-build_ui layout_link_editor
+build_ui build_toolbar
 build_ui design_toolkit
 build_ui designpanel_general
 build_ui designpanel_joint_orients
@@ -40,6 +39,10 @@ build_ui designpanel_joints
 build_ui designpanel_layout
 build_ui designpanel_symmetry
 build_ui designpanel_weights
+build_ui layout_link_editor
+build_ui main_editor
+build_ui quick_name_editor
 
 # build all resources
 echo "Building resource files..."
+build_res resources

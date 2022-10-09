@@ -6,6 +6,8 @@ from .version import __version__
 LOG = logging.getLogger("pulse")
 LOG.level = logging.DEBUG
 
+# TODO: move all this actions logic to an actions module
+
 BUILTIN_ACTIONS_LOADED = False
 
 

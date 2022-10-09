@@ -16,13 +16,16 @@ pulse.ui.toggleEditorUI()
 
 ```python
 # development reload Pulse
-import pulse.ui
+import pymel.core as pm
+
 try:
+    import pulse.ui
     pulse.ui.tearDownUI()
 except:
     pass
 
-import pymel.core as pm
+# keep track of the current scene
+scene_name = pm.sceneName()
 
 pm.newFile(force=True)
 pm.unloadPlugin('pulse')
@@ -33,12 +36,14 @@ except:
     pass
 
 import pulse.vendor.mayacoretools as tools
-
 tools.deleteModules('pulse*')
 
 import pulse.ui
-
 pulse.ui.showEditorUI()
+
+# re-open last scene
+if scene_name:
+    pm.openFile(scene_name)
 ```
 
 ## Roadmap

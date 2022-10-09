@@ -6,14 +6,15 @@ import logging
 
 import maya.cmds as cmds
 
-from .core import BlueprintUIModel
-from .actioneditor import ActionEditorWindow
-from .designtoolkit import DesignToolkitWindow
-from .style import UIColors
+from ..vendor.Qt import QtWidgets
 from .. import editorutils
 from ..blueprints import BlueprintBuilder, BlueprintValidator
 from ..rigs import openFirstRigBlueprint
-from ..vendor.Qt import QtWidgets, QtGui
+from .core import BlueprintUIModel
+from .actioneditor import ActionEditorWindow
+from .designtoolkit import DesignToolkitWindow
+
+from .gen.build_toolbar import Ui_BuildToolbar
 
 LOG = logging.getLogger(__name__)
 
@@ -25,133 +26,79 @@ class BuildToolbarWidget(QtWidgets.QWidget):
 
         self.isStateDirty = False
 
-        self.blueprintModel = BlueprintUIModel.getDefaultModel()
-        self.blueprintModel.rigExistsChanged.connect(self.onRigExistsChanged)
+        self.blueprint_model = BlueprintUIModel.getDefaultModel()
+        self.blueprint_model.rigExistsChanged.connect(self._on_rig_exists_changed)
 
-        self.setupUi(self)
-        self.onRigExistsChanged()
+        self.ui = Ui_BuildToolbar()
+        self.ui.setupUi(self)
+
+        self._clean_state()
+        self._update_mode()
+        self._update_rig_name()
 
         # connect signals
-        self.blueprintModel.readOnlyChanged.connect(self.onReadOnlyChanged)
-        self.blueprintModel.rigNameChanged.connect(self.rigNameChanged)
+        self.blueprint_model.readOnlyChanged.connect(self._on_read_only_changed)
+        self.blueprint_model.rigNameChanged.connect(self._on_rig_name_changed)
+
+        self.ui.validate_btn.clicked.connect(self.run_validation)
+        self.ui.build_btn.clicked.connect(self.run_build)
+        self.ui.open_blueprint_btn.clicked.connect(openFirstRigBlueprint)
+
+        self.ui.design_toolkit_btn.clicked.connect(DesignToolkitWindow.toggleWindow)
+        self.ui.action_editor_btn.clicked.connect(ActionEditorWindow.toggleWindow)
 
     @property
-    def rigExists(self):
-        return self.blueprintModel.rigExists
+    def does_rig_exist(self):
+        return self.blueprint_model.rigExists
 
     def showEvent(self, event):
         super(BuildToolbarWidget, self).showEvent(event)
-        self.onStateDirty()
+        self._on_state_dirty()
 
-    def setupUi(self, parent):
-        layout = QtWidgets.QVBoxLayout(parent)
-        layout.setMargin(0)
+    def _on_rig_name_changed(self, name):
+        self._update_rig_name()
 
-        self.frame = QtWidgets.QFrame(parent)
-        self.frame.setObjectName("panelFrame")
-        layout.addWidget(self.frame)
+    def _update_rig_name(self):
+        self.ui.blueprint_name_label.setText(self.blueprint_model.getRigName())
+        self.ui.rig_name_label.setText(self.blueprint_model.getRigName())
 
-        hlayout = QtWidgets.QHBoxLayout(self.frame)
+    def _on_rig_exists_changed(self):
+        self._clean_state()
+        self._update_mode()
 
-        labelLayout = QtWidgets.QVBoxLayout(parent)
-        hlayout.addLayout(labelLayout)
+    def _on_read_only_changed(self, is_read_only):
+        # TODO: represent read-only state elsewhere
+        self._update_mode()
 
-        font = QtGui.QFont()
-        font.setPointSize(12)
-        font.setWeight(75)
-        font.setBold(True)
-        self.rigNameLabel = QtWidgets.QLabel(parent)
-        self.rigNameLabel.setFont(font)
-        self.rigNameLabel.setSizePolicy(
-            QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
-        self.rigNameLabel.setText(self.getRigNameText(
-            self.blueprintModel.getRigName()))
-        labelLayout.addWidget(self.rigNameLabel)
-
-        font = QtGui.QFont()
-        font.setPointSize(9)
-        font.setItalic(True)
-        self.rigOrBlueprintLabel = QtWidgets.QLabel(parent)
-        self.rigOrBlueprintLabel.setFont(font)
-        labelLayout.addWidget(self.rigOrBlueprintLabel)
-
-        self.design_toolkit_btn = QtWidgets.QPushButton(parent)
-        self.design_toolkit_btn.setText("D")
-        self.design_toolkit_btn.setFixedSize(24, 24)
-        self.design_toolkit_btn.clicked.connect(DesignToolkitWindow.toggleWindow)
-        hlayout.addWidget(self.design_toolkit_btn)
-
-        self.action_editor_btn = QtWidgets.QPushButton(parent)
-        self.action_editor_btn.setText("A")
-        self.action_editor_btn.setFixedSize(24, 24)
-        self.action_editor_btn.clicked.connect(ActionEditorWindow.toggleWindow)
-        hlayout.addWidget(self.action_editor_btn)
-
-        self.checkBtn = QtWidgets.QPushButton(parent)
-        self.checkBtn.setText("Validate")
-        self.checkBtn.setMaximumWidth(80)
-        self.checkBtn.clicked.connect(self.runValidation)
-        hlayout.addWidget(self.checkBtn)
-
-        self.buildBtn = QtWidgets.QPushButton(parent)
-        self.buildBtn.setText("Build")
-        self.buildBtn.setMaximumWidth(80)
-        self.buildBtn.clicked.connect(self.runBuild)
-        hlayout.addWidget(self.buildBtn)
-
-        self.openBPBtn = QtWidgets.QPushButton(parent)
-        self.openBPBtn.setText("Open Blueprint")
-        self.openBPBtn.clicked.connect(self.openBlueprintAndReload)
-        hlayout.addWidget(self.openBPBtn)
-
-        self.cleanState()
-
-    def rigNameChanged(self, name):
-        self.rigNameLabel.setText(self.getRigNameText(name))
-
-    def getRigNameText(self, rigName):
-        name = self.blueprintModel.getRigName()
-        if not name:
-            name = '(unnamed)'
-        return name
-
-    def onRigExistsChanged(self):
-        self.cleanState()
-        self.refreshStateText()
-        self.checkBtn.setVisible(not self.rigExists)
-        self.buildBtn.setVisible(not self.rigExists)
-        self.openBPBtn.setVisible(self.rigExists)
-
-        frameColor = UIColors.RED if self.rigExists else UIColors.BLUE
-        frameColor = list(frameColor)
-        frameColor[-1] = 40
-        self.frame.setStyleSheet(
-            ".QFrame#panelFrame{{ {0} }}".format(UIColors.asBGColor(frameColor)))
-
-    def onReadOnlyChanged(self, isReadOnly):
-        self.refreshStateText()
-
-    def cleanState(self):
+    def _clean_state(self):
         self.isStateDirty = False
         self.setEnabled(True)  # TODO: True if isBuilding
 
-    def onStateDirty(self):
+    def _on_state_dirty(self):
         if not self.isStateDirty:
             self.isStateDirty = True
             self.setEnabled(False)
-            cmds.evalDeferred(self.cleanState)
+            cmds.evalDeferred(self._clean_state)
 
-    def refreshStateText(self):
-        stateText = "Rig" if self.rigExists else "Blueprint"
-        if self.blueprintModel.isReadOnly():
-            stateText += " (read-only)"
-        self.rigOrBlueprintLabel.setText(stateText)
+    def _update_mode(self):
+        """
+        Update the mode header and visible page, blueprint or rig.
+        """
+        if self.does_rig_exist:
+            # rig read-only mode
+            self.ui.mode_label.setText('Rig')
+            self.ui.mode_frame.setProperty('cssClasses', 'toolbar-rig')
+            self.ui.main_stack.setCurrentWidget(self.ui.rig_page)
+        else:
+            # blueprint editing mode
+            self.ui.mode_label.setText('Blueprint')
+            self.ui.mode_frame.setProperty('cssClasses', 'toolbar-blueprint')
+            self.ui.main_stack.setCurrentWidget(self.ui.blueprint_page)
+        # refresh stylesheet for mode frame
+        self.ui.mode_frame.setStyleSheet('')
 
-    def openBlueprintAndReload(self):
-        openFirstRigBlueprint()
-
-    def runValidation(self):
-        blueprint = self.blueprintModel.blueprint
+    def run_validation(self):
+        blueprint = self.blueprint_model.blueprint
         if blueprint is not None:
             if not BlueprintBuilder.preBuildValidate(blueprint):
                 return
@@ -159,8 +106,8 @@ class BuildToolbarWidget(QtWidgets.QWidget):
             validator = BlueprintValidator(blueprint, debug=True)
             validator.start()
 
-    def runBuild(self):
-        blueprint = self.blueprintModel.blueprint
+    def run_build(self):
+        blueprint = self.blueprint_model.blueprint
         if blueprint is not None:
             if not BlueprintBuilder.preBuildValidate(blueprint):
                 return
@@ -170,14 +117,14 @@ class BuildToolbarWidget(QtWidgets.QWidget):
                 return
 
             # if autoSave:
-            self.blueprintModel.save()
+            self.blueprint_model.save()
 
             builder = BlueprintBuilder.createBuilderWithCurrentScene(
                 blueprint, debug=True)
             builder.showProgressUI = True
             builder.start()
 
-            cmds.evalDeferred(self.onStateDirty)
+            cmds.evalDeferred(self._on_state_dirty)
 
             # TODO: add build events for situations like this
-            cmds.evalDeferred(self.blueprintModel.load, low=True)
+            cmds.evalDeferred(self.blueprint_model.load, low=True)

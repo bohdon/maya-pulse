@@ -1,0 +1,8 @@
+<RCC>
+  <qresource prefix="res">
+    <file>build.svg</file>
+    <file>validate.svg</file>
+    <file>action_editor.svg</file>
+    <file>design_toolkit.svg</file>
+  </qresource>
+</RCC>
