@@ -37,6 +37,7 @@ build_ui designpanel_general
 build_ui designpanel_joint_orients
 build_ui designpanel_joints
 build_ui designpanel_layout
+build_ui designpanel_symmetry
 build_ui designpanel_weights
 
 # build all resources
