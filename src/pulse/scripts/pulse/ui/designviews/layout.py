@@ -4,10 +4,12 @@ from maya import OpenMaya as api
 from ...vendor.Qt import QtWidgets, QtGui
 from ... import editorutils
 from ... import links
-from .. import utils as viewutils
-from ..core import PulseWindow
-from ..gen.layout_link_editor import Ui_LayoutLinkEditor
 from ..utils import undoAndRepeatPartial as cmd
+from ..core import PulseWindow
+from .. import utils as viewutils
+
+from ..gen.designpanel_layout import Ui_LayoutDesignPanel
+from ..gen.layout_link_editor import Ui_LayoutLinkEditor
 
 
 class LayoutDesignPanel(QtWidgets.QWidget):
@@ -18,32 +20,11 @@ class LayoutDesignPanel(QtWidgets.QWidget):
     def __init__(self, parent):
         super(LayoutDesignPanel, self).__init__(parent)
 
-        self.setupUi(self)
+        self.ui = Ui_LayoutDesignPanel()
+        self.ui.setupUi(self)
 
-    def setupUi(self, parent):
-        gridLayout = QtWidgets.QGridLayout(parent)
-        gridLayout.setMargin(0)
-        gridLayout.setSpacing(2)
-
-        snapToTargetsBtn = QtWidgets.QPushButton(parent)
-        snapToTargetsBtn.setText("Snap To Targets")
-        snapToTargetsBtn.setStatusTip(
-            "Snap controls and linked objects to their target positions")
-        snapToTargetsBtn.clicked.connect(
-            cmd(editorutils.positionLinkForSelected))
-
-        linkEditorBtn = QtWidgets.QPushButton(parent)
-        linkEditorBtn.setText("Link Editor")
-        linkEditorBtn.setStatusTip(
-            "Open the Layout Link Editor for managing how nodes are connected "
-            "to each other during blueprint design")
-        linkEditorBtn.clicked.connect(
-            cmd(LayoutLinkEditorWindow.toggleWindow))
-
-        gridItems = [
-            [snapToTargetsBtn, linkEditorBtn],
-        ]
-        viewutils.addItemsToGrid(gridLayout, gridItems)
+        self.ui.snap_to_targets_btn.clicked.connect(cmd(editorutils.positionLinkForSelected))
+        self.ui.link_editor_btn.clicked.connect(cmd(LayoutLinkEditorWindow.toggleWindow))
 
 
 class LayoutLinkEditorWidget(QtWidgets.QWidget):

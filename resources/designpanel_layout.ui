@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>LayoutDesignPanel</class>
+ <widget class="QWidget" name="LayoutDesignPanel">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>326</width>
+    <height>23</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Form</string>
+  </property>
+  <layout class="QGridLayout" name="gridLayout">
+   <property name="leftMargin">
+    <number>0</number>
+   </property>
+   <property name="topMargin">
+    <number>0</number>
+   </property>
+   <property name="rightMargin">
+    <number>0</number>
+   </property>
+   <property name="bottomMargin">
+    <number>0</number>
+   </property>
+   <property name="spacing">
+    <number>2</number>
+   </property>
+   <item row="0" column="0">
+    <widget class="QPushButton" name="snap_to_targets_btn">
+     <property name="statusTip">
+      <string>Snap controls and linked objects to their target positions.</string>
+     </property>
+     <property name="text">
+      <string>Snap to Targets</string>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="1">
+    <widget class="QPushButton" name="link_editor_btn">
+     <property name="statusTip">
+      <string>Open the Layout Link Editor for managing how nodes are connected to each other during blueprint design.</string>
+     </property>
+     <property name="text">
+      <string>Link Editor</string>
+     </property>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
