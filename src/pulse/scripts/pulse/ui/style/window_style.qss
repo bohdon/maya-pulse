@@ -23,3 +23,17 @@ QPushButton[cssClasses~="large"] {
     font-size: 11pt;
     font-weight: bold;
 }
+
+
+/* Color-coded axis buttons. */
+QPushButton[cssClasses~="x-axis"] {
+    background-color: rgb(45%, 25%, 25%);
+}
+
+QPushButton[cssClasses~="y-axis"] {
+    background-color: rgb(25%, 45%, 25%);
+}
+
+QPushButton[cssClasses~="z-axis"] {
+    background-color: rgb(25%, 30%, 45%);
+}

@@ -2,14 +2,14 @@ from functools import partial
 
 import pymel.core as pm
 
-from .. import utils as viewutils
-from ..core import PulsePanelWidget
-from ..style import UIColors
-from ..utils import undoAndRepeatPartial as cmd
+from ...vendor.Qt import QtWidgets
 from ... import editorutils
 from ...prefs import optionVarProperty
-from ...vendor.Qt import QtWidgets
-from ...vendor.Qt.QtWidgets import QPushButton
+
+from .. import utils as viewutils
+from ..core import PulsePanelWidget
+from ..utils import undoAndRepeatPartial as cmd
+from ..gen.designpanel_joint_orients import Ui_DesignPanelJointOrients
 
 
 class JointsPanel(PulsePanelWidget):
@@ -31,34 +31,34 @@ class JointsPanel(PulsePanelWidget):
         gridLayout.setMargin(0)
         gridLayout.setSpacing(2)
 
-        jointToolBtn = QPushButton(parent)
+        jointToolBtn = QtWidgets.QPushButton(parent)
         jointToolBtn.setText("Joint Tool")
         jointToolBtn.clicked.connect(cmd(pm.mel.JointTool))
 
-        insertToolBtn = QPushButton(parent)
+        insertToolBtn = QtWidgets.QPushButton(parent)
         insertToolBtn.setText("Insert Joint Tool")
         insertToolBtn.clicked.connect(cmd(pm.mel.InsertJointTool))
 
-        centerBtn = QPushButton(parent)
+        centerBtn = QtWidgets.QPushButton(parent)
         centerBtn.setText("Center")
         centerBtn.clicked.connect(cmd(editorutils.centerSelectedJoints))
 
-        insertBtn = QPushButton(parent)
+        insertBtn = QtWidgets.QPushButton(parent)
         insertBtn.setText("Insert")
         insertBtn.clicked.connect(cmd(editorutils.insertJointForSelected))
 
-        disableSSCBtn = QPushButton(parent)
+        disableSSCBtn = QtWidgets.QPushButton(parent)
         disableSSCBtn.setText("Disable Scale Compensate")
         disableSSCBtn.clicked.connect(
             cmd(editorutils.disableSegmentScaleCompensateForSelected))
 
-        freezeBtn = QPushButton(parent)
+        freezeBtn = QtWidgets.QPushButton(parent)
         freezeBtn.setText("Freeze Joints")
         freezeBtn.setStatusTip("Freeze rotates and scales on the selected joint hierarchies")
         freezeBtn.clicked.connect(
             cmd(editorutils.freezeJointsForSelectedHierarchies))
 
-        markEndJntsBtn = QPushButton(parent)
+        markEndJntsBtn = QtWidgets.QPushButton(parent)
         markEndJntsBtn.setText("Mark End Joints")
         markEndJntsBtn.setStatusTip("Find all end joints in the selected hierarchy and rename and color them")
         markEndJntsBtn.clicked.connect(
@@ -73,41 +73,154 @@ class JointsPanel(PulsePanelWidget):
         viewutils.addItemsToGrid(gridLayout, gridItems)
 
 
+class JointOrientsPanelWidget(QtWidgets.QWidget):
+    AXIS_ORDER_OPTIONS = ['XYZ', 'XZY', 'YXZ', 'YZX', 'ZXY', 'ZYX']
+    UP_AXIS_OPTIONS = ['X', 'Y', 'Z']
+
+    axis_order = optionVarProperty('pulse.editor.orientAxisOrder', 0)
+    up_axis = optionVarProperty('pulse.editor.orientUpAxis', 1)
+    keep_axes_synced = optionVarProperty('pulse.editor.keepAxesSynced', True)
+    preserve_children = optionVarProperty('pulse.editor.orientPreserveChildren', True)
+    preserve_shapes = optionVarProperty('pulse.editor.orientPreserveShapes', True)
+    include_children = optionVarProperty('pulse.editor.orientIncludeChildren', False)
+
+    def set_axis_order(self, value):
+        self.axis_order = value
+
+    def set_up_axis(self, value):
+        self.up_axis = value
+
+    def set_keep_axes_synced(self, value):
+        self.keep_axes_synced = value
+
+    def set_preserve_children(self, value):
+        self.preserve_children = value
+
+    def set_preserve_shapes(self, value):
+        self.preserve_shapes = value
+
+    def set_include_children(self, value):
+        self.include_children = value
+
+    def __init__(self, parent):
+        super(JointOrientsPanelWidget, self).__init__(parent)
+
+        self.ui = Ui_DesignPanelJointOrients()
+        self.ui.setupUi(self)
+        self._update_settings()
+
+        # general utils
+        self.ui.toggle_lras_btn.clicked.connect(cmd(editorutils.toggleLocalRotationAxesForSelected))
+        self.ui.toggle_cb_attrs_btn.clicked.connect(cmd(editorutils.toggleDetailedChannelBoxForSelected))
+        self.ui.interactive_btn.clicked.connect(cmd(editorutils.interactiveOrientForSelected))
+        self.ui.sync_axes_btn.clicked.connect(cmd(editorutils.matchJointRotationToOrientForSelected))
+
+        # incremental rotate buttons
+        self.ui.rot_x_neg_btn.clicked.connect(partial(self.rotate_selected_orients_around_axis, 0, -90))
+        self.ui.rot_x_pos_btn.clicked.connect(partial(self.rotate_selected_orients_around_axis, 0, 90))
+        self.ui.rot_y_neg_btn.clicked.connect(partial(self.rotate_selected_orients_around_axis, 1, -90))
+        self.ui.rot_y_pos_btn.clicked.connect(partial(self.rotate_selected_orients_around_axis, 1, 90))
+        self.ui.rot_z_neg_btn.clicked.connect(partial(self.rotate_selected_orients_around_axis, 2, -90))
+        self.ui.rot_z_pos_btn.clicked.connect(partial(self.rotate_selected_orients_around_axis, 2, 90))
+
+        # auto orient settings
+        self.ui.axis_order_combo.currentIndexChanged.connect(self.set_axis_order)
+        self.ui.up_axis_combo.currentIndexChanged.connect(self.set_up_axis)
+        self.ui.include_children_check.stateChanged.connect(self.set_include_children)
+        self.ui.keep_axes_synced_check.stateChanged.connect(self.set_keep_axes_synced)
+        self.ui.preserve_children_check.stateChanged.connect(self.set_preserve_children)
+        self.ui.preserve_shapes_check.stateChanged.connect(self.set_preserve_shapes)
+
+        # auto orient buttons
+        self.ui.orient_to_joint_btn.clicked.connect(self.orient_to_joint_for_selected)
+        self.ui.orient_to_parent_btn.clicked.connect(self.orient_to_parent_for_selected)
+        self.ui.orient_to_world_btn.clicked.connect(self.orient_to_world_for_selected)
+        self.ui.orient_ik_joints_btn.clicked.connect(self.orient_ik_joints_for_selected)
+        self.ui.fixup_btn.clicked.connect(self.fixup_orient_for_selected)
+
+    def _update_settings(self):
+        self.ui.axis_order_combo.setCurrentIndex(self.axis_order)
+        self.ui.up_axis_combo.setCurrentIndex(self.up_axis)
+
+        self.ui.include_children_check.setChecked(self.include_children)
+        self.ui.keep_axes_synced_check.setChecked(self.keep_axes_synced)
+        self.ui.preserve_children_check.setChecked(self.preserve_children)
+        self.ui.preserve_shapes_check.setChecked(self.preserve_shapes)
+
+    def get_up_axis_str(self):
+        """
+        Returns:
+            An str representing the up axis
+                e.g. 'x', 'y', 'z'
+        """
+        return self.UP_AXIS_OPTIONS[self.up_axis].lower()
+
+    def get_axis_order_str(self):
+        """
+        Returns:
+            A string representing the orient axis order,
+                e.g. 'xyz', 'zyx', ...
+        """
+        return self.AXIS_ORDER_OPTIONS[self.axis_order].lower()
+
+    def rotate_selected_orients_around_axis(self, axis, degrees):
+        kw = dict(
+            preserveChildren=self.preserve_children,
+            preserveShapes=self.preserve_shapes,
+            syncJointAxes=self.keep_axes_synced,
+        )
+        cmd(editorutils.rotateSelectedOrientsAroundAxis, axis, degrees, **kw)()
+
+    def orient_to_world_for_selected(self):
+        kw = dict(
+            includeChildren=self.include_children,
+            preserveChildren=self.preserve_children,
+            preserveShapes=self.preserve_shapes,
+            syncJointAxes=self.keep_axes_synced,
+        )
+        cmd(editorutils.orientToWorldForSelected, **kw)()
+
+    def orient_to_joint_for_selected(self):
+        kw = dict(
+            axisOrder=self.get_axis_order_str(),
+            upAxisStr=self.get_up_axis_str(),
+            includeChildren=self.include_children,
+            preserveChildren=self.preserve_children,
+            preserveShapes=self.preserve_shapes,
+            syncJointAxes=self.keep_axes_synced,
+        )
+        cmd(editorutils.orientToJointForSelected, **kw)()
+
+    def orient_to_parent_for_selected(self):
+        kw = dict(
+            includeChildren=self.include_children,
+            preserveChildren=self.preserve_children,
+        )
+        cmd(editorutils.orientToParentForSelected, **kw)()
+
+    def orient_ik_joints_for_selected(self):
+        kw = dict(
+            aimAxis=self.get_axis_order_str()[0],
+            poleAxis=self.get_up_axis_str(),
+            preserveChildren=self.preserve_children,
+        )
+        cmd(editorutils.orientIKJointsForSelected, **kw)()
+
+    def fixup_orient_for_selected(self):
+        kw = dict(
+            aimAxis=self.get_axis_order_str()[0],
+            keepAxis=self.get_up_axis_str(),
+            preserveChildren=self.preserve_children,
+        )
+        cmd(editorutils.fixupJointOrientForSelected, **kw)()
+
+
+# TODO: remove the need for this separate panel widget, allow adding a basic QWidget to the design view
+
 class JointOrientsPanel(PulsePanelWidget):
     """
     Util widget for orienting joints.
     """
-
-    AXIS_ORDER_OPTIONS = ['XYZ', 'XZY', 'YXZ', 'YZX', 'ZXY', 'ZYX']
-    UP_AXIS_OPTIONS = ['X', 'Y', 'Z']
-
-    orientAxisOrder = optionVarProperty('pulse.editor.orientAxisOrder', 0)
-    orientUpAxis = optionVarProperty('pulse.editor.orientUpAxis', 1)
-    syncJointAxes = optionVarProperty('pulse.editor.syncJointAxes', True)
-    orientPreserveChildren = optionVarProperty(
-        'pulse.editor.orientPreserveChildren', True)
-    orientPreserveShapes = optionVarProperty(
-        'pulse.editor.orientPreserveShapes', True)
-    orientIncludeChildren = optionVarProperty(
-        'pulse.editor.orientIncludeChildren', True)
-
-    def setOrientAxisOrder(self, value):
-        self.orientAxisOrder = value
-
-    def setOrientUpAxis(self, value):
-        self.orientUpAxis = value
-
-    def setSyncJointAxes(self, value):
-        self.syncJointAxes = value
-
-    def setOrientPreserveChildren(self, value):
-        self.orientPreserveChildren = value
-
-    def setOrientPreserveShapes(self, value):
-        self.orientPreserveShapes = value
-
-    def setOrientIncludeChildren(self, value):
-        self.orientIncludeChildren = value
 
     def getPanelDisplayName(self):
         return "Joint Orients"
@@ -116,165 +229,8 @@ class JointOrientsPanel(PulsePanelWidget):
         layout = QtWidgets.QVBoxLayout(parent)
         layout.setMargin(0)
 
-        frame = self.createPanelFrame(parent)
-        layout.addWidget(frame)
-
-        self.setupContenUi(frame)
-
-    def setupContenUi(self, parent):
-        layout = QtWidgets.QVBoxLayout(parent)
-        layout.setMargin(0)
-
-        # settings
-        # --------
-        self.keepChildPosCheck = QtWidgets.QCheckBox(parent)
-        self.keepChildPosCheck.setText("Preserve Children")
-        self.keepChildPosCheck.setStatusTip(
-            "Preseve the positions of child nodes when rotating "
-            "or orienting a transform or joint")
-        self.keepChildPosCheck.setChecked(self.orientPreserveChildren)
-        self.keepChildPosCheck.stateChanged.connect(
-            self.setOrientPreserveChildren)
-
-        self.keepShapeCheck = QtWidgets.QCheckBox(parent)
-        self.keepShapeCheck.setText("Preserve Shapes")
-        self.keepShapeCheck.setStatusTip(
-            "Preseve the orientation of shapes when rotating nodes")
-        self.keepShapeCheck.setChecked(self.orientPreserveShapes)
-        self.keepShapeCheck.stateChanged.connect(self.setOrientPreserveShapes)
-
-        self.syncJointAxesCheck = QtWidgets.QCheckBox(parent)
-        self.syncJointAxesCheck.setText('Keep Axes Synced')
-        self.syncJointAxesCheck.setStatusTip(
-            "When enabled, joint translate and scale axes are automatically "
-            "updated when the jointOrient and rotateAxis values are changed.")
-        self.syncJointAxesCheck.setChecked(self.syncJointAxes)
-        self.syncJointAxesCheck.stateChanged.connect(self.setSyncJointAxes)
-
-        self.includeChildrenCheck = QtWidgets.QCheckBox(parent)
-        self.includeChildrenCheck.setText("Include All Children")
-        self.includeChildrenCheck.setStatusTip(
-            "Update all child joints when using orient to joint or world")
-        self.includeChildrenCheck.setChecked(self.orientIncludeChildren)
-        self.includeChildrenCheck.stateChanged.connect(
-            self.setOrientIncludeChildren)
-
-        # joint orient axes
-        hlayout = QtWidgets.QHBoxLayout(parent)
-        hlayout.setSpacing(4)
-
-        # axisOrderLabel = QtWidgets.QLabel(parent)
-        # axisOrderLabel.setText("Orient Axes")
-
-        self.axisOrderCombo = QtWidgets.QComboBox(parent)
-        for option in self.AXIS_ORDER_OPTIONS:
-            optionStr = '{0} forward, {1} up'.format(option[0], option[1])
-            self.axisOrderCombo.addItem(optionStr)
-        self.axisOrderCombo.setCurrentIndex(self.orientAxisOrder)
-        self.axisOrderCombo.setStatusTip(
-            "The local axes to use for forward / up / secondary")
-        self.axisOrderCombo.currentIndexChanged.connect(
-            self.setOrientAxisOrder)
-
-        self.upAxisCombo = QtWidgets.QComboBox(parent)
-        for option in self.UP_AXIS_OPTIONS:
-            optionStr = '{0} world up'.format(option)
-            self.upAxisCombo.addItem(optionStr)
-        self.upAxisCombo.setCurrentIndex(self.orientUpAxis)
-        self.upAxisCombo.setStatusTip(
-            "The world axis that up vector of the joint should point towards")
-        self.upAxisCombo.currentIndexChanged.connect(self.setOrientUpAxis)
-
-        # hlayout.addWidget(axisOrderLabel)
-        hlayout.addWidget(self.axisOrderCombo)
-        hlayout.addWidget(self.upAxisCombo)
-        hlayout.addItem(viewutils.createHSpacer())
-
-        layout.addWidget(self.keepChildPosCheck)
-        layout.addWidget(self.keepShapeCheck)
-        layout.addWidget(self.syncJointAxesCheck)
-        layout.addWidget(self.includeChildrenCheck)
-        layout.addLayout(hlayout)
-
-        # display btn grid
-        displayGridLayout = QtWidgets.QGridLayout(parent)
-        displayGridLayout.setMargin(0)
-        displayGridLayout.setSpacing(2)
-
-        toggleCBBtn = QPushButton(parent)
-        toggleCBBtn.setText('Toggle Channel Box Attrs')
-        toggleCBBtn.setStatusTip(
-            "Toggle the display of rotateAxis, localPivot, and other "
-            "attributes in the channel box")
-        toggleCBBtn.clicked.connect(
-            cmd(editorutils.toggleDetailedChannelBoxForSelected))
-
-        toggleLRABtn = QPushButton(parent)
-        toggleLRABtn.setText('Toggle LRAs')
-        toggleLRABtn.setStatusTip(
-            "Toggle the display of local rotation axes")
-        toggleLRABtn.clicked.connect(
-            cmd(self.toggleLocalRotationAxesForSelected))
-
-        gridItems = [
-            [toggleLRABtn, toggleCBBtn]
-        ]
-        viewutils.addItemsToGrid(displayGridLayout, gridItems)
-        layout.addLayout(displayGridLayout)
-
-        # orient btn grid
-        orientGridLayout = QtWidgets.QGridLayout(parent)
-        orientGridLayout.setMargin(0)
-        orientGridLayout.setSpacing(2)
-
-        orientToJointBtn = QtWidgets.QPushButton(parent)
-        orientToJointBtn.setText("Orient to Joint")
-        orientToJointBtn.clicked.connect(self.orientToJointForSelected)
-
-        orientToParentBtn = QtWidgets.QPushButton(parent)
-        orientToParentBtn.setText("Orient to Parent")
-        orientToParentBtn.clicked.connect(self.orientToParentForSelected)
-
-        orientToWorldBtn = QtWidgets.QPushButton(parent)
-        orientToWorldBtn.setText("Orient to World")
-        orientToWorldBtn.clicked.connect(self.orientToWorldForSelected)
-
-        orientIKJointsBtn = QtWidgets.QPushButton(parent)
-        orientIKJointsBtn.setText("Orient IK Joints")
-        orientIKJointsBtn.clicked.connect(self.orientIKJointsForSelected)
-
-        interactiveOrientBtn = QtWidgets.QPushButton(parent)
-        interactiveOrientBtn.setText("Interactive Orient")
-        interactiveOrientBtn.clicked.connect(self.interactiveOrientForSelected)
-
-        fixupOrientBtn = QtWidgets.QPushButton(parent)
-        fixupOrientBtn.setText("Fixup Orient")
-        fixupOrientBtn.setStatusTip(
-            "Adjust joint orientation to point down the bone, whilst preserving "
-            "the other axes as much as possible. "
-            "Currently hard-coded to point down X and prioritize Z")
-        fixupOrientBtn.clicked.connect(
-            self.fixupJointOrientForSelected)
-
-        syncAxesBtn = QtWidgets.QPushButton(parent)
-        syncAxesBtn.setText("Sync Axes")
-        syncAxesBtn.setStatusTip(
-            "Match the translate and scale axes of a "
-            "joint to its orientation")
-        syncAxesBtn.clicked.connect(self.matchJointRotationToOrientForSelected)
-
-        gridItems = [
-            [orientToJointBtn, orientToParentBtn],
-            [orientToWorldBtn, orientIKJointsBtn],
-            [fixupOrientBtn, syncAxesBtn],
-            [interactiveOrientBtn],
-        ]
-        viewutils.addItemsToGrid(orientGridLayout, gridItems)
-        layout.addLayout(orientGridLayout)
-
-        # rotate orient buttons
-        rotateForm = self.createRotateAxisForm(parent)
-        layout.addWidget(rotateForm)
+        widget = JointOrientsPanelWidget(parent)
+        layout.addWidget(widget)
 
     def createRotateAxisForm(self, parent):
         widget = QtWidgets.QWidget(parent)
@@ -283,114 +239,3 @@ class JointOrientsPanel(PulsePanelWidget):
         layout.setMargin(0)
         layout.setSpacing(2)
         widget.setLayout(layout)
-
-        def createRotateOrientsButton(text, color, axis, degrees):
-            _axes = {0: 'X', 1: 'Y', 2: 'Z'}
-
-            btn = QtWidgets.QPushButton(parent)
-            btn.setText(text)
-            btn.setStatusTip(
-                "Rotate the components of the selected controls "
-                "{0} degrees around the {1} axis".format(degrees, _axes[axis]))
-            btn.setStyleSheet(UIColors.asBGColor(color))
-            btn.clicked.connect(
-                partial(self.rotateSelectedOrientsAroundAxis, axis, degrees))
-            return btn
-
-        btn = createRotateOrientsButton('- X', UIColors.RED, 0, -90)
-        layout.addWidget(btn)
-        btn = createRotateOrientsButton('+ X', UIColors.RED, 0, 90)
-        layout.addWidget(btn)
-        btn = createRotateOrientsButton('- Y', UIColors.GREEN, 1, -90)
-        layout.addWidget(btn)
-        btn = createRotateOrientsButton('+ Y', UIColors.GREEN, 1, 90)
-        layout.addWidget(btn)
-        btn = createRotateOrientsButton('- Z', UIColors.BLUE, 2, -90)
-        layout.addWidget(btn)
-        btn = createRotateOrientsButton('+ Z', UIColors.BLUE, 2, 90)
-        layout.addWidget(btn)
-
-        return widget
-
-    def getOrientUpAxisStr(self):
-        """
-        Returns:
-            An str representing the up axis
-                e.g. 'x', 'y', 'z'
-        """
-        return self.UP_AXIS_OPTIONS[self.orientUpAxis].lower()
-
-    def getOrientAxisOrderStr(self):
-        """
-        Returns:
-            A string representing the orient axis order,
-                e.g. 'xyz', 'zyx', ...
-        """
-        return self.AXIS_ORDER_OPTIONS[self.orientAxisOrder].lower()
-
-    def toggleLocalRotationAxesForSelected(self):
-        kw = dict(
-            includeChildren=self.orientIncludeChildren,
-        )
-        cmd(editorutils.toggleLocalRotationAxesForSelected, **kw)()
-
-    def rotateSelectedOrientsAroundAxis(self, axis, degrees):
-        kw = dict(
-            preserveChildren=self.orientPreserveChildren,
-            preserveShapes=self.orientPreserveShapes,
-            syncJointAxes=self.syncJointAxes,
-        )
-        cmd(editorutils.rotateSelectedOrientsAroundAxis,
-            axis, degrees, **kw)()
-
-    def interactiveOrientForSelected(self):
-        cmd(editorutils.interactiveOrientForSelected)()
-
-    def orientToWorldForSelected(self):
-        kw = dict(
-            includeChildren=self.orientIncludeChildren,
-            preserveChildren=self.orientPreserveChildren,
-            preserveShapes=self.orientPreserveShapes,
-            syncJointAxes=self.syncJointAxes,
-        )
-        cmd(editorutils.orientToWorldForSelected, **kw)()
-
-    def orientToJointForSelected(self):
-        kw = dict(
-            axisOrder=self.getOrientAxisOrderStr(),
-            upAxisStr=self.getOrientUpAxisStr(),
-            includeChildren=self.orientIncludeChildren,
-            preserveChildren=self.orientPreserveChildren,
-            preserveShapes=self.orientPreserveShapes,
-            syncJointAxes=self.syncJointAxes,
-        )
-        cmd(editorutils.orientToJointForSelected, **kw)()
-
-    def orientToParentForSelected(self):
-        kw = dict(
-            includeChildren=self.orientIncludeChildren,
-            preserveChildren=self.orientPreserveChildren,
-        )
-        cmd(editorutils.orientToParentForSelected, **kw)()
-
-    def orientIKJointsForSelected(self):
-        kw = dict(
-            aimAxis=self.getOrientAxisOrderStr()[0],
-            poleAxis=self.getOrientUpAxisStr(),
-            preserveChildren=self.orientPreserveChildren,
-        )
-        cmd(editorutils.orientIKJointsForSelected, **kw)()
-
-    def fixupJointOrientForSelected(self):
-        kw = dict(
-            aimAxis=self.getOrientAxisOrderStr()[0],
-            keepAxis=self.getOrientUpAxisStr(),
-            preserveChildren=self.orientPreserveChildren,
-        )
-        cmd(editorutils.fixupJointOrientForSelected, **kw)()
-
-    def matchJointRotationToOrientForSelected(self):
-        kw = dict(
-            preserveChildren=self.orientPreserveChildren,
-        )
-        cmd(editorutils.matchJointRotationToOrientForSelected, **kw)()

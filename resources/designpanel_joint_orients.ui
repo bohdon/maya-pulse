@@ -1,0 +1,422 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>DesignPanelJointOrients</class>
+ <widget class="QWidget" name="DesignPanelJointOrients">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>227</width>
+    <height>299</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Form</string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <property name="spacing">
+    <number>2</number>
+   </property>
+   <property name="leftMargin">
+    <number>0</number>
+   </property>
+   <property name="topMargin">
+    <number>0</number>
+   </property>
+   <property name="rightMargin">
+    <number>0</number>
+   </property>
+   <property name="bottomMargin">
+    <number>0</number>
+   </property>
+   <item>
+    <layout class="QHBoxLayout" name="horizontalLayout_2"/>
+   </item>
+   <item>
+    <layout class="QGridLayout" name="gridLayout_2">
+     <item row="1" column="3">
+      <widget class="QPushButton" name="sync_axes_btn">
+       <property name="statusTip">
+        <string>Match the translate and scale axes of a joint to its orientation.</string>
+       </property>
+       <property name="text">
+        <string>Synx Axes</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="2">
+      <widget class="QPushButton" name="interactive_btn">
+       <property name="text">
+        <string>Interactive</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="2">
+      <widget class="QPushButton" name="toggle_lras_btn">
+       <property name="statusTip">
+        <string>Toggle the display of local rotation axes.</string>
+       </property>
+       <property name="text">
+        <string>Toggle LRAs</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="3">
+      <widget class="QPushButton" name="toggle_cb_attrs_btn">
+       <property name="statusTip">
+        <string>Toggle the display of orientation attributes in the channel box.</string>
+       </property>
+       <property name="text">
+        <string>Toggle CB Attrs</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="horizontalLayout_4">
+     <item>
+      <widget class="QPushButton" name="rot_x_neg_btn">
+       <property name="minimumSize">
+        <size>
+         <width>10</width>
+         <height>0</height>
+        </size>
+       </property>
+       <property name="statusTip">
+        <string>Rotate the orients in controlled increments.</string>
+       </property>
+       <property name="text">
+        <string>- X</string>
+       </property>
+       <property name="cssClasses" stdset="0">
+        <string>x-axis</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="rot_x_pos_btn">
+       <property name="minimumSize">
+        <size>
+         <width>10</width>
+         <height>0</height>
+        </size>
+       </property>
+       <property name="statusTip">
+        <string>Rotate the orients in controlled increments.</string>
+       </property>
+       <property name="text">
+        <string>+ X</string>
+       </property>
+       <property name="cssClasses" stdset="0">
+        <string>x-axis</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="rot_y_neg_btn">
+       <property name="minimumSize">
+        <size>
+         <width>10</width>
+         <height>0</height>
+        </size>
+       </property>
+       <property name="statusTip">
+        <string>Rotate the orients in controlled increments.</string>
+       </property>
+       <property name="text">
+        <string>- Y</string>
+       </property>
+       <property name="cssClasses" stdset="0">
+        <string>y-axis</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="rot_y_pos_btn">
+       <property name="minimumSize">
+        <size>
+         <width>10</width>
+         <height>0</height>
+        </size>
+       </property>
+       <property name="statusTip">
+        <string>Rotate the orients in controlled increments.</string>
+       </property>
+       <property name="text">
+        <string>+ Y</string>
+       </property>
+       <property name="cssClasses" stdset="0">
+        <string>y-axis</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="rot_z_neg_btn">
+       <property name="minimumSize">
+        <size>
+         <width>10</width>
+         <height>0</height>
+        </size>
+       </property>
+       <property name="statusTip">
+        <string>Rotate the orients in controlled increments.</string>
+       </property>
+       <property name="text">
+        <string>- Z</string>
+       </property>
+       <property name="cssClasses" stdset="0">
+        <string>z-axis</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="rot_z_pos_btn">
+       <property name="minimumSize">
+        <size>
+         <width>10</width>
+         <height>0</height>
+        </size>
+       </property>
+       <property name="statusTip">
+        <string>Rotate the orients in controlled increments.</string>
+       </property>
+       <property name="text">
+        <string>+ Z</string>
+       </property>
+       <property name="cssClasses" stdset="0">
+        <string>z-axis</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <spacer name="verticalSpacer_2">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeType">
+      <enum>QSizePolicy::Minimum</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>20</width>
+       <height>6</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+   <item>
+    <widget class="Line" name="line">
+     <property name="frameShadow">
+      <enum>QFrame::Plain</enum>
+     </property>
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <spacer name="verticalSpacer_4">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeType">
+      <enum>QSizePolicy::Minimum</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>20</width>
+       <height>6</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="horizontalLayout">
+     <item>
+      <layout class="QVBoxLayout" name="verticalLayout_2">
+       <item>
+        <widget class="QCheckBox" name="preserve_children_check">
+         <property name="statusTip">
+          <string>Preseve the positions of child nodes when rotating or orienting a transform or joint.</string>
+         </property>
+         <property name="text">
+          <string>Preserve Children</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QCheckBox" name="preserve_shapes_check">
+         <property name="statusTip">
+          <string>Preseve the orientation of shapes when rotating nodes.</string>
+         </property>
+         <property name="text">
+          <string>Preserve Shapes</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QCheckBox" name="keep_axes_synced_check">
+         <property name="statusTip">
+          <string>When enabled, joint translate and scale axes are automatically updated when the jointOrient and rotateAxis values are changed.</string>
+         </property>
+         <property name="text">
+          <string>Keep Axes Synced</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QCheckBox" name="include_children_check">
+         <property name="statusTip">
+          <string>Update all child joints when using orient to joint or world.</string>
+         </property>
+         <property name="text">
+          <string>Include Children</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+     <item>
+      <layout class="QVBoxLayout" name="verticalLayout_3">
+       <item>
+        <widget class="QComboBox" name="axis_order_combo">
+         <property name="toolTip">
+          <string>The local axes to use when orienting.</string>
+         </property>
+         <item>
+          <property name="text">
+           <string>X forward, Y up</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>X forward, Z up</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Y forward, X up</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Y forward, Z up</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Z forward, X up</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Z forward, Y up</string>
+          </property>
+         </item>
+        </widget>
+       </item>
+       <item>
+        <widget class="QComboBox" name="up_axis_combo">
+         <property name="toolTip">
+          <string>The world up axis to align with the local up axis.</string>
+         </property>
+         <item>
+          <property name="text">
+           <string>X world up</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Y world up</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Z world up</string>
+          </property>
+         </item>
+        </widget>
+       </item>
+       <item>
+        <spacer name="verticalSpacer">
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>20</width>
+           <height>40</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+      </layout>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <spacer name="verticalSpacer_3">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeType">
+      <enum>QSizePolicy::Minimum</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>20</width>
+       <height>6</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+   <item>
+    <layout class="QGridLayout" name="gridLayout">
+     <item row="2" column="1">
+      <widget class="QPushButton" name="orient_ik_joints_btn">
+       <property name="text">
+        <string>Orient IK Joints</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="0">
+      <widget class="QPushButton" name="orient_to_world_btn">
+       <property name="text">
+        <string>Orient to World</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="0">
+      <widget class="QPushButton" name="orient_to_joint_btn">
+       <property name="text">
+        <string>Orient to Joint</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="1">
+      <widget class="QPushButton" name="orient_to_parent_btn">
+       <property name="text">
+        <string>Orient to Parent</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <widget class="QPushButton" name="fixup_btn">
+     <property name="statusTip">
+      <string>Adjust joint orientation to point down the bone, whilst preserving the other axes as much as possible. Currently hard-coded to point down X and prioritize Z.</string>
+     </property>
+     <property name="text">
+      <string>Fixup</string>
+     </property>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
