@@ -6,8 +6,8 @@ from ...vendor.Qt import QtWidgets
 from ... import editorutils
 from ...prefs import optionVarProperty
 
-from .. import utils as viewutils
 from ..utils import undoAndRepeatPartial as cmd
+from ..gen.designpanel_joints import Ui_JointsDesignPanel
 from ..gen.designpanel_joint_orients import Ui_JointOrientsDesignPanel
 
 
@@ -16,53 +16,16 @@ class JointsDesignPanel(QtWidgets.QWidget):
     def __init__(self, parent):
         super(JointsDesignPanel, self).__init__(parent)
 
-        self.setupUi(self)
+        self.ui = Ui_JointsDesignPanel()
+        self.ui.setupUi(self)
 
-    def setupUi(self, parent):
-        gridLayout = QtWidgets.QGridLayout(parent)
-        gridLayout.setMargin(0)
-        gridLayout.setSpacing(2)
-
-        jointToolBtn = QtWidgets.QPushButton(parent)
-        jointToolBtn.setText("Joint Tool")
-        jointToolBtn.clicked.connect(cmd(pm.mel.JointTool))
-
-        insertToolBtn = QtWidgets.QPushButton(parent)
-        insertToolBtn.setText("Insert Joint Tool")
-        insertToolBtn.clicked.connect(cmd(pm.mel.InsertJointTool))
-
-        centerBtn = QtWidgets.QPushButton(parent)
-        centerBtn.setText("Center")
-        centerBtn.clicked.connect(cmd(editorutils.centerSelectedJoints))
-
-        insertBtn = QtWidgets.QPushButton(parent)
-        insertBtn.setText("Insert")
-        insertBtn.clicked.connect(cmd(editorutils.insertJointForSelected))
-
-        disableSSCBtn = QtWidgets.QPushButton(parent)
-        disableSSCBtn.setText("Disable Scale Compensate")
-        disableSSCBtn.clicked.connect(
-            cmd(editorutils.disableSegmentScaleCompensateForSelected))
-
-        freezeBtn = QtWidgets.QPushButton(parent)
-        freezeBtn.setText("Freeze Joints")
-        freezeBtn.setStatusTip("Freeze rotates and scales on the selected joint hierarchies")
-        freezeBtn.clicked.connect(
-            cmd(editorutils.freezeJointsForSelectedHierarchies))
-
-        markEndJntsBtn = QtWidgets.QPushButton(parent)
-        markEndJntsBtn.setText("Mark End Joints")
-        markEndJntsBtn.setStatusTip("Find all end joints in the selected hierarchy and rename and color them")
-        markEndJntsBtn.clicked.connect(
-            cmd(editorutils.markEndJointsForSelected))
-
-        gridItems = [
-            [jointToolBtn, insertToolBtn],
-            [centerBtn, insertBtn],
-            [disableSSCBtn, freezeBtn],
-            [markEndJntsBtn],
-        ]
-        viewutils.addItemsToGrid(gridLayout, gridItems)
+        self.ui.joint_tool_btn.clicked.connect(cmd(pm.mel.JointTool))
+        self.ui.insert_joint_tool_btn.clicked.connect(cmd(pm.mel.InsertJointTool))
+        self.ui.center_btn.clicked.connect(cmd(editorutils.centerSelectedJoints))
+        self.ui.insert_btn.clicked.connect(cmd(editorutils.insertJointForSelected))
+        self.ui.disable_ssc_btn.clicked.connect(cmd(editorutils.disableSegmentScaleCompensateForSelected))
+        self.ui.freeze_btn.clicked.connect(cmd(editorutils.freezeJointsForSelectedHierarchies))
+        self.ui.mark_end_joints_btn.clicked.connect(cmd(editorutils.markEndJointsForSelected))
 
 
 class DesignPanelJointOrients(QtWidgets.QWidget):
