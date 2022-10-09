@@ -1,30 +1,22 @@
 from .. import utils as viewutils
-from ..core import PulsePanelWidget
 from ..utils import undoAndRepeatPartial as cmd
 from ... import editorutils
 from ...vendor.Qt import QtWidgets
 
 
-class WeightsPanel(PulsePanelWidget):
+class WeightsDesignPanel(QtWidgets.QWidget):
 
     def __init__(self, parent):
-        super(WeightsPanel, self).__init__(parent=parent)
+        super(WeightsDesignPanel, self).__init__(parent)
 
-    def getPanelDisplayName(self):
-        return "Weights"
+        self.setupUi(self)
 
-    def setupPanelUi(self, parent):
-        layout = QtWidgets.QVBoxLayout(parent)
-        layout.setMargin(0)
-
-        frame = self.createPanelFrame(parent)
-        layout.addWidget(frame)
-
-        gridLayout = QtWidgets.QGridLayout(frame)
+    def setupUi(self, parent):
+        gridLayout = QtWidgets.QGridLayout(parent)
         gridLayout.setMargin(0)
         gridLayout.setSpacing(2)
 
-        saveWeightsBtn = QtWidgets.QPushButton(frame)
+        saveWeightsBtn = QtWidgets.QPushButton(parent)
         saveWeightsBtn.setText("Save Skin Weights")
         saveWeightsBtn.setStatusTip(
             "Save all skin weights in the scene a weights file")

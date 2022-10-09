@@ -3,23 +3,44 @@ A widget containing a collection of panels with tools
 for designing the rig blueprint.
 """
 
-from .core import PulseWindow
-from .designviews.controls import ControlsPanel
-from .designviews.general import GeneralPanel
-from .designviews.joints import JointsPanel, JointOrientsPanel
-from .designviews.layout import LayoutPanel
-from .designviews.sym import SymmetryPanel
-from .designviews.weights import WeightsPanel
+from .core import PulseWindow, PulsePanelWidget
+from .designviews.controls import ControlsDesignPanel
+from .designviews.general import GeneralDesignPanel
+from .designviews.joints import JointsDesignPanel, DesignPanelJointOrients
+from .designviews.layout import LayoutDesignPanel
+from .designviews.sym import SymmetryDesignPanel
+from .designviews.weights import WeightsDesignPanel
 from ..vendor.Qt import QtWidgets, QtCore
 
 PANEL_DEFINITIONS = [
-    {"widgetClass": GeneralPanel},
-    {"widgetClass": LayoutPanel},
-    {"widgetClass": ControlsPanel},
-    {"widgetClass": JointsPanel},
-    {"widgetClass": JointOrientsPanel},
-    {"widgetClass": SymmetryPanel},
-    {"widgetClass": WeightsPanel},
+    {
+        "title": "General",
+        "widgetClass": GeneralDesignPanel,
+    },
+    {
+        "title": "Layout",
+        "widgetClass": LayoutDesignPanel,
+    },
+    {
+        "title": "Controls",
+        "widgetClass": ControlsDesignPanel,
+    },
+    {
+        "title": "Joints",
+        "widgetClass": JointsDesignPanel,
+    },
+    {
+        "title": "Joint Orients",
+        "widgetClass": DesignPanelJointOrients,
+    },
+    {
+        "title": "Symmetry",
+        "widgetClass": SymmetryDesignPanel,
+    },
+    {
+        "title": "Weights",
+        "widgetClass": WeightsDesignPanel,
+    },
 ]
 
 
@@ -53,7 +74,7 @@ class DesignToolkitWidget(QtWidgets.QWidget):
         self.scrollLayout.setMargin(0)
         self.scrollLayout.setSpacing(8)
 
-        self.setupPanelsUi(self.scrollLayout, self.scrollWidget)
+        self.setup_panels_ui(self.scrollLayout, self.scrollWidget)
 
         spacer = QtWidgets.QSpacerItem(
             20, 20, QtWidgets.QSizePolicy.Minimum,
@@ -62,14 +83,20 @@ class DesignToolkitWidget(QtWidgets.QWidget):
 
         self.scrollWidget.setLayout(self.scrollLayout)
 
-    def setupPanelsUi(self, layout, parent):
+    def setup_panels_ui(self, layout, parent):
         """
-        Create a widget instance for each class in self.panelDefinitions
-        and add it to the layout.
+        Create a PulsePanelWidget widget for each entry in self.panelDefinitions and add it to the layout.
         """
         for panelDef in self.panelDefinitions:
-            panel = panelDef['widgetClass'](parent)
-            layout.addWidget(panel)
+            # create a collapsible container to wrap the design panel
+            panel_widget = PulsePanelWidget(parent)
+            panel_widget.set_title_text(panelDef['title'])
+
+            # create the contents widget
+            content_widget = panelDef['widgetClass'](parent)
+            panel_widget.set_content_widget(content_widget)
+
+            layout.addWidget(panel_widget)
 
         spacer = QtWidgets.QSpacerItem(
             20, 20, QtWidgets.QSizePolicy.Minimum,

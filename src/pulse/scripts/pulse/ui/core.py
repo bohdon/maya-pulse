@@ -29,81 +29,57 @@ BLUEPRINT_FILE_EXT = 'yml'
 
 class PulsePanelWidget(QtWidgets.QWidget):
     """
-    Base widget for any simple panel in the editor ui.
-
-    Provides functionality for building a consistent
-    ui across all pulse editor views.
+    A collapsible container widget with a title bar.
     """
+
+    # TODO: move this class to a common widgets module, it's not core functionality
 
     def __init__(self, parent):
         super(PulsePanelWidget, self).__init__(parent=parent)
 
+        # the main widget that will be shown and hidden when collapsing this container
+        self._content_widget = None
+
         self.setupUi(self)
-        self.setupPanelUi(self.panelWidget)
 
-    def getPanelDisplayName(self):
+    def set_title_text(self, text: str):
         """
-        Return the display name for this panel
+        Set the title text for the panel.
         """
-        raise NotImplementedError
-
-    def getPanelColor(self):
-        return [0, 0, 0]
+        self.title_label.setText(text)
 
     def setupUi(self, parent):
-        """
-        Build a collapsible panel ui that can be used
-        by all design panels.
-
-        All panel widgets should be attached to `self.panelWidget`
-        """
-        self.mainLayout = QtWidgets.QVBoxLayout(parent)
-        self.mainLayout.setMargin(0)
-        self.mainLayout.setSpacing(3)
+        self.main_layout = QtWidgets.QVBoxLayout(parent)
+        self.main_layout.setMargin(0)
+        self.main_layout.setSpacing(3)
 
         # header frame
-        self.headerFrame = CollapsibleFrame(parent)
-        headerColor = 'rgba({0}, {1}, {2}, 40)'.format(*self.getPanelColor())
-        self.headerFrame.setStyleSheet(
-            ".CollapsibleFrame{{ background-color: {color}; border-radius: 2px; }}".format(color=headerColor))
-        self.headerFrame.collapsedChanged.connect(self.onCollapsedChanged)
+        self.header_frame = CollapsibleFrame(parent)
+        self.header_frame.collapsedChanged.connect(self._on_collapsed_changed)
+
         # header layout
-        self.headerLayout = QtWidgets.QHBoxLayout(self.headerFrame)
-        self.headerLayout.setContentsMargins(10, 2, 2, 2)
-        # display name label
-        font = QtGui.QFont()
-        font.setWeight(75)
-        font.setBold(True)
-        self.displayNameLabel = QtWidgets.QLabel(self.headerFrame)
-        self.displayNameLabel.setMinimumHeight(18)
-        self.displayNameLabel.setFont(font)
-        self.displayNameLabel.setText(self.getPanelDisplayName())
-        self.headerLayout.addWidget(self.displayNameLabel)
+        self.header_layout = QtWidgets.QHBoxLayout(self.header_frame)
+        self.header_layout.setContentsMargins(0, 0, 0, 0)
 
-        self.mainLayout.addWidget(self.headerFrame)
+        # title label
+        self.title_label = QtWidgets.QLabel(self.header_frame)
+        self.title_label.setProperty('cssClasses', 'section-title')
+        self.header_layout.addWidget(self.title_label)
 
-        self.panelWidget = QtWidgets.QWidget(parent)
-        self.mainLayout.addWidget(self.panelWidget)
+        self.main_layout.addWidget(self.header_frame)
 
-    def setupPanelUi(self, parent):
+    def set_content_widget(self, widget: QtWidgets.QWidget):
         """
-        Setup the ui for the contents of the panel
+        Set the widget to use for the contents of the panel.
         """
-        raise NotImplementedError
+        self._content_widget = widget
+        if self._content_widget:
+            self._content_widget.setVisible(not self.header_frame.isCollapsed())
+            self.main_layout.addWidget(self._content_widget)
 
-    def onCollapsedChanged(self, isCollapsed):
-        self.panelWidget.setVisible(not isCollapsed)
-
-    @staticmethod
-    def createPanelFrame(parent):
-        """
-        Create a QFrame with consistent styling for a design view panel
-        """
-        frame = QtWidgets.QFrame(parent)
-        frame.setObjectName("panelFrame")
-        frame.setStyleSheet(
-            ".QFrame#panelFrame{ background-color: rgba(255, 255, 255, 5); }")
-        return frame
+    def _on_collapsed_changed(self, is_collapsed):
+        if self._content_widget:
+            self._content_widget.setVisible(not is_collapsed)
 
 
 class PulseWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):

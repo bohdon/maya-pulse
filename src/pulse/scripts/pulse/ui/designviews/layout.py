@@ -1,45 +1,38 @@
 import pymel.core as pm
 from maya import OpenMaya as api
 
-from ...vendor.Qt import QtCore, QtWidgets, QtGui
+from ...vendor.Qt import QtWidgets, QtGui
 from ... import editorutils
 from ... import links
 from .. import utils as viewutils
-from ..core import PulseWindow, PulsePanelWidget
+from ..core import PulseWindow
 from ..gen.layout_link_editor import Ui_LayoutLinkEditor
 from ..utils import undoAndRepeatPartial as cmd
 
 
-class LayoutPanel(PulsePanelWidget):
+class LayoutDesignPanel(QtWidgets.QWidget):
     """
     The layout utils panel shown in the Design Toolkit.
     """
 
     def __init__(self, parent):
-        super(LayoutPanel, self).__init__(parent=parent)
+        super(LayoutDesignPanel, self).__init__(parent)
 
-    def getPanelDisplayName(self):
-        return "Layout"
+        self.setupUi(self)
 
-    def setupPanelUi(self, parent):
-        layout = QtWidgets.QVBoxLayout(parent)
-        layout.setMargin(0)
-
-        frame = self.createPanelFrame(parent)
-        layout.addWidget(frame)
-
-        gridLayout = QtWidgets.QGridLayout(frame)
+    def setupUi(self, parent):
+        gridLayout = QtWidgets.QGridLayout(parent)
         gridLayout.setMargin(0)
         gridLayout.setSpacing(2)
 
-        snapToTargetsBtn = QtWidgets.QPushButton(frame)
+        snapToTargetsBtn = QtWidgets.QPushButton(parent)
         snapToTargetsBtn.setText("Snap To Targets")
         snapToTargetsBtn.setStatusTip(
             "Snap controls and linked objects to their target positions")
         snapToTargetsBtn.clicked.connect(
             cmd(editorutils.positionLinkForSelected))
 
-        linkEditorBtn = QtWidgets.QPushButton(frame)
+        linkEditorBtn = QtWidgets.QPushButton(parent)
         linkEditorBtn.setText("Link Editor")
         linkEditorBtn.setStatusTip(
             "Open the Layout Link Editor for managing how nodes are connected "

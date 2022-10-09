@@ -1,4 +1,3 @@
-from ..core import PulsePanelWidget
 from ..style import UIColors
 from ..utils import getIcon
 from ..utils import undoAndRepeatPartial as cmd
@@ -7,31 +6,21 @@ from ... import editorutils
 from ...vendor.Qt import QtCore, QtWidgets
 
 
-class ControlsPanel(PulsePanelWidget):
+class ControlsDesignPanel(QtWidgets.QWidget):
 
     def __init__(self, parent):
-        super(ControlsPanel, self).__init__(parent=parent)
+        super(ControlsDesignPanel, self).__init__(parent)
 
-    def getPanelDisplayName(self):
-        return "Controls"
+        self.setupUi(self)
 
-    def setupPanelUi(self, parent):
+    def setupUi(self, parent):
         layout = QtWidgets.QVBoxLayout(parent)
         layout.setMargin(0)
         layout.setSpacing(4)
 
-        createFrame = self.createPanelFrame(parent)
-        layout.addWidget(createFrame)
-        self.setupCreateControlsUi(createFrame)
-
-        editFrame = self.createPanelFrame(parent)
-        layout.addWidget(editFrame)
-        self.setupEditControlsUi(editFrame)
-
-    def setupCreateControlsUi(self, parent):
-        gridLayout = QtWidgets.QGridLayout(parent)
-        gridLayout.setMargin(0)
-        gridLayout.setSpacing(2)
+        create_layout = QtWidgets.QGridLayout(parent)
+        create_layout.setMargin(0)
+        create_layout.setSpacing(2)
 
         controlshapes.loadBuiltinControlShapes()
 
@@ -43,8 +32,7 @@ class ControlsPanel(PulsePanelWidget):
                 btn.setIconSize(QtCore.QSize(32, 32))
             else:
                 btn.setText(text)
-            btn.clicked.connect(
-                cmd(controlshapes.createControlsForSelected, shapeData))
+            btn.clicked.connect(cmd(controlshapes.createControlsForSelected, shapeData))
             return btn
 
         shapes = controlshapes.getControlShapes()
@@ -54,16 +42,18 @@ class ControlsPanel(PulsePanelWidget):
         columnCount = 4
         for s in shapes:
             btn = createControlShapeButton(s['name'], s)
-            gridLayout.addWidget(btn, row, col, 1, 1)
+            create_layout.addWidget(btn, row, col, 1, 1)
             col += 1
             if col == columnCount:
                 row += 1
                 col = 0
 
-    def setupEditControlsUi(self, parent):
-        layout = QtWidgets.QHBoxLayout(parent)
-        layout.setMargin(0)
-        layout.setSpacing(2)
+        layout.addLayout(create_layout)
+
+        # setup edit controls ui
+        edit_layout = QtWidgets.QHBoxLayout(parent)
+        edit_layout.setMargin(0)
+        edit_layout.setSpacing(2)
 
         def createRotateComponentsButton(text, color, axis, degrees):
             _axes = {0: 'X', 1: 'Y', 2: 'Z'}
@@ -74,19 +64,20 @@ class ControlsPanel(PulsePanelWidget):
                 "Rotate the components of the selected controls "
                 "{0} degrees around the {1} axis".format(degrees, _axes[axis]))
             btn.setStyleSheet(UIColors.asBGColor(color))
-            btn.clicked.connect(
-                cmd(editorutils.rotateSelectedComponentsAroundAxis, axis, degrees))
+            btn.clicked.connect(cmd(editorutils.rotateSelectedComponentsAroundAxis, axis, degrees))
             return btn
 
         btn = createRotateComponentsButton('- X', UIColors.RED, 0, -90)
-        layout.addWidget(btn)
+        edit_layout.addWidget(btn)
         btn = createRotateComponentsButton('+ X', UIColors.RED, 0, 90)
-        layout.addWidget(btn)
+        edit_layout.addWidget(btn)
         btn = createRotateComponentsButton('- Y', UIColors.GREEN, 1, -90)
-        layout.addWidget(btn)
+        edit_layout.addWidget(btn)
         btn = createRotateComponentsButton('+ Y', UIColors.GREEN, 1, 90)
-        layout.addWidget(btn)
+        edit_layout.addWidget(btn)
         btn = createRotateComponentsButton('- Z', UIColors.BLUE, 2, -90)
-        layout.addWidget(btn)
+        edit_layout.addWidget(btn)
         btn = createRotateComponentsButton('+ Z', UIColors.BLUE, 2, 90)
-        layout.addWidget(btn)
+        edit_layout.addWidget(btn)
+
+        layout.addLayout(edit_layout)

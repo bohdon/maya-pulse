@@ -7,26 +7,18 @@ from ... import editorutils
 from ...prefs import optionVarProperty
 
 from .. import utils as viewutils
-from ..core import PulsePanelWidget
 from ..utils import undoAndRepeatPartial as cmd
-from ..gen.designpanel_joint_orients import Ui_DesignPanelJointOrients
+from ..gen.designpanel_joint_orients import Ui_JointOrientsDesignPanel
 
 
-class JointsPanel(PulsePanelWidget):
+class JointsDesignPanel(QtWidgets.QWidget):
 
-    def getPanelDisplayName(self):
-        return "Joints"
+    def __init__(self, parent):
+        super(JointsDesignPanel, self).__init__(parent)
 
-    def setupPanelUi(self, parent):
-        layout = QtWidgets.QVBoxLayout(parent)
-        layout.setMargin(0)
+        self.setupUi(self)
 
-        frame = self.createPanelFrame(parent)
-        layout.addWidget(frame)
-
-        self.setupButtonGridUi(frame)
-
-    def setupButtonGridUi(self, parent):
+    def setupUi(self, parent):
         gridLayout = QtWidgets.QGridLayout(parent)
         gridLayout.setMargin(0)
         gridLayout.setSpacing(2)
@@ -73,7 +65,7 @@ class JointsPanel(PulsePanelWidget):
         viewutils.addItemsToGrid(gridLayout, gridItems)
 
 
-class JointOrientsPanelWidget(QtWidgets.QWidget):
+class DesignPanelJointOrients(QtWidgets.QWidget):
     AXIS_ORDER_OPTIONS = ['XYZ', 'XZY', 'YXZ', 'YZX', 'ZXY', 'ZYX']
     UP_AXIS_OPTIONS = ['X', 'Y', 'Z']
 
@@ -103,9 +95,9 @@ class JointOrientsPanelWidget(QtWidgets.QWidget):
         self.include_children = value
 
     def __init__(self, parent):
-        super(JointOrientsPanelWidget, self).__init__(parent)
+        super(DesignPanelJointOrients, self).__init__(parent)
 
-        self.ui = Ui_DesignPanelJointOrients()
+        self.ui = Ui_JointOrientsDesignPanel()
         self.ui.setupUi(self)
         self._update_settings()
 
@@ -213,29 +205,3 @@ class JointOrientsPanelWidget(QtWidgets.QWidget):
             preserveChildren=self.preserve_children,
         )
         cmd(editorutils.fixupJointOrientForSelected, **kw)()
-
-
-# TODO: remove the need for this separate panel widget, allow adding a basic QWidget to the design view
-
-class JointOrientsPanel(PulsePanelWidget):
-    """
-    Util widget for orienting joints.
-    """
-
-    def getPanelDisplayName(self):
-        return "Joint Orients"
-
-    def setupPanelUi(self, parent):
-        layout = QtWidgets.QVBoxLayout(parent)
-        layout.setMargin(0)
-
-        widget = JointOrientsPanelWidget(parent)
-        layout.addWidget(widget)
-
-    def createRotateAxisForm(self, parent):
-        widget = QtWidgets.QWidget(parent)
-
-        layout = QtWidgets.QHBoxLayout(parent)
-        layout.setMargin(0)
-        layout.setSpacing(2)
-        widget.setLayout(layout)

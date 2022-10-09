@@ -1,26 +1,18 @@
 from .. import utils as viewutils
-from ..core import PulsePanelWidget
 from ..utils import undoAndRepeatPartial as cmd
 from ... import editorutils
 from ...prefs import optionVarProperty
 from ...vendor.Qt import QtWidgets
 
 
-class SymmetryPanel(PulsePanelWidget):
-    mirrorRecursive = optionVarProperty(
-        'pulse.editor.mirrorRecursive', True)
-    mirrorTransforms = optionVarProperty(
-        'pulse.editor.mirrorTransforms', True)
-    mirrorParenting = optionVarProperty(
-        'pulse.editor.mirrorParenting', True)
-    mirrorLinks = optionVarProperty(
-        'pulse.editor.mirrorLinks', True)
-    mirrorAppearance = optionVarProperty(
-        'pulse.editor.mirrorAppearance', True)
-    mirrorCurveShapes = optionVarProperty(
-        'pulse.editor.mirrorCurveShapes', True)
-    mirrorAllowCreate = optionVarProperty(
-        'pulse.editor.mirrorAllowCreate', True)
+class SymmetryDesignPanel(QtWidgets.QWidget):
+    mirrorRecursive = optionVarProperty('pulse.editor.mirrorRecursive', True)
+    mirrorTransforms = optionVarProperty('pulse.editor.mirrorTransforms', True)
+    mirrorParenting = optionVarProperty('pulse.editor.mirrorParenting', True)
+    mirrorLinks = optionVarProperty('pulse.editor.mirrorLinks', True)
+    mirrorAppearance = optionVarProperty('pulse.editor.mirrorAppearance', True)
+    mirrorCurveShapes = optionVarProperty('pulse.editor.mirrorCurveShapes', True)
+    mirrorAllowCreate = optionVarProperty('pulse.editor.mirrorAllowCreate', True)
 
     def setMirrorRecursive(self, value):
         self.mirrorRecursive = True if value > 0 else False
@@ -44,21 +36,11 @@ class SymmetryPanel(PulsePanelWidget):
         self.mirrorAllowCreate = True if value > 0 else False
 
     def __init__(self, parent):
-        super(SymmetryPanel, self).__init__(parent=parent)
+        super(SymmetryDesignPanel, self).__init__(parent)
 
-    def getPanelDisplayName(self):
-        return "Symmetry"
+        self.setupUi(self)
 
-    def setupPanelUi(self, parent):
-        layout = QtWidgets.QVBoxLayout(parent)
-        layout.setMargin(0)
-
-        frame = self.createPanelFrame(parent)
-        layout.addWidget(frame)
-
-        self.setupContentUi(frame)
-
-    def setupContentUi(self, parent):
+    def setupUi(self, parent):
         layout = QtWidgets.QVBoxLayout(parent)
         layout.setMargin(0)
 

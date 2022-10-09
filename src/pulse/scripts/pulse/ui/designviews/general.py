@@ -1,7 +1,6 @@
 import pymel.core as pm
 
 from .. import utils as viewutils
-from ..core import PulsePanelWidget
 from ..quickcolor import QuickColorWindow
 from ..quickname import QuickNameWindow
 from ..utils import undoAndRepeatPartial as cmd
@@ -9,49 +8,42 @@ from ... import editorutils
 from ...vendor.Qt import QtWidgets
 
 
-class GeneralPanel(PulsePanelWidget):
+class GeneralDesignPanel(QtWidgets.QWidget):
 
     def __init__(self, parent):
-        super(GeneralPanel, self).__init__(parent=parent)
+        super(GeneralDesignPanel, self).__init__(parent)
 
-    def getPanelDisplayName(self):
-        return "General"
+        self.setupUi(self)
 
-    def setupPanelUi(self, parent):
-        layout = QtWidgets.QVBoxLayout(parent)
-        layout.setMargin(0)
-
-        frame = self.createPanelFrame(parent)
-        layout.addWidget(frame)
-
-        gridLayout = QtWidgets.QGridLayout(frame)
+    def setupUi(self, parent):
+        gridLayout = QtWidgets.QGridLayout(parent)
         gridLayout.setMargin(0)
         gridLayout.setSpacing(2)
 
-        nameEditorBtn = QtWidgets.QPushButton(frame)
+        nameEditorBtn = QtWidgets.QPushButton(parent)
         nameEditorBtn.setText("Name Editor")
         nameEditorBtn.clicked.connect(
             cmd(QuickNameWindow.toggleWindow))
 
-        colorEditorBtn = QtWidgets.QPushButton(frame)
+        colorEditorBtn = QtWidgets.QPushButton(parent)
         colorEditorBtn.setText("Color Editor")
         colorEditorBtn.clicked.connect(
             cmd(QuickColorWindow.toggleWindow))
 
-        parentSelBtn = QtWidgets.QPushButton(frame)
+        parentSelBtn = QtWidgets.QPushButton(parent)
         parentSelBtn.setText("Parent Selected")
         parentSelBtn.setStatusTip(
             "Parent the selected nodes, select one leader then followers")
         parentSelBtn.clicked.connect(cmd(editorutils.parentSelected))
 
-        parentInOrderBtn = QtWidgets.QPushButton(frame)
+        parentInOrderBtn = QtWidgets.QPushButton(parent)
         parentInOrderBtn.setText("Parent in Order")
         parentInOrderBtn.setStatusTip(
             "Parent the selection in order, select leaders to followers")
         parentInOrderBtn.clicked.connect(
             cmd(editorutils.parentSelectedInOrder))
 
-        createOffsetBtn = QtWidgets.QPushButton(frame)
+        createOffsetBtn = QtWidgets.QPushButton(parent)
         createOffsetBtn.setText("Create Offset")
         createOffsetBtn.setStatusTip(
             "Group the selected transform, creating the group "
@@ -59,13 +51,13 @@ class GeneralPanel(PulsePanelWidget):
         createOffsetBtn.clicked.connect(
             cmd(editorutils.createOffsetForSelected))
 
-        selectChildrenBtn = QtWidgets.QPushButton(frame)
+        selectChildrenBtn = QtWidgets.QPushButton(parent)
         selectChildrenBtn.setText("Select Hierarchy")
         selectChildrenBtn.setStatusTip(
             "Select all descendants of the selected node")
         selectChildrenBtn.clicked.connect(cmd(self.selectChildren))
 
-        freezeScaleBtn = QtWidgets.QPushButton(frame)
+        freezeScaleBtn = QtWidgets.QPushButton(parent)
         freezeScaleBtn.setText("Freeze Scales")
         freezeScaleBtn.setStatusTip(
             "Freeze the scales of the selected node and its children "
@@ -73,7 +65,7 @@ class GeneralPanel(PulsePanelWidget):
         freezeScaleBtn.clicked.connect(
             cmd(editorutils.freezeScalesForSelectedHierarchies))
 
-        freezePivotBtn = QtWidgets.QPushButton(frame)
+        freezePivotBtn = QtWidgets.QPushButton(parent)
         freezePivotBtn.setText("Freeze Pivots")
         freezePivotBtn.setStatusTip(
             "Freeze the local pivots of the selected node and its "
