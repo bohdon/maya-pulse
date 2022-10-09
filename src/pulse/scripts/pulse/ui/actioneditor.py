@@ -637,10 +637,6 @@ class ActionEditorWidget(QtWidgets.QWidget):
 
 class ActionEditorWindow(PulseWindow):
     OBJECT_NAME = 'pulseActionEditorWindow'
-    PREFERRED_SIZE = QtCore.QSize(320, 300)
-    STARTING_SIZE = QtCore.QSize(320, 300)
-    MINIMUM_SIZE = QtCore.QSize(320, 300)
-    DEFAULT_TAB_CONTROL = 'ChannelBoxLayerEditor'
     WINDOW_MODULE = 'pulse.ui.actioneditor'
 
     def __init__(self, parent=None):

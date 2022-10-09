@@ -7,6 +7,8 @@ import logging
 import maya.cmds as cmds
 
 from .core import BlueprintUIModel
+from .actioneditor import ActionEditorWindow
+from .designview import DesignToolkitWindow
 from .style import UIColors
 from .. import editorutils
 from ..blueprints import BlueprintBuilder, BlueprintValidator
@@ -72,6 +74,18 @@ class BuildToolbarWidget(QtWidgets.QWidget):
         self.rigOrBlueprintLabel = QtWidgets.QLabel(parent)
         self.rigOrBlueprintLabel.setFont(font)
         labelLayout.addWidget(self.rigOrBlueprintLabel)
+
+        self.design_toolkit_btn = QtWidgets.QPushButton(parent)
+        self.design_toolkit_btn.setText("D")
+        self.design_toolkit_btn.setFixedSize(24, 24)
+        self.design_toolkit_btn.clicked.connect(DesignToolkitWindow.toggleWindow)
+        hlayout.addWidget(self.design_toolkit_btn)
+
+        self.action_editor_btn = QtWidgets.QPushButton(parent)
+        self.action_editor_btn.setText("A")
+        self.action_editor_btn.setFixedSize(24, 24)
+        self.action_editor_btn.clicked.connect(ActionEditorWindow.toggleWindow)
+        hlayout.addWidget(self.action_editor_btn)
 
         self.checkBtn = QtWidgets.QPushButton(parent)
         self.checkBtn.setText("Validate")

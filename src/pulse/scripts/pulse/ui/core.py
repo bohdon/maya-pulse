@@ -106,7 +106,7 @@ class PulseWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
     DEFAULT_DOCK_AREA = None
 
     # if set, dock this window as a tab into the specified control
-    # options include "ChannelBoxLayerEditor", "AttributeEditor"
+    # options include "ChannelBoxLayerEditor", "AttributeEditor", "Outliner"
     DEFAULT_TAB_CONTROL = None
 
     # a string of python code to run when the workspace control is shown

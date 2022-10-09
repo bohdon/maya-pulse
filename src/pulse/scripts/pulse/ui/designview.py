@@ -106,10 +106,6 @@ class DesignToolkitWidget(QtWidgets.QWidget):
 
 class DesignToolkitWindow(PulseWindow):
     OBJECT_NAME = 'pulseDesignToolkitWindow'
-    PREFERRED_SIZE = QtCore.QSize(280, 300)
-    STARTING_SIZE = QtCore.QSize(280, 300)
-    MINIMUM_SIZE = QtCore.QSize(280, 300)
-    DEFAULT_TAB_CONTROL = 'ChannelBoxLayerEditor'
     WINDOW_MODULE = 'pulse.ui.designview'
 
     def __init__(self, parent=None):
