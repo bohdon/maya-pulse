@@ -6,13 +6,13 @@ import logging
 
 import maya.cmds as cmds
 
-from .actionpalette import ActionPaletteWidget
+from ..vendor.Qt import QtCore, QtWidgets, QtGui
+from ..serializer import serializeAttrValue
+from ..buildItems import BuildStep
+from .. import sym
 from .core import BlueprintUIModel
 from .core import PulseWindow
-from .. import sym
-from ..buildItems import BuildStep
-from ..serializer import serializeAttrValue
-from ..vendor.Qt import QtCore, QtWidgets, QtGui
+from .gen.action_tree import Ui_ActionTree
 
 LOG = logging.getLogger(__name__)
 
@@ -56,6 +56,7 @@ class ActionTreeView(QtWidgets.QTreeView):
         self.setDefaultDropAction(QtCore.Qt.MoveAction)
         self.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.ExtendedSelection)
         self.setIndentation(14)
+        self.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOn)
 
     def keyPressEvent(self, event):
         key = event.key()
@@ -153,73 +154,82 @@ class ActionTreeView(QtWidgets.QTreeView):
                 mirrorUtil.mirrorAction(step)
 
 
-class ActionTreeWidget(QtWidgets.QWidget):
+class ActionTree(QtWidgets.QWidget):
     """
-    A widget that displays a all BuildActions in a Blueprint.
-    Items can be selected, and the shared selection model
-    can then be used to display info about selected BuildActions
-    in other UI.
+    A widget that displays all Build Actions in a Blueprint.
+    Items can be selected, and the shared selection model can then be used to
+    display info about selected BuildActions in other UI.
     """
 
     def __init__(self, parent=None):
-        super(ActionTreeWidget, self).__init__(parent=parent)
+        super(ActionTree, self).__init__(parent=parent)
 
         # get shared models
-        self.blueprintModel = BlueprintUIModel.getDefaultModel()
-        self.model = self.blueprintModel.buildStepTreeModel
-        self.selectionModel = self.blueprintModel.buildStepSelectionModel
+        self._blueprint_model = BlueprintUIModel.getDefaultModel()
+        self.model = self._blueprint_model.buildStepTreeModel
+        self._selection_model = self._blueprint_model.buildStepSelectionModel
 
-        self.setupUi(self)
+        self.ui = Ui_ActionTree()
+        self.ui.setupUi(self)
+
+        # add action tree view
+        self.action_tree_view = ActionTreeView(self._blueprint_model, self)
+        self.action_tree_view.setModel(self.model)
+        self.action_tree_view.setSelectionModel(self._selection_model)
+        self.action_tree_view.expandAll()
+        self.ui.main_layout.addWidget(self.action_tree_view)
 
         # connect signals
-        self.model.modelReset.connect(self.onModelReset)
+        self.model.modelReset.connect(self._on_model_reset)
 
-    def setupUi(self, parent):
-        layout = QtWidgets.QVBoxLayout(parent)
+    def _on_model_reset(self):
+        self.action_tree_view.expandAll()
 
-        self.treeView = ActionTreeView(self.blueprintModel, parent)
-        self.treeView.setModel(self.model)
-        self.treeView.setSelectionModel(self.selectionModel)
-        self.treeView.expandAll()
-        layout.addWidget(self.treeView)
+    def setup_actions_menu(self, parent, menu_bar):
+        """
+        Set up the Actions menu on a menu bar.
+        """
+        actions_menu = menu_bar.addMenu("Actions")
 
-    def onModelReset(self):
-        self.treeView.expandAll()
+        add_defaults_action = QtWidgets.QAction("Add Default Actions", parent)
+        add_defaults_action.setStatusTip("Add the default set of actions.")
+        add_defaults_action.triggered.connect(self._blueprint_model.initializeBlueprintToDefaultActions)
+        actions_menu.addAction(add_defaults_action)
 
 
 class ActionTreeWindow(PulseWindow):
     """
-    A standalone window that contains an ActionTreeWidget
-    and an ActionPaletteWidget.
+    A standalone window that contains an Action Tree.
     """
 
     OBJECT_NAME = 'pulseActionTreeWindow'
-    PREFERRED_SIZE = QtCore.QSize(400, 300)
-    STARTING_SIZE = QtCore.QSize(400, 300)
-    MINIMUM_SIZE = QtCore.QSize(400, 300)
-
     WINDOW_MODULE = 'pulse.ui.actiontree'
 
     def __init__(self, parent=None):
-        super(ActionTreeWindow, self).__init__(parent=parent)
+        super(ActionTreeWindow, self).__init__(parent)
+
+        self._blueprint_model = BlueprintUIModel.getDefaultModel()
 
         self.setWindowTitle('Pulse Action Tree')
 
         layout = QtWidgets.QVBoxLayout(self)
+        layout.setMargin(0)
         self.setLayout(layout)
 
-        self.actionTree = ActionTreeWidget(self)
-        layout.addWidget(self.actionTree)
+        self.action_tree = ActionTree(self)
+        layout.addWidget(self.action_tree)
 
-        self.actionPalette = ActionPaletteWidget(self)
-        layout.addWidget(self.actionPalette)
+        # setup main menu bar
+        self.menu_bar = QtWidgets.QMenuBar(self)
+        self.layout().setMenuBar(self.menu_bar)
 
-        layout.setStretch(layout.indexOf(self.actionTree), 2)
-        layout.setStretch(layout.indexOf(self.actionPalette), 1)
+        self.action_tree.setup_actions_menu(self, self.menu_bar)
 
 
 # Action Mirroring
 # ----------------
+
+# TODO: move this outside of a ui module, should be core functionality
 
 class MirrorActionUtil(object):
     """

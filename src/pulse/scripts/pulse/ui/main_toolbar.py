@@ -11,25 +11,26 @@ from .. import editorutils
 from ..blueprints import BlueprintBuilder, BlueprintValidator
 from ..rigs import openFirstRigBlueprint
 from .core import BlueprintUIModel
+from .main_settings import MainSettingsWindow
 from .actioneditor import ActionEditorWindow
 from .designtoolkit import DesignToolkitWindow
 
-from .gen.build_toolbar import Ui_BuildToolbar
+from .gen.main_toolbar import Ui_MainToolbar
 
 LOG = logging.getLogger(__name__)
 
 
-class BuildToolbarWidget(QtWidgets.QWidget):
+class MainToolbar(QtWidgets.QWidget):
 
     def __init__(self, parent=None):
-        super(BuildToolbarWidget, self).__init__(parent=parent)
+        super(MainToolbar, self).__init__(parent=parent)
 
         self.isStateDirty = False
 
         self.blueprint_model = BlueprintUIModel.getDefaultModel()
         self.blueprint_model.rigExistsChanged.connect(self._on_rig_exists_changed)
 
-        self.ui = Ui_BuildToolbar()
+        self.ui = Ui_MainToolbar()
         self.ui.setupUi(self)
 
         self._clean_state()
@@ -44,6 +45,7 @@ class BuildToolbarWidget(QtWidgets.QWidget):
         self.ui.build_btn.clicked.connect(self.run_build)
         self.ui.open_blueprint_btn.clicked.connect(openFirstRigBlueprint)
 
+        self.ui.settings_btn.clicked.connect(MainSettingsWindow.toggleWindow)
         self.ui.design_toolkit_btn.clicked.connect(DesignToolkitWindow.toggleWindow)
         self.ui.action_editor_btn.clicked.connect(ActionEditorWindow.toggleWindow)
 
@@ -52,7 +54,7 @@ class BuildToolbarWidget(QtWidgets.QWidget):
         return self.blueprint_model.rigExists
 
     def showEvent(self, event):
-        super(BuildToolbarWidget, self).showEvent(event)
+        super(MainToolbar, self).showEvent(event)
         self._on_state_dirty()
 
     def _on_rig_name_changed(self, name):

@@ -1,17 +1,23 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>BlueprintSettings</class>
- <widget class="QWidget" name="BlueprintSettings">
+ <class>MainSettings</class>
+ <widget class="QWidget" name="MainSettings">
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>324</width>
-    <height>309</height>
+    <width>350</width>
+    <height>400</height>
    </rect>
   </property>
+  <property name="minimumSize">
+   <size>
+    <width>350</width>
+    <height>400</height>
+   </size>
+  </property>
   <property name="windowTitle">
-   <string>Blueprint Settings</string>
+   <string>Pulse Settings</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>

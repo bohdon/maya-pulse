@@ -17,28 +17,30 @@ class Ui_MainEditor(object):
     def setupUi(self, MainEditor):
         if not MainEditor.objectName():
             MainEditor.setObjectName(u"MainEditor")
-        MainEditor.resize(300, 225)
-        MainEditor.setMinimumSize(QSize(300, 0))
+        MainEditor.resize(320, 239)
+        MainEditor.setMinimumSize(QSize(320, 0))
         self.verticalLayout = QVBoxLayout(MainEditor)
         self.verticalLayout.setSpacing(2)
         self.verticalLayout.setObjectName(u"verticalLayout")
         self.verticalLayout.setContentsMargins(0, 0, 0, 0)
+        self.main_layout = QVBoxLayout()
+        self.main_layout.setObjectName(u"main_layout")
         self.toolbar_layout = QVBoxLayout()
         self.toolbar_layout.setObjectName(u"toolbar_layout")
 
-        self.verticalLayout.addLayout(self.toolbar_layout)
+        self.main_layout.addLayout(self.toolbar_layout)
 
-        self.main_tab_widget = QTabWidget(MainEditor)
-        self.main_tab_widget.setObjectName(u"main_tab_widget")
+        self.action_tree_layout = QVBoxLayout()
+        self.action_tree_layout.setObjectName(u"action_tree_layout")
 
-        self.verticalLayout.addWidget(self.main_tab_widget)
+        self.main_layout.addLayout(self.action_tree_layout)
 
-        self.verticalLayout.setStretch(1, 1)
+        self.main_layout.setStretch(1, 1)
+
+        self.verticalLayout.addLayout(self.main_layout)
+
 
         self.retranslateUi(MainEditor)
-
-        self.main_tab_widget.setCurrentIndex(-1)
-
 
         QMetaObject.connectSlotsByName(MainEditor)
     # setupUi

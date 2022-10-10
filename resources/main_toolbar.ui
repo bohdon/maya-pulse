@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>BuildToolbar</class>
- <widget class="QWidget" name="BuildToolbar">
+ <class>MainToolbar</class>
+ <widget class="QWidget" name="MainToolbar">
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>466</width>
-    <height>129</height>
+    <width>298</width>
+    <height>117</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Build Toolbar</string>
+   <string>Main Toolbar</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <property name="spacing">
@@ -38,6 +38,18 @@
       <enum>QFrame::Raised</enum>
      </property>
      <layout class="QVBoxLayout" name="verticalLayout_2">
+      <property name="leftMargin">
+       <number>6</number>
+      </property>
+      <property name="topMargin">
+       <number>6</number>
+      </property>
+      <property name="rightMargin">
+       <number>6</number>
+      </property>
+      <property name="bottomMargin">
+       <number>6</number>
+      </property>
       <item>
        <layout class="QHBoxLayout" name="horizontalLayout_3">
         <item>
@@ -224,8 +236,31 @@
       <string>toolbar</string>
      </property>
      <layout class="QHBoxLayout" name="horizontalLayout">
+      <property name="leftMargin">
+       <number>6</number>
+      </property>
+      <property name="topMargin">
+       <number>6</number>
+      </property>
+      <property name="rightMargin">
+       <number>6</number>
+      </property>
+      <property name="bottomMargin">
+       <number>6</number>
+      </property>
       <item>
        <layout class="QHBoxLayout" name="toolbar_layout">
+        <item>
+         <widget class="QPushButton" name="settings_btn">
+          <property name="text">
+           <string> Settings</string>
+          </property>
+          <property name="icon">
+           <iconset resource="resources.qrc">
+            <normaloff>:/res/gear.svg</normaloff>:/res/gear.svg</iconset>
+          </property>
+         </widget>
+        </item>
         <item>
          <widget class="QPushButton" name="design_toolkit_btn">
           <property name="text">

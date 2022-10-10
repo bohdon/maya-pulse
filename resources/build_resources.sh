@@ -31,8 +31,7 @@ build_res() {
 
 # build all UIs
 echo "Building ui files..."
-build_ui blueprint_settings
-build_ui build_toolbar
+build_ui action_tree
 build_ui design_toolkit
 build_ui designpanel_general
 build_ui designpanel_joint_orients
@@ -42,6 +41,8 @@ build_ui designpanel_symmetry
 build_ui designpanel_weights
 build_ui layout_link_editor
 build_ui main_editor
+build_ui main_settings
+build_ui main_toolbar
 build_ui quick_name_editor
 
 # build all resources

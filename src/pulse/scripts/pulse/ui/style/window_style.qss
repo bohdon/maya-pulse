@@ -91,6 +91,24 @@ QFrame[cssClasses~="toolbar"] {
     background-color: rgba(0, 0, 0, 20%);
 }
 
+QFrame[cssClasses~="toolbar"] QPushButton {
+    border: none;
+    padding: 6px;
+    background: rgba(0, 0, 0, 0);
+}
+
+QFrame[cssClasses~="toolbar"] QPushButton:hover {
+    border: none;
+    border-radius: 2px;
+    background-color: rgba(200, 200, 200, 18%);
+}
+
+QFrame[cssClasses~="toolbar"] QPushButton:pressed {
+    border: none;
+    border-radius: 2px;
+    background-color: rgba(200, 200, 200, 35%);
+}
+
 /* Color coded toolbars to indicate blueprint vs rig mode. */
 QFrame[cssClasses~="toolbar-blueprint"] {
     background-color: rgba(60, 80, 120, 50%);

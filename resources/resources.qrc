@@ -1,5 +1,6 @@
 <RCC>
   <qresource prefix="res">
+    <file>gear.svg</file>
     <file>circle_left.svg</file>
     <file>angle_left.svg</file>
     <file>build.svg</file>

@@ -1,29 +1,29 @@
 """
-A panel for displaying blueprint attributes and details
+A panel for displaying Pulse and blueprint settings.
 """
 import os
 
 import pymel.core as pm
 
 from pulse.vendor.Qt import QtWidgets
-from .core import BlueprintUIModel
+from .core import BlueprintUIModel, PulseWindow
 
-from .gen.blueprint_settings import Ui_BlueprintSettings
+from .gen.main_settings import Ui_MainSettings
 
 
-class ManageWidget(QtWidgets.QWidget):
+class MainSettings(QtWidgets.QWidget):
     """
-    A panel for displaying blueprint attributes and details
+    A panel for displaying Pulse and blueprint settings.
     """
 
     def __init__(self, parent=None):
-        super(ManageWidget, self).__init__(parent=parent)
+        super(MainSettings, self).__init__(parent=parent)
 
         self.blueprint_model = BlueprintUIModel.getDefaultModel()
         self.setEnabled(not self.blueprint_model.isReadOnly())
         self.model = self.blueprint_model.buildStepTreeModel
 
-        self.ui = Ui_BlueprintSettings()
+        self.ui = Ui_MainSettings()
         self.ui.setupUi(self)
 
         self.ui.file_path_edit.setText(self._get_scene_relative_file_path(self.blueprint_model.getBlueprintFilepath()))
@@ -57,3 +57,13 @@ class ManageWidget(QtWidgets.QWidget):
             return rel_path
 
         return file_path
+
+
+class MainSettingsWindow(PulseWindow):
+    """
+    The settings window for Pulse and the current blueprint.
+    """
+    OBJECT_NAME = 'pulseMainSettingsWindow'
+    WINDOW_MODULE = 'pulse.ui.main_settings'
+    WINDOW_TITLE = 'Pulse Settings'
+    WIDGET_CLASS = MainSettings

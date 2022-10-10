@@ -91,6 +91,9 @@ class PulseWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
 
     OBJECT_NAME = None
 
+    # the display title of the window
+    WINDOW_TITLE = None
+
     # window size hints, set to a QtCore.QSize to override, otherwise define in the .ui
     PREFERRED_SIZE = None
     STARTING_SIZE = None
@@ -123,12 +126,15 @@ class PulseWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
     # the file path to the stylesheet for this window, relative to this module
     STYLESHEET_PATH = 'style/window_style.qss'
 
+    # if set, instantiate a single QWidget of this class and wrap it in a simple layout
+    WIDGET_CLASS = None
+
     @classmethod
     def createWindow(cls, restore=False):
         if restore:
             parent = mui.MQtUtil.getCurrentParent()
 
-        # create instance if it doesn't exists
+        # create instance if it doesn't exist
         if not cls.INSTANCE:
 
             # load required plugins
@@ -218,12 +224,19 @@ class PulseWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
 
         self.setObjectName(self.OBJECT_NAME)
 
+        if self.WINDOW_TITLE:
+            self.setWindowTitle(self.WINDOW_TITLE)
+
         self.preferredSize = self.PREFERRED_SIZE
 
         if self.STARTING_SIZE:
             self.resize(dpiScale(self.STARTING_SIZE))
 
         self._apply_stylesheet()
+
+        self.main_widget = None
+        if self.WIDGET_CLASS:
+            self._setup_widget_ui(self.WIDGET_CLASS)
 
     def setSizeHint(self, size):
         self.preferredSize = size
@@ -250,6 +263,21 @@ class PulseWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                     self.setStyleSheet(fp.read())
             else:
                 LOG.warning(f'Could not find stylesheet: {full_path}')
+
+    def _setup_widget_ui(self, widget_cls):
+        """
+        Set up a basic layout with no margin and a single widget.
+
+        Args:
+            widget_cls: class
+                The QWidget class to instantiate and wrap in a simple layout.
+        """
+        layout = QtWidgets.QVBoxLayout(self)
+        layout.setMargin(0)
+        self.setLayout(layout)
+
+        self.main_widget = widget_cls(self)
+        layout.addWidget(self.main_widget)
 
 
 class BlueprintUIModel(QtCore.QObject):
