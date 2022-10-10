@@ -2,7 +2,7 @@
 The main editor that contains the build toolbar, blueprint settings,
 and the list of pulse actions.
 """
-from ..vendor.Qt import QtWidgets
+from ..vendor.Qt import QtCore, QtWidgets
 
 import pulse
 
@@ -27,7 +27,9 @@ class MainEditor(QtWidgets.QWidget):
 
         pulse.loadBuiltinActions()
 
-        self.blueprintModel = BlueprintUIModel.getDefaultModel()
+        self.blueprint_model = BlueprintUIModel.getDefaultModel()
+        self.selection_model = self.blueprint_model.buildStepSelectionModel
+        self.selection_model.selectionChanged.connect(self._on_action_selection_changed)
 
         self.ui = Ui_MainEditor()
         self.ui.setupUi(self)
@@ -45,18 +47,18 @@ class MainEditor(QtWidgets.QWidget):
 
         init_blueprint = QtWidgets.QAction("Initialize", parent)
         init_blueprint.setStatusTip("Delete all actions and reset the Blueprint.")
-        init_blueprint.triggered.connect(self.blueprintModel.initializeBlueprint)
+        init_blueprint.triggered.connect(self.blueprint_model.initializeBlueprint)
         file_menu.addAction(init_blueprint)
 
         save_action = QtWidgets.QAction("Save", parent)
         save_action.setStatusTip("Save the Blueprint as a yaml file associated with the current maya scene file")
-        save_action.triggered.connect(self.blueprintModel.save)
+        save_action.triggered.connect(self.blueprint_model.save)
         file_menu.addAction(save_action)
 
         reload_action = QtWidgets.QAction("Reload", parent)
         reload_action.setStatusTip(
             "Reload the Blueprint from the yaml file associated with the current maya scene file")
-        reload_action.triggered.connect(self.blueprintModel.load)
+        reload_action.triggered.connect(self.blueprint_model.load)
         file_menu.addAction(reload_action)
 
         file_menu.addSeparator()
@@ -69,15 +71,15 @@ class MainEditor(QtWidgets.QWidget):
 
         autosave_check = QtWidgets.QAction("Auto Save", parent)
         autosave_check.setCheckable(True)
-        autosave_check.setChecked(self.blueprintModel.autoSave)
-        autosave_check.toggled.connect(self.blueprintModel.setAutoSave)
+        autosave_check.setChecked(self.blueprint_model.auto_save)
+        autosave_check.toggled.connect(self.blueprint_model.set_auto_save)
         autosave_check.setStatusTip("Automatically save Blueprint files when a scene is saved")
         file_menu.addAction(autosave_check)
 
         autoload_check = QtWidgets.QAction("Auto Load", parent)
         autoload_check.setCheckable(True)
-        autoload_check.setChecked(self.blueprintModel.autoLoad)
-        autoload_check.toggled.connect(self.blueprintModel.setAutoLoad)
+        autoload_check.setChecked(self.blueprint_model.auto_load)
+        autoload_check.toggled.connect(self.blueprint_model.set_auto_load)
         autoload_check.setStatusTip("Automatically load Blueprint files when a scene is opened")
         file_menu.addAction(autoload_check)
 
@@ -104,13 +106,27 @@ class MainEditor(QtWidgets.QWidget):
         action_tree.triggered.connect(ActionTreeWindow.toggleWindow)
         window_menu.addAction(action_tree)
 
+        window_menu.addSeparator()
+
+        auto_show_editor = QtWidgets.QAction("Auto Focus Action Editor", parent)
+        auto_show_editor.setCheckable(True)
+        auto_show_editor.setChecked(self.blueprint_model.auto_show_action_editor)
+        auto_show_editor.toggled.connect(self.blueprint_model.set_auto_show_action_editor)
+        auto_show_editor.setStatusTip("Automatically show the Action Editor when selecting an Action in the tree.")
+        window_menu.addAction(auto_show_editor)
+
     def setup_actions_menu(self, parent, menu_bar):
         self.action_tree_widget.setup_actions_menu(parent, menu_bar)
 
     def debug_print_serialized(self):
-        print(self.blueprintModel, self.blueprintModel.blueprint)
-        print(self.blueprintModel.getBlueprintFilepath())
-        print(self.blueprintModel.blueprint.dumpYaml())
+        print(self.blueprint_model, self.blueprint_model.blueprint)
+        print(self.blueprint_model.getBlueprintFilepath())
+        print(self.blueprint_model.blueprint.dumpYaml())
+
+    def _on_action_selection_changed(self, selected: QtCore.QItemSelection, deselected: QtCore.QItemSelection):
+        if not selected.isEmpty():
+            if self.blueprint_model.auto_show_action_editor:
+                ActionEditorWindow.showWindow()
 
 
 class MainEditorWindow(PulseWindow):

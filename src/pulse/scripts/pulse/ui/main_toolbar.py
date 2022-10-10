@@ -133,7 +133,7 @@ class MainToolbar(QtWidgets.QWidget):
             if not editorutils.saveSceneIfDirty(prompt=False):
                 return
 
-            # if autoSave:
+            # if auto_save:
             self.blueprint_model.save()
 
             builder = BlueprintBuilder.createBuilderWithCurrentScene(

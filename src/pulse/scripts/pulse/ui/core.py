@@ -341,17 +341,21 @@ class BlueprintUIModel(QtCore.QObject):
 
     rigExistsChanged = QtCore.Signal()
 
-    autoSave = optionVarProperty('pulse.editor.autoSave', True)
-    autoLoad = optionVarProperty('pulse.editor.autoLoad', True)
+    auto_save = optionVarProperty('pulse.editor.auto_save', True)
+    auto_load = optionVarProperty('pulse.editor.auto_load', True)
+    auto_show_action_editor = optionVarProperty('pulse.editor.auto_show_action_editor', True)
 
     # called when the read-only state of the blueprint has changed
     readOnlyChanged = QtCore.Signal(bool)
 
-    def setAutoSave(self, value):
-        self.autoSave = value
+    def set_auto_save(self, value):
+        self.auto_save = value
 
-    def setAutoLoad(self, value):
-        self.autoLoad = value
+    def set_auto_load(self, value):
+        self.auto_load = value
+
+    def set_auto_show_action_editor(self, value):
+        self.auto_show_action_editor = value
 
     def __init__(self, parent=None):
         super(BlueprintUIModel, self).__init__(parent=parent)
@@ -370,7 +374,7 @@ class BlueprintUIModel(QtCore.QObject):
         self.refreshRigExists()
 
         # attempt to load from the scene
-        if self.autoLoad:
+        if self.auto_load:
             self.load(suppressWarnings=True)
 
         # register maya scene callbacks that can be used
@@ -450,7 +454,7 @@ class BlueprintUIModel(QtCore.QObject):
             self.save()
 
     def onAfterOpenScene(self, clientData=None):
-        if self.autoLoad:
+        if self.auto_load:
             self.load(suppressWarnings=True)
         self.fileChanged.emit()
 
@@ -524,7 +528,7 @@ class BlueprintUIModel(QtCore.QObject):
             self.readOnlyChanged.emit(self.isReadOnly())
 
     def shouldAutoSaveBlueprint(self):
-        if not self.autoSave:
+        if not self.auto_save:
             return False
         if not self.doesBlueprintPairFileExist():
             return False
