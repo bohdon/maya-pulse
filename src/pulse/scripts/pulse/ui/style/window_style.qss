@@ -15,7 +15,6 @@ QFrame {
 /* Consistent look for all tool buttons. */
 QToolButton {
     border: none;
-    color: red;
 }
 
 QToolButton:hover {

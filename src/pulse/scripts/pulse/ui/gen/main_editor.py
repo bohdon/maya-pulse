@@ -44,6 +44,6 @@ class Ui_MainEditor(object):
     # setupUi
 
     def retranslateUi(self, MainEditor):
-        MainEditor.setWindowTitle(QCoreApplication.translate("MainEditor", u"Form", None))
+        MainEditor.setWindowTitle(QCoreApplication.translate("MainEditor", u"Main Editor", None))
     # retranslateUi
 

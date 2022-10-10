@@ -1,5 +1,7 @@
 <RCC>
   <qresource prefix="res">
+    <file>circle_left.svg</file>
+    <file>angle_left.svg</file>
     <file>build.svg</file>
     <file>validate.svg</file>
     <file>action_editor.svg</file>

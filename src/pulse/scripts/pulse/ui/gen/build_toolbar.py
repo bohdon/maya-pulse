@@ -18,7 +18,7 @@ class Ui_BuildToolbar(object):
     def setupUi(self, BuildToolbar):
         if not BuildToolbar.objectName():
             BuildToolbar.setObjectName(u"BuildToolbar")
-        BuildToolbar.resize(344, 97)
+        BuildToolbar.resize(318, 79)
         self.verticalLayout = QVBoxLayout(BuildToolbar)
         self.verticalLayout.setObjectName(u"verticalLayout")
         self.verticalLayout.setContentsMargins(0, 0, 0, 0)
@@ -37,6 +37,10 @@ class Ui_BuildToolbar(object):
         self.horizontalLayout_2.setContentsMargins(0, 0, 0, 0)
         self.blueprint_name_label = QLabel(self.blueprint_page)
         self.blueprint_name_label.setObjectName(u"blueprint_name_label")
+        font = QFont()
+        font.setBold(True)
+        font.setWeight(75)
+        self.blueprint_name_label.setFont(font)
 
         self.horizontalLayout_2.addWidget(self.blueprint_name_label)
 
@@ -69,20 +73,20 @@ class Ui_BuildToolbar(object):
         self.horizontalLayout.setContentsMargins(0, 0, 0, 0)
         self.rig_name_label = QLabel(self.rig_page)
         self.rig_name_label.setObjectName(u"rig_name_label")
+        self.rig_name_label.setFont(font)
 
         self.horizontalLayout.addWidget(self.rig_name_label)
 
-        self.label = QLabel(self.rig_page)
-        self.label.setObjectName(u"label")
-
-        self.horizontalLayout.addWidget(self.label)
-
         self.open_blueprint_btn = QPushButton(self.rig_page)
         self.open_blueprint_btn.setObjectName(u"open_blueprint_btn")
+        icon2 = QIcon()
+        icon2.addFile(u":/res/angle_left.svg", QSize(), QIcon.Normal, QIcon.Off)
+        self.open_blueprint_btn.setIcon(icon2)
+        self.open_blueprint_btn.setIconSize(QSize(14, 14))
 
         self.horizontalLayout.addWidget(self.open_blueprint_btn)
 
-        self.horizontalLayout.setStretch(1, 1)
+        self.horizontalLayout.setStretch(0, 1)
         self.main_stack.addWidget(self.rig_page)
 
         self.verticalLayout_2.addWidget(self.main_stack)
@@ -97,9 +101,9 @@ class Ui_BuildToolbar(object):
         self.design_toolkit_btn = QToolButton(self.mode_frame)
         self.design_toolkit_btn.setObjectName(u"design_toolkit_btn")
         self.design_toolkit_btn.setMinimumSize(QSize(28, 28))
-        icon2 = QIcon()
-        icon2.addFile(u":/res/design_toolkit.svg", QSize(), QIcon.Normal, QIcon.Off)
-        self.design_toolkit_btn.setIcon(icon2)
+        icon3 = QIcon()
+        icon3.addFile(u":/res/design_toolkit.svg", QSize(), QIcon.Normal, QIcon.Off)
+        self.design_toolkit_btn.setIcon(icon3)
         self.design_toolkit_btn.setIconSize(QSize(20, 20))
 
         self.header_layout.addWidget(self.design_toolkit_btn)
@@ -107,9 +111,9 @@ class Ui_BuildToolbar(object):
         self.action_editor_btn = QToolButton(self.mode_frame)
         self.action_editor_btn.setObjectName(u"action_editor_btn")
         self.action_editor_btn.setMinimumSize(QSize(28, 28))
-        icon3 = QIcon()
-        icon3.addFile(u":/res/action_editor.svg", QSize(), QIcon.Normal, QIcon.Off)
-        self.action_editor_btn.setIcon(icon3)
+        icon4 = QIcon()
+        icon4.addFile(u":/res/action_editor.svg", QSize(), QIcon.Normal, QIcon.Off)
+        self.action_editor_btn.setIcon(icon4)
         self.action_editor_btn.setIconSize(QSize(20, 20))
 
         self.header_layout.addWidget(self.action_editor_btn)
@@ -130,16 +134,12 @@ class Ui_BuildToolbar(object):
     # setupUi
 
     def retranslateUi(self, BuildToolbar):
-        BuildToolbar.setWindowTitle(QCoreApplication.translate("BuildToolbar", u"Form", None))
-        self.blueprint_name_label.setText(QCoreApplication.translate("BuildToolbar", u"<Blueprint Rig Name>", None))
-        self.blueprint_name_label.setProperty("cssClasses", QCoreApplication.translate("BuildToolbar", u"title", None))
+        BuildToolbar.setWindowTitle(QCoreApplication.translate("BuildToolbar", u"Build Toolbar", None))
+        self.blueprint_name_label.setText(QCoreApplication.translate("BuildToolbar", u"<Blueprint File Name>", None))
         self.validate_btn.setText(QCoreApplication.translate("BuildToolbar", u" Validate", None))
         self.build_btn.setText(QCoreApplication.translate("BuildToolbar", u" Build", None))
         self.rig_name_label.setText(QCoreApplication.translate("BuildToolbar", u"<Rig Name>", None))
-        self.rig_name_label.setProperty("cssClasses", QCoreApplication.translate("BuildToolbar", u"title", None))
-        self.label.setText(QCoreApplication.translate("BuildToolbar", u"(read-only)", None))
-        self.label.setProperty("cssClasses", QCoreApplication.translate("BuildToolbar", u"help title", None))
-        self.open_blueprint_btn.setText(QCoreApplication.translate("BuildToolbar", u"Open Blueprint", None))
+        self.open_blueprint_btn.setText(QCoreApplication.translate("BuildToolbar", u" Open Blueprint", None))
         self.mode_label.setText(QCoreApplication.translate("BuildToolbar", u"<Mode>", None))
         self.mode_label.setProperty("cssClasses", QCoreApplication.translate("BuildToolbar", u"mode-title", None))
 #if QT_CONFIG(statustip)

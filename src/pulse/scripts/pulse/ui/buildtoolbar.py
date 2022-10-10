@@ -59,7 +59,7 @@ class BuildToolbarWidget(QtWidgets.QWidget):
         self._update_rig_name()
 
     def _update_rig_name(self):
-        self.ui.blueprint_name_label.setText(self.blueprint_model.getRigName())
+        self.ui.blueprint_name_label.setText(self.blueprint_model.getBlueprintFilename())
         self.ui.rig_name_label.setText(self.blueprint_model.getRigName())
 
     def _on_rig_exists_changed(self):

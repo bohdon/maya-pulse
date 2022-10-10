@@ -52,6 +52,6 @@ class Ui_DesignToolkit(object):
     # setupUi
 
     def retranslateUi(self, DesignToolkit):
-        DesignToolkit.setWindowTitle(QCoreApplication.translate("DesignToolkit", u"Form", None))
+        DesignToolkit.setWindowTitle(QCoreApplication.translate("DesignToolkit", u"Design Toolkit", None))
     # retranslateUi
 

@@ -6,12 +6,12 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>344</width>
-    <height>97</height>
+    <width>318</width>
+    <height>79</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Form</string>
+   <string>Build Toolbar</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <property name="leftMargin">
@@ -56,11 +56,14 @@
           </property>
           <item>
            <widget class="QLabel" name="blueprint_name_label">
-            <property name="text">
-             <string>&lt;Blueprint Rig Name&gt;</string>
+            <property name="font">
+             <font>
+              <weight>75</weight>
+              <bold>true</bold>
+             </font>
             </property>
-            <property name="cssClasses" stdset="0">
-             <string>title</string>
+            <property name="text">
+             <string>&lt;Blueprint File Name&gt;</string>
             </property>
            </widget>
           </item>
@@ -113,7 +116,7 @@
          </layout>
         </widget>
         <widget class="QWidget" name="rig_page">
-         <layout class="QHBoxLayout" name="horizontalLayout" stretch="0,1,0">
+         <layout class="QHBoxLayout" name="horizontalLayout" stretch="1,0">
           <property name="leftMargin">
            <number>0</number>
           </property>
@@ -128,28 +131,31 @@
           </property>
           <item>
            <widget class="QLabel" name="rig_name_label">
+            <property name="font">
+             <font>
+              <weight>75</weight>
+              <bold>true</bold>
+             </font>
+            </property>
             <property name="text">
              <string>&lt;Rig Name&gt;</string>
-            </property>
-            <property name="cssClasses" stdset="0">
-             <string>title</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QLabel" name="label">
-            <property name="text">
-             <string>(read-only)</string>
-            </property>
-            <property name="cssClasses" stdset="0">
-             <string>help title</string>
             </property>
            </widget>
           </item>
           <item>
            <widget class="QPushButton" name="open_blueprint_btn">
             <property name="text">
-             <string>Open Blueprint</string>
+             <string> Open Blueprint</string>
+            </property>
+            <property name="icon">
+             <iconset resource="resources.qrc">
+              <normaloff>:/res/angle_left.svg</normaloff>:/res/angle_left.svg</iconset>
+            </property>
+            <property name="iconSize">
+             <size>
+              <width>14</width>
+              <height>14</height>
+             </size>
             </property>
            </widget>
           </item>

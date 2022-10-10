@@ -181,6 +181,7 @@ def createVSpacer(width=20, height=20):
         20, 20, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
 
 
+# TODO: remove
 def createHeaderLabel(parent, text):
     font = QtGui.QFont()
     font.setWeight(75)

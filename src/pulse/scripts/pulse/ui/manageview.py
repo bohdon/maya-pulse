@@ -7,7 +7,8 @@ import pymel.core as pm
 
 from pulse.vendor.Qt import QtWidgets
 from .core import BlueprintUIModel
-from .utils import createHeaderLabel
+
+from .gen.blueprint_settings import Ui_BlueprintSettings
 
 
 class ManageWidget(QtWidgets.QWidget):
@@ -18,67 +19,37 @@ class ManageWidget(QtWidgets.QWidget):
     def __init__(self, parent=None):
         super(ManageWidget, self).__init__(parent=parent)
 
-        self.blueprintModel = BlueprintUIModel.getDefaultModel()
-        self.model = self.blueprintModel.buildStepTreeModel
+        self.blueprint_model = BlueprintUIModel.getDefaultModel()
+        self.setEnabled(not self.blueprint_model.isReadOnly())
+        self.model = self.blueprint_model.buildStepTreeModel
 
-        self.setupUi(self)
+        self.ui = Ui_BlueprintSettings()
+        self.ui.setupUi(self)
 
-        self.blueprintModel.rigNameChanged.connect(self.onRigNameChanged)
-        self.blueprintModel.fileChanged.connect(self.onFileChanged)
-        self.blueprintModel.readOnlyChanged.connect(self.onReadOnlyChanged)
+        self.ui.file_path_edit.setText(self._get_scene_relative_file_path(self.blueprint_model.getBlueprintFilepath()))
+        self.ui.rig_name_edit.setText(self.blueprint_model.getRigName())
+        self.ui.rig_name_edit.textChanged.connect(self._on_edit_rig_name)
 
-    def setupUi(self, parent):
-        layout = QtWidgets.QVBoxLayout(self)
+        self.blueprint_model.rigNameChanged.connect(self._on_rig_name_changed)
+        self.blueprint_model.fileChanged.connect(self._on_file_path_changed)
+        self.blueprint_model.readOnlyChanged.connect(self._on_read_only_changed)
 
-        propertiesHeader = createHeaderLabel(parent, "Rig Properties")
-        layout.addWidget(propertiesHeader)
+    def _on_file_path_changed(self):
+        self.ui.file_path_edit.setText(self._get_scene_relative_file_path(self.blueprint_model.getBlueprintFilepath()))
 
-        rigNameLabel = QtWidgets.QLabel(parent)
-        rigNameLabel.setText("Rig Name")
+    def _on_edit_rig_name(self):
+        self.blueprint_model.setRigName(self.ui.rig_name_edit.text())
 
-        self.rigNameText = QtWidgets.QLineEdit(parent)
-        self.rigNameText.setText(self.blueprintModel.getRigName())
-        self.rigNameText.textChanged.connect(self.rigNameTextChanged)
+    def _on_rig_name_changed(self, name):
+        self.ui.rig_name_edit.setText(name)
 
-        formLayout1 = QtWidgets.QFormLayout(parent)
-        formLayout1.setWidget(0, QtWidgets.QFormLayout.LabelRole, rigNameLabel)
-        formLayout1.setWidget(0, QtWidgets.QFormLayout.FieldRole, self.rigNameText)
-        layout.addLayout(formLayout1)
+    def _on_read_only_changed(self, is_read_only):
+        self.setEnabled(not is_read_only)
 
-        fileNameLabel = QtWidgets.QLabel(parent)
-        fileNameLabel.setText("File Name")
-
-        self.fileNameText = QtWidgets.QLineEdit(parent)
-        self.fileNameText.setText(self.getSceneRelativeFilePath(self.blueprintModel.getBlueprintFilepath()))
-        self.fileNameText.setReadOnly(True)
-
-        formLayout2 = QtWidgets.QFormLayout(parent)
-        formLayout2.setWidget(0, QtWidgets.QFormLayout.LabelRole, fileNameLabel)
-        formLayout2.setWidget(0, QtWidgets.QFormLayout.FieldRole, self.fileNameText)
-        layout.addLayout(formLayout2)
-
-        spacer = QtWidgets.QSpacerItem(0, 0, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
-        layout.addItem(spacer)
-
-        self.refreshState()
-
-    def refreshState(self):
-        self.rigNameText.setEnabled(not self.blueprintModel.isReadOnly())
-
-    def onRigNameChanged(self, name):
-        self.rigNameText.setText(name)
-
-    def onFileChanged(self):
-        self.fileNameText.setText(self.getSceneRelativeFilePath(self.blueprintModel.getBlueprintFilepath()))
-
-    def onReadOnlyChanged(self, isReadOnly):
-        self.setEnabled(not isReadOnly)
-
-    def rigNameTextChanged(self):
-        self.blueprintModel.setRigName(self.rigNameText.text())
-
-    def getSceneRelativeFilePath(self, file_path):
+    @staticmethod
+    def _get_scene_relative_file_path(file_path):
         # get the file name relative to the current scene name
+        return file_path
         scene_path = pm.sceneName()
         if scene_path:
             scene_dir = scene_path.dirname()

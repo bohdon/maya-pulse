@@ -31,6 +31,7 @@ build_res() {
 
 # build all UIs
 echo "Building ui files..."
+build_ui blueprint_settings
 build_ui build_toolbar
 build_ui design_toolkit
 build_ui designpanel_general
