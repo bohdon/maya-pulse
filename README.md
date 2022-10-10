@@ -1,7 +1,6 @@
-# Pulse Rigging Framework for Maya
+# Pulse
 
-A rigging framework for Maya.
-
+A rigging framework and toolkit built for Maya.
 
 ## Development Testing
 
@@ -20,6 +19,7 @@ import pymel.core as pm
 
 try:
     import pulse.ui
+
     pulse.ui.tearDownUI()
 except:
     pass
@@ -36,9 +36,11 @@ except:
     pass
 
 import pulse.vendor.mayacoretools as tools
+
 tools.deleteModules('pulse*')
 
 import pulse.ui
+
 pulse.ui.showEditorUI()
 
 # re-open last scene
@@ -48,6 +50,4 @@ if scene_name:
 
 ## Roadmap
 
-You can view the Pulse roadmap on trello here:
-
-[Pulse Roadmap](https://trello.com/b/x1EgkZA7)
+You can track development on Pulse [here](https://bohdon.notion.site/f656af523ead43a5893679d13e36e6aa).
