@@ -8,17 +8,18 @@ from functools import partial
 
 import maya.cmds as cmds
 
-from .core import BlueprintUIModel, PulseWindow
-from .utils import createHeaderLabel
-from ..buildItems import getRegisteredActionConfigs
 from ..vendor.Qt import QtCore, QtWidgets
+from ..buildItems import getRegisteredActionConfigs
+from .core import BlueprintUIModel, PulseWindow
+
+from .gen.action_palette import Ui_ActionPalette
 
 LOG = logging.getLogger(__name__)
 LOG_LEVEL_KEY = 'PYLOG_%s' % LOG.name.split('.')[0].upper()
 LOG.setLevel(os.environ.get(LOG_LEVEL_KEY, 'INFO').upper())
 
 
-class ActionPaletteWidget(QtWidgets.QWidget):
+class ActionPalette(QtWidgets.QWidget):
     """
     Provides UI for creating any BuildAction. One button is created
     for each BuildAction, and they are grouped by category. Also
@@ -26,40 +27,24 @@ class ActionPaletteWidget(QtWidgets.QWidget):
     """
 
     def __init__(self, parent=None):
-        super(ActionPaletteWidget, self).__init__(parent=parent)
+        super(ActionPalette, self).__init__(parent=parent)
 
-        self.blueprintModel = BlueprintUIModel.getDefaultModel()
-        self.blueprintModel.readOnlyChanged.connect(self.onReadOnlyChanged)
-        self.model = self.blueprintModel.buildStepTreeModel
-        self.selectionModel = self.blueprintModel.buildStepSelectionModel
-        self.setupUi(self)
+        self.blueprint_model = BlueprintUIModel.getDefaultModel()
+        self.blueprint_model.readOnlyChanged.connect(self._on_read_only_changed)
+        self.model = self.blueprint_model.buildStepTreeModel
+        self.selection_model = self.blueprint_model.buildStepSelectionModel
 
-    def setupUi(self, parent):
-        """ Build the UI """
-        layout = QtWidgets.QVBoxLayout(parent)
+        self.ui = Ui_ActionPalette()
+        self.ui.setupUi(self)
 
-        searchField = QtWidgets.QLineEdit(parent)
-        searchField.setPlaceholderText("Search")
-        layout.addWidget(searchField)
+        self.setup_actions_ui(self.ui.scroll_area_widget, self.ui.actions_layout)
 
-        self.grpBtn = QtWidgets.QPushButton(parent)
-        self.grpBtn.setText("New Group")
-        self.grpBtn.clicked.connect(self.createBuildGroup)
-        layout.addWidget(self.grpBtn)
+        self.ui.group_btn.clicked.connect(self.create_group)
 
-        self.contentWidget = QtWidgets.QWidget(parent)
-        tabScroll = QtWidgets.QScrollArea(parent)
-        tabScroll.setFrameShape(QtWidgets.QScrollArea.NoFrame)
-        tabScroll.setWidgetResizable(True)
-        tabScroll.setWidget(self.contentWidget)
-
-        self.setupContentUi(self.contentWidget)
-
-        layout.addWidget(tabScroll)
-
-    def setupContentUi(self, parent):
-        """ Build the action buttons UI """
-        layout = QtWidgets.QVBoxLayout(parent)
+    def setup_actions_ui(self, parent, layout):
+        """
+        Build buttons for creating each action.
+        """
 
         allActionConfigs = getRegisteredActionConfigs()
 
@@ -72,44 +57,46 @@ class ActionPaletteWidget(QtWidgets.QWidget):
         for cat in sorted(categories):
             # add category layout
             catLay = QtWidgets.QVBoxLayout(parent)
-            catLay.setSpacing(4)
+            catLay.setSpacing(2)
             layout.addLayout(catLay)
             categoryLayouts[cat] = catLay
             # add label
-            label = createHeaderLabel(parent, cat)
+            label = QtWidgets.QLabel(parent)
+            label.setText(cat)
+            label.setProperty('cssClasses', 'section-title')
             catLay.addWidget(label)
 
         for actionConfig in allActionConfigs:
             actionId = actionConfig['id']
             actionCategory = actionConfig.get('category', 'Default')
-            color = self.getActionColor(actionConfig)
+            color = self.get_action_color(actionConfig)
             btn = QtWidgets.QPushButton(parent)
             btn.setText(actionConfig['displayName'])
-            btn.setStyleSheet(
-                'background-color:rgba({0}, {1}, {2}, 30)'.format(*color))
-            btn.clicked.connect(partial(self.createBuildAction, actionId))
+            btn.setStyleSheet('background-color:rgba({0}, {1}, {2}, 30)'.format(*color))
+            btn.clicked.connect(partial(self.create_action, actionId))
             categoryLayouts[actionCategory].addWidget(btn)
 
         spacer = QtWidgets.QSpacerItem(
             0, 0, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
+
         layout.addItem(spacer)
 
     @staticmethod
-    def getActionColor(actionConfig):
+    def get_action_color(actionConfig):
         color = actionConfig.get('color', [1, 1, 1])
         if color:
             return [int(c * 255) for c in color]
         else:
             return [255, 255, 255]
 
-    def onReadOnlyChanged(self, isReadOnly):
+    def _on_read_only_changed(self, isReadOnly):
         self.grpBtn.setEnabled(not isReadOnly)
         self.contentWidget.setEnabled(not isReadOnly)
 
-    def onActionClicked(self, typeName):
+    def _on_action_clicked(self, typeName):
         self.clicked.emit(typeName)
 
-    def createStepsForSelection(self, stepData=None):
+    def create_steps_for_selection(self, stepData=None):
         """
         Create new BuildSteps in the hierarchy at the
         current selection and return the new step paths.
@@ -118,19 +105,19 @@ class ActionPaletteWidget(QtWidgets.QWidget):
             stepData (str): A string representation of serialized
                 BuildStep data used to create the new steps
         """
-        if self.blueprintModel.isReadOnly():
+        if self.blueprint_model.isReadOnly():
             LOG.warning('cannot create steps, blueprint is read only')
             return
 
         LOG.debug('creating new steps at selection: %s', stepData)
 
-        selIndexes = self.selectionModel.selectedIndexes()
+        selIndexes = self.selection_model.selectedIndexes()
         if not selIndexes:
             selIndexes = [QtCore.QModelIndex()]
 
-        model = self.selectionModel.model()
+        model = self.selection_model.model()
 
-        def getParentAndInsertIndex(index):
+        def get_parent_and_insert_index(index):
             step = model.stepForIndex(index)
             LOG.debug('step: %s', step)
             if step.canHaveChildren:
@@ -142,7 +129,7 @@ class ActionPaletteWidget(QtWidgets.QWidget):
 
         newPaths = []
         for index in selIndexes:
-            parentStep, insertIndex = getParentAndInsertIndex(index)
+            parentStep, insertIndex = get_parent_and_insert_index(index)
             parentPath = parentStep.getFullPath() if parentStep else None
             if not parentPath:
                 parentPath = ''
@@ -160,39 +147,26 @@ class ActionPaletteWidget(QtWidgets.QWidget):
 
         return newPaths
 
-    def createBuildGroup(self):
-        if self.blueprintModel.isReadOnly():
+    def create_group(self):
+        if self.blueprint_model.isReadOnly():
             LOG.warning("Cannot create group, blueprint is read-only")
             return
-        LOG.debug('createBuildGroup')
-        newPaths = self.createStepsForSelection()
-        self.selectionModel.setSelectedItemPaths(newPaths)
+        LOG.debug('create_group')
+        newPaths = self.create_steps_for_selection()
+        self.selection_model.setSelectedItemPaths(newPaths)
 
-    def createBuildAction(self, actionId):
-        if self.blueprintModel.isReadOnly():
+    def create_action(self, actionId):
+        if self.blueprint_model.isReadOnly():
             LOG.warning("Cannot create action, blueprint is read-only")
             return
-        LOG.debug('createBuildAction: %s', actionId)
+        LOG.debug('create_action: %s', actionId)
         stepData = "{'action':{'id':'%s'}}" % actionId
-        newPaths = self.createStepsForSelection(stepData=stepData)
-        self.selectionModel.setSelectedItemPaths(newPaths)
+        newPaths = self.create_steps_for_selection(stepData=stepData)
+        self.selection_model.setSelectedItemPaths(newPaths)
 
 
 class ActionPaletteWindow(PulseWindow):
     OBJECT_NAME = 'pulseActionPaletteWindow'
-    PREFERRED_SIZE = QtCore.QSize(320, 300)
-    STARTING_SIZE = QtCore.QSize(320, 300)
-    MINIMUM_SIZE = QtCore.QSize(320, 300)
     WINDOW_MODULE = 'pulse.ui.actionpalette'
-
-    def __init__(self, parent=None):
-        super(ActionPaletteWindow, self).__init__(parent=parent)
-
-        self.setWindowTitle('Pulse Action Editor')
-
-        layout = QtWidgets.QVBoxLayout(self)
-        layout.setMargin(0)
-        self.setLayout(layout)
-
-        widget = ActionPaletteWidget(self)
-        layout.addWidget(widget)
+    WINDOW_TITLE = 'Pulse Action Palette'
+    WIDGET_CLASS = ActionPalette
