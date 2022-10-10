@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>350</width>
-    <height>400</height>
+    <width>414</width>
+    <height>423</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -43,6 +43,9 @@
          <height>0</height>
         </size>
        </property>
+       <property name="statusTip">
+        <string>The path to the currently open blueprint.</string>
+       </property>
        <property name="text">
         <string>File Path</string>
        </property>
@@ -75,30 +78,16 @@
        </item>
       </layout>
      </item>
-    </layout>
-   </item>
-   <item>
-    <widget class="QLabel" name="blueprint_properties_title">
-     <property name="text">
-      <string>Properties</string>
-     </property>
-     <property name="cssClasses" stdset="0">
-      <string>section-title</string>
-     </property>
-    </widget>
-   </item>
-   <item>
-    <layout class="QFormLayout" name="formLayout">
-     <property name="verticalSpacing">
-      <number>2</number>
-     </property>
-     <item row="0" column="0">
+     <item row="1" column="0">
       <widget class="QLabel" name="rig_name_label">
        <property name="minimumSize">
         <size>
          <width>80</width>
          <height>0</height>
         </size>
+       </property>
+       <property name="statusTip">
+        <string>The name of the rig. Used to name the core hierarchy nodes and can be used by actions as well.</string>
        </property>
        <property name="text">
         <string>Rig Name</string>
@@ -108,7 +97,7 @@
        </property>
       </widget>
      </item>
-     <item row="0" column="1">
+     <item row="1" column="1">
       <widget class="QLineEdit" name="rig_name_edit"/>
      </item>
     </layout>

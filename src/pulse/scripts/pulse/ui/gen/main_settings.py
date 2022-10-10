@@ -17,7 +17,7 @@ class Ui_MainSettings(object):
     def setupUi(self, MainSettings):
         if not MainSettings.objectName():
             MainSettings.setObjectName(u"MainSettings")
-        MainSettings.resize(350, 400)
+        MainSettings.resize(414, 423)
         MainSettings.setMinimumSize(QSize(350, 400))
         self.verticalLayout = QVBoxLayout(MainSettings)
         self.verticalLayout.setObjectName(u"verticalLayout")
@@ -53,31 +53,20 @@ class Ui_MainSettings(object):
 
         self.formLayout_2.setLayout(0, QFormLayout.FieldRole, self.file_path_hbox)
 
-
-        self.verticalLayout.addLayout(self.formLayout_2)
-
-        self.blueprint_properties_title = QLabel(MainSettings)
-        self.blueprint_properties_title.setObjectName(u"blueprint_properties_title")
-
-        self.verticalLayout.addWidget(self.blueprint_properties_title)
-
-        self.formLayout = QFormLayout()
-        self.formLayout.setObjectName(u"formLayout")
-        self.formLayout.setVerticalSpacing(2)
         self.rig_name_label = QLabel(MainSettings)
         self.rig_name_label.setObjectName(u"rig_name_label")
         self.rig_name_label.setMinimumSize(QSize(80, 0))
         self.rig_name_label.setAlignment(Qt.AlignRight|Qt.AlignTrailing|Qt.AlignVCenter)
 
-        self.formLayout.setWidget(0, QFormLayout.LabelRole, self.rig_name_label)
+        self.formLayout_2.setWidget(1, QFormLayout.LabelRole, self.rig_name_label)
 
         self.rig_name_edit = QLineEdit(MainSettings)
         self.rig_name_edit.setObjectName(u"rig_name_edit")
 
-        self.formLayout.setWidget(0, QFormLayout.FieldRole, self.rig_name_edit)
+        self.formLayout_2.setWidget(1, QFormLayout.FieldRole, self.rig_name_edit)
 
 
-        self.verticalLayout.addLayout(self.formLayout)
+        self.verticalLayout.addLayout(self.formLayout_2)
 
         self.verticalSpacer = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding)
 
@@ -93,13 +82,17 @@ class Ui_MainSettings(object):
         MainSettings.setWindowTitle(QCoreApplication.translate("MainSettings", u"Pulse Settings", None))
         self.blueprint_properties_title_2.setText(QCoreApplication.translate("MainSettings", u"Blueprint", None))
         self.blueprint_properties_title_2.setProperty("cssClasses", QCoreApplication.translate("MainSettings", u"section-title", None))
+#if QT_CONFIG(statustip)
+        self.file_path_label.setStatusTip(QCoreApplication.translate("MainSettings", u"The path to the currently open blueprint.", None))
+#endif // QT_CONFIG(statustip)
         self.file_path_label.setText(QCoreApplication.translate("MainSettings", u"File Path", None))
 #if QT_CONFIG(tooltip)
         self.file_path_browse_btn.setToolTip(QCoreApplication.translate("MainSettings", u"Custom blueprint file paths are not yet supported.", None))
 #endif // QT_CONFIG(tooltip)
         self.file_path_browse_btn.setText(QCoreApplication.translate("MainSettings", u"...", None))
-        self.blueprint_properties_title.setText(QCoreApplication.translate("MainSettings", u"Properties", None))
-        self.blueprint_properties_title.setProperty("cssClasses", QCoreApplication.translate("MainSettings", u"section-title", None))
+#if QT_CONFIG(statustip)
+        self.rig_name_label.setStatusTip(QCoreApplication.translate("MainSettings", u"The name of the rig. Used to name the core hierarchy nodes and can be used by actions as well.", None))
+#endif // QT_CONFIG(statustip)
         self.rig_name_label.setText(QCoreApplication.translate("MainSettings", u"Rig Name", None))
     # retranslateUi
 

@@ -10,7 +10,7 @@ Pulse is still in early development, but if you want to try it out here's the en
 # toggle the Pulse UI
 import pulse.ui
 
-pulse.ui.toggleEditorUI()
+pulse.ui.toggle_editor_ui()
 ```
 
 ```python
@@ -20,7 +20,7 @@ import pymel.core as pm
 try:
     import pulse.ui
 
-    pulse.ui.tearDownUI()
+    pulse.ui.tear_down_ui()
 except:
     pass
 
@@ -31,7 +31,7 @@ pm.newFile(force=True)
 pm.unloadPlugin('pulse')
 
 try:
-    pulse.ui.destroyUIModelInstances()
+    pulse.ui.destroy_ui_model_instances()
 except:
     pass
 
@@ -41,7 +41,7 @@ tools.deleteModules('pulse*')
 
 import pulse.ui
 
-pulse.ui.showEditorUI()
+pulse.ui.show_editor_ui()
 
 # re-open last scene
 if scene_name:

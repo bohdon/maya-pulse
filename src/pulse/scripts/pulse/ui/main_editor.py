@@ -113,18 +113,18 @@ class MainEditor(QtWidgets.QWidget):
         print(self.blueprintModel.blueprint.dumpYaml())
 
 
-class PulseEditorWindow(PulseWindow):
+class MainEditorWindow(PulseWindow):
     """
     The main editor window that contains the build toolbar, blueprint settings,
     and the list of pulse actions.
     """
-    OBJECT_NAME = 'pulseEditorWindow'
-    WINDOW_MODULE = 'pulse.ui.pulseeditor'
+    OBJECT_NAME = 'pulseMainEditorWindow'
+    WINDOW_MODULE = 'pulse.ui.main_editor'
     WINDOW_TITLE = 'Pulse'
     WIDGET_CLASS = MainEditor
 
     def __init__(self):
-        super(PulseEditorWindow, self).__init__()
+        super(MainEditorWindow, self).__init__()
 
         # setup menu bar
         self.menu_bar = QtWidgets.QMenuBar(self)
