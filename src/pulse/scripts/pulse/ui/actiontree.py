@@ -204,26 +204,17 @@ class ActionTreeWindow(PulseWindow):
 
     OBJECT_NAME = 'pulseActionTreeWindow'
     WINDOW_MODULE = 'pulse.ui.actiontree'
+    WINDOW_TITLE = 'Pulse Action Tree'
+    WIDGET_CLASS = ActionTree
 
     def __init__(self, parent=None):
         super(ActionTreeWindow, self).__init__(parent)
-
-        self._blueprint_model = BlueprintUIModel.getDefaultModel()
-
-        self.setWindowTitle('Pulse Action Tree')
-
-        layout = QtWidgets.QVBoxLayout(self)
-        layout.setMargin(0)
-        self.setLayout(layout)
-
-        self.action_tree = ActionTree(self)
-        layout.addWidget(self.action_tree)
 
         # setup main menu bar
         self.menu_bar = QtWidgets.QMenuBar(self)
         self.layout().setMenuBar(self.menu_bar)
 
-        self.action_tree.setup_actions_menu(self, self.menu_bar)
+        self.main_widget.setup_actions_menu(self, self.menu_bar)
 
 
 # Action Mirroring

@@ -9,10 +9,12 @@ from functools import partial
 
 import maya.cmds as cmds
 
+from ..vendor.Qt import QtCore, QtWidgets, QtGui
 from .actionattrform import ActionAttrForm, BatchAttrForm
 from .core import BlueprintUIModel
 from .core import PulseWindow
-from ..vendor.Qt import QtCore, QtWidgets, QtGui
+
+from .gen.action_editor import Ui_ActionEditor
 
 LOG = logging.getLogger(__name__)
 LOG_LEVEL_KEY = 'PYLOG_%s' % LOG.name.split('.')[0].upper()
@@ -545,7 +547,7 @@ class BuildActionProxyForm(QtWidgets.QWidget):
         self.updateVariantFormList()
 
 
-class ActionEditorWidget(QtWidgets.QWidget):
+class ActionEditor(QtWidgets.QWidget):
     """
     The main widget for inspecting and editing BuildActions.
 
@@ -554,9 +556,10 @@ class ActionEditorWidget(QtWidgets.QWidget):
     """
 
     def __init__(self, parent=None):
-        super(ActionEditorWidget, self).__init__(parent=parent)
+        super(ActionEditor, self).__init__(parent=parent)
 
-        self.setupUi(self)
+        self.ui = Ui_ActionEditor()
+        self.ui.setupUi(self)
 
         self.blueprintModel = BlueprintUIModel.getDefaultModel()
         self.blueprintModel.readOnlyChanged.connect(self.onReadOnlyChanged)
@@ -564,40 +567,13 @@ class ActionEditorWidget(QtWidgets.QWidget):
         self.model.dataChanged.connect(self.onModelDataChanged)
         self.model.modelReset.connect(self.onModelReset)
         self.selectionModel = self.blueprintModel.buildStepSelectionModel
-        self.selectionModel.selectionChanged.connect(self.onSelectionChanged)
+        self.selectionModel.selectionChanged.connect(self._on_selection_changed)
 
-        self.scrollWidget.setEnabled(not self.blueprintModel.isReadOnly())
+        self.setEnabled(not self.blueprintModel.isReadOnly())
 
         self.setupItemsUiForSelection()
 
-    def setupUi(self, parent):
-        outerLayout = QtWidgets.QVBoxLayout(parent)
-        outerLayout.setMargin(0)
-
-        self.scrollArea = QtWidgets.QScrollArea(parent)
-        self.scrollArea.setFrameShape(QtWidgets.QScrollArea.NoFrame)
-        self.scrollArea.setWidgetResizable(True)
-        outerLayout.addWidget(self.scrollArea)
-
-        self.scrollWidget = QtWidgets.QWidget()
-        self.scrollArea.setWidget(self.scrollWidget)
-
-        # scroll layout contains the main layout and a spacer item
-        self.scrollLayout = QtWidgets.QVBoxLayout(self.scrollWidget)
-        self.scrollLayout.setMargin(0)
-
-        self.mainLayout = QtWidgets.QVBoxLayout(self.scrollWidget)
-        self.mainLayout.setSpacing(12)
-        self.mainLayout.setMargin(4)
-        self.scrollLayout.addLayout(self.mainLayout)
-
-        spacer = QtWidgets.QSpacerItem(
-            20, 20, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
-        self.scrollLayout.addItem(spacer)
-
-        self.scrollWidget.setLayout(self.scrollLayout)
-
-    def onSelectionChanged(self, selected, deselected):
+    def _on_selection_changed(self, selected: QtCore.QItemSelection, deselected: QtCore.QItemSelection):
         self.setupItemsUiForSelection()
 
     def onModelDataChanged(self):
@@ -608,11 +584,11 @@ class ActionEditorWidget(QtWidgets.QWidget):
         self.setupItemsUiForSelection()
 
     def onReadOnlyChanged(self, isReadOnly):
-        self.scrollWidget.setEnabled(not isReadOnly)
+        self.setEnabled(not isReadOnly)
 
-    def clearItemsUi(self):
+    def clear_items_ui(self):
         while True:
-            item = self.mainLayout.takeAt(0)
+            item = self.ui.items_layout.takeAt(0)
             if item:
                 widget = item.widget()
                 if widget:
@@ -621,32 +597,24 @@ class ActionEditorWidget(QtWidgets.QWidget):
             else:
                 break
 
-    def setupItemsUi(self, itemIndexes, parent):
-        self.clearItemsUi()
+    def setup_items_ui(self, itemIndexes, parent):
+        self.clear_items_ui()
 
         for index in itemIndexes:
-            itemWidget = BuildStepForm(index, parent=parent)
-            self.mainLayout.addWidget(itemWidget)
+            item_widget = BuildStepForm(index, parent=parent)
+            self.ui.items_layout.addWidget(item_widget)
 
     def setupItemsUiForSelection(self):
-        self.setupItemsUi(
-            self.selectionModel.selectedIndexes(),
-            self.scrollWidget
-        )
+        if self.selectionModel.hasSelection():
+            self.ui.main_stack.setCurrentWidget(self.ui.content_page)
+        else:
+            self.ui.main_stack.setCurrentWidget(self.ui.help_page)
+
+        self.setup_items_ui(self.selectionModel.selectedIndexes(), self.ui.scroll_area_widget)
 
 
 class ActionEditorWindow(PulseWindow):
     OBJECT_NAME = 'pulseActionEditorWindow'
     WINDOW_MODULE = 'pulse.ui.actioneditor'
-
-    def __init__(self, parent=None):
-        super(ActionEditorWindow, self).__init__(parent=parent)
-
-        self.setWindowTitle('Pulse Action Editor')
-
-        layout = QtWidgets.QVBoxLayout(self)
-        layout.setMargin(0)
-        self.setLayout(layout)
-
-        widget = ActionEditorWidget(self)
-        layout.addWidget(widget)
+    WINDOW_TITLE = 'Pulse Action Editor'
+    WIDGET_CLASS = ActionEditor

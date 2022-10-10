@@ -139,8 +139,8 @@ class MainEditorWindow(PulseWindow):
     WINDOW_TITLE = 'Pulse'
     WIDGET_CLASS = MainEditor
 
-    def __init__(self):
-        super(MainEditorWindow, self).__init__()
+    def __init__(self, parent=None):
+        super(MainEditorWindow, self).__init__(parent)
 
         # setup menu bar
         self.menu_bar = QtWidgets.QMenuBar(self)
