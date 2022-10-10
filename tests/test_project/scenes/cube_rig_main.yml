@@ -1,15 +1,49 @@
-rigName: cube
+rigName: cube_rig
 steps:
   children:
   - action:
       id: Pulse.ImportReferences
     name: Import References
   - action:
-      allNodes: true
+      allNodes: false
       id: Pulse.BuildCoreHierarchy
+      variantAttrs:
+      - groupName
+      - allNodes
+      - nodes
+      variants:
+      - allNodes: false
+        groupName: core
+        nodes:
+        - !node '6506B2DD-486F-185B-BFB8-E38F2984AD20'
+      - allNodes: true
+        groupName: ctls
+        nodes: []
     name: Build Core Hierarchy
-  - name: Main
+  - children:
+    - action:
+        id: Pulse.AnimControl
+        variantAttrs:
+        - controlNode
+        variants:
+        - controlNode: !node '6D08720C-41B0-ED2E-C6F1-90873E18F7FD'
+        - controlNode: !node '4E662F1B-474F-B612-FE07-72BCB543D23E'
+      name: Anim Control
+    - action:
+        follower: !node '6506B2DD-486F-185B-BFB8-E38F2984AD20'
+        id: Pulse.MatrixConstrain
+        leader: !node '4E662F1B-474F-B612-FE07-72BCB543D23E'
+      name: Matrix Constrain
+    name: Main
   - action:
+      displayType: 2
+      id: Pulse.DisplayLayer
+      name: meshes_lyr
+      objects:
+      - !node '6506B2DD-486F-185B-BFB8-E38F2984AD20'
+    name: Display Layer
+  - action:
+      filename: '{rig[name]}_built'
       id: Pulse.RenameScene
     name: Rename Scene
   name: Root
