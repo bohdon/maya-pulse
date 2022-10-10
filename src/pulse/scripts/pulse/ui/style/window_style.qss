@@ -44,12 +44,20 @@ QLabel[cssClasses~="title"] {
     font-weight: bold;
 }
 
-/* A smaller and italic title. */
+/* Subtitle text, medium size and bold. */
+QLabel[cssClasses~="subtitle"] {
+    font-size: 10pt;
+    font-weight: bold;
+}
+
+/* The current mode title text, large and uppercase, with an active and inactive state. */
 QLabel[cssClasses~="mode-title"] {
-    font-size: 12pt;
+    font-size: 11pt;
     font-weight: 500;
     text-transform: uppercase;
-    color: rgba(255, 255, 255, 20%);
+}
+QLabel[cssClasses~="mode-title"][enabled=false] {
+    color: rgba(255, 255, 255, 10%);
 }
 
 /* Help text, usually at the bottom of a window, italic and dimmed. */
@@ -78,6 +86,10 @@ QPushButton[cssClasses~="z-axis"] {
     background-color: rgb(25%, 30%, 45%);
 }
 
+/* Main toolbar, highlighted a bit with a darker background. */
+QFrame[cssClasses~="toolbar"] {
+    background-color: rgba(0, 0, 0, 20%);
+}
 
 /* Color coded toolbars to indicate blueprint vs rig mode. */
 QFrame[cssClasses~="toolbar-blueprint"] {

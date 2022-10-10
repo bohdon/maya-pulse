@@ -6,14 +6,17 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>318</width>
-    <height>79</height>
+    <width>466</width>
+    <height>129</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Build Toolbar</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
+   <property name="spacing">
+    <number>2</number>
+   </property>
    <property name="leftMargin">
     <number>0</number>
    </property>
@@ -36,139 +39,78 @@
      </property>
      <layout class="QVBoxLayout" name="verticalLayout_2">
       <item>
-       <widget class="QStackedWidget" name="main_stack">
-        <property name="currentIndex">
-         <number>1</number>
-        </property>
-        <widget class="QWidget" name="blueprint_page">
-         <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="1,0,0">
-          <property name="leftMargin">
-           <number>0</number>
-          </property>
-          <property name="topMargin">
-           <number>0</number>
-          </property>
-          <property name="rightMargin">
-           <number>0</number>
-          </property>
-          <property name="bottomMargin">
-           <number>0</number>
-          </property>
-          <item>
-           <widget class="QLabel" name="blueprint_name_label">
-            <property name="font">
-             <font>
-              <weight>75</weight>
-              <bold>true</bold>
-             </font>
-            </property>
-            <property name="text">
-             <string>&lt;Blueprint File Name&gt;</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QPushButton" name="validate_btn">
-            <property name="minimumSize">
-             <size>
-              <width>80</width>
-              <height>0</height>
-             </size>
-            </property>
-            <property name="text">
-             <string> Validate</string>
-            </property>
-            <property name="icon">
-             <iconset resource="resources.qrc">
-              <normaloff>:/res/validate.svg</normaloff>:/res/validate.svg</iconset>
-            </property>
-            <property name="iconSize">
-             <size>
-              <width>14</width>
-              <height>14</height>
-             </size>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QPushButton" name="build_btn">
-            <property name="minimumSize">
-             <size>
-              <width>80</width>
-              <height>0</height>
-             </size>
-            </property>
-            <property name="text">
-             <string> Build</string>
-            </property>
-            <property name="icon">
-             <iconset resource="resources.qrc">
-              <normaloff>:/res/build.svg</normaloff>:/res/build.svg</iconset>
-            </property>
-            <property name="iconSize">
-             <size>
-              <width>14</width>
-              <height>14</height>
-             </size>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </widget>
-        <widget class="QWidget" name="rig_page">
-         <layout class="QHBoxLayout" name="horizontalLayout" stretch="1,0">
-          <property name="leftMargin">
-           <number>0</number>
-          </property>
-          <property name="topMargin">
-           <number>0</number>
-          </property>
-          <property name="rightMargin">
-           <number>0</number>
-          </property>
-          <property name="bottomMargin">
-           <number>0</number>
-          </property>
-          <item>
-           <widget class="QLabel" name="rig_name_label">
-            <property name="font">
-             <font>
-              <weight>75</weight>
-              <bold>true</bold>
-             </font>
-            </property>
-            <property name="text">
-             <string>&lt;Rig Name&gt;</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QPushButton" name="open_blueprint_btn">
-            <property name="text">
-             <string> Open Blueprint</string>
-            </property>
-            <property name="icon">
-             <iconset resource="resources.qrc">
-              <normaloff>:/res/angle_left.svg</normaloff>:/res/angle_left.svg</iconset>
-            </property>
-            <property name="iconSize">
-             <size>
-              <width>14</width>
-              <height>14</height>
-             </size>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </widget>
-       </widget>
-      </item>
-      <item>
-       <layout class="QHBoxLayout" name="header_layout">
+       <layout class="QHBoxLayout" name="horizontalLayout_3">
         <item>
-         <widget class="QLabel" name="mode_label">
+         <widget class="QStackedWidget" name="header_stack_widget">
+          <property name="currentIndex">
+           <number>0</number>
+          </property>
+          <widget class="QWidget" name="blueprint_page">
+           <layout class="QHBoxLayout" name="horizontalLayout_2">
+            <property name="leftMargin">
+             <number>0</number>
+            </property>
+            <property name="topMargin">
+             <number>0</number>
+            </property>
+            <property name="rightMargin">
+             <number>0</number>
+            </property>
+            <property name="bottomMargin">
+             <number>0</number>
+            </property>
+            <item>
+             <layout class="QHBoxLayout" name="horizontalLayout_4">
+              <item>
+               <widget class="QLabel" name="blueprint_name_label">
+                <property name="text">
+                 <string>&lt;Blueprint File Name&gt;</string>
+                </property>
+                <property name="cssClasses" stdset="0">
+                 <string>subtitle</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
+           </layout>
+          </widget>
+          <widget class="QWidget" name="rig_page">
+           <layout class="QHBoxLayout" name="horizontalLayout_7">
+            <property name="leftMargin">
+             <number>0</number>
+            </property>
+            <property name="topMargin">
+             <number>0</number>
+            </property>
+            <property name="rightMargin">
+             <number>0</number>
+            </property>
+            <property name="bottomMargin">
+             <number>0</number>
+            </property>
+            <item>
+             <layout class="QHBoxLayout" name="horizontalLayout_6">
+              <item>
+               <widget class="QLabel" name="rig_name_label">
+                <property name="text">
+                 <string>&lt;Rig Name&gt;</string>
+                </property>
+                <property name="cssClasses" stdset="0">
+                 <string>subtitle</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
+           </layout>
+          </widget>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="blueprint_mode_label">
           <property name="text">
-           <string>&lt;Mode&gt;</string>
+           <string>Blueprint</string>
           </property>
           <property name="cssClasses" stdset="0">
            <string>mode-title</string>
@@ -176,54 +118,133 @@
          </widget>
         </item>
         <item>
-         <widget class="QToolButton" name="design_toolkit_btn">
-          <property name="minimumSize">
-           <size>
-            <width>28</width>
-            <height>28</height>
-           </size>
-          </property>
-          <property name="statusTip">
-           <string>Open the Pulse Design Toolkit</string>
+         <widget class="QLabel" name="label_2">
+          <property name="enabled">
+           <bool>false</bool>
           </property>
           <property name="text">
-           <string/>
+           <string>|</string>
+          </property>
+          <property name="cssClasses" stdset="0">
+           <string>mode-title</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="rig_mode_label">
+          <property name="text">
+           <string>Rig</string>
+          </property>
+          <property name="cssClasses" stdset="0">
+           <string>mode-title</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" name="buttons_layout">
+        <item>
+         <widget class="QPushButton" name="validate_btn">
+          <property name="minimumSize">
+           <size>
+            <width>80</width>
+            <height>0</height>
+           </size>
+          </property>
+          <property name="text">
+           <string> Validate</string>
           </property>
           <property name="icon">
            <iconset resource="resources.qrc">
-            <normaloff>:/res/design_toolkit.svg</normaloff>:/res/design_toolkit.svg</iconset>
+            <normaloff>:/res/validate.svg</normaloff>:/res/validate.svg</iconset>
           </property>
           <property name="iconSize">
            <size>
-            <width>20</width>
-            <height>20</height>
+            <width>14</width>
+            <height>14</height>
            </size>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="QToolButton" name="action_editor_btn">
+         <widget class="QPushButton" name="build_btn">
           <property name="minimumSize">
            <size>
-            <width>28</width>
-            <height>28</height>
+            <width>80</width>
+            <height>0</height>
            </size>
           </property>
-          <property name="statusTip">
-           <string>Open the Pulse Action Editor</string>
-          </property>
           <property name="text">
-           <string/>
+           <string> Build</string>
+          </property>
+          <property name="icon">
+           <iconset resource="resources.qrc">
+            <normaloff>:/res/build.svg</normaloff>:/res/build.svg</iconset>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>14</width>
+            <height>14</height>
+           </size>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="open_blueprint_btn">
+          <property name="text">
+           <string> Open Blueprint</string>
+          </property>
+          <property name="icon">
+           <iconset resource="resources.qrc">
+            <normaloff>:/res/angle_left.svg</normaloff>:/res/angle_left.svg</iconset>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>14</width>
+            <height>14</height>
+           </size>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QFrame" name="toolbar_frame">
+     <property name="frameShape">
+      <enum>QFrame::StyledPanel</enum>
+     </property>
+     <property name="frameShadow">
+      <enum>QFrame::Raised</enum>
+     </property>
+     <property name="cssClasses" stdset="0">
+      <string>toolbar</string>
+     </property>
+     <layout class="QHBoxLayout" name="horizontalLayout">
+      <item>
+       <layout class="QHBoxLayout" name="toolbar_layout">
+        <item>
+         <widget class="QPushButton" name="design_toolkit_btn">
+          <property name="text">
+           <string> Design Toolkit</string>
+          </property>
+          <property name="icon">
+           <iconset resource="resources.qrc">
+            <normaloff>:/res/design_toolkit.svg</normaloff>:/res/design_toolkit.svg</iconset>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="action_editor_btn">
+          <property name="text">
+           <string> Action Editor</string>
           </property>
           <property name="icon">
            <iconset resource="resources.qrc">
             <normaloff>:/res/action_editor.svg</normaloff>:/res/action_editor.svg</iconset>
-          </property>
-          <property name="iconSize">
-           <size>
-            <width>20</width>
-            <height>20</height>
-           </size>
           </property>
          </widget>
         </item>

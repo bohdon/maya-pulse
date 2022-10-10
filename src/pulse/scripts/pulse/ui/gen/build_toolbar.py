@@ -18,8 +18,9 @@ class Ui_BuildToolbar(object):
     def setupUi(self, BuildToolbar):
         if not BuildToolbar.objectName():
             BuildToolbar.setObjectName(u"BuildToolbar")
-        BuildToolbar.resize(318, 79)
+        BuildToolbar.resize(466, 129)
         self.verticalLayout = QVBoxLayout(BuildToolbar)
+        self.verticalLayout.setSpacing(2)
         self.verticalLayout.setObjectName(u"verticalLayout")
         self.verticalLayout.setContentsMargins(0, 0, 0, 0)
         self.mode_frame = QFrame(BuildToolbar)
@@ -28,23 +29,67 @@ class Ui_BuildToolbar(object):
         self.mode_frame.setFrameShadow(QFrame.Raised)
         self.verticalLayout_2 = QVBoxLayout(self.mode_frame)
         self.verticalLayout_2.setObjectName(u"verticalLayout_2")
-        self.main_stack = QStackedWidget(self.mode_frame)
-        self.main_stack.setObjectName(u"main_stack")
+        self.horizontalLayout_3 = QHBoxLayout()
+        self.horizontalLayout_3.setObjectName(u"horizontalLayout_3")
+        self.header_stack_widget = QStackedWidget(self.mode_frame)
+        self.header_stack_widget.setObjectName(u"header_stack_widget")
         self.blueprint_page = QWidget()
         self.blueprint_page.setObjectName(u"blueprint_page")
         self.horizontalLayout_2 = QHBoxLayout(self.blueprint_page)
         self.horizontalLayout_2.setObjectName(u"horizontalLayout_2")
         self.horizontalLayout_2.setContentsMargins(0, 0, 0, 0)
+        self.horizontalLayout_4 = QHBoxLayout()
+        self.horizontalLayout_4.setObjectName(u"horizontalLayout_4")
         self.blueprint_name_label = QLabel(self.blueprint_page)
         self.blueprint_name_label.setObjectName(u"blueprint_name_label")
-        font = QFont()
-        font.setBold(True)
-        font.setWeight(75)
-        self.blueprint_name_label.setFont(font)
 
-        self.horizontalLayout_2.addWidget(self.blueprint_name_label)
+        self.horizontalLayout_4.addWidget(self.blueprint_name_label)
 
-        self.validate_btn = QPushButton(self.blueprint_page)
+
+        self.horizontalLayout_2.addLayout(self.horizontalLayout_4)
+
+        self.header_stack_widget.addWidget(self.blueprint_page)
+        self.rig_page = QWidget()
+        self.rig_page.setObjectName(u"rig_page")
+        self.horizontalLayout_7 = QHBoxLayout(self.rig_page)
+        self.horizontalLayout_7.setObjectName(u"horizontalLayout_7")
+        self.horizontalLayout_7.setContentsMargins(0, 0, 0, 0)
+        self.horizontalLayout_6 = QHBoxLayout()
+        self.horizontalLayout_6.setObjectName(u"horizontalLayout_6")
+        self.rig_name_label = QLabel(self.rig_page)
+        self.rig_name_label.setObjectName(u"rig_name_label")
+
+        self.horizontalLayout_6.addWidget(self.rig_name_label)
+
+
+        self.horizontalLayout_7.addLayout(self.horizontalLayout_6)
+
+        self.header_stack_widget.addWidget(self.rig_page)
+
+        self.horizontalLayout_3.addWidget(self.header_stack_widget)
+
+        self.blueprint_mode_label = QLabel(self.mode_frame)
+        self.blueprint_mode_label.setObjectName(u"blueprint_mode_label")
+
+        self.horizontalLayout_3.addWidget(self.blueprint_mode_label)
+
+        self.label_2 = QLabel(self.mode_frame)
+        self.label_2.setObjectName(u"label_2")
+        self.label_2.setEnabled(False)
+
+        self.horizontalLayout_3.addWidget(self.label_2)
+
+        self.rig_mode_label = QLabel(self.mode_frame)
+        self.rig_mode_label.setObjectName(u"rig_mode_label")
+
+        self.horizontalLayout_3.addWidget(self.rig_mode_label)
+
+
+        self.verticalLayout_2.addLayout(self.horizontalLayout_3)
+
+        self.buttons_layout = QHBoxLayout()
+        self.buttons_layout.setObjectName(u"buttons_layout")
+        self.validate_btn = QPushButton(self.mode_frame)
         self.validate_btn.setObjectName(u"validate_btn")
         self.validate_btn.setMinimumSize(QSize(80, 0))
         icon = QIcon()
@@ -52,9 +97,9 @@ class Ui_BuildToolbar(object):
         self.validate_btn.setIcon(icon)
         self.validate_btn.setIconSize(QSize(14, 14))
 
-        self.horizontalLayout_2.addWidget(self.validate_btn)
+        self.buttons_layout.addWidget(self.validate_btn)
 
-        self.build_btn = QPushButton(self.blueprint_page)
+        self.build_btn = QPushButton(self.mode_frame)
         self.build_btn.setObjectName(u"build_btn")
         self.build_btn.setMinimumSize(QSize(80, 0))
         icon1 = QIcon()
@@ -62,72 +107,57 @@ class Ui_BuildToolbar(object):
         self.build_btn.setIcon(icon1)
         self.build_btn.setIconSize(QSize(14, 14))
 
-        self.horizontalLayout_2.addWidget(self.build_btn)
+        self.buttons_layout.addWidget(self.build_btn)
 
-        self.horizontalLayout_2.setStretch(0, 1)
-        self.main_stack.addWidget(self.blueprint_page)
-        self.rig_page = QWidget()
-        self.rig_page.setObjectName(u"rig_page")
-        self.horizontalLayout = QHBoxLayout(self.rig_page)
-        self.horizontalLayout.setObjectName(u"horizontalLayout")
-        self.horizontalLayout.setContentsMargins(0, 0, 0, 0)
-        self.rig_name_label = QLabel(self.rig_page)
-        self.rig_name_label.setObjectName(u"rig_name_label")
-        self.rig_name_label.setFont(font)
-
-        self.horizontalLayout.addWidget(self.rig_name_label)
-
-        self.open_blueprint_btn = QPushButton(self.rig_page)
+        self.open_blueprint_btn = QPushButton(self.mode_frame)
         self.open_blueprint_btn.setObjectName(u"open_blueprint_btn")
         icon2 = QIcon()
         icon2.addFile(u":/res/angle_left.svg", QSize(), QIcon.Normal, QIcon.Off)
         self.open_blueprint_btn.setIcon(icon2)
         self.open_blueprint_btn.setIconSize(QSize(14, 14))
 
-        self.horizontalLayout.addWidget(self.open_blueprint_btn)
-
-        self.horizontalLayout.setStretch(0, 1)
-        self.main_stack.addWidget(self.rig_page)
-
-        self.verticalLayout_2.addWidget(self.main_stack)
-
-        self.header_layout = QHBoxLayout()
-        self.header_layout.setObjectName(u"header_layout")
-        self.mode_label = QLabel(self.mode_frame)
-        self.mode_label.setObjectName(u"mode_label")
-
-        self.header_layout.addWidget(self.mode_label)
-
-        self.design_toolkit_btn = QToolButton(self.mode_frame)
-        self.design_toolkit_btn.setObjectName(u"design_toolkit_btn")
-        self.design_toolkit_btn.setMinimumSize(QSize(28, 28))
-        icon3 = QIcon()
-        icon3.addFile(u":/res/design_toolkit.svg", QSize(), QIcon.Normal, QIcon.Off)
-        self.design_toolkit_btn.setIcon(icon3)
-        self.design_toolkit_btn.setIconSize(QSize(20, 20))
-
-        self.header_layout.addWidget(self.design_toolkit_btn)
-
-        self.action_editor_btn = QToolButton(self.mode_frame)
-        self.action_editor_btn.setObjectName(u"action_editor_btn")
-        self.action_editor_btn.setMinimumSize(QSize(28, 28))
-        icon4 = QIcon()
-        icon4.addFile(u":/res/action_editor.svg", QSize(), QIcon.Normal, QIcon.Off)
-        self.action_editor_btn.setIcon(icon4)
-        self.action_editor_btn.setIconSize(QSize(20, 20))
-
-        self.header_layout.addWidget(self.action_editor_btn)
+        self.buttons_layout.addWidget(self.open_blueprint_btn)
 
 
-        self.verticalLayout_2.addLayout(self.header_layout)
+        self.verticalLayout_2.addLayout(self.buttons_layout)
 
 
         self.verticalLayout.addWidget(self.mode_frame)
 
+        self.toolbar_frame = QFrame(BuildToolbar)
+        self.toolbar_frame.setObjectName(u"toolbar_frame")
+        self.toolbar_frame.setFrameShape(QFrame.StyledPanel)
+        self.toolbar_frame.setFrameShadow(QFrame.Raised)
+        self.horizontalLayout = QHBoxLayout(self.toolbar_frame)
+        self.horizontalLayout.setObjectName(u"horizontalLayout")
+        self.toolbar_layout = QHBoxLayout()
+        self.toolbar_layout.setObjectName(u"toolbar_layout")
+        self.design_toolkit_btn = QPushButton(self.toolbar_frame)
+        self.design_toolkit_btn.setObjectName(u"design_toolkit_btn")
+        icon3 = QIcon()
+        icon3.addFile(u":/res/design_toolkit.svg", QSize(), QIcon.Normal, QIcon.Off)
+        self.design_toolkit_btn.setIcon(icon3)
+
+        self.toolbar_layout.addWidget(self.design_toolkit_btn)
+
+        self.action_editor_btn = QPushButton(self.toolbar_frame)
+        self.action_editor_btn.setObjectName(u"action_editor_btn")
+        icon4 = QIcon()
+        icon4.addFile(u":/res/action_editor.svg", QSize(), QIcon.Normal, QIcon.Off)
+        self.action_editor_btn.setIcon(icon4)
+
+        self.toolbar_layout.addWidget(self.action_editor_btn)
+
+
+        self.horizontalLayout.addLayout(self.toolbar_layout)
+
+
+        self.verticalLayout.addWidget(self.toolbar_frame)
+
 
         self.retranslateUi(BuildToolbar)
 
-        self.main_stack.setCurrentIndex(1)
+        self.header_stack_widget.setCurrentIndex(0)
 
 
         QMetaObject.connectSlotsByName(BuildToolbar)
@@ -136,19 +166,20 @@ class Ui_BuildToolbar(object):
     def retranslateUi(self, BuildToolbar):
         BuildToolbar.setWindowTitle(QCoreApplication.translate("BuildToolbar", u"Build Toolbar", None))
         self.blueprint_name_label.setText(QCoreApplication.translate("BuildToolbar", u"<Blueprint File Name>", None))
+        self.blueprint_name_label.setProperty("cssClasses", QCoreApplication.translate("BuildToolbar", u"subtitle", None))
+        self.rig_name_label.setText(QCoreApplication.translate("BuildToolbar", u"<Rig Name>", None))
+        self.rig_name_label.setProperty("cssClasses", QCoreApplication.translate("BuildToolbar", u"subtitle", None))
+        self.blueprint_mode_label.setText(QCoreApplication.translate("BuildToolbar", u"Blueprint", None))
+        self.blueprint_mode_label.setProperty("cssClasses", QCoreApplication.translate("BuildToolbar", u"mode-title", None))
+        self.label_2.setText(QCoreApplication.translate("BuildToolbar", u"|", None))
+        self.label_2.setProperty("cssClasses", QCoreApplication.translate("BuildToolbar", u"mode-title", None))
+        self.rig_mode_label.setText(QCoreApplication.translate("BuildToolbar", u"Rig", None))
+        self.rig_mode_label.setProperty("cssClasses", QCoreApplication.translate("BuildToolbar", u"mode-title", None))
         self.validate_btn.setText(QCoreApplication.translate("BuildToolbar", u" Validate", None))
         self.build_btn.setText(QCoreApplication.translate("BuildToolbar", u" Build", None))
-        self.rig_name_label.setText(QCoreApplication.translate("BuildToolbar", u"<Rig Name>", None))
         self.open_blueprint_btn.setText(QCoreApplication.translate("BuildToolbar", u" Open Blueprint", None))
-        self.mode_label.setText(QCoreApplication.translate("BuildToolbar", u"<Mode>", None))
-        self.mode_label.setProperty("cssClasses", QCoreApplication.translate("BuildToolbar", u"mode-title", None))
-#if QT_CONFIG(statustip)
-        self.design_toolkit_btn.setStatusTip(QCoreApplication.translate("BuildToolbar", u"Open the Pulse Design Toolkit", None))
-#endif // QT_CONFIG(statustip)
-        self.design_toolkit_btn.setText("")
-#if QT_CONFIG(statustip)
-        self.action_editor_btn.setStatusTip(QCoreApplication.translate("BuildToolbar", u"Open the Pulse Action Editor", None))
-#endif // QT_CONFIG(statustip)
-        self.action_editor_btn.setText("")
+        self.toolbar_frame.setProperty("cssClasses", QCoreApplication.translate("BuildToolbar", u"toolbar", None))
+        self.design_toolkit_btn.setText(QCoreApplication.translate("BuildToolbar", u" Design Toolkit", None))
+        self.action_editor_btn.setText(QCoreApplication.translate("BuildToolbar", u" Action Editor", None))
     # retranslateUi
 

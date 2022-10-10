@@ -86,14 +86,29 @@ class BuildToolbarWidget(QtWidgets.QWidget):
         """
         if self.does_rig_exist:
             # rig read-only mode
-            self.ui.mode_label.setText('Rig')
+            self.ui.validate_btn.setEnabled(False)
+            self.ui.build_btn.setEnabled(False)
+            self.ui.open_blueprint_btn.setEnabled(True)
+            # switch active model label
+            self.ui.blueprint_mode_label.setEnabled(False)
+            self.ui.rig_mode_label.setEnabled(True)
+            # update mode frame color
             self.ui.mode_frame.setProperty('cssClasses', 'toolbar-rig')
-            self.ui.main_stack.setCurrentWidget(self.ui.rig_page)
+            # switch between blueprint and rig name
+            self.ui.header_stack_widget.setCurrentWidget(self.ui.rig_page)
         else:
             # blueprint editing mode
-            self.ui.mode_label.setText('Blueprint')
+            self.ui.validate_btn.setEnabled(True)
+            self.ui.build_btn.setEnabled(True)
+            self.ui.open_blueprint_btn.setEnabled(False)
+            # switch active model label
+            self.ui.blueprint_mode_label.setEnabled(True)
+            self.ui.rig_mode_label.setEnabled(False)
+            # update mode frame color
             self.ui.mode_frame.setProperty('cssClasses', 'toolbar-blueprint')
-            self.ui.main_stack.setCurrentWidget(self.ui.blueprint_page)
+            # switch between blueprint and rig name
+            self.ui.header_stack_widget.setCurrentWidget(self.ui.blueprint_page)
+
         # refresh stylesheet for mode frame
         self.ui.mode_frame.setStyleSheet('')
 
