@@ -51,7 +51,7 @@ class MainToolbar(QtWidgets.QWidget):
 
     @property
     def does_rig_exist(self):
-        return self.blueprint_model.rigExists
+        return self.blueprint_model.doesRigExist
 
     def showEvent(self, event):
         super(MainToolbar, self).showEvent(event)
@@ -61,8 +61,9 @@ class MainToolbar(QtWidgets.QWidget):
         self._update_rig_name()
 
     def _update_rig_name(self):
-        self.ui.blueprint_name_label.setText(self.blueprint_model.getBlueprintFilename())
-        self.ui.rig_name_label.setText(self.blueprint_model.getRigName())
+        self.ui.rig_name_label.setText(self.blueprint_model.blueprint.rigName)
+        self.ui.blueprint_file_name_label.setText(self.blueprint_model.getBlueprintFileName())
+        self.ui.blueprint_file_name_label.setToolTip(self.blueprint_model.getBlueprintFilePath())
 
     def _on_rig_exists_changed(self):
         self._clean_state()
@@ -96,8 +97,6 @@ class MainToolbar(QtWidgets.QWidget):
             self.ui.rig_mode_label.setEnabled(True)
             # update mode frame color
             self.ui.mode_frame.setProperty('cssClasses', 'toolbar-rig')
-            # switch between blueprint and rig name
-            self.ui.header_stack_widget.setCurrentWidget(self.ui.rig_page)
         else:
             # blueprint editing mode
             self.ui.validate_btn.setEnabled(True)
@@ -108,8 +107,6 @@ class MainToolbar(QtWidgets.QWidget):
             self.ui.rig_mode_label.setEnabled(False)
             # update mode frame color
             self.ui.mode_frame.setProperty('cssClasses', 'toolbar-blueprint')
-            # switch between blueprint and rig name
-            self.ui.header_stack_widget.setCurrentWidget(self.ui.blueprint_page)
 
         # refresh stylesheet for mode frame
         self.ui.mode_frame.setStyleSheet('')
@@ -134,7 +131,7 @@ class MainToolbar(QtWidgets.QWidget):
                 return
 
             # if auto_save:
-            self.blueprint_model.save()
+            self.blueprint_model.saveFile()
 
             builder = BlueprintBuilder.createBuilderWithCurrentScene(
                 blueprint, debug=True)
@@ -144,4 +141,4 @@ class MainToolbar(QtWidgets.QWidget):
             cmds.evalDeferred(self._on_state_dirty)
 
             # TODO: add build events for situations like this
-            cmds.evalDeferred(self.blueprint_model.load, low=True)
+            cmds.evalDeferred(self.blueprint_model.reloadFile, low=True)

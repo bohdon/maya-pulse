@@ -4,6 +4,7 @@ UI model classes, and base classes for common widgets.
 
 import logging
 import os
+from typing import Optional
 
 import maya.OpenMaya as api
 import maya.OpenMayaUI as mui
@@ -15,7 +16,7 @@ import pymetanode as meta
 from .utils import CollapsibleFrame
 from .utils import dpiScale
 from .. import rigs
-from ..blueprints import Blueprint
+from ..blueprints import Blueprint, BlueprintFile
 from ..buildItems import BuildStep, BuildAction
 from ..prefs import optionVarProperty
 from ..serializer import serializeAttrValue
@@ -23,8 +24,6 @@ from ..vendor.Qt import QtCore, QtWidgets, QtGui
 
 LOG = logging.getLogger(__name__)
 LOG.level = logging.DEBUG
-
-BLUEPRINT_FILE_EXT = 'yml'
 
 
 class PulsePanelWidget(QtWidgets.QWidget):
@@ -282,9 +281,8 @@ class PulseWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
 
 class BlueprintUIModel(QtCore.QObject):
     """
-    The owner and manager of various models representing a Blueprint
-    in the scene. All reading and writing for the Blueprint through
-    the UI should be done using this model.
+    The owner and manager of various models representing a Blueprint in the scene.
+    All reading and writing for the Blueprint through the UI should be done using this model.
 
     Blueprints represented in this model are saved and loaded using yaml
     files which are paired with a maya scene file.
@@ -292,6 +290,37 @@ class BlueprintUIModel(QtCore.QObject):
 
     # shared instances, mapped by name
     INSTANCES = {}
+
+    # automatically save the blueprint file when the maya scene is saved
+    autoSave = optionVarProperty('pulse.editor.auto_save', True)
+
+    # automatically load the blueprint file when a maya scene is opened
+    autoLoad = optionVarProperty('pulse.editor.auto_load', True)
+
+    # automatically show the action editor when selecting an action in the tree
+    autoShowActionEditor = optionVarProperty('pulse.editor.auto_show_action_editor', True)
+
+    def setAutoSave(self, value):
+        self.autoSave = value
+
+    def setAutoLoad(self, value):
+        self.autoLoad = value
+
+    def setAutoShowActionEditor(self, value):
+        self.autoShowActionEditor = value
+
+    # called when the current blueprint file has changed
+    fileChanged = QtCore.Signal()
+
+    # a config property on the blueprint changed
+    # TODO: add more generic blueprint property data model
+    rigNameChanged = QtCore.Signal(str)
+
+    # called when the presence of a built rig has changed
+    rigExistsChanged = QtCore.Signal()
+
+    # called when the read-only state of the blueprint has changed
+    readOnlyChanged = QtCore.Signal(bool)
 
     @classmethod
     def getDefaultModel(cls) -> 'BlueprintUIModel':
@@ -324,229 +353,273 @@ class BlueprintUIModel(QtCore.QObject):
             instance.onDelete()
         cls.INSTANCES.clear()
 
-    # a config property on the blueprint changed
-    # TODO: add more generic blueprint property data model
-    rigNameChanged = QtCore.Signal(str)
-
-    # called when the blueprint filepath has changed
-    # occurs on maya open scene, or new scene
-    fileChanged = QtCore.Signal()
-
-    # called just before a blueprint file is loaded
-    # args: (filepath)
-    preFileLoad = QtCore.Signal(str)
-
-    # called when the blueprint file has changed
-    postFileLoad = QtCore.Signal()
-
-    rigExistsChanged = QtCore.Signal()
-
-    auto_save = optionVarProperty('pulse.editor.auto_save', True)
-    auto_load = optionVarProperty('pulse.editor.auto_load', True)
-    auto_show_action_editor = optionVarProperty('pulse.editor.auto_show_action_editor', True)
-
-    # called when the read-only state of the blueprint has changed
-    readOnlyChanged = QtCore.Signal(bool)
-
-    def set_auto_save(self, value):
-        self.auto_save = value
-
-    def set_auto_load(self, value):
-        self.auto_load = value
-
-    def set_auto_show_action_editor(self, value):
-        self.auto_show_action_editor = value
-
     def __init__(self, parent=None):
         super(BlueprintUIModel, self).__init__(parent=parent)
 
-        # the blueprint of this model
-        self._blueprint = Blueprint()
+        # the currently open blueprint file
+        self._blueprintFile: Optional[BlueprintFile] = None
+
+        # a null blueprint used when no blueprint file is opened to allow UI to still behave
+        self._nullBlueprint = Blueprint()
 
         # the tree item model and selection model for BuildSteps
         self.buildStepTreeModel = BuildStepTreeModel(self.blueprint, self)
-        self.buildStepSelectionModel = BuildStepSelectionModel(
-            self.buildStepTreeModel, self)
+        self.buildStepSelectionModel = BuildStepSelectionModel(self.buildStepTreeModel, self)
 
-        # keeps track of whether a rig is currently in the scene,
-        # which will affect the ability to edit the Blueprint
-        self.rigExists = False
-        self.refreshRigExists()
-
-        # attempt to load from the scene
-        if self.auto_load:
-            self.load(suppressWarnings=True)
-
-        # register maya scene callbacks that can be used
-        # for auto-saving the Blueprint
+        # register maya scene callbacks that can be used for auto save and load
         self._callbackIds = []
-        self.addSceneCallbacks()
+        self._addSceneCallbacks()
+
+        # keep track of whether a rig is currently in the scene to determine which mode we are in
+        self.doesRigExist = False
+        self._refreshRigExists()
+
+        if self.autoLoad:
+            self.reloadFile()
 
     def onDelete(self):
-        self.removeSceneCallbacks()
+        self._removeSceneCallbacks()
+
+    @property
+    def blueprintFile(self) -> BlueprintFile:
+        """
+        The Blueprint File being edited.
+        Will be None if no Blueprint is currently being edited.
+        """
+        return self._blueprintFile
 
     @property
     def blueprint(self) -> Blueprint:
         """
-        The Blueprint object represented by this Model.
+        The Blueprint of the currently open Blueprint File.
+        Always valid, even when no Blueprint file is open.
         """
-        return self._blueprint
+        if self._blueprintFile:
+            return self._blueprintFile.blueprint
+        return self._nullBlueprint
+
+    def isFileOpen(self) -> bool:
+        """
+        Is a Blueprint File currently available?
+        """
+        return self._blueprintFile is not None
 
     def isReadOnly(self) -> bool:
         """
-        Return True if the Blueprint is not able to be modified.
+        Return True if the modifications to the Blueprint are not allowed.
         """
-        return self.rigExists
+        if self.doesRigExist:
+            # readonly whenever a rig is around
+            return True
 
-    def getBlueprintFilepath(self) -> str:
+        if not self.isFileOpen():
+            # no blueprint open to edit
+            return True
+
+        return self._blueprintFile.is_read_only
+
+    def getBlueprintFilePath(self) -> Optional[str]:
         """
-        Return the full path to the Blueprint file being edited.
+        Return the full path of the current Blueprint File.
         """
-        sceneName = None
+        if self.isFileOpen():
+            return self._blueprintFile.file_path
 
-        allRigs = rigs.getAllRigs()
-        if len(allRigs) > 0:
-            # get filepath from rig
-            rig = allRigs[0]
-            rigdata = meta.getMetaData(rig, rigs.RIG_METACLASS)
-            sceneName = rigdata.get('blueprintFile')
-        else:
-            sceneName = pm.sceneName()
-
-        if sceneName:
-            baseName = os.path.splitext(sceneName)[0]
-            filepath = '%s.%s' % (baseName, BLUEPRINT_FILE_EXT)
-            return filepath
-
-    def getBlueprintFilename(self) -> str:
+    def getBlueprintFileName(self) -> Optional[str]:
         """
-        Return the base name of the Blueprint file being edited.
+        Return the base name of the current Blueprint File.
         """
-        filepath = self.getBlueprintFilepath()
-        if filepath:
-            return os.path.basename(filepath)
+        if self.isFileOpen():
+            return self._blueprintFile.get_file_name()
 
-    def addSceneCallbacks(self):
-        if not self._callbackIds:
-            saveId = api.MSceneMessage.addCallback(
-                api.MSceneMessage.kBeforeSave, self.onBeforeSaveScene)
-            openId = api.MSceneMessage.addCallback(
-                api.MSceneMessage.kAfterOpen, self.onAfterOpenScene)
-            newId = api.MSceneMessage.addCallback(
-                api.MSceneMessage.kAfterNew, self.onAfterNewScene)
-            self._callbackIds.append(saveId)
-            self._callbackIds.append(openId)
-            self._callbackIds.append(newId)
-        LOG.debug(
-            'BlueprintUIModel: added scene callbacks')
-
-    def removeSceneCallbacks(self):
-        if self._callbackIds:
-            while self._callbackIds:
-                cbid = self._callbackIds.pop()
-                api.MMessage.removeCallback(cbid)
-            LOG.debug(
-                'BlueprintUIModel: removed scene callbacks')
-
-    def onBeforeSaveScene(self, clientData=None):
-        if self.shouldAutoSaveBlueprint():
-            LOG.debug('Auto-saving Pulse Blueprint...')
-            self.save()
-
-    def onAfterOpenScene(self, clientData=None):
-        if self.auto_load:
-            self.load(suppressWarnings=True)
-        self.fileChanged.emit()
-
-    def onAfterNewScene(self, clientData=None):
-        self.initializeBlueprint()
-        self.fileChanged.emit()
-
-    def save(self, suppressWarnings=False):
+    def canSave(self) -> bool:
         """
-        Save the Blueprint data to the file associated with this model
+        Can the blueprint file currently be saved?
         """
-        self.refreshRigExists()
+        self._refreshRigExists()
+        return self.isFileOpen() and self._blueprintFile.can_save() and not self.doesRigExist
 
-        if self.isReadOnly():
-            return
-
-        filepath = self.getBlueprintFilepath()
-        if not filepath:
-            if not suppressWarnings:
-                LOG.warning("Scene is not saved")
-            return
-
-        success = self.blueprint.saveToFile(filepath)
-        if not success:
-            LOG.error("Failed to save Blueprint to file: {0}".format(filepath))
-
-    def load(self, suppressWarnings=False):
+    def canLoad(self) -> bool:
         """
-        Load the Blueprint from the file associated with this model
+        Can the blueprint file currently be loaded?
         """
-        self.refreshRigExists()
-        filepath = self.getBlueprintFilepath()
-        if not filepath:
-            if not suppressWarnings:
-                LOG.warning("Scene is not saved")
-            return
+        return self.isFileOpen() and self._blueprintFile.can_load()
 
-        if not os.path.isfile(filepath):
-            if not suppressWarnings:
-                LOG.warning(
-                    "Blueprint file does not exist: {0}".format(filepath))
-            return
-
-        self.preFileLoad.emit(filepath)
+    def newFile(self):
+        """
+        Start a new Blueprint File.
+        Does not write the file to disk.
+        """
         self.buildStepTreeModel.beginResetModel()
-        success = self.blueprint.loadFromFile(filepath)
+
+        self._blueprintFile = BlueprintFile()
+        self._blueprintFile.resolve_file_path(allow_existing=False)
+        self._blueprintFile.blueprint.rigName = 'untitled'
+
+        self.buildStepTreeModel.setBlueprint(self.blueprint)
         self.buildStepTreeModel.endResetModel()
-        self.rigNameChanged.emit(self.getRigName())
-        self.postFileLoad.emit()
 
-        if not success:
-            LOG.error(
-                "Failed to load Blueprint from file: {0}".format(filepath))
+        self.fileChanged.emit()
+        self.rigNameChanged.emit(self.blueprint.rigName)
+        self.readOnlyChanged.emit(self.isReadOnly())
 
-    def doesBlueprintPairFileExist(self):
+    def openFile(self, filePath: Optional[str] = None):
         """
-        Return True if a Blueprint yaml file exists that is
-        paired to the current maya scene file.
+        Open a Blueprint File.
+
+        Args:
+            filePath: str
+                The path to a blueprint.
         """
-        filepath = self.getBlueprintFilepath()
-        if filepath:
-            return os.path.isfile(filepath)
-        return False
+        self.buildStepTreeModel.beginResetModel()
 
-    def refreshRigExists(self):
-        oldReadOnly = self.isReadOnly()
-        self.rigExists = len(rigs.getAllRigs()) > 0
-        self.rigExistsChanged.emit()
+        self._blueprintFile = BlueprintFile(file_path=filePath)
 
-        if oldReadOnly != self.isReadOnly():
-            self.readOnlyChanged.emit(self.isReadOnly())
+        if not filePath:
+            # resolve file path automatically from maya scene
+            self._blueprintFile.resolve_file_path(allow_existing=True)
 
-    def shouldAutoSaveBlueprint(self):
-        if not self.auto_save:
-            return False
-        if not self.doesBlueprintPairFileExist():
-            return False
-        self.refreshRigExists()
+        self._blueprintFile.load()
+
+        self.buildStepTreeModel.setBlueprint(self.blueprint)
+        self.buildStepTreeModel.endResetModel()
+
+        self.fileChanged.emit()
+        self.rigNameChanged.emit(self.blueprint.rigName)
+        self.readOnlyChanged.emit(self.isReadOnly())
+
+    def openFileWithPrompt(self):
+        file_path_results = pm.fileDialog2(fileMode=1, fileFilter='Pulse Blueprint(*.yml)')
+        if file_path_results:
+            file_path = file_path_results[0]
+            self.openFile(file_path)
+
+    def saveFile(self):
+        """
+        Save the current Blueprint File.
+        """
+        if self.canSave():
+            self._blueprintFile.save()
+
+    def saveFileAs(self, filePath: str):
+        """
+        Save the current Blueprint File to a different file path.
+        """
+        if self.isFileOpen():
+            self._blueprintFile.file_path = filePath
+            self.fileChanged.emit()
+            self._blueprintFile.save()
+
+    def _saveFileWithPrompt(self, caption='Save As', forcePrompt=False):
+        if not self.isFileOpen():
+            LOG.error("Nothing to save.")
+            return
+
         if self.isReadOnly():
-            return False
-        return True
+            LOG.error("Cannot save read-only Blueprint")
+            return
 
-    def getRigName(self):
-        return self.blueprint.rigName
+        if forcePrompt or not self._blueprintFile.has_file_path():
+            # prompt for file path
+            file_path_results = pm.fileDialog2(cap=caption, fileFilter='Pulse Blueprint (*.yml)')
+            if not file_path_results:
+                return
+            self._blueprintFile.file_path = file_path_results[0]
+            self.fileChanged.emit()
+
+        self.saveFile()
+
+    def saveFileWithPrompt(self):
+        """
+        Save the current Blueprint file, prompting for a file path if none is set.
+        """
+        self._saveFileWithPrompt(caption='Save')
+
+    def saveFileAsWithPrompt(self):
+        """
+        Save the current Blueprint file to a new path, prompting for the file path.
+        """
+        self._saveFileWithPrompt(caption='Save As', forcePrompt=True)
+
+    def reloadFile(self):
+        """
+        Reload the current Blueprint File from disk.
+        """
+        if self.canLoad():
+            self.buildStepTreeModel.beginResetModel()
+            self._blueprintFile.load()
+            self.buildStepTreeModel.endResetModel()
+            self.rigNameChanged.emit(self.blueprint.rigName)
+
+    def closeFile(self):
+        """
+        Close the current Blueprint File.
+        """
+        self.buildStepTreeModel.beginResetModel()
+
+        self._blueprintFile = None
+
+        self.buildStepTreeModel.setBlueprint(self.blueprint)
+        self.buildStepTreeModel.endResetModel()
+
+        self.fileChanged.emit()
+        self.rigNameChanged.emit(self.blueprint.rigName)
+        self.readOnlyChanged.emit(self.isReadOnly())
 
     def setRigName(self, newRigName):
         if self.isReadOnly():
-            LOG.error('Cannot edit readonly Blueprint')
+            LOG.error('setRigName: Cannot edit readonly Blueprint')
             return
 
         self.blueprint.rigName = newRigName
         self.rigNameChanged.emit(self.blueprint.rigName)
+
+    def _refreshRigExists(self):
+        old_read_only = self.isReadOnly()
+        self.doesRigExist = len(rigs.getAllRigs()) > 0
+        self.rigExistsChanged.emit()
+
+        if old_read_only != self.isReadOnly():
+            self.readOnlyChanged.emit(self.isReadOnly())
+
+    def _addSceneCallbacks(self):
+        if not self._callbackIds:
+            save_id = api.MSceneMessage.addCallback(api.MSceneMessage.kBeforeSave, self._onBeforeSaveScene)
+            open_id = api.MSceneMessage.addCallback(api.MSceneMessage.kAfterOpen, self._onAfterOpenScene)
+            before_new_id = api.MSceneMessage.addCallback(api.MSceneMessage.kBeforeNew, self._onBeforeNewScene)
+            self._callbackIds.append(save_id)
+            self._callbackIds.append(open_id)
+            self._callbackIds.append(before_new_id)
+        LOG.debug('BlueprintUIModel: added scene callbacks')
+
+    def _removeSceneCallbacks(self):
+        if self._callbackIds:
+            while self._callbackIds:
+                callbackId = self._callbackIds.pop()
+                api.MMessage.removeCallback(callbackId)
+            LOG.debug('BlueprintUIModel: removed scene callbacks')
+
+    def _onBeforeSaveScene(self, clientData=None):
+        if self._shouldAutoSave():
+            LOG.debug('Auto-saving Blueprint...')
+
+            # automatically resolve file path if not yet set
+            if not self._blueprintFile.has_file_path():
+                # don't automatically save over existing blueprint
+                self._blueprintFile.resolve_file_path(allow_existing=False)
+                self.fileChanged.emit()
+
+            self.saveFile()
+
+    def _onAfterOpenScene(self, clientData=None):
+        if self.autoLoad:
+            self.openFile()
+
+    def _onBeforeNewScene(self, clientData=None):
+        self.closeFile()
+
+    def _shouldAutoSave(self):
+        return self.autoSave and self.isFileOpen()
 
     def initializeBlueprint(self):
         """
@@ -581,7 +654,7 @@ class BlueprintUIModel(QtCore.QObject):
             The newly created BuildStep, or None if the operation failed.
         """
         if self.isReadOnly():
-            LOG.error('Cannot edit readonly Blueprint')
+            LOG.error('createStep: Cannot edit readonly Blueprint')
             return
 
         parentStep = self.blueprint.getStepByPath(parentPath)
@@ -612,7 +685,7 @@ class BlueprintUIModel(QtCore.QObject):
             True if the step was deleted successfully
         """
         if self.isReadOnly():
-            LOG.error('Cannot edit readonly Blueprint')
+            LOG.error('deleteStep: Cannot edit readonly Blueprint')
             return False
 
         step = self.blueprint.getStepByPath(stepPath)
@@ -638,7 +711,7 @@ class BlueprintUIModel(QtCore.QObject):
             the operation failed.
         """
         if self.isReadOnly():
-            LOG.error('Cannot edit readonly Blueprint')
+            LOG.error('moveStep: Cannot edit readonly Blueprint')
             return
 
         step = self.blueprint.getStepByPath(sourcePath)
@@ -665,7 +738,7 @@ class BlueprintUIModel(QtCore.QObject):
 
     def renameStep(self, stepPath, targetName):
         if self.isReadOnly():
-            LOG.error('Cannot edit readonly Blueprint')
+            LOG.error('renameStep: Cannot edit readonly Blueprint')
             return
 
         step = self.blueprint.getStepByPath(stepPath)
@@ -766,7 +839,7 @@ class BlueprintUIModel(QtCore.QObject):
         Set the value for an attribute on the Blueprint
         """
         if self.isReadOnly():
-            LOG.error('Cannot edit readonly Blueprint')
+            LOG.error('setActionAttr: Cannot edit readonly Blueprint')
             return
 
         stepPath, attrName = attrPath.split('.')
@@ -803,7 +876,7 @@ class BlueprintUIModel(QtCore.QObject):
         """
         """
         if self.isReadOnly():
-            LOG.error('Cannot edit readonly Blueprint')
+            LOG.error('setIsActionAttrVariant: Cannot edit readonly Blueprint')
             return
 
         stepPath, attrName = attrPath.split('.')
@@ -829,19 +902,24 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
     hierarchy of a Blueprint.
     """
 
-    def __init__(self, blueprint=None, parent=None):
+    def __init__(self, blueprint: Blueprint = None, parent=None):
         super(BuildStepTreeModel, self).__init__(parent=parent)
+
         self._blueprint = blueprint
 
         # used to keep track of drag move actions since
         # we don't have enough data within one function
         # to group undo chunks completely
         self.isMoveActionOpen = False
+
         # hacky, but used to rename dragged steps back to their
         # original names since they will get new names due to
         # conflicts from both source and target steps existing
         # at the same time briefly
         self.dragRenameQueue = []
+
+    def setBlueprint(self, blueprint: Blueprint):
+        self._blueprint = blueprint
 
     def isReadOnly(self):
         parent = QtCore.QObject.parent(self)

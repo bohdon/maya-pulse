@@ -3,6 +3,7 @@ import os
 import tempfile
 import time
 from datetime import datetime
+from typing import Optional
 
 import maya.cmds as cmds
 import pymel.core as pm
@@ -210,6 +211,129 @@ class Blueprint(object):
             self.config = _loadConfig(self.configFile)
 
 
+class BlueprintFile(object):
+    """
+    Contains a Blueprint and file path info for saving and loading, as well as
+    tracking modification status.
+
+    A Blueprint File is considered valid by default, even without a file path,
+    just like a new 'untitled' maya scene file. A file path must be assigned before it
+    can be saved.
+    """
+
+    # the file extension to use for blueprint files
+    file_ext: str = 'yml'
+
+    def __init__(self, file_path: Optional[str] = None, is_read_only: bool = False):
+        self.blueprint = Blueprint()
+        self.file_path = file_path
+        self.is_read_only = is_read_only
+        self._is_modified = False
+
+    def has_file_path(self) -> bool:
+        return bool(self.file_path)
+
+    def can_load(self) -> bool:
+        return self.has_file_path()
+
+    def can_save(self) -> bool:
+        return self.has_file_path() and not self.is_read_only
+
+    def is_modified(self) -> bool:
+        return self._is_modified
+
+    def mark_dirty(self):
+        """
+        Mark the blueprint file as modified.
+        """
+        self._is_modified = True
+
+    def clear_dirty(self):
+        """
+        Clear the modified status of the file.
+        """
+        self._is_modified = False
+
+    def get_file_name(self) -> Optional[str]:
+        """
+        Return the base name of the file path.
+        """
+        if self.file_path:
+            return os.path.basename(self.file_path)
+
+    def save(self) -> bool:
+        """
+        Save the Blueprint to file.
+
+        Returns:
+            True if the file was saved successfully.
+        """
+        if not self.file_path:
+            LOG.warning("Cant save Blueprint, file path is not set.")
+            return False
+
+        success = self.blueprint.saveToFile(self.file_path)
+
+        if not success:
+            LOG.error(f"Failed to save Blueprint to file: {self.file_path}")
+
+        return success
+
+    def save_as(self, file_path: str) -> bool:
+        """
+        Save the Blueprint with a new file path.
+        """
+        self.file_path = file_path
+        return self.save()
+
+    def load(self) -> bool:
+        """
+        Load the blueprint from file.
+        """
+        if not self.file_path:
+            LOG.warning("Cant load Blueprint, file path is not set.")
+            return False
+
+        if not os.path.isfile(self.file_path):
+            LOG.warning(f"Blueprint file does not exist: {self.file_path}")
+            return False
+
+        success = self.blueprint.loadFromFile(self.file_path)
+
+        if not success:
+            LOG.error(f"Failed to load Blueprint from file: {self.file_path}")
+
+        return success
+
+    def resolve_file_path(self, allow_existing=False):
+        """
+        Automatically resolve the current file path based on the open maya scene.
+        Does nothing if file path is already set.
+
+        Args:
+            allow_existing: bool
+                If true, allow resolving to a path that already exists on disk.
+        """
+        if not self.file_path:
+            file_path = self.get_default_file_path()
+            if file_path:
+                if allow_existing or not os.path.isfile(file_path):
+                    self.file_path = file_path
+
+    def get_default_file_path(self) -> Optional[str]:
+        """
+        Return the file path to use for a new blueprint file.
+        Uses the open maya scene by default.
+
+        # TODO: move out of core into a maya specific subclass
+        """
+        scene_name = pm.sceneName()
+
+        if scene_name:
+            base_name = os.path.splitext(scene_name)[0]
+            return f'{base_name}.{self.file_ext}'
+
+
 class BlueprintBuilder(object):
     """
     The Blueprint Builder is responsible for turning a Blueprint
@@ -218,8 +342,7 @@ class BlueprintBuilder(object):
     """
 
     @classmethod
-    def preBuildValidate(cls, blueprint):
-        # type: (class, Blueprint) -> bool
+    def preBuildValidate(cls, blueprint: Blueprint) -> bool:
         """
         Perform a quick pre-build validation on a Blueprint
         to ensure that building can at least be started.
@@ -239,7 +362,7 @@ class BlueprintBuilder(object):
         return True
 
     @classmethod
-    def createBuilderWithCurrentScene(cls, blueprint, debug=False):
+    def createBuilderWithCurrentScene(cls, blueprint: Blueprint, debug=False):
         """
         Create and return a new BlueprintBuilder instance
         using a blueprint and the current scene.

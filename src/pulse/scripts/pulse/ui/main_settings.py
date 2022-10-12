@@ -26,28 +26,34 @@ class MainSettings(QtWidgets.QWidget):
         self.ui = Ui_MainSettings()
         self.ui.setupUi(self)
 
-        self.ui.file_path_edit.setText(self._get_scene_relative_file_path(self.blueprint_model.getBlueprintFilepath()))
-        self.ui.rig_name_edit.setText(self.blueprint_model.getRigName())
-        self.ui.rig_name_edit.textChanged.connect(self._on_edit_rig_name)
+        self.ui.file_path_text_label.setText(self._getSceneRelativeBlueprintFilePath())
+        self.ui.rig_name_edit.setText(self.blueprint_model.blueprint.rigName)
+        self.ui.rig_name_edit.textEdited.connect(self._onEditRigName)
 
-        self.blueprint_model.rigNameChanged.connect(self._on_rig_name_changed)
-        self.blueprint_model.fileChanged.connect(self._on_file_path_changed)
-        self.blueprint_model.readOnlyChanged.connect(self._on_read_only_changed)
+        self.blueprint_model.rigNameChanged.connect(self._onRigNameChanged)
+        self.blueprint_model.fileChanged.connect(self._onFileChanged)
+        self.blueprint_model.readOnlyChanged.connect(self._onReadOnlyChanged)
 
-    def _on_file_path_changed(self):
-        self.ui.file_path_edit.setText(self._get_scene_relative_file_path(self.blueprint_model.getBlueprintFilepath()))
+    def _onFileChanged(self):
+        """
+        Called when a blueprint is created, opened, or saved to a new path.
+        """
+        self.ui.file_path_text_label.setText(self._getSceneRelativeBlueprintFilePath())
 
-    def _on_edit_rig_name(self):
+    def _onEditRigName(self):
         self.blueprint_model.setRigName(self.ui.rig_name_edit.text())
 
-    def _on_rig_name_changed(self, name):
+    def _onRigNameChanged(self, name):
         self.ui.rig_name_edit.setText(name)
 
-    def _on_read_only_changed(self, is_read_only):
-        self.setEnabled(not is_read_only)
+    def _onReadOnlyChanged(self, isReadOnly):
+        self.setEnabled(not isReadOnly)
+
+    def _getSceneRelativeBlueprintFilePath(self):
+        return self._getSceneRelativeFilePath(self.blueprint_model.getBlueprintFilePath())
 
     @staticmethod
-    def _get_scene_relative_file_path(file_path):
+    def _getSceneRelativeFilePath(file_path):
         # get the file name relative to the current scene name
         return file_path
         scene_path = pm.sceneName()

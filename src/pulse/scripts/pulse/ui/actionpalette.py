@@ -90,8 +90,8 @@ class ActionPalette(QtWidgets.QWidget):
             return [255, 255, 255]
 
     def _on_read_only_changed(self, isReadOnly):
-        self.grpBtn.setEnabled(not isReadOnly)
-        self.contentWidget.setEnabled(not isReadOnly)
+        self.ui.group_btn.setEnabled(not isReadOnly)
+        self.ui.scroll_area_widget.setEnabled(not isReadOnly)
 
     def _on_action_clicked(self, typeName):
         self.clicked.emit(typeName)

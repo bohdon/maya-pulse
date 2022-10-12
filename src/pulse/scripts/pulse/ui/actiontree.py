@@ -185,7 +185,7 @@ class ActionTree(QtWidgets.QWidget):
     def _on_model_reset(self):
         self.action_tree_view.expandAll()
 
-    def setup_actions_menu(self, parent, menu_bar):
+    def setupActionsMenu(self, parent, menu_bar):
         """
         Set up the Actions menu on a menu bar.
         """
@@ -214,7 +214,7 @@ class ActionTreeWindow(PulseWindow):
         self.menu_bar = QtWidgets.QMenuBar(self)
         self.layout().setMenuBar(self.menu_bar)
 
-        self.main_widget.setup_actions_menu(self, self.menu_bar)
+        self.main_widget.setupActionsMenu(self, self.menu_bar)
 
 
 # Action Mirroring

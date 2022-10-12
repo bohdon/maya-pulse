@@ -31,27 +31,16 @@ class Ui_MainSettings(object):
         self.formLayout_2.setVerticalSpacing(2)
         self.file_path_label = QLabel(MainSettings)
         self.file_path_label.setObjectName(u"file_path_label")
-        self.file_path_label.setMinimumSize(QSize(80, 0))
+        self.file_path_label.setMinimumSize(QSize(80, 20))
         self.file_path_label.setAlignment(Qt.AlignRight|Qt.AlignTrailing|Qt.AlignVCenter)
 
         self.formLayout_2.setWidget(0, QFormLayout.LabelRole, self.file_path_label)
 
-        self.file_path_hbox = QHBoxLayout()
-        self.file_path_hbox.setObjectName(u"file_path_hbox")
-        self.file_path_edit = QLineEdit(MainSettings)
-        self.file_path_edit.setObjectName(u"file_path_edit")
-        self.file_path_edit.setReadOnly(True)
+        self.file_path_text_label = QLabel(MainSettings)
+        self.file_path_text_label.setObjectName(u"file_path_text_label")
+        self.file_path_text_label.setTextInteractionFlags(Qt.LinksAccessibleByMouse|Qt.TextSelectableByMouse)
 
-        self.file_path_hbox.addWidget(self.file_path_edit)
-
-        self.file_path_browse_btn = QToolButton(MainSettings)
-        self.file_path_browse_btn.setObjectName(u"file_path_browse_btn")
-        self.file_path_browse_btn.setEnabled(False)
-
-        self.file_path_hbox.addWidget(self.file_path_browse_btn)
-
-
-        self.formLayout_2.setLayout(0, QFormLayout.FieldRole, self.file_path_hbox)
+        self.formLayout_2.setWidget(0, QFormLayout.FieldRole, self.file_path_text_label)
 
         self.rig_name_label = QLabel(MainSettings)
         self.rig_name_label.setObjectName(u"rig_name_label")
@@ -86,10 +75,7 @@ class Ui_MainSettings(object):
         self.file_path_label.setStatusTip(QCoreApplication.translate("MainSettings", u"The path to the currently open blueprint.", None))
 #endif // QT_CONFIG(statustip)
         self.file_path_label.setText(QCoreApplication.translate("MainSettings", u"File Path", None))
-#if QT_CONFIG(tooltip)
-        self.file_path_browse_btn.setToolTip(QCoreApplication.translate("MainSettings", u"Custom blueprint file paths are not yet supported.", None))
-#endif // QT_CONFIG(tooltip)
-        self.file_path_browse_btn.setText(QCoreApplication.translate("MainSettings", u"...", None))
+        self.file_path_text_label.setText(QCoreApplication.translate("MainSettings", u"<File Path>", None))
 #if QT_CONFIG(statustip)
         self.rig_name_label.setStatusTip(QCoreApplication.translate("MainSettings", u"The name of the rig. Used to name the core hierarchy nodes and can be used by actions as well.", None))
 #endif // QT_CONFIG(statustip)

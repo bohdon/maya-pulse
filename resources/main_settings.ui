@@ -40,7 +40,7 @@
        <property name="minimumSize">
         <size>
          <width>80</width>
-         <height>0</height>
+         <height>20</height>
         </size>
        </property>
        <property name="statusTip">
@@ -55,28 +55,14 @@
       </widget>
      </item>
      <item row="0" column="1">
-      <layout class="QHBoxLayout" name="file_path_hbox">
-       <item>
-        <widget class="QLineEdit" name="file_path_edit">
-         <property name="readOnly">
-          <bool>true</bool>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QToolButton" name="file_path_browse_btn">
-         <property name="enabled">
-          <bool>false</bool>
-         </property>
-         <property name="toolTip">
-          <string>Custom blueprint file paths are not yet supported.</string>
-         </property>
-         <property name="text">
-          <string>...</string>
-         </property>
-        </widget>
-       </item>
-      </layout>
+      <widget class="QLabel" name="file_path_text_label">
+       <property name="text">
+        <string>&lt;File Path&gt;</string>
+       </property>
+       <property name="textInteractionFlags">
+        <set>Qt::LinksAccessibleByMouse|Qt::TextSelectableByMouse</set>
+       </property>
+      </widget>
      </item>
      <item row="1" column="0">
       <widget class="QLabel" name="rig_name_label">
