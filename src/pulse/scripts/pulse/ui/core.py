@@ -417,6 +417,15 @@ class BlueprintUIModel(QtCore.QObject):
         """
         return self.isFileOpen() and self._blueprintFile.is_modified()
 
+    def modify(self):
+        """
+        Mark the current blueprint file as modified.
+        """
+        if self.isFileOpen() and not self.isReadOnly():
+            # TOOD: store modified state in blueprint so blueprintFile doesn't have to be updated
+            self._blueprintFile.modify()
+            self.isFileModifiedChanged.emit(self.isFileModified())
+
     def isReadOnly(self) -> bool:
         """
         Return True if the modifications to the Blueprint are not allowed.
@@ -673,9 +682,7 @@ class BlueprintUIModel(QtCore.QObject):
         oldValue = self.blueprint.get_setting(key)
         if oldValue != value:
             self.blueprint.set_setting(key, value)
-            # TOOD: store modified state in blueprint so blueprintFile doesn't have to be updated
-            self._blueprintFile.modify()
-            self.isFileModifiedChanged.emit(self.isFileModified())
+            self.modify()
             self.settingChanged.emit(key, value)
 
     def refreshRigExists(self):
@@ -749,10 +756,8 @@ class BlueprintUIModel(QtCore.QObject):
         if self.isFileOpen() and not self.isReadOnly():
             self.buildStepTreeModel.beginResetModel()
             self.blueprint.add_default_actions()
-            # TODO: again move modify to blueprint
-            self._blueprintFile.modify()
-            self.isFileModifiedChanged.emit(self.isFileModified())
             self.buildStepTreeModel.endResetModel()
+            self.modify()
 
     def createStep(self, parentPath, childIndex, data):
         """
@@ -788,6 +793,7 @@ class BlueprintUIModel(QtCore.QObject):
         parentStep.insertChild(childIndex, step)
 
         self.buildStepTreeModel.endInsertRows()
+        self.modify()
         return step
 
     def deleteStep(self, stepPath):
@@ -813,6 +819,7 @@ class BlueprintUIModel(QtCore.QObject):
         step.removeFromParent()
 
         self.buildStepTreeModel.endRemoveRows()
+        self.modify()
         return True
 
     def moveStep(self, sourcePath, targetPath):
@@ -846,7 +853,7 @@ class BlueprintUIModel(QtCore.QObject):
         step.setName(targetName)
 
         self.buildStepTreeModel.layoutChanged.emit()
-
+        self.modify()
         return step.getFullPath()
 
     def renameStep(self, stepPath, targetName):
@@ -869,6 +876,7 @@ class BlueprintUIModel(QtCore.QObject):
         if step.name != oldName:
             index = self.buildStepTreeModel.indexByStep(step)
             self.buildStepTreeModel.dataChanged.emit(index, index, [])
+            self.modify()
 
         return step.getFullPath()
 
@@ -920,6 +928,7 @@ class BlueprintUIModel(QtCore.QObject):
             #     newIndex = self.model.index(insertIndex, 0, parentIndex)
             #     newPaths.append(newIndex)
 
+        self.modify()
         return newPaths
 
     def createGroup(self):
@@ -987,6 +996,7 @@ class BlueprintUIModel(QtCore.QObject):
 
         index = self.buildStepTreeModel.indexByStepPath(stepPath)
         self.buildStepTreeModel.dataChanged.emit(index, index, [])
+        self.modify()
 
     def getActionAttr(self, attrPath, variantIndex=-1):
         """
@@ -1042,6 +1052,7 @@ class BlueprintUIModel(QtCore.QObject):
 
         index = self.buildStepTreeModel.indexByStepPath(stepPath)
         self.buildStepTreeModel.dataChanged.emit(index, index, [])
+        self.modify()
 
     def isActionAttrVariant(self, attrPath):
         stepPath, attrName = attrPath.split('.')
@@ -1076,6 +1087,7 @@ class BlueprintUIModel(QtCore.QObject):
 
         index = self.buildStepTreeModel.indexByStepPath(stepPath)
         self.buildStepTreeModel.dataChanged.emit(index, index, [])
+        self.modify()
 
 
 class BuildStepTreeModel(QtCore.QAbstractItemModel):
