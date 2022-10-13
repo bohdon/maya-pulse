@@ -31,13 +31,12 @@ class PythonAction(BuildAction):
 
     def run(self):
         # TODO: use actual blueprint file, not maya scene
-        blueprintFile = self.builder.blueprintFile
-        if not blueprintFile:
-            raise BuildActionError(
-                "Failed to get blueprint file name from builder")
+        scene_file_path = self.builder.scene_file_path
+        if not scene_file_path:
+            raise BuildActionError("Failed to get blueprint file name from builder")
 
-        moduleFilepath = os.path.splitext(blueprintFile)[0] + '_scripts.py'
-        func = self.importFunction(self.function, moduleFilepath)
+        module_file_path = os.path.splitext(scene_file_path)[0] + '_scripts.py'
+        func = self.importFunction(self.function, module_file_path)
         func(self)
 
     def importFunction(self, functionName, moduleFilepath):
