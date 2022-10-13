@@ -5,7 +5,7 @@ import maya.OpenMaya as api
 import maya.cmds as cmds
 import pymel.core as pm
 
-import pymetanode as meta
+from .vendor import pymetanode as meta
 from .rigs import isRig
 
 LOG = logging.getLogger(__name__)

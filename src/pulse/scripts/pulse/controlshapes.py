@@ -4,11 +4,11 @@ from fnmatch import fnmatch
 
 import pymel.core as pm
 
-import pymetanode as meta
+from .vendor import pymetanode as meta
+from .vendor import yaml
 from . import links
 from . import nodes
 from . import utilnodes
-from .vendor import yaml
 
 CONTROLSHAPE_METACLASS = 'pulse_controlshape'
 BUILTIN_CONTROLSHAPES_LOADED = False

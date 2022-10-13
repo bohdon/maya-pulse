@@ -1,4 +1,4 @@
-import pymetanode as meta
+from .vendor import pymetanode as meta
 from .vendor import yaml
 
 

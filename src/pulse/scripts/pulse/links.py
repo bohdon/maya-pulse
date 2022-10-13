@@ -15,7 +15,7 @@ import operator
 
 import pymel.core as pm
 
-import pymetanode as meta
+from .vendor import pymetanode as meta
 from . import joints, math
 from . import nodes
 

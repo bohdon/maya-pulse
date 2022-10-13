@@ -29,7 +29,7 @@ import logging
 import maya.cmds as cmds
 import pymel.core as pm
 
-import pymetanode as meta
+from .vendor import pymetanode as meta
 from . import nodes
 from . import utilnodes
 

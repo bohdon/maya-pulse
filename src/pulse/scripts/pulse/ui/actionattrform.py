@@ -7,11 +7,11 @@ import logging
 import maya.cmds as cmds
 import pymel.core as pm
 
-import pymetanode as meta
-from . import utils as viewutils
-from .. import names
+from ..vendor import pymetanode as meta
 from ..serializer import serializeAttrValue
 from ..vendor.Qt import QtCore, QtWidgets
+from . import utils as viewutils
+from .. import names
 
 LOG = logging.getLogger(__name__)
 

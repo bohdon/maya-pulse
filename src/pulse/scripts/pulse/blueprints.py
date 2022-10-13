@@ -8,12 +8,12 @@ from typing import Optional, Iterable
 # TODO: remove maya dependencies from this core module, add BlueprintBuilder subclass that uses maya progress bars
 import pymel.core as pm
 
-import pymetanode as meta
+from .vendor import pymetanode as meta
+from .vendor import yaml
 from . import version
 from .buildItems import BuildStep, BuildAction, BuildActionData
 from .rigs import RIG_METACLASS, createRigNode
 from .serializer import PulseDumper, PulseLoader, UnsortableOrderedDict
-from .vendor import yaml
 
 LOG = logging.getLogger(__name__)
 LOG.level = logging.DEBUG

@@ -4,7 +4,7 @@ import maya.OpenMaya as api
 import maya.OpenMayaAnim as apianim
 import pymel.core as pm
 
-import pymetanode as meta
+from .vendor import pymetanode as meta
 
 LOG = logging.getLogger(__name__)
 

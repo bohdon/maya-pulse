@@ -2,7 +2,7 @@ from collections import OrderedDict
 
 import pymel.core as pm
 
-import pymetanode as meta
+from .vendor import pymetanode as meta
 from .vendor import yaml
 from .vendor.yaml.composer import Composer
 from .vendor.yaml.constructor import SafeConstructor

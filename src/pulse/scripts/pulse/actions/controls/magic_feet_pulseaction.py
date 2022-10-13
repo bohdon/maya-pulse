@@ -2,7 +2,7 @@ import pymel.core as pm
 
 import pulse.nodes
 import pulse.utilnodes
-import pymetanode as meta
+from pulse.vendor import pymetanode as meta
 from pulse.buildItems import BuildAction, BuildActionError
 
 MAGIC_FEET_CTL_METACLASSNAME = 'pulse_magicfeet_ctl'

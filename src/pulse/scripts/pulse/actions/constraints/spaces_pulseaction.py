@@ -2,7 +2,7 @@ import pymel.core as pm
 
 import pulse.nodes
 import pulse.spaces
-import pymetanode as meta
+from pulse.vendor import pymetanode as meta
 from pulse.buildItems import BuildAction, BuildActionError
 from pulse.ui.contextmenus import PulseNodeContextSubMenu
 

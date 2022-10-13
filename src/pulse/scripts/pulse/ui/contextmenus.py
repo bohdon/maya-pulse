@@ -7,7 +7,7 @@ from typing import List, Type
 
 import pymel.core as pm
 
-import pymetanode as meta
+from ..vendor import pymetanode as meta
 
 try:
     import rmbmenuhook

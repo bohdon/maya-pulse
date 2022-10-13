@@ -12,15 +12,15 @@ import maya.cmds as cmds
 import pymel.core as pm
 from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
 
-import pymetanode as meta
-from .utils import CollapsibleFrame
-from .utils import dpiScale
+from ..vendor import pymetanode as meta
+from ..vendor.Qt import QtCore, QtWidgets, QtGui
 from .. import rigs
 from ..blueprints import Blueprint, BlueprintFile, BlueprintSettings
 from ..buildItems import BuildStep, BuildAction
 from ..prefs import optionVarProperty
 from ..serializer import serializeAttrValue
-from ..vendor.Qt import QtCore, QtWidgets, QtGui
+from .utils import CollapsibleFrame
+from .utils import dpiScale
 
 LOG = logging.getLogger(__name__)
 LOG.level = logging.DEBUG

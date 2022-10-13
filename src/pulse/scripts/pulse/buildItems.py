@@ -5,7 +5,7 @@ from typing import List, Iterable
 
 import maya.cmds as cmds
 
-import pymetanode as meta
+from .vendor import pymetanode as meta
 from .rigs import RIG_METACLASS
 from .serializer import UnsortableOrderedDict
 
