@@ -10,7 +10,7 @@ import maya.cmds as cmds
 
 from ..vendor.Qt import QtCore, QtWidgets, QtGui
 from ..serializer import serializeAttrValue
-from ..buildItems import BuildStep, get_registered_action_configs
+from ..buildItems import BuildStep, BuildActionRegistry, BuildActionSpec
 from .. import sym
 from .core import BlueprintUIModel
 from .core import PulseWindow
@@ -217,14 +217,14 @@ class ActionTree(QtWidgets.QWidget):
 
         actions_menu.addSeparator()
 
-        allActionConfigs = get_registered_action_configs()
+        allActionSpecs: List[BuildActionSpec] = BuildActionRegistry.get().get_all_actions()
 
         grp_action = QtWidgets.QAction("Group", parent)
         grp_action.triggered.connect(self.blueprintModel.createGroup)
         actions_menu.addAction(grp_action)
 
         # create action sub menu for each category
-        categories = [c.get('category', 'Default') for c in allActionConfigs]
+        categories = [spec.config.get('category', 'Default') for spec in allActionSpecs]
         categories = list(set(categories))
         cat_menus: Dict[str, QtWidgets.QMenu] = {}
 
@@ -232,12 +232,12 @@ class ActionTree(QtWidgets.QWidget):
             cat_menu = actions_menu.addMenu(cat)
             cat_menus[cat] = cat_menu
 
-        for actionConfig in allActionConfigs:
-            actionId = actionConfig['id']
-            actionCategory = actionConfig.get('category', 'Default')
-            description = actionConfig.get('description')
+        for actionSpec in allActionSpecs:
+            actionId = actionSpec.config['id']
+            actionCategory = actionSpec.config.get('category', 'Default')
+            description = actionSpec.config.get('description')
 
-            action = QtWidgets.QAction(actionConfig['displayName'], parent)
+            action = QtWidgets.QAction(actionSpec.config['displayName'], parent)
             if description:
                 action.setStatusTip(description)
             action.triggered.connect(partial(self.blueprintModel.createAction, actionId))
@@ -357,8 +357,8 @@ class MirrorActionUtil(object):
         sourceAction = sourceStep.action_proxy
         destAction = destStep.action_proxy
 
-        if not destAction or destAction.get_action_id() != sourceAction.get_action_id():
-            # action was setup incorrectly
+        if not destAction or destAction.action_id != sourceAction.action_id:
+            # action was set up incorrectly
             LOG.warning("Cannot mirror %s -> %s, destination action"
                         "is not tye same type", sourceStep, destStep)
             return False

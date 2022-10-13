@@ -1,145 +1,153 @@
+"""
+Functionality for finding and loading Pulse Build Actions from a library of actions.
+"""
+
 import importlib
 import logging
 import os
 import sys
 from fnmatch import fnmatch
+from typing import List
 
-from .buildItems import BuildAction
+from .buildItems import BuildAction, BuildActionSpec
 from .vendor import yaml
 from .ui.actioneditor import BuildActionProxyForm
 
 LOG = logging.getLogger(__name__)
 
 
-def _isSamePythonFile(fileA, fileB):
-    return (os.path.normpath(os.path.splitext(fileA)[0]) ==
-            os.path.normpath(os.path.splitext(fileB)[0]))
+def _is_same_python_file(path_a, path_b):
+    return (os.path.normpath(os.path.splitext(path_a)[0]) ==
+            os.path.normpath(os.path.splitext(path_b)[0]))
 
 
 class BuildActionLoader(object):
+    """
+    Handles finding and loading Build Action configs and modules and returning
+    them as BuildActionSpec objects. They can then be registered with the
+    build action registry for use.
+    """
 
-    def loadActionConfig(self, name, configFile):
+    def __init__(self):
+        self.config_extension = 'yaml'
+
+    def load_actions_from_module(self, module) -> List[BuildActionSpec]:
         """
-        Load and return the config data for a BuildAction class.
-
-        Args:
-            name (str): The name of the BuildAction for which to load a config
-            configFile (str): The path to the BuildAction config file
+        Find all BuildAction subclasses in a module, load associated config data for them,
+        and return a list of BuildActionConfigs with the results.
 
         Returns:
-            A dict representing the config data for the named BuildAction
+            A list of BuildActionSpec for each Build Action class and corresponding
+            yml config in the module.
         """
-        if not os.path.isfile(configFile):
-            LOG.warning("Config file not found: {0}".format(configFile))
-            return False
+        config_file_path = f'{os.path.splitext(module.__file__)[0]}.{self.config_extension}'
+        action_configs = self._load_config(config_file_path)
 
-        with open(configFile, 'r') as fp:
-            config = yaml.load(fp.read())
-
-        if config and (name in config):
-            actionConfig = config[name]
-            actionConfig['configFile'] = configFile
-            return actionConfig
-
-        LOG.warning("No BuildAction config data for {0} "
-                    "was found in {1}".format(name, configFile))
-
-    def loadActionsFromModule(self, module):
-        """
-        Return BuildStep type map data for all BuildActions
-        contained in the given module
-
-        Returns:
-            A list of tuples containing (dict, class) representing the
-            action's config and BuildAction class.
-
-        """
-        result = []
+        result: List[BuildActionSpec] = []
         for name in dir(module):
             obj = getattr(module, name)
-            if (isinstance(obj, type) and issubclass(obj, BuildAction) and obj is not BuildAction):
+
+            if self._is_valid_build_action_class(obj):
                 # get config for the action class
-                configFile = os.path.splitext(module.__file__)[0] + '.yaml'
-                actionConfig = self.loadActionConfig(name, configFile)
-                if actionConfig:
-                    self.postProcessActionConfig(actionConfig, name, module)
-                    LOG.debug('Loaded BuildAction: %s', obj.__name__)
-                    result.append((actionConfig, obj))
+                action_config = action_configs.get(name, {})
+                if action_config:
+                    action_spec = BuildActionSpec(action_config, config_file_path, obj, module)
+                    LOG.debug('Loaded BuildAction: %s', action_spec)
+                    result.append(action_spec)
                 else:
-                    LOG.error('Failed to load BuildAction: %s', obj)
+                    LOG.error("Build Action config key '%s' was not found in: %s", name, config_file_path)
         return result
 
-    def postProcessActionConfig(self, actionConfig, actionName, module):
-        """
-        Called when a config has been loaded for an action, and is about to be registered.
-        Provides a chance to modify the loaded config.
-        """
-        # check for custom editor form class
-        editorFormClsName = actionConfig.get('editorFormClass')
-        if editorFormClsName:
-            if hasattr(module, editorFormClsName):
-                obj = getattr(module, editorFormClsName)
-                if isinstance(obj, type) and issubclass(obj, BuildActionProxyForm):
-                    # store the editor form class object in the config
-                    actionConfig['editorFormClassObj'] = obj
-                else:
-                    LOG.error(
-                        '%s is not a valid BuildActionProxyForm subclass', editorFormClsName)
-            else:
-                LOG.error(
-                    'Failed to find editorFormClass: %s in module %s', editorFormClsName, module)
-
-    def loadActionsFromDirectory(self, startDir, pattern='*_pulseaction.py'):
+    def load_actions_from_dir(self, start_dir: str, pattern: str = '*_pulseaction.py') -> List[BuildActionSpec]:
         """
         Return BuildStep type map data for all BuildActions found
         by searching a directory. Search is performed recursively for
         any python files matching a pattern.
 
         Args:
-            startDir: A str path of the directory to search
+            start_dir: str
+                The directory to search for actions.
+            pattern: str
+                The file pattern to match for finding action python modules.
 
         Returns:
-            A list of tuples containing (dict, class) representing the
-            action's config and BuildAction class.
+            A list of BuildActionConfigs representing the loaded config and BuildAction class.
         """
-        if '~' in startDir:
-            startDir = os.path.expanduser(startDir)
+        if '~' in start_dir:
+            start_dir = os.path.expanduser(start_dir)
 
-        result = []
+        result: List[BuildActionSpec] = []
 
-        paths = os.listdir(startDir)
+        paths = os.listdir(start_dir)
         for path in paths:
-            fullPath = os.path.join(startDir, path)
+            full_path = os.path.join(start_dir, path)
 
-            if os.path.isfile(fullPath):
+            if os.path.isfile(full_path):
                 if fnmatch(path, pattern):
-                    module = self._getModuleFromFile(fullPath)
-                    result.extend(self.loadActionsFromModule(module))
+                    module = self._import_module_from_file(full_path)
+                    result.extend(self.load_actions_from_module(module))
 
-            elif os.path.isdir(fullPath):
-                result.extend(self.loadActionsFromDirectory(fullPath, pattern))
+            elif os.path.isdir(full_path):
+                result.extend(self.load_actions_from_dir(full_path, pattern))
 
         return result
 
-    def _getModuleFromFile(self, filePath):
+    def _load_config(self, config_file_path) -> dict:
+        """
+        Load a build action config file. Note that an action config file may contain
+        config entries for multiple build actions.
+        """
+        if not os.path.isfile(config_file_path):
+            LOG.error("Config file not found: %s", config_file_path)
+            return {}
+
+        with open(config_file_path, 'r') as fp:
+            config = yaml.load(fp.read())
+
+        return config
+
+    def _import_module_from_file(self, file_path: str):
+        """
+        Import and return a python module from a file path.
+
+        If the module is already found in sys modules it will be deleted to force a reload.
+
+        """
         # get module name
-        name = os.path.splitext(os.path.basename(filePath))[0]
+        name = os.path.splitext(os.path.basename(file_path))[0]
+
         # check for existing module in sys.modules
         if name in sys.modules:
-            if _isSamePythonFile(sys.modules[name].__file__, filePath):
+            if _is_same_python_file(sys.modules[name].__file__, file_path):
                 # correct module already imported, delete it to force reload
                 del sys.modules[name]
             else:
-                raise ImportError("BuildAction module does not have "
-                                  "a unique module name: " + filePath)
+                raise ImportError(f"BuildAction module does not have a unique module name: {file_path}")
+
         # add dir to sys path if necessary
-        dirName = os.path.dirname(filePath)
-        isNotInSysPath = False
-        if not dirName in sys.path:
-            sys.path.insert(0, dirName)
-            isNotInSysPath = True
-        module = importlib.import_module(name)
-        # remove path from sys
-        if isNotInSysPath:
-            sys.path.remove(dirName)
-        return module
+        dir_name = os.path.dirname(file_path)
+        is_not_in_sys_path = False
+
+        if dir_name not in sys.path:
+            sys.path.insert(0, dir_name)
+            is_not_in_sys_path = True
+
+        try:
+            # TODO(bsayre): error handling of import?
+            module = importlib.import_module(name)
+        except:
+            LOG.error("Failed to import Build Action module: %s", name)
+            pass
+        else:
+            return module
+        finally:
+            # remove path from sys
+            if is_not_in_sys_path:
+                sys.path.remove(dir_name)
+
+    @staticmethod
+    def _is_valid_build_action_class(obj) -> bool:
+        """
+        Return true if an object is a valid BuildAction subclass.
+        """
+        return isinstance(obj, type) and issubclass(obj, BuildAction) and obj is not BuildAction

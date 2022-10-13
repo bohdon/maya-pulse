@@ -664,7 +664,7 @@ class BlueprintBuilder(object):
                 The exception that occurred.
         """
         self.errors.append(error)
-        self.log.error('/%s (%s): %s', step.get_full_path(), action.get_action_id(), error, exc_info=self.debug)
+        self.log.error('/%s (%s): %s', step.get_full_path(), action.action_id, error, exc_info=self.debug)
 
     def action_iterator(self) -> Iterable[tuple[BuildStep, BuildAction]]:
         """

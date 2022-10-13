@@ -27,7 +27,7 @@ class MainEditor(QtWidgets.QWidget):
     def __init__(self, parent):
         super(MainEditor, self).__init__(parent)
 
-        pulse.loadBuiltinActions()
+        pulse.load_builtin_actions()
 
         self.blueprint_model = BlueprintUIModel.getDefaultModel()
         self.selection_model = self.blueprint_model.buildStepSelectionModel

@@ -9,7 +9,7 @@ from functools import partial
 import maya.cmds as cmds
 
 from ..vendor.Qt import QtCore, QtWidgets
-from ..buildItems import get_registered_action_configs
+from ..buildItems import BuildActionRegistry
 from .core import BlueprintUIModel, PulseWindow
 
 from .gen.action_palette import Ui_ActionPalette
@@ -48,10 +48,10 @@ class ActionPalette(QtWidgets.QWidget):
         Build buttons for creating each action.
         """
 
-        allActionConfigs = get_registered_action_configs()
+        allActionSpecs = BuildActionRegistry.get().get_all_actions()
 
         # make button for each action
-        categories = [c.get('category', 'Default') for c in allActionConfigs]
+        categories = [spec.config.get('category', 'Default') for spec in allActionSpecs]
         categories = list(set(categories))
         categoryLayouts = {}
 
@@ -68,12 +68,12 @@ class ActionPalette(QtWidgets.QWidget):
             label.setProperty('cssClasses', 'section-title')
             catLay.addWidget(label)
 
-        for actionConfig in allActionConfigs:
-            actionId = actionConfig['id']
-            actionCategory = actionConfig.get('category', 'Default')
-            color = self.getActionColor(actionConfig)
+        for actionSpec in allActionSpecs:
+            actionId = actionSpec.config['id']
+            actionCategory = actionSpec.config.get('category', 'Default')
+            color = self.getActionColor(actionSpec.config)
             btn = QtWidgets.QPushButton(parent)
-            btn.setText(actionConfig['displayName'])
+            btn.setText(actionSpec.config['displayName'])
             btn.setStyleSheet('background-color:rgba({0}, {1}, {2}, 30)'.format(*color))
             btn.clicked.connect(partial(self.blueprintModel.createAction, actionId))
             categoryLayouts[actionCategory].addWidget(btn)

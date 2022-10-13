@@ -6,7 +6,7 @@ maya.standalone.initialize()
 
 # pulse setup
 import pulse
-pulse.loadBuiltinActions()
+pulse.load_builtin_actions()
 
 # run tests
 loader = unittest.TestLoader()

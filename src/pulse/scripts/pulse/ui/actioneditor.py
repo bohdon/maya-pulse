@@ -126,8 +126,8 @@ class BuildStepForm(QtWidgets.QWidget):
         layout.setMargin(6)
         layout.setSpacing(0)
 
-        if step.is_action():
-            formCls = step.action_proxy.get_editor_form_class()
+        if step.is_action() and step.action_proxy.is_valid():
+            formCls = step.action_proxy.action_spec.editor_form_cls
             if not formCls:
                 formCls = BuildActionProxyForm
             self.actionForm = formCls(self.index, parent)
@@ -199,12 +199,11 @@ class BuildActionDataForm(QtWidgets.QWidget):
         if not hasattr(self, 'missingLabel'):
             self.missingLabel = None
 
-        if actionData.is_missing_config():
+        if actionData.is_missing_spec():
             # add warning that the action config was not found
             if not self.missingLabel:
                 self.missingLabel = QtWidgets.QLabel(self)
-                self.missingLabel.setText(
-                    "Failed to find action config for: `%s`" % actionData.get_action_id())
+                self.missingLabel.setText(f"Failed to find action config for: '{actionData.action_id}'")
                 self.attrListLayout.addWidget(self.missingLabel)
             return
         else:
@@ -215,7 +214,7 @@ class BuildActionDataForm(QtWidgets.QWidget):
 
         parent = self
 
-        # remove forms for non existent attrs
+        # remove forms for non-existent attrs
         for attrName, attrForm in list(self._attrForms.items()):
             if not actionData.has_attr(attrName):
                 self.attrListLayout.removeWidget(attrForm)
@@ -278,7 +277,7 @@ class MainBuildActionDataForm(BuildActionDataForm):
         isVariant = False
         # duck type of action proxy
         if hasattr(actionData, 'is_variant_attr'):
-            isVariant = actionData.isVariantAttr(attr['name'])
+            isVariant = actionData.is_variant_attr(attr['name'])
 
         if isVariant:
             attrForm = BatchAttrForm.createForm(
@@ -306,7 +305,7 @@ class MainBuildActionDataForm(BuildActionDataForm):
         isVariant = False
         # duck type of action proxy
         if hasattr(actionData, 'is_variant_attr'):
-            isVariant = actionData.isVariantAttr(attr['name'])
+            isVariant = actionData.is_variant_attr(attr['name'])
 
         return getattr(attrForm, 'isBatchForm', False) != isVariant
 
@@ -315,7 +314,7 @@ class MainBuildActionDataForm(BuildActionDataForm):
         isVariant = False
         # duck type of action proxy
         if hasattr(actionData, 'is_variant_attr'):
-            isVariant = actionData.isVariantAttr(attr['name'])
+            isVariant = actionData.is_variant_attr(attr['name'])
 
         attrForm.toggleVariantBtn.setChecked(isVariant)
         attrForm.toggleVariantBtn.setText("⋮" if isVariant else "·")
