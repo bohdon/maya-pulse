@@ -39,7 +39,7 @@ class ActionPalette(QtWidgets.QWidget):
 
         self.setupActionsUi(self.ui.scroll_area_widget, self.ui.actions_layout)
 
-        self.ui.group_btn.clicked.connect(self.createGroup)
+        self.ui.group_btn.clicked.connect(self.blueprintModel.createGroup)
 
         self._onReadOnlyChanged(self.blueprintModel.isReadOnly())
 
@@ -75,7 +75,7 @@ class ActionPalette(QtWidgets.QWidget):
             btn = QtWidgets.QPushButton(parent)
             btn.setText(actionConfig['displayName'])
             btn.setStyleSheet('background-color:rgba({0}, {1}, {2}, 30)'.format(*color))
-            btn.clicked.connect(partial(self.createAction, actionId))
+            btn.clicked.connect(partial(self.blueprintModel.createAction, actionId))
             categoryLayouts[actionCategory].addWidget(btn)
 
         spacer = QtWidgets.QSpacerItem(
@@ -97,74 +97,6 @@ class ActionPalette(QtWidgets.QWidget):
 
     def _onActionClicked(self, typeName):
         self.clicked.emit(typeName)
-
-    def createStepsForSelection(self, stepData=None):
-        """
-        Create new BuildSteps in the hierarchy at the
-        current selection and return the new step paths.
-
-        Args:
-            stepData (str): A string representation of serialized
-                BuildStep data used to create the new steps
-        """
-        if self.blueprintModel.isReadOnly():
-            LOG.warning('cannot create steps, blueprint is read only')
-            return
-
-        LOG.debug('creating new steps at selection: %s', stepData)
-
-        selIndexes = self.selectionModel.selectedIndexes()
-        if not selIndexes:
-            selIndexes = [QtCore.QModelIndex()]
-
-        model = self.selectionModel.model()
-
-        def getParentAndInsertIndex(index):
-            step = model.stepForIndex(index)
-            LOG.debug('step: %s', step)
-            if step.canHaveChildren:
-                LOG.debug('inserting at num children: %d', step.numChildren())
-                return step, step.numChildren()
-            else:
-                LOG.debug('inserting at selected + 1: %d', index.row() + 1)
-                return step.parent, index.row() + 1
-
-        newPaths = []
-        for index in selIndexes:
-            parentStep, insertIndex = getParentAndInsertIndex(index)
-            parentPath = parentStep.getFullPath() if parentStep else None
-            if not parentPath:
-                parentPath = ''
-            if not stepData:
-                stepData = ''
-            newStepPath = cmds.pulseCreateStep(
-                parentPath, insertIndex, stepData)
-            if newStepPath:
-                # TODO: remove this if/when plugin command only returns single string
-                newStepPath = newStepPath[0]
-                newPaths.append(newStepPath)
-            # if self.model.insertRows(insertIndex, 1, parentIndex):
-            #     newIndex = self.model.index(insertIndex, 0, parentIndex)
-            #     newPaths.append(newIndex)
-
-        return newPaths
-
-    def createGroup(self):
-        if self.blueprintModel.isReadOnly():
-            LOG.warning("Cannot create group, blueprint is read-only")
-            return
-        LOG.debug('create_group')
-        newPaths = self.createStepsForSelection()
-        self.selectionModel.setSelectedItemPaths(newPaths)
-
-    def createAction(self, actionId):
-        if self.blueprintModel.isReadOnly():
-            LOG.warning("Cannot create action, blueprint is read-only")
-            return
-        LOG.debug('create_action: %s', actionId)
-        stepData = "{'action':{'id':'%s'}}" % actionId
-        newPaths = self.createStepsForSelection(stepData=stepData)
-        self.selectionModel.setSelectedItemPaths(newPaths)
 
 
 class ActionPaletteWindow(PulseWindow):

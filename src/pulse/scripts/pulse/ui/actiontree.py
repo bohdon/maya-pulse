@@ -3,12 +3,14 @@ Tree widget for displaying the build step hierarchy of a blueprint.
 """
 
 import logging
+from functools import partial
+from typing import Optional, Dict
 
 import maya.cmds as cmds
 
 from ..vendor.Qt import QtCore, QtWidgets, QtGui
 from ..serializer import serializeAttrValue
-from ..buildItems import BuildStep
+from ..buildItems import BuildStep, getRegisteredActionConfigs
 from .. import sym
 from .core import BlueprintUIModel
 from .core import PulseWindow
@@ -202,7 +204,7 @@ class ActionTree(QtWidgets.QWidget):
     def _on_model_reset(self):
         self.action_tree_view.expandAll()
 
-    def setupActionsMenu(self, parent, menu_bar):
+    def setupActionsMenu(self, parent: Optional[QtCore.QObject], menu_bar: QtWidgets.QMenuBar):
         """
         Set up the Actions menu on a menu bar.
         """
@@ -212,6 +214,35 @@ class ActionTree(QtWidgets.QWidget):
         add_defaults_action.setStatusTip("Add the default set of actions.")
         add_defaults_action.triggered.connect(self.blueprintModel.addDefaultActions)
         actions_menu.addAction(add_defaults_action)
+
+        actions_menu.addSeparator()
+
+        allActionConfigs = getRegisteredActionConfigs()
+
+        grp_action = QtWidgets.QAction("Group", parent)
+        grp_action.triggered.connect(self.blueprintModel.createGroup)
+        actions_menu.addAction(grp_action)
+
+        # create action sub menu for each category
+        categories = [c.get('category', 'Default') for c in allActionConfigs]
+        categories = list(set(categories))
+        cat_menus: Dict[str, QtWidgets.QMenu] = {}
+
+        for cat in sorted(categories):
+            cat_menu = actions_menu.addMenu(cat)
+            cat_menus[cat] = cat_menu
+
+        for actionConfig in allActionConfigs:
+            actionId = actionConfig['id']
+            actionCategory = actionConfig.get('category', 'Default')
+            description = actionConfig.get('description')
+
+            action = QtWidgets.QAction(actionConfig['displayName'], parent)
+            if description:
+                action.setStatusTip(description)
+            action.triggered.connect(partial(self.blueprintModel.createAction, actionId))
+
+            cat_menus[actionCategory].addAction(action)
 
 
 class ActionTreeWindow(PulseWindow):

@@ -872,6 +872,75 @@ class BlueprintUIModel(QtCore.QObject):
 
         return step.getFullPath()
 
+    def createStepsForSelection(self, stepData: Optional[str] = None):
+        """
+        Create new BuildSteps in the hierarchy at the current selection and return the new step paths.
+
+        Args:
+            stepData: str
+                A string representation of serialized BuildStep data used to create the new steps.
+        """
+        if self.isReadOnly():
+            LOG.warning('cannot create steps, blueprint is read only')
+            return
+
+        LOG.debug('creating new steps at selection: %s', stepData)
+
+        selIndexes = self.buildStepSelectionModel.selectedIndexes()
+        if not selIndexes:
+            selIndexes = [QtCore.QModelIndex()]
+
+        model = self.buildStepSelectionModel.model()
+
+        def getParentAndInsertIndex(index):
+            step = model.stepForIndex(index)
+            LOG.debug('step: %s', step)
+            if step.canHaveChildren:
+                LOG.debug('inserting at num children: %d', step.numChildren())
+                return step, step.numChildren()
+            else:
+                LOG.debug('inserting at selected + 1: %d', index.row() + 1)
+                return step.parent, index.row() + 1
+
+        newPaths = []
+        for index in selIndexes:
+            parentStep, insertIndex = getParentAndInsertIndex(index)
+            parentPath = parentStep.getFullPath() if parentStep else None
+            if not parentPath:
+                parentPath = ''
+            if not stepData:
+                stepData = ''
+            newStepPath = cmds.pulseCreateStep(
+                parentPath, insertIndex, stepData)
+            if newStepPath:
+                # TODO: remove this if/when plugin command only returns single string
+                newStepPath = newStepPath[0]
+                newPaths.append(newStepPath)
+            # if self.model.insertRows(insertIndex, 1, parentIndex):
+            #     newIndex = self.model.index(insertIndex, 0, parentIndex)
+            #     newPaths.append(newIndex)
+
+        return newPaths
+
+    def createGroup(self):
+        if self.isReadOnly():
+            LOG.warning("Cannot create group, blueprint is read-only")
+            return
+
+        LOG.debug('create_group')
+        newPaths = self.createStepsForSelection()
+        self.buildStepSelectionModel.setSelectedItemPaths(newPaths)
+
+    def createAction(self, actionId: str):
+        if self.isReadOnly():
+            LOG.warning("Cannot create action, blueprint is read-only")
+            return
+
+        LOG.debug('create_action: %s', actionId)
+        stepData = "{'action':{'id':'%s'}}" % actionId
+        newPaths = self.createStepsForSelection(stepData=stepData)
+        self.buildStepSelectionModel.setSelectedItemPaths(newPaths)
+
     def getStep(self, stepPath):
         """
         Return the BuildStep at a path

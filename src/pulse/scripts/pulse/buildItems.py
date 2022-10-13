@@ -33,7 +33,7 @@ def _copyData(data, refNode=None):
     return meta.decodeMetaData(meta.encodeMetaData(data), refNode)
 
 
-def getRegisteredAction(actionId):
+def getRegisteredAction(actionId) -> dict:
     """
     Return a BuildAction config and class by action id
 
@@ -47,7 +47,7 @@ def getRegisteredAction(actionId):
         return BUILDACTIONMAP[actionId]
 
 
-def getBuildActionConfig(actionId):
+def getBuildActionConfig(actionId) -> dict:
     """
     Return a BuildAction config by action id
 
@@ -73,7 +73,7 @@ def _getBuildActionConfigForClass(actionClass):
             return v['config']
 
 
-def getBuildActionClass(actionId):
+def getBuildActionClass(actionId) -> type['BuildAction']:
     """
     Return a BuildAction class by action id
 
@@ -85,14 +85,14 @@ def getBuildActionClass(actionId):
         return action['class']
 
 
-def getRegisteredActionIds():
+def getRegisteredActionIds() -> Iterable[str]:
     """
     Return all the ids of registered BuildActions
     """
     return BUILDACTIONMAP.keys()
 
 
-def getRegisteredActions():
+def getRegisteredActions() -> dict[str, dict]:
     """
     Return all registered BuildAction configs and classes organized by their id
 
@@ -102,7 +102,7 @@ def getRegisteredActions():
     return {k: v for k, v in BUILDACTIONMAP.items()}
 
 
-def getRegisteredActionConfigs():
+def getRegisteredActionConfigs() -> List[dict]:
     """
     Return all registered BuildAction configs
 
