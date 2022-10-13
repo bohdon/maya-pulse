@@ -312,6 +312,9 @@ class BlueprintUIModel(QtCore.QObject):
     # called when the current blueprint file has changed
     fileChanged = QtCore.Signal()
 
+    # called when the modified status of the file has changed
+    isFileModifiedChanged = QtCore.Signal(bool)
+
     # a config property on the blueprint changed
     # TODO: add more generic blueprint property data model
     rigNameChanged = QtCore.Signal(str)
@@ -404,6 +407,12 @@ class BlueprintUIModel(QtCore.QObject):
         """
         return self._blueprintFile is not None
 
+    def isFileModified(self) -> bool:
+        """
+        Return whether modifications have been made to the open Blueprint File since it was last saved.
+        """
+        return self.isFileOpen() and self._blueprintFile.is_modified()
+
     def isReadOnly(self) -> bool:
         """
         Return True if the modifications to the Blueprint are not allowed.
@@ -450,6 +459,11 @@ class BlueprintUIModel(QtCore.QObject):
         Start a new Blueprint File.
         Does not write the file to disk.
         """
+        # close first, prompting to save
+        if self.isFileOpen():
+            if not self.closeFile():
+                return
+
         self.buildStepTreeModel.beginResetModel()
 
         self._blueprintFile = BlueprintFile()
@@ -471,6 +485,11 @@ class BlueprintUIModel(QtCore.QObject):
             filePath: str
                 The path to a blueprint.
         """
+        # close first, prompting to save
+        if self.isFileOpen():
+            if not self.closeFile():
+                return
+
         self.buildStepTreeModel.beginResetModel()
 
         self._blueprintFile = BlueprintFile(file_path=filePath)
@@ -494,67 +513,127 @@ class BlueprintUIModel(QtCore.QObject):
             file_path = file_path_results[0]
             self.openFile(file_path)
 
-    def saveFile(self):
+    def saveFile(self) -> bool:
         """
         Save the current Blueprint File.
+
+        Returns:
+            True if the file was saved.
         """
         if self.canSave():
-            self._blueprintFile.save()
+            success = self._blueprintFile.save()
+            self.isFileModifiedChanged.emit(self.isFileModified())
+            return success
+        return False
 
-    def saveFileAs(self, filePath: str):
+    def saveFileAs(self, filePath: str) -> bool:
         """
         Save the current Blueprint File to a different file path.
+
+        Returns:
+            True if the file was saved.
         """
         if self.isFileOpen():
             self._blueprintFile.file_path = filePath
             self.fileChanged.emit()
-            self._blueprintFile.save()
+            success = self._blueprintFile.save()
+            self.isFileModifiedChanged.emit(self.isFileModified())
+            return success
+        return False
 
-    def _saveFileWithPrompt(self, caption='Save As', forcePrompt=False):
+    def _saveFileWithPrompt(self, caption='Save As', forcePrompt=False) -> bool:
         if not self.isFileOpen():
             LOG.error("Nothing to save.")
-            return
+            return False
 
         if self.isReadOnly():
             LOG.error("Cannot save read-only Blueprint")
-            return
+            return False
 
         if forcePrompt or not self._blueprintFile.has_file_path():
             # prompt for file path
             file_path_results = pm.fileDialog2(cap=caption, fileFilter='Pulse Blueprint (*.yml)')
             if not file_path_results:
-                return
+                return False
             self._blueprintFile.file_path = file_path_results[0]
             self.fileChanged.emit()
 
         self.saveFile()
+        return True
 
-    def saveFileWithPrompt(self):
+    def saveFileWithPrompt(self) -> bool:
         """
         Save the current Blueprint file, prompting for a file path if none is set.
-        """
-        self._saveFileWithPrompt(caption='Save')
 
-    def saveFileAsWithPrompt(self):
+        Returns:
+            True if the file was saved.
+        """
+        return self._saveFileWithPrompt(caption='Save')
+
+    def saveFileAsWithPrompt(self) -> bool:
         """
         Save the current Blueprint file to a new path, prompting for the file path.
+
+        Returns:
+            True if the file was saved.
         """
-        self._saveFileWithPrompt(caption='Save As', forcePrompt=True)
+        return self._saveFileWithPrompt(caption='Save As', forcePrompt=True)
+
+    def saveOrDiscardChangesWithPrompt(self) -> bool:
+        """
+        Save or discard modifications to the current Blueprint File.
+
+        Returns:
+            True if the user chose to Save or Not Save, False if they chose to Cancel.
+        """
+        filePath = self.getBlueprintFilePath()
+        if filePath:
+            title = 'Save Changes'
+            message = f'Save changes to {filePath}?'
+        else:
+            title = 'Save'
+            message = f'Save changes to unsaved Blueprint?'
+        response = pm.confirmDialog(title=title, message=message, button=['Save', "Don't Save", 'Cancel'],
+                                    dismissString='Cancel')
+        if response == 'Save':
+            return self.saveFileWithPrompt()
+        elif response == "Don't Save":
+            return True
+        else:
+            return False
 
     def reloadFile(self):
         """
         Reload the current Blueprint File from disk.
         """
         if self.canLoad():
+
+            if self.isFileModified():
+                # confirm loss of changes
+                filePath = self.getBlueprintFilePath()
+                response = pm.confirmDialog(title='Reload Blueprint',
+                                            message=f'Are you sure you want to reload {filePath}? '
+                                                    'All changes will be lost.',
+                                            button=['Reload', 'Cancel'], dismissString='Cancel')
+                if response != 'Reload':
+                    return
+
             self.buildStepTreeModel.beginResetModel()
             self._blueprintFile.load()
+            self.isFileModifiedChanged.emit(self.isFileModified())
             self.buildStepTreeModel.endResetModel()
             self.rigNameChanged.emit(self.blueprint.rigName)
 
-    def closeFile(self):
+    def closeFile(self, promptSaveChanges=True) -> bool:
         """
         Close the current Blueprint File.
+        Returns true if the file was successfully closed, or false if canceled due to unsaved changes.
         """
+        print(f'promptSaveChanges: {promptSaveChanges}')
+        if promptSaveChanges and self.isFileModified():
+            if not self.saveOrDiscardChangesWithPrompt():
+                return
+
         self.buildStepTreeModel.beginResetModel()
 
         self._blueprintFile = None
@@ -565,14 +644,19 @@ class BlueprintUIModel(QtCore.QObject):
         self.fileChanged.emit()
         self.rigNameChanged.emit(self.blueprint.rigName)
         self.readOnlyChanged.emit(self.isReadOnly())
+        return True
 
     def setRigName(self, newRigName):
         if self.isReadOnly():
             LOG.error('setRigName: Cannot edit readonly Blueprint')
             return
 
-        self.blueprint.rigName = newRigName
-        self.rigNameChanged.emit(self.blueprint.rigName)
+        if self.blueprint.rigName != newRigName:
+            self.blueprint.rigName = newRigName
+            # TOOD: store modified state in blueprint so blueprintFile doesn't have to be updated
+            self._blueprintFile.modify()
+            self.isFileModifiedChanged.emit(self.isFileModified())
+            self.rigNameChanged.emit(self.blueprint.rigName)
 
     def _refreshRigExists(self):
         old_read_only = self.isReadOnly()
@@ -621,25 +705,17 @@ class BlueprintUIModel(QtCore.QObject):
     def _shouldAutoSave(self):
         return self.autoSave and self.isFileOpen()
 
-    def initializeBlueprint(self):
+    def addDefaultActions(self):
         """
-        Initialize the Blueprint to an empty state.
+        Add the default actions to the current Blueprint.
         """
-        self.buildStepTreeModel.beginResetModel()
-        self.blueprint.rigName = None
-        self.blueprint.rootStep.clearChildren()
-        self.buildStepTreeModel.endResetModel()
-        self.rigNameChanged.emit(self.blueprint.rigName)
-
-    def initializeBlueprintToDefaultActions(self):
-        """
-        Initialize the Blueprint to its default state based
-        on the current blueprint config.
-        """
-        self.buildStepTreeModel.beginResetModel()
-        self.blueprint.rootStep.clearChildren()
-        self.blueprint.initializeDefaultActions()
-        self.buildStepTreeModel.endResetModel()
+        if self.isFileOpen() and not self.isReadOnly():
+            self.buildStepTreeModel.beginResetModel()
+            self.blueprint.addDefaultActions()
+            # TODO: again move modify to blueprint
+            self._blueprintFile.modify()
+            self.isFileModifiedChanged.emit(self.isFileModified())
+            self.buildStepTreeModel.endResetModel()
 
     def createStep(self, parentPath, childIndex, data):
         """

@@ -2,6 +2,8 @@
 The main editor that contains the build toolbar, blueprint settings,
 and the list of pulse actions.
 """
+from functools import partial
+
 from ..vendor.Qt import QtCore, QtWidgets
 
 import pulse
@@ -72,7 +74,7 @@ class MainEditor(QtWidgets.QWidget):
 
         close_action = QtWidgets.QAction("Close Blueprint", parent)
         close_action.setStatusTip("Close the current Blueprint.")
-        close_action.triggered.connect(self.blueprint_model.closeFile)
+        close_action.triggered.connect(partial(self.blueprint_model.closeFile, True))
         file_menu.addAction(close_action)
 
         file_menu.addSeparator()

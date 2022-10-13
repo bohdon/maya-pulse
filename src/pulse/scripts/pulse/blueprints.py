@@ -127,10 +127,6 @@ class Blueprint(object):
         Returns:
             True if the save was successful
         """
-        sceneName = pm.sceneName()
-        if not sceneName:
-            return False
-
         LOG.debug("Saving blueprint: %s", filepath)
 
         data = self.serialize()
@@ -173,7 +169,7 @@ class Blueprint(object):
                 LOG.warning("could not find BuildStep: %s", path)
             return step
 
-    def initializeDefaultActions(self):
+    def addDefaultActions(self):
         """
         Create a set of core BuildActions that are common in most
         if not all Blueprints.
@@ -242,13 +238,13 @@ class BlueprintFile(object):
     def is_modified(self) -> bool:
         return self._is_modified
 
-    def mark_dirty(self):
+    def modify(self):
         """
         Mark the blueprint file as modified.
         """
         self._is_modified = True
 
-    def clear_dirty(self):
+    def clear_modified(self):
         """
         Clear the modified status of the file.
         """
@@ -274,7 +270,9 @@ class BlueprintFile(object):
 
         success = self.blueprint.saveToFile(self.file_path)
 
-        if not success:
+        if success:
+            self.clear_modified()
+        else:
             LOG.error(f"Failed to save Blueprint to file: {self.file_path}")
 
         return success
@@ -300,7 +298,9 @@ class BlueprintFile(object):
 
         success = self.blueprint.loadFromFile(self.file_path)
 
-        if not success:
+        if success:
+            self.clear_modified()
+        else:
             LOG.error(f"Failed to load Blueprint from file: {self.file_path}")
 
         return success

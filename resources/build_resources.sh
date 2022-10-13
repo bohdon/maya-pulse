@@ -9,14 +9,16 @@
 #   pip install qt5-tools
 # and browsing to <python>\Lib\site-packages\qt5_applications\Qt\bin\designer.exe
 
+script_dir=$( cd "$(dirname "${BASH_SOURCE[0]}")" ; pwd -P )
+
 # the path to output build files to:
-UI_PYTHON_PATH=../src/pulse/scripts/pulse/ui/gen
+UI_PYTHON_PATH=$script_dir/../src/pulse/scripts/pulse/ui/gen
 
 # helper function that also echoes the command being run
 build_qt() {
     echo "Building " $2
 
-    $1 $2 >"$UI_PYTHON_PATH/$3.py"
+    $1 $script_dir/$2 >"$UI_PYTHON_PATH/$3.py"
 }
 
 # compile a .ui to a .py

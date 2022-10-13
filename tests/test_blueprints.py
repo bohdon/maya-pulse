@@ -2,8 +2,10 @@
 import unittest
 import pymel.core as pm
 
-import pulse
+import pulse.blueprints
+import pulse.buildItems
 import pulse.controlshapes
+import pulse.rigs
 
 EXAMPLE_BLUEPRINT_A = """
 version: 1.0.0
@@ -33,24 +35,24 @@ steps:
 class TestBlueprints(unittest.TestCase):
 
     def tearDown(self):
-        pm.delete(pulse.getAllRigs())
+        pm.delete(pulse.rigs.getAllRigs())
 
     def test_build(self):
-        bp = pulse.Blueprint()
+        bp = pulse.blueprints.Blueprint()
         bp.rigName = 'testRig'
-        bp.initializeDefaultActions()
+        bp.addDefaultActions()
 
         mainStep = bp.getStepByPath('Main')
 
         ctlNode = pm.polyCube(n='my_ctl')[0]
 
-        ctlStep = pulse.BuildStep(actionId='Pulse.AnimControl')
+        ctlStep = pulse.buildItems.BuildStep(actionId='Pulse.AnimControl')
         ctlStep.actionProxy.setAttrValue('controlNode', ctlNode)
         mainStep.addChild(ctlStep)
 
         self.assertTrue(len(mainStep.children) == 1)
 
-        builder = pulse.BlueprintBuilder(bp)
+        builder = pulse.blueprints.BlueprintBuilder(bp)
         builder.start()
 
         self.assertTrue(builder.isFinished)
@@ -72,14 +74,14 @@ class TestBlueprints(unittest.TestCase):
         self.assertTrue(len(assemblies) == 5)
 
     def test_build_steps(self):
-        bp = pulse.Blueprint()
+        bp = pulse.blueprints.Blueprint()
 
-        stepA = pulse.BuildStep('StepFirst')
-        stepB = pulse.BuildStep('StepB')
-        stepC = pulse.BuildStep('StepC')
-        stepX = pulse.BuildStep('StepX')
-        stepY = pulse.BuildStep('StepY')
-        stepZ = pulse.BuildStep('StepZ')
+        stepA = pulse.buildItems.BuildStep('StepFirst')
+        stepB = pulse.buildItems.BuildStep('StepB')
+        stepC = pulse.buildItems.BuildStep('StepC')
+        stepX = pulse.buildItems.BuildStep('StepX')
+        stepY = pulse.buildItems.BuildStep('StepY')
+        stepZ = pulse.buildItems.BuildStep('StepZ')
 
         self.assertEqual(stepA.getDisplayName(), 'StepFirst (0)')
         stepA.setName(None)
@@ -134,7 +136,7 @@ class TestBlueprints(unittest.TestCase):
         self.assertTrue(stepX.numChildren() == 0)
 
     def test_deserialize(self):
-        bp = pulse.Blueprint()
+        bp = pulse.blueprints.Blueprint()
         bp.loadFromYaml(EXAMPLE_BLUEPRINT_A)
 
         self.assertEqual(bp.rigName, 'TestRig')

@@ -27,67 +27,86 @@ class MainToolbar(QtWidgets.QWidget):
 
         self.isStateDirty = False
 
-        self.blueprint_model = BlueprintUIModel.getDefaultModel()
-        self.blueprint_model.rigExistsChanged.connect(self._on_rig_exists_changed)
+        self.blueprintModel = BlueprintUIModel.getDefaultModel()
+        self.blueprintModel.rigExistsChanged.connect(self._onRigExistsChanged)
 
         self.ui = Ui_MainToolbar()
         self.ui.setupUi(self)
 
-        self._clean_state()
-        self._update_mode()
-        self._update_rig_name()
+        self._cleanState()
+        self._updateMode()
+        self._updateRigName()
 
         # connect signals
-        self.blueprint_model.readOnlyChanged.connect(self._on_read_only_changed)
-        self.blueprint_model.rigNameChanged.connect(self._on_rig_name_changed)
+        self.blueprintModel.fileChanged.connect(self._onFileChanged)
+        self.blueprintModel.isFileModifiedChanged.connect(self._onFileModifiedChanged)
+        self.blueprintModel.readOnlyChanged.connect(self._onReadOnlyChanged)
+        self.blueprintModel.rigNameChanged.connect(self._onRigNameChanged)
 
-        self.ui.validate_btn.clicked.connect(self.run_validation)
-        self.ui.build_btn.clicked.connect(self.run_build)
+        self.ui.new_blueprint_btn.clicked.connect(self.blueprintModel.newFile)
+        self.ui.validate_btn.clicked.connect(self.runValidation)
+        self.ui.build_btn.clicked.connect(self.runBuild)
         self.ui.open_blueprint_btn.clicked.connect(openFirstRigBlueprint)
 
         self.ui.settings_btn.clicked.connect(MainSettingsWindow.toggleWindow)
         self.ui.design_toolkit_btn.clicked.connect(DesignToolkitWindow.toggleWindow)
         self.ui.action_editor_btn.clicked.connect(ActionEditorWindow.toggleWindow)
 
-    @property
-    def does_rig_exist(self):
-        return self.blueprint_model.doesRigExist
+    def doesRigExist(self):
+        return self.blueprintModel.doesRigExist
 
     def showEvent(self, event):
         super(MainToolbar, self).showEvent(event)
-        self._on_state_dirty()
+        self._onStateDirty()
 
-    def _on_rig_name_changed(self, name):
-        self._update_rig_name()
+    def _onFileChanged(self):
+        self._updateMode()
 
-    def _update_rig_name(self):
-        self.ui.rig_name_label.setText(self.blueprint_model.blueprint.rigName)
-        self.ui.blueprint_file_name_label.setText(self.blueprint_model.getBlueprintFileName())
-        self.ui.blueprint_file_name_label.setToolTip(self.blueprint_model.getBlueprintFilePath())
+    def _onFileModifiedChanged(self, isModified):
+        self._updateRigName()
 
-    def _on_rig_exists_changed(self):
-        self._clean_state()
-        self._update_mode()
+    def _onRigNameChanged(self, name):
+        self._updateRigName()
 
-    def _on_read_only_changed(self, is_read_only):
-        # TODO: represent read-only state elsewhere
-        self._update_mode()
+    def _updateRigName(self):
+        fileName = self.blueprintModel.getBlueprintFileName()
+        if fileName is None:
+            fileName = 'untitled'
+        if self.blueprintModel.isFileModified():
+            fileName += '*'
 
-    def _clean_state(self):
+        self.ui.rig_name_label.setText(self.blueprintModel.blueprint.rigName)
+        self.ui.blueprint_file_name_label.setText(fileName)
+        self.ui.blueprint_file_name_label.setToolTip(self.blueprintModel.getBlueprintFilePath())
+
+    def _onRigExistsChanged(self):
+        self._cleanState()
+        self._updateMode()
+
+    def _onReadOnlyChanged(self, is_read_only):
+        # TODO: represent read-only state somewhere
+        pass
+
+    def _cleanState(self):
         self.isStateDirty = False
         self.setEnabled(True)  # TODO: True if isBuilding
 
-    def _on_state_dirty(self):
+    def _onStateDirty(self):
         if not self.isStateDirty:
             self.isStateDirty = True
             self.setEnabled(False)
-            cmds.evalDeferred(self._clean_state)
+            cmds.evalDeferred(self._cleanState)
 
-    def _update_mode(self):
+    def _updateMode(self):
         """
         Update the mode header and visible page, blueprint or rig.
         """
-        if self.does_rig_exist:
+        if self.blueprintModel.isFileOpen():
+            self.ui.main_stack.setCurrentWidget(self.ui.opened_page)
+        else:
+            self.ui.main_stack.setCurrentWidget(self.ui.new_page)
+
+        if self.doesRigExist():
             # rig read-only mode
             self.ui.validate_btn.setEnabled(False)
             self.ui.build_btn.setEnabled(False)
@@ -111,8 +130,8 @@ class MainToolbar(QtWidgets.QWidget):
         # refresh stylesheet for mode frame
         self.ui.mode_frame.setStyleSheet('')
 
-    def run_validation(self):
-        blueprint = self.blueprint_model.blueprint
+    def runValidation(self):
+        blueprint = self.blueprintModel.blueprint
         if blueprint is not None:
             if not BlueprintBuilder.preBuildValidate(blueprint):
                 return
@@ -120,8 +139,8 @@ class MainToolbar(QtWidgets.QWidget):
             validator = BlueprintValidator(blueprint, debug=True)
             validator.start()
 
-    def run_build(self):
-        blueprint = self.blueprint_model.blueprint
+    def runBuild(self):
+        blueprint = self.blueprintModel.blueprint
         if blueprint is not None:
             if not BlueprintBuilder.preBuildValidate(blueprint):
                 return
@@ -131,14 +150,14 @@ class MainToolbar(QtWidgets.QWidget):
                 return
 
             # if auto_save:
-            self.blueprint_model.saveFile()
+            self.blueprintModel.saveFile()
 
             builder = BlueprintBuilder.createBuilderWithCurrentScene(
                 blueprint, debug=True)
             builder.showProgressUI = True
             builder.start()
 
-            cmds.evalDeferred(self._on_state_dirty)
+            cmds.evalDeferred(self._onStateDirty)
 
             # TODO: add build events for situations like this
-            cmds.evalDeferred(self.blueprint_model.reloadFile, low=True)
+            cmds.evalDeferred(self.blueprintModel.reloadFile, low=True)

@@ -29,19 +29,21 @@ class ActionPalette(QtWidgets.QWidget):
     def __init__(self, parent=None):
         super(ActionPalette, self).__init__(parent=parent)
 
-        self.blueprint_model = BlueprintUIModel.getDefaultModel()
-        self.blueprint_model.readOnlyChanged.connect(self._on_read_only_changed)
-        self.model = self.blueprint_model.buildStepTreeModel
-        self.selection_model = self.blueprint_model.buildStepSelectionModel
+        self.blueprintModel = BlueprintUIModel.getDefaultModel()
+        self.blueprintModel.readOnlyChanged.connect(self._onReadOnlyChanged)
+        self.model = self.blueprintModel.buildStepTreeModel
+        self.selectionModel = self.blueprintModel.buildStepSelectionModel
 
         self.ui = Ui_ActionPalette()
         self.ui.setupUi(self)
 
-        self.setup_actions_ui(self.ui.scroll_area_widget, self.ui.actions_layout)
+        self.setupActionsUi(self.ui.scroll_area_widget, self.ui.actions_layout)
 
-        self.ui.group_btn.clicked.connect(self.create_group)
+        self.ui.group_btn.clicked.connect(self.createGroup)
 
-    def setup_actions_ui(self, parent, layout):
+        self._onReadOnlyChanged(self.blueprintModel.isReadOnly())
+
+    def setupActionsUi(self, parent, layout):
         """
         Build buttons for creating each action.
         """
@@ -69,11 +71,11 @@ class ActionPalette(QtWidgets.QWidget):
         for actionConfig in allActionConfigs:
             actionId = actionConfig['id']
             actionCategory = actionConfig.get('category', 'Default')
-            color = self.get_action_color(actionConfig)
+            color = self.getActionColor(actionConfig)
             btn = QtWidgets.QPushButton(parent)
             btn.setText(actionConfig['displayName'])
             btn.setStyleSheet('background-color:rgba({0}, {1}, {2}, 30)'.format(*color))
-            btn.clicked.connect(partial(self.create_action, actionId))
+            btn.clicked.connect(partial(self.createAction, actionId))
             categoryLayouts[actionCategory].addWidget(btn)
 
         spacer = QtWidgets.QSpacerItem(
@@ -82,21 +84,21 @@ class ActionPalette(QtWidgets.QWidget):
         layout.addItem(spacer)
 
     @staticmethod
-    def get_action_color(actionConfig):
+    def getActionColor(actionConfig):
         color = actionConfig.get('color', [1, 1, 1])
         if color:
             return [int(c * 255) for c in color]
         else:
             return [255, 255, 255]
 
-    def _on_read_only_changed(self, isReadOnly):
+    def _onReadOnlyChanged(self, isReadOnly):
         self.ui.group_btn.setEnabled(not isReadOnly)
         self.ui.scroll_area_widget.setEnabled(not isReadOnly)
 
-    def _on_action_clicked(self, typeName):
+    def _onActionClicked(self, typeName):
         self.clicked.emit(typeName)
 
-    def create_steps_for_selection(self, stepData=None):
+    def createStepsForSelection(self, stepData=None):
         """
         Create new BuildSteps in the hierarchy at the
         current selection and return the new step paths.
@@ -105,19 +107,19 @@ class ActionPalette(QtWidgets.QWidget):
             stepData (str): A string representation of serialized
                 BuildStep data used to create the new steps
         """
-        if self.blueprint_model.isReadOnly():
+        if self.blueprintModel.isReadOnly():
             LOG.warning('cannot create steps, blueprint is read only')
             return
 
         LOG.debug('creating new steps at selection: %s', stepData)
 
-        selIndexes = self.selection_model.selectedIndexes()
+        selIndexes = self.selectionModel.selectedIndexes()
         if not selIndexes:
             selIndexes = [QtCore.QModelIndex()]
 
-        model = self.selection_model.model()
+        model = self.selectionModel.model()
 
-        def get_parent_and_insert_index(index):
+        def getParentAndInsertIndex(index):
             step = model.stepForIndex(index)
             LOG.debug('step: %s', step)
             if step.canHaveChildren:
@@ -129,7 +131,7 @@ class ActionPalette(QtWidgets.QWidget):
 
         newPaths = []
         for index in selIndexes:
-            parentStep, insertIndex = get_parent_and_insert_index(index)
+            parentStep, insertIndex = getParentAndInsertIndex(index)
             parentPath = parentStep.getFullPath() if parentStep else None
             if not parentPath:
                 parentPath = ''
@@ -147,22 +149,22 @@ class ActionPalette(QtWidgets.QWidget):
 
         return newPaths
 
-    def create_group(self):
-        if self.blueprint_model.isReadOnly():
+    def createGroup(self):
+        if self.blueprintModel.isReadOnly():
             LOG.warning("Cannot create group, blueprint is read-only")
             return
         LOG.debug('create_group')
-        newPaths = self.create_steps_for_selection()
-        self.selection_model.setSelectedItemPaths(newPaths)
+        newPaths = self.createStepsForSelection()
+        self.selectionModel.setSelectedItemPaths(newPaths)
 
-    def create_action(self, actionId):
-        if self.blueprint_model.isReadOnly():
+    def createAction(self, actionId):
+        if self.blueprintModel.isReadOnly():
             LOG.warning("Cannot create action, blueprint is read-only")
             return
         LOG.debug('create_action: %s', actionId)
         stepData = "{'action':{'id':'%s'}}" % actionId
-        newPaths = self.create_steps_for_selection(stepData=stepData)
-        self.selection_model.setSelectedItemPaths(newPaths)
+        newPaths = self.createStepsForSelection(stepData=stepData)
+        self.selectionModel.setSelectedItemPaths(newPaths)
 
 
 class ActionPaletteWindow(PulseWindow):

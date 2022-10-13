@@ -165,15 +165,15 @@ class ActionTree(QtWidgets.QWidget):
         super(ActionTree, self).__init__(parent=parent)
 
         # get shared models
-        self._blueprint_model = BlueprintUIModel.getDefaultModel()
-        self.model = self._blueprint_model.buildStepTreeModel
-        self._selection_model = self._blueprint_model.buildStepSelectionModel
+        self.blueprintModel = BlueprintUIModel.getDefaultModel()
+        self.model = self.blueprintModel.buildStepTreeModel
+        self._selection_model = self.blueprintModel.buildStepSelectionModel
 
         self.ui = Ui_ActionTree()
         self.ui.setupUi(self)
 
         # add action tree view
-        self.action_tree_view = ActionTreeView(self._blueprint_model, self)
+        self.action_tree_view = ActionTreeView(self.blueprintModel, self)
         self.action_tree_view.setModel(self.model)
         self.action_tree_view.setSelectionModel(self._selection_model)
         self.action_tree_view.expandAll()
@@ -181,6 +181,15 @@ class ActionTree(QtWidgets.QWidget):
 
         # connect signals
         self.model.modelReset.connect(self._on_model_reset)
+        self.blueprintModel.fileChanged.connect(self._onFileChanged)
+
+        self._onFileChanged()
+
+    def _onFileChanged(self):
+        if self.blueprintModel.isFileOpen():
+            self.ui.main_stack.setCurrentWidget(self.ui.active_page)
+        else:
+            self.ui.main_stack.setCurrentWidget(self.ui.inactive_page)
 
     def _on_model_reset(self):
         self.action_tree_view.expandAll()
@@ -193,7 +202,7 @@ class ActionTree(QtWidgets.QWidget):
 
         add_defaults_action = QtWidgets.QAction("Add Default Actions", parent)
         add_defaults_action.setStatusTip("Add the default set of actions.")
-        add_defaults_action.triggered.connect(self._blueprint_model.initializeBlueprintToDefaultActions)
+        add_defaults_action.triggered.connect(self.blueprintModel.addDefaultActions)
         actions_menu.addAction(add_defaults_action)
 
 

@@ -18,12 +18,28 @@ class Ui_MainToolbar(object):
     def setupUi(self, MainToolbar):
         if not MainToolbar.objectName():
             MainToolbar.setObjectName(u"MainToolbar")
-        MainToolbar.resize(325, 123)
-        self.verticalLayout = QVBoxLayout(MainToolbar)
-        self.verticalLayout.setSpacing(2)
+        MainToolbar.resize(323, 127)
+        self.verticalLayout_5 = QVBoxLayout(MainToolbar)
+        self.verticalLayout_5.setObjectName(u"verticalLayout_5")
+        self.verticalLayout_5.setContentsMargins(0, 0, 0, 0)
+        self.main_stack = QStackedWidget(MainToolbar)
+        self.main_stack.setObjectName(u"main_stack")
+        self.new_page = QWidget()
+        self.new_page.setObjectName(u"new_page")
+        self.verticalLayout_4 = QVBoxLayout(self.new_page)
+        self.verticalLayout_4.setObjectName(u"verticalLayout_4")
+        self.new_blueprint_btn = QPushButton(self.new_page)
+        self.new_blueprint_btn.setObjectName(u"new_blueprint_btn")
+
+        self.verticalLayout_4.addWidget(self.new_blueprint_btn)
+
+        self.main_stack.addWidget(self.new_page)
+        self.opened_page = QWidget()
+        self.opened_page.setObjectName(u"opened_page")
+        self.verticalLayout = QVBoxLayout(self.opened_page)
         self.verticalLayout.setObjectName(u"verticalLayout")
         self.verticalLayout.setContentsMargins(0, 0, 0, 0)
-        self.mode_frame = QFrame(MainToolbar)
+        self.mode_frame = QFrame(self.opened_page)
         self.mode_frame.setObjectName(u"mode_frame")
         self.mode_frame.setFrameShape(QFrame.StyledPanel)
         self.mode_frame.setFrameShadow(QFrame.Raised)
@@ -34,15 +50,15 @@ class Ui_MainToolbar(object):
         self.horizontalLayout_3.setObjectName(u"horizontalLayout_3")
         self.verticalLayout_3 = QVBoxLayout()
         self.verticalLayout_3.setObjectName(u"verticalLayout_3")
-        self.rig_name_label = QLabel(self.mode_frame)
-        self.rig_name_label.setObjectName(u"rig_name_label")
-
-        self.verticalLayout_3.addWidget(self.rig_name_label)
-
         self.blueprint_file_name_label = QLabel(self.mode_frame)
         self.blueprint_file_name_label.setObjectName(u"blueprint_file_name_label")
 
         self.verticalLayout_3.addWidget(self.blueprint_file_name_label)
+
+        self.rig_name_label = QLabel(self.mode_frame)
+        self.rig_name_label.setObjectName(u"rig_name_label")
+
+        self.verticalLayout_3.addWidget(self.rig_name_label)
 
 
         self.horizontalLayout_3.addLayout(self.verticalLayout_3)
@@ -104,6 +120,10 @@ class Ui_MainToolbar(object):
 
         self.verticalLayout.addWidget(self.mode_frame)
 
+        self.main_stack.addWidget(self.opened_page)
+
+        self.verticalLayout_5.addWidget(self.main_stack)
+
         self.toolbar_frame = QFrame(MainToolbar)
         self.toolbar_frame.setObjectName(u"toolbar_frame")
         self.toolbar_frame.setFrameShape(QFrame.StyledPanel)
@@ -141,20 +161,24 @@ class Ui_MainToolbar(object):
         self.horizontalLayout.addLayout(self.toolbar_layout)
 
 
-        self.verticalLayout.addWidget(self.toolbar_frame)
+        self.verticalLayout_5.addWidget(self.toolbar_frame)
 
 
         self.retranslateUi(MainToolbar)
+
+        self.main_stack.setCurrentIndex(1)
+
 
         QMetaObject.connectSlotsByName(MainToolbar)
     # setupUi
 
     def retranslateUi(self, MainToolbar):
         MainToolbar.setWindowTitle(QCoreApplication.translate("MainToolbar", u"Main Toolbar", None))
-        self.rig_name_label.setText(QCoreApplication.translate("MainToolbar", u"<Rig Name>", None))
-        self.rig_name_label.setProperty("cssClasses", QCoreApplication.translate("MainToolbar", u"subtitle", None))
+        self.new_blueprint_btn.setText(QCoreApplication.translate("MainToolbar", u"New Blueprint", None))
         self.blueprint_file_name_label.setText(QCoreApplication.translate("MainToolbar", u"<Blueprint File Name>", None))
-        self.blueprint_file_name_label.setProperty("cssClasses", QCoreApplication.translate("MainToolbar", u"help", None))
+        self.blueprint_file_name_label.setProperty("cssClasses", QCoreApplication.translate("MainToolbar", u"subtitle", None))
+        self.rig_name_label.setText(QCoreApplication.translate("MainToolbar", u"<Rig Name>", None))
+        self.rig_name_label.setProperty("cssClasses", QCoreApplication.translate("MainToolbar", u"help", None))
         self.blueprint_mode_label.setText(QCoreApplication.translate("MainToolbar", u"Blueprint", None))
         self.blueprint_mode_label.setProperty("cssClasses", QCoreApplication.translate("MainToolbar", u"mode-title", None))
         self.label_2.setText(QCoreApplication.translate("MainToolbar", u"|", None))
