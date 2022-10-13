@@ -74,12 +74,9 @@ class Blueprint(object):
         return blueprint
 
     def __init__(self):
-        self.settings = {
-            # the name of the rig this blueprint represents
-            BlueprintSettings.RIG_NAME: '',
-            # the format to use for naming the parent rig node
-            BlueprintSettings.RIG_NODE_NAME_FORMAT: '{rigName}_rig',
-        }
+        # various settings used by the blueprint, such as the rig name
+        self.settings = {}
+        self.add_missing_settings()
         # the version of this blueprint
         self.version = BLUEPRINT_VERSION
         # the root step of this blueprint
@@ -88,6 +85,15 @@ class Blueprint(object):
         self.configFile = getDefaultConfigFile()
         # the config, automatically loaded when calling `getConfig`
         self.config = None
+
+    def add_missing_settings(self):
+        """
+        Add new or missing settings to the Blueprint, do not overwrite any existing settings.
+        """
+        if BlueprintSettings.RIG_NAME not in self.settings:
+            self.setSetting(BlueprintSettings.RIG_NAME, '')
+        if BlueprintSettings.RIG_NODE_NAME_FORMAT not in self.settings:
+            self.setSetting(BlueprintSettings.RIG_NODE_NAME_FORMAT, '{rigName}_rig')
 
     def getSetting(self, key: str, default=None):
         """
@@ -126,6 +132,8 @@ class Blueprint(object):
         self.version = data.get('version', None)
         self.settings = data.get('settings', {})
         self.rootStep.deserialize(data.get('steps', {'name': 'Root'}))
+        # inject new or missing settings
+        self.add_missing_settings()
         return True
 
     def loadFromFile(self, filepath):

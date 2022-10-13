@@ -1,4 +1,6 @@
-rigName: cube_rig
+settings:
+  rigName: cube
+  rigNodeNameFormat: '{rigName}_rig'
 steps:
   children:
   - action:
