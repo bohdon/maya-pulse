@@ -25,10 +25,10 @@ class MainToolbar(QtWidgets.QWidget):
     def __init__(self, parent=None):
         super(MainToolbar, self).__init__(parent=parent)
 
-        self.isStateDirty = False
+        # used to cause a latent refresh after builds
+        self._isStateDirty = False
 
         self.blueprintModel = BlueprintUIModel.getDefaultModel()
-        self.blueprintModel.rigExistsChanged.connect(self._onRigExistsChanged)
 
         self.ui = Ui_MainToolbar()
         self.ui.setupUi(self)
@@ -38,8 +38,10 @@ class MainToolbar(QtWidgets.QWidget):
         self._updateRigName()
 
         # connect signals
+        self.blueprintModel.changeSceneFinished.connect(self._onChangeSceneFinished)
         self.blueprintModel.fileChanged.connect(self._onFileChanged)
         self.blueprintModel.isFileModifiedChanged.connect(self._onFileModifiedChanged)
+        self.blueprintModel.rigExistsChanged.connect(self._onRigExistsChanged)
         self.blueprintModel.readOnlyChanged.connect(self._onReadOnlyChanged)
         self.blueprintModel.rigNameChanged.connect(self._onRigNameChanged)
 
@@ -59,6 +61,10 @@ class MainToolbar(QtWidgets.QWidget):
         super(MainToolbar, self).showEvent(event)
         self._onStateDirty()
 
+    def _onChangeSceneFinished(self):
+        self._updateRigName()
+        self._updateMode()
+
     def _onFileChanged(self):
         self._updateMode()
 
@@ -69,6 +75,10 @@ class MainToolbar(QtWidgets.QWidget):
         self._updateRigName()
 
     def _updateRigName(self):
+        # prevent updating rig and file name while changing scenes
+        if self.blueprintModel.isChangingScenes:
+            return
+
         fileName = self.blueprintModel.getBlueprintFileName()
         if fileName is None:
             fileName = 'untitled'
@@ -83,17 +93,17 @@ class MainToolbar(QtWidgets.QWidget):
         self._cleanState()
         self._updateMode()
 
-    def _onReadOnlyChanged(self, is_read_only):
+    def _onReadOnlyChanged(self, isReadOnly):
         # TODO: represent read-only state somewhere
         pass
 
     def _cleanState(self):
-        self.isStateDirty = False
+        self._isStateDirty = False
         self.setEnabled(True)  # TODO: True if isBuilding
 
     def _onStateDirty(self):
-        if not self.isStateDirty:
-            self.isStateDirty = True
+        if not self._isStateDirty:
+            self._isStateDirty = True
             self.setEnabled(False)
             cmds.evalDeferred(self._cleanState)
 
@@ -101,6 +111,11 @@ class MainToolbar(QtWidgets.QWidget):
         """
         Update the mode header and visible page, blueprint or rig.
         """
+        # prevent mode changes while changing scenes to avoid flickering
+        # since a file may be briefly closed before a new one is opened
+        if self.blueprintModel.isChangingScenes:
+            return
+
         if self.blueprintModel.isFileOpen():
             self.ui.main_stack.setCurrentWidget(self.ui.opened_page)
         else:
@@ -145,19 +160,21 @@ class MainToolbar(QtWidgets.QWidget):
             if not BlueprintBuilder.preBuildValidate(blueprint):
                 return
 
+            # save maya scene
             # TODO: expose prompt to save scene as option
             if not editorutils.saveSceneIfDirty(prompt=False):
                 return
 
-            # if auto_save:
-            self.blueprintModel.saveFile()
+            # save blueprint
+            if self.blueprintModel.isFileModified():
+                if not self.blueprintModel.saveFileWithPrompt():
+                    return
 
-            builder = BlueprintBuilder.createBuilderWithCurrentScene(
-                blueprint, debug=True)
+            builder = BlueprintBuilder.createBuilderWithCurrentScene(blueprint, debug=True)
             builder.showProgressUI = True
             builder.start()
 
             cmds.evalDeferred(self._onStateDirty)
 
             # TODO: add build events for situations like this
-            cmds.evalDeferred(self.blueprintModel.reloadFile, low=True)
+            cmds.evalDeferred(self.blueprintModel.refreshRigExists, low=True)

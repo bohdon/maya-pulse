@@ -148,6 +148,9 @@
                 <height>0</height>
                </size>
               </property>
+              <property name="statusTip">
+               <string>Run validation on the blueprint and all actions.</string>
+              </property>
               <property name="text">
                <string> Validate</string>
               </property>
@@ -171,6 +174,9 @@
                 <height>0</height>
                </size>
               </property>
+              <property name="statusTip">
+               <string>Save the blueprint and scene and build the rig.</string>
+              </property>
               <property name="text">
                <string> Build</string>
               </property>
@@ -188,6 +194,9 @@
             </item>
             <item>
              <widget class="QPushButton" name="open_blueprint_btn">
+              <property name="statusTip">
+               <string>Open the blueprint scene that built this rig.</string>
+              </property>
               <property name="text">
                <string> Open Blueprint</string>
               </property>

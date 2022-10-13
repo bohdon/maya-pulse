@@ -181,11 +181,19 @@ class ActionTree(QtWidgets.QWidget):
 
         # connect signals
         self.model.modelReset.connect(self._on_model_reset)
+        self.blueprintModel.changeSceneFinished.connect(self._onChangeSceneFinished)
         self.blueprintModel.fileChanged.connect(self._onFileChanged)
 
         self._onFileChanged()
 
+    def _onChangeSceneFinished(self):
+        self._onFileChanged()
+
     def _onFileChanged(self):
+        # don't update until after scene change is finished
+        if self.blueprintModel.isChangingScenes:
+            return
+
         if self.blueprintModel.isFileOpen():
             self.ui.main_stack.setCurrentWidget(self.ui.active_page)
         else:

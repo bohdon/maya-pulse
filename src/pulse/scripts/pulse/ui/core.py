@@ -309,6 +309,10 @@ class BlueprintUIModel(QtCore.QObject):
     def setAutoShowActionEditor(self, value):
         self.autoShowActionEditor = value
 
+    # called after a scene change (new or opened) to allow ui to update
+    # if it was previously frozen while isChangingScenes is true
+    changeSceneFinished = QtCore.Signal()
+
     # called when the current blueprint file has changed
     fileChanged = QtCore.Signal()
 
@@ -370,12 +374,13 @@ class BlueprintUIModel(QtCore.QObject):
         self.buildStepSelectionModel = BuildStepSelectionModel(self.buildStepTreeModel, self)
 
         # register maya scene callbacks that can be used for auto save and load
+        self.isChangingScenes = False
         self._callbackIds = []
         self._addSceneCallbacks()
 
         # keep track of whether a rig is currently in the scene to determine which mode we are in
         self.doesRigExist = False
-        self._refreshRigExists()
+        self.refreshRigExists()
 
         if self.autoLoad:
             self.reloadFile()
@@ -445,7 +450,7 @@ class BlueprintUIModel(QtCore.QObject):
         """
         Can the blueprint file currently be saved?
         """
-        self._refreshRigExists()
+        self.refreshRigExists()
         return self.isFileOpen() and self._blueprintFile.can_save() and not self.doesRigExist
 
     def canLoad(self) -> bool:
@@ -508,7 +513,14 @@ class BlueprintUIModel(QtCore.QObject):
         self.readOnlyChanged.emit(self.isReadOnly())
 
     def openFileWithPrompt(self):
-        file_path_results = pm.fileDialog2(fileMode=1, fileFilter='Pulse Blueprint(*.yml)')
+        # default to opening from the directory of the maya scene
+        kwargs = {}
+        sceneName = pm.sceneName()
+        if sceneName:
+            sceneDir = str(sceneName.parent)
+            kwargs['startingDirectory'] = sceneDir
+
+        file_path_results = pm.fileDialog2(fileMode=1, fileFilter='Pulse Blueprint(*.yml)', **kwargs)
         if file_path_results:
             file_path = file_path_results[0]
             self.openFile(file_path)
@@ -541,7 +553,7 @@ class BlueprintUIModel(QtCore.QObject):
             return success
         return False
 
-    def _saveFileWithPrompt(self, caption='Save As', forcePrompt=False) -> bool:
+    def _saveFileWithPrompt(self, forcePrompt=False) -> bool:
         if not self.isFileOpen():
             LOG.error("Nothing to save.")
             return False
@@ -552,7 +564,7 @@ class BlueprintUIModel(QtCore.QObject):
 
         if forcePrompt or not self._blueprintFile.has_file_path():
             # prompt for file path
-            file_path_results = pm.fileDialog2(cap=caption, fileFilter='Pulse Blueprint (*.yml)')
+            file_path_results = pm.fileDialog2(cap='Save Blueprint', fileFilter='Pulse Blueprint (*.yml)')
             if not file_path_results:
                 return False
             self._blueprintFile.file_path = file_path_results[0]
@@ -568,7 +580,7 @@ class BlueprintUIModel(QtCore.QObject):
         Returns:
             True if the file was saved.
         """
-        return self._saveFileWithPrompt(caption='Save')
+        return self._saveFileWithPrompt()
 
     def saveFileAsWithPrompt(self) -> bool:
         """
@@ -577,7 +589,7 @@ class BlueprintUIModel(QtCore.QObject):
         Returns:
             True if the file was saved.
         """
-        return self._saveFileWithPrompt(caption='Save As', forcePrompt=True)
+        return self._saveFileWithPrompt(forcePrompt=True)
 
     def saveOrDiscardChangesWithPrompt(self) -> bool:
         """
@@ -588,13 +600,11 @@ class BlueprintUIModel(QtCore.QObject):
         """
         filePath = self.getBlueprintFilePath()
         if filePath:
-            title = 'Save Changes'
             message = f'Save changes to {filePath}?'
         else:
-            title = 'Save'
             message = f'Save changes to unsaved Blueprint?'
-        response = pm.confirmDialog(title=title, message=message, button=['Save', "Don't Save", 'Cancel'],
-                                    dismissString='Cancel')
+        response = pm.confirmDialog(title='Save Blueprint Changes', message=message,
+                                    button=['Save', "Don't Save", 'Cancel'], dismissString='Cancel')
         if response == 'Save':
             return self.saveFileWithPrompt()
         elif response == "Don't Save":
@@ -658,22 +668,25 @@ class BlueprintUIModel(QtCore.QObject):
             self.isFileModifiedChanged.emit(self.isFileModified())
             self.rigNameChanged.emit(self.blueprint.rigName)
 
-    def _refreshRigExists(self):
-        old_read_only = self.isReadOnly()
+    def refreshRigExists(self):
+        oldReadOnly = self.isReadOnly()
         self.doesRigExist = len(rigs.getAllRigs()) > 0
         self.rigExistsChanged.emit()
 
-        if old_read_only != self.isReadOnly():
+        if oldReadOnly != self.isReadOnly():
             self.readOnlyChanged.emit(self.isReadOnly())
 
     def _addSceneCallbacks(self):
         if not self._callbackIds:
-            save_id = api.MSceneMessage.addCallback(api.MSceneMessage.kBeforeSave, self._onBeforeSaveScene)
-            open_id = api.MSceneMessage.addCallback(api.MSceneMessage.kAfterOpen, self._onAfterOpenScene)
-            before_new_id = api.MSceneMessage.addCallback(api.MSceneMessage.kBeforeNew, self._onBeforeNewScene)
-            self._callbackIds.append(save_id)
-            self._callbackIds.append(open_id)
-            self._callbackIds.append(before_new_id)
+            saveId = api.MSceneMessage.addCallback(api.MSceneMessage.kBeforeSave, self._onBeforeSaveScene)
+            beforeOpenId = api.MSceneMessage.addCallback(api.MSceneMessage.kBeforeOpen, self._onBeforeOpenScene)
+            afterOpenId = api.MSceneMessage.addCallback(api.MSceneMessage.kAfterOpen, self._onAfterOpenScene)
+            beforeNewId = api.MSceneMessage.addCallback(api.MSceneMessage.kBeforeNew, self._onBeforeNewScene)
+            afterNewId = api.MSceneMessage.addCallback(api.MSceneMessage.kAfterNew, self._onAfterNewScene)
+            self._callbackIds.append(saveId)
+            self._callbackIds.append(afterOpenId)
+            self._callbackIds.append(beforeNewId)
+            self._callbackIds.append(afterNewId)
         LOG.debug('BlueprintUIModel: added scene callbacks')
 
     def _removeSceneCallbacks(self):
@@ -695,12 +708,25 @@ class BlueprintUIModel(QtCore.QObject):
 
             self.saveFile()
 
+    def _onBeforeOpenScene(self, clientData=None):
+        self.isChangingScenes = True
+        self.closeFile()
+
     def _onAfterOpenScene(self, clientData=None):
+        self.isChangingScenes = False
+        self.refreshRigExists()
         if self.autoLoad:
             self.openFile()
+        self.changeSceneFinished.emit()
 
     def _onBeforeNewScene(self, clientData=None):
+        self.isChangingScenes = True
         self.closeFile()
+
+    def _onAfterNewScene(self, clientData=None):
+        self.isChangingScenes = False
+        self.refreshRigExists()
+        self.changeSceneFinished.emit()
 
     def _shouldAutoSave(self):
         return self.autoSave and self.isFileOpen()
