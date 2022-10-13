@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>414</width>
-    <height>423</height>
+    <width>543</width>
+    <height>455</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -39,7 +39,7 @@
       <widget class="QLabel" name="file_path_label">
        <property name="minimumSize">
         <size>
-         <width>80</width>
+         <width>120</width>
          <height>20</height>
         </size>
        </property>
@@ -68,7 +68,7 @@
       <widget class="QLabel" name="rig_name_label">
        <property name="minimumSize">
         <size>
-         <width>80</width>
+         <width>120</width>
          <height>0</height>
         </size>
        </property>
@@ -85,6 +85,28 @@
      </item>
      <item row="1" column="1">
       <widget class="QLineEdit" name="rig_name_edit"/>
+     </item>
+     <item row="2" column="0">
+      <widget class="QLabel" name="rig_node_fmt_label">
+       <property name="minimumSize">
+        <size>
+         <width>120</width>
+         <height>0</height>
+        </size>
+       </property>
+       <property name="statusTip">
+        <string>The naming format to use for the parent rig node. Can use any settings key, such as {rigName}.</string>
+       </property>
+       <property name="text">
+        <string>Rig Node Name Format</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="1">
+      <widget class="QLineEdit" name="rig_node_fmt_edit"/>
      </item>
     </layout>
    </item>

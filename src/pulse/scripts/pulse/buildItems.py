@@ -137,465 +137,6 @@ def unregisterAction(actionId):
         del BUILDACTIONMAP[actionId]
 
 
-class BuildStep(object):
-    """
-    Represents a step to perform when building a Blueprint.
-    Steps are hierarchical, but a BuildStep that performs a BuildAction
-    cannot have children.
-    """
-
-    # TODO (bsayre): consider adding method to change the action type of the current proxy,
-    #       whilst preserving or transferring as much attr data as possible
-
-    @staticmethod
-    def fromData(data):
-        """
-        Return a new BuildStep instance created
-        from serialized data.
-
-        Args:
-            data (dict): Serialized BuildStep data
-        """
-        newStep = BuildStep()
-        newStep.deserialize(data)
-        return newStep
-
-    def __init__(self, name=None, actionProxy=None, actionId=None):
-        # the name of this step (unique among siblings)
-        self._name = None
-        # the parent BuildStep
-        self._parent = None
-        # list of child BuildSteps
-        self._children = []
-        # the BuildActionProxy for this step
-        self._actionProxy = actionProxy
-
-        # is this build step currently disabled?
-        self.isDisabled = False
-
-        # auto-create a basic BuildActionProxy if an actionId was given
-        if actionId:
-            self._actionProxy = BuildActionProxy(actionId)
-
-        # set the name, potentially defaulting to the action's name
-        self.setName(name)
-
-    @property
-    def name(self):
-        return self._name
-
-    def setName(self, newName):
-        """
-        Set the name of the BuildStep, modifying it if necessary
-        to ensure that it is unique among siblings.
-
-        Args:
-            newName (str): The new name of the step
-        """
-        newNameClean = self.getCleanName(newName)
-        if self._name != newNameClean:
-            self._name = newNameClean
-            self.ensureUniqueName()
-
-    def getCleanName(self, name):
-        # ensure a non-null name
-        if not name:
-            if self._actionProxy:
-                name = self._actionProxy.getDisplayName()
-            else:
-                name = 'New Step'
-        return name.strip()
-
-    def setNameFromAction(self):
-        """
-        Set the name of the BuildStep to match the action it contains.
-        """
-        if self._actionProxy:
-            self.setName(self._actionProxy.getDisplayName())
-
-    def isDisabledInHierarchy(self):
-        """
-        Return true if this step or any of its parents is disabled
-        """
-        if self.isDisabled:
-            return True
-        if self._parent:
-            return self._parent.isDisabledInHierarchy()
-        return False
-
-    def isAction(self):
-        return self._actionProxy is not None
-
-    @property
-    def actionProxy(self):
-        # type: () -> BuildActionProxy
-        return self._actionProxy
-
-    def setActionProxy(self, actionProxy):
-        """
-        Set a BuildActionProxy for this step. Will fail if
-        the step has any children.
-
-        Args:
-            actionProxy (BuildActionProxy): The new action proxy
-        """
-        if self._children:
-            LOG.warning("Cannot set a BuildActionProxy on a step with children. "
-                        "Clear all children first")
-            return
-
-        self._actionProxy = actionProxy
-
-    @property
-    def canHaveChildren(self):
-        return not self.isAction()
-
-    @property
-    def parent(self):
-        return self._parent
-
-    def setParentInternal(self, newParent):
-        self._parent = newParent
-        self.onParentChanged()
-
-    def setParent(self, newParent):
-        """
-        Set the parent of this BuildStep, removing it from
-        its old parent if necessary.
-        """
-        if newParent and not newParent.canHaveChildren:
-            raise ValueError(
-                "Cannot set parent to step that cannot have children: {0}".format(newParent))
-
-        if self._parent is not newParent:
-            if self._parent:
-                self._parent.removeChildInternal(self)
-                self._parent = None
-            if newParent:
-                newParent.addChild(self)
-            else:
-                self.setParentInternal(None)
-
-    def onParentChanged(self):
-        self.ensureUniqueName()
-
-    @property
-    def children(self):
-        return self._children
-
-    def __repr__(self):
-        return "<BuildStep '{0}'>".format(self.getDisplayName())
-
-    def ensureUniqueName(self):
-        """
-        Change this step's name to ensure that
-        it is unique among siblings.
-        """
-        if self._parent:
-            siblings = [c for c in self._parent.children if not (c is self)]
-            siblingNames = [s.name for s in siblings]
-            while self._name in siblingNames:
-                self._name = _incrementName(self._name)
-
-    def getDisplayName(self):
-        """
-        Return the display name for this step.
-        """
-        if self._actionProxy:
-            if self._actionProxy.isVariantAction():
-                return '{0} (x{1})'.format(
-                    self._name, self._actionProxy.numVariants())
-            else:
-                return '{0}'.format(self._name)
-        else:
-            return '{0} ({1})'.format(self._name, self.numChildren())
-
-    def getColor(self):
-        """
-        Return the color of this BuildStep when represented in the UI
-        """
-        if self._actionProxy:
-            return self._actionProxy.getColor()
-        return [1, 1, 1]
-
-    def getIconFile(self):
-        """
-        Return the full path to this build step's icon
-        """
-        if self._actionProxy:
-            return self._actionProxy.getIconFile()
-        else:
-            pass
-
-    def getFullPath(self):
-        """
-        Return the full path to this BuildStep.
-
-        Returns:
-            A string path to the step
-            e.g. 'MyGroupA/MyGroupB/MyBuildStep'
-        """
-        if self._parent:
-            parentPath = self._parent.getFullPath()
-            if parentPath:
-                return '{0}/{1}'.format(parentPath, self._name)
-            else:
-                return self._name
-        else:
-            # a root step, or step without a parent has no path
-            return None
-
-    def getParentPath(self):
-        """
-        Return the full path to this BuildStep's parent
-        """
-        if self._parent:
-            return self._parent.getFullPath()
-
-    def indexInParent(self):
-        """
-        Return the index of this within its parent's list of children.
-        """
-        if self.parent:
-            return self.parent.getChildIndex(self)
-        else:
-            return 0
-
-    def clearChildren(self):
-        if not self.canHaveChildren:
-            return
-
-        for step in self._children:
-            step.setParentInternal(None)
-
-        self._children = []
-
-    def addChild(self, step):
-        if not self.canHaveChildren:
-            return
-
-        if step is self:
-            raise ValueError('Cannot add step as child of itself')
-
-        if not isinstance(step, BuildStep):
-            raise TypeError(
-                'Expected BuildStep, got {0}'.format(type(step).__name__))
-
-        if step not in self._children:
-            self._children.append(step)
-            step.setParentInternal(self)
-
-    def addChildren(self, steps):
-        for step in steps:
-            self.addChild(step)
-
-    def removeChild(self, step):
-        if not self.canHaveChildren:
-            return
-
-        if step in self._children:
-            self._children.remove(step)
-            step.setParentInternal(None)
-
-    def removeChildInternal(self, step):
-        if step in self._children:
-            self._children.remove(step)
-
-    def removeChildren(self, index, count):
-        for _ in range(count):
-            self.removeChildAt(index)
-
-    def removeChildAt(self, index):
-        if not self.canHaveChildren:
-            return
-
-        if index < 0 or index >= len(self._children):
-            return
-
-        step = self._children[index]
-        step.setParentInternal(None)
-
-        del self._children[index]
-
-    def removeFromParent(self):
-        """
-        Remove this item from its parent, if any.
-        """
-        if self.parent:
-            self.parent.removeChild(self)
-
-    def insertChild(self, index, step):
-        if not self.canHaveChildren:
-            return
-
-        if not isinstance(step, BuildStep):
-            raise TypeError(
-                'Expected BuildStep, got {0}'.format(type(step).__name__))
-
-        if step not in self._children:
-            self._children.insert(index, step)
-            step.setParentInternal(self)
-
-    def numChildren(self):
-        if not self.canHaveChildren:
-            return 0
-
-        return len(self._children)
-
-    def hasAnyChildren(self):
-        return self.numChildren() != 0
-
-    def hasParent(self, step):
-        """
-        Return True if the step is an immediate or distance parent of this step.
-        """
-        if self.parent:
-            if self.parent == step:
-                return True
-            else:
-                return self.parent.hasParent(step)
-        return False
-
-    def getChildAt(self, index):
-        if not self.canHaveChildren:
-            return
-
-        if index < 0 or index >= len(self._children):
-            LOG.error("child index out of range: {0}, num children: {1}".format(
-                index, len(self._children)))
-            return
-
-        return self._children[index]
-
-    def getChildIndex(self, step):
-        """
-        Return the index of a BuildStep within this step's list of children
-        """
-        if not self.canHaveChildren:
-            return -1
-
-        return self._children.index(step)
-
-    def getChildByName(self, name):
-        """
-        Return a child step by name
-        """
-        if not self.canHaveChildren:
-            return
-
-        for step in self._children:
-            if step.name == name:
-                return step
-
-    def getChildByPath(self, path):
-        """
-        Return a child step by relative path
-        """
-        if not self.canHaveChildren:
-            return
-
-        if '/' in path:
-            childName, grandChildPath = path.split('/', 1)
-            child = self.getChildByName(childName)
-            if child:
-                return child.getChildByPath(grandChildPath)
-        else:
-            return self.getChildByName(path)
-
-    def childIterator(self):
-        """
-        Generator that yields all children, recursively.
-        """
-        if not self.canHaveChildren:
-            return
-        for child in self._children:
-            if child.isDisabled:
-                continue
-            yield child
-            for descendant in child.childIterator():
-                yield descendant
-
-    def actionIterator(self):
-        """
-        Return a generator that yields all actions for this step.
-        """
-        if self._actionProxy:
-            for elem in self._actionProxy.actionIterator():
-                yield elem
-
-    def serialize(self):
-        """
-        Return this BuildStep as a serialized dict object
-        """
-        data = UnsortableOrderedDict()
-        data['name'] = self._name
-
-        if self.isDisabled:
-            data['isDisabled'] = True
-
-        if self._actionProxy:
-            data['action'] = self._actionProxy.serialize()
-
-        if self.numChildren() > 0:
-            # TODO: perform a recursion loop check
-            data['children'] = [c.serialize() for c in self._children]
-
-        return data
-
-    def deserialize(self, data):
-        """
-        Load configuration of this BuildStep from data
-
-        Args:
-            data: A dict containing serialized data for this step
-        """
-        self.isDisabled = data.get('isDisabled', False)
-
-        if 'action' in data:
-            newActionProxy = BuildActionProxy()
-            newActionProxy.deserialize(data['action'])
-            self.setActionProxy(newActionProxy)
-        else:
-            self._actionProxy = None
-
-        # set name after action, so that if no name has
-        # been set yet, it will initialized with the name
-        # of the action
-        self.setName(data.get('name', None))
-
-        # TODO: warn if throwing away children in a rare case that
-        #       both a proxy and children existed (maybe data was manually created).
-        if self.canHaveChildren:
-            # detach any existing children
-            self.clearChildren()
-            # deserialize all children, and connect them to this parent
-            self._children = [BuildStep.fromData(
-                c) for c in data.get('children', [])]
-            for child in self._children:
-                if child:
-                    child.setParentInternal(self)
-
-    @staticmethod
-    def getTopmostSteps(steps):
-        """
-        Return a copy of the list of BuildSteps that doesn't include
-        any BuildSteps that have a parent or distant parent in the list.
-        """
-        def hasAnyParent(step, parents):
-            for parent in parents:
-                if step != parent and step.hasParent(parent):
-                    return True
-            return False
-
-        topSteps = []
-
-        for step in steps:
-            if not hasAnyParent(step, steps):
-                topSteps.append(step)
-
-        return topSteps
-
-
 class BuildActionError(Exception):
     """
     A BuildAction was misconfigured or failed during build
@@ -1431,3 +972,462 @@ class BuildAction(BuildActionData):
         that is desired.
         """
         raise NotImplementedError
+
+
+class BuildStep(object):
+    """
+    Represents a step to perform when building a Blueprint.
+    Steps are hierarchical, but a BuildStep that performs a BuildAction
+    cannot have children.
+    """
+
+    # TODO (bsayre): consider adding method to change the action type of the current proxy,
+    #       whilst preserving or transferring as much attr data as possible
+
+    @staticmethod
+    def fromData(data):
+        """
+        Return a new BuildStep instance created
+        from serialized data.
+
+        Args:
+            data (dict): Serialized BuildStep data
+        """
+        newStep = BuildStep()
+        newStep.deserialize(data)
+        return newStep
+
+    def __init__(self, name=None, actionProxy=None, actionId=None):
+        # the name of this step (unique among siblings)
+        self._name = None
+        # the parent BuildStep
+        self._parent = None
+        # list of child BuildSteps
+        self._children = []
+        # the BuildActionProxy for this step
+        self._actionProxy = actionProxy
+
+        # is this build step currently disabled?
+        self.isDisabled = False
+
+        # auto-create a basic BuildActionProxy if an actionId was given
+        if actionId:
+            self._actionProxy = BuildActionProxy(actionId)
+
+        # set the name, potentially defaulting to the action's name
+        self.setName(name)
+
+    @property
+    def name(self):
+        return self._name
+
+    def setName(self, newName):
+        """
+        Set the name of the BuildStep, modifying it if necessary
+        to ensure that it is unique among siblings.
+
+        Args:
+            newName (str): The new name of the step
+        """
+        newNameClean = self.getCleanName(newName)
+        if self._name != newNameClean:
+            self._name = newNameClean
+            self.ensureUniqueName()
+
+    def getCleanName(self, name):
+        # ensure a non-null name
+        if not name:
+            if self._actionProxy:
+                name = self._actionProxy.getDisplayName()
+            else:
+                name = 'New Step'
+        return name.strip()
+
+    def setNameFromAction(self):
+        """
+        Set the name of the BuildStep to match the action it contains.
+        """
+        if self._actionProxy:
+            self.setName(self._actionProxy.getDisplayName())
+
+    def isDisabledInHierarchy(self):
+        """
+        Return true if this step or any of its parents is disabled
+        """
+        if self.isDisabled:
+            return True
+        if self._parent:
+            return self._parent.isDisabledInHierarchy()
+        return False
+
+    def isAction(self):
+        return self._actionProxy is not None
+
+    @property
+    def actionProxy(self) -> BuildActionProxy:
+        return self._actionProxy
+
+    def setActionProxy(self, actionProxy):
+        """
+        Set a BuildActionProxy for this step. Will fail if
+        the step has any children.
+
+        Args:
+            actionProxy (BuildActionProxy): The new action proxy
+        """
+        if self._children:
+            LOG.warning("Cannot set a BuildActionProxy on a step with children. "
+                        "Clear all children first")
+            return
+
+        self._actionProxy = actionProxy
+
+    @property
+    def canHaveChildren(self):
+        return not self.isAction()
+
+    @property
+    def parent(self):
+        return self._parent
+
+    def setParentInternal(self, newParent):
+        self._parent = newParent
+        self.onParentChanged()
+
+    def setParent(self, newParent):
+        """
+        Set the parent of this BuildStep, removing it from
+        its old parent if necessary.
+        """
+        if newParent and not newParent.canHaveChildren:
+            raise ValueError(
+                "Cannot set parent to step that cannot have children: {0}".format(newParent))
+
+        if self._parent is not newParent:
+            if self._parent:
+                self._parent.removeChildInternal(self)
+                self._parent = None
+            if newParent:
+                newParent.addChild(self)
+            else:
+                self.setParentInternal(None)
+
+    def onParentChanged(self):
+        self.ensureUniqueName()
+
+    @property
+    def children(self):
+        return self._children
+
+    def __repr__(self):
+        return "<BuildStep '{0}'>".format(self.getDisplayName())
+
+    def ensureUniqueName(self):
+        """
+        Change this step's name to ensure that
+        it is unique among siblings.
+        """
+        if self._parent:
+            siblings = [c for c in self._parent.children if not (c is self)]
+            siblingNames = [s.name for s in siblings]
+            while self._name in siblingNames:
+                self._name = _incrementName(self._name)
+
+    def getDisplayName(self):
+        """
+        Return the display name for this step.
+        """
+        if self._actionProxy:
+            if self._actionProxy.isVariantAction():
+                return '{0} (x{1})'.format(
+                    self._name, self._actionProxy.numVariants())
+            else:
+                return '{0}'.format(self._name)
+        else:
+            return '{0} ({1})'.format(self._name, self.numChildren())
+
+    def getColor(self):
+        """
+        Return the color of this BuildStep when represented in the UI
+        """
+        if self._actionProxy:
+            return self._actionProxy.getColor()
+        return [1, 1, 1]
+
+    def getIconFile(self):
+        """
+        Return the full path to this build step's icon
+        """
+        if self._actionProxy:
+            return self._actionProxy.getIconFile()
+        else:
+            pass
+
+    def getFullPath(self):
+        """
+        Return the full path to this BuildStep.
+
+        Returns:
+            A string path to the step
+            e.g. 'MyGroupA/MyGroupB/MyBuildStep'
+        """
+        if self._parent:
+            parentPath = self._parent.getFullPath()
+            if parentPath:
+                return '{0}/{1}'.format(parentPath, self._name)
+            else:
+                return self._name
+        else:
+            # a root step, or step without a parent has no path
+            return None
+
+    def getParentPath(self):
+        """
+        Return the full path to this BuildStep's parent
+        """
+        if self._parent:
+            return self._parent.getFullPath()
+
+    def indexInParent(self):
+        """
+        Return the index of this within its parent's list of children.
+        """
+        if self.parent:
+            return self.parent.getChildIndex(self)
+        else:
+            return 0
+
+    def clearChildren(self):
+        if not self.canHaveChildren:
+            return
+
+        for step in self._children:
+            step.setParentInternal(None)
+
+        self._children = []
+
+    def addChild(self, step):
+        if not self.canHaveChildren:
+            return
+
+        if step is self:
+            raise ValueError('Cannot add step as child of itself')
+
+        if not isinstance(step, BuildStep):
+            raise TypeError(
+                'Expected BuildStep, got {0}'.format(type(step).__name__))
+
+        if step not in self._children:
+            self._children.append(step)
+            step.setParentInternal(self)
+
+    def addChildren(self, steps):
+        for step in steps:
+            self.addChild(step)
+
+    def removeChild(self, step):
+        if not self.canHaveChildren:
+            return
+
+        if step in self._children:
+            self._children.remove(step)
+            step.setParentInternal(None)
+
+    def removeChildInternal(self, step):
+        if step in self._children:
+            self._children.remove(step)
+
+    def removeChildren(self, index, count):
+        for _ in range(count):
+            self.removeChildAt(index)
+
+    def removeChildAt(self, index):
+        if not self.canHaveChildren:
+            return
+
+        if index < 0 or index >= len(self._children):
+            return
+
+        step = self._children[index]
+        step.setParentInternal(None)
+
+        del self._children[index]
+
+    def removeFromParent(self):
+        """
+        Remove this item from its parent, if any.
+        """
+        if self.parent:
+            self.parent.removeChild(self)
+
+    def insertChild(self, index, step):
+        if not self.canHaveChildren:
+            return
+
+        if not isinstance(step, BuildStep):
+            raise TypeError(
+                'Expected BuildStep, got {0}'.format(type(step).__name__))
+
+        if step not in self._children:
+            self._children.insert(index, step)
+            step.setParentInternal(self)
+
+    def numChildren(self) -> int:
+        if not self.canHaveChildren:
+            return 0
+
+        return len(self._children)
+
+    def hasAnyChildren(self):
+        return self.numChildren() != 0
+
+    def hasParent(self, step):
+        """
+        Return True if the step is an immediate or distance parent of this step.
+        """
+        if self.parent:
+            if self.parent == step:
+                return True
+            else:
+                return self.parent.hasParent(step)
+        return False
+
+    def getChildAt(self, index):
+        if not self.canHaveChildren:
+            return
+
+        if index < 0 or index >= len(self._children):
+            LOG.error("child index out of range: {0}, num children: {1}".format(
+                index, len(self._children)))
+            return
+
+        return self._children[index]
+
+    def getChildIndex(self, step):
+        """
+        Return the index of a BuildStep within this step's list of children
+        """
+        if not self.canHaveChildren:
+            return -1
+
+        return self._children.index(step)
+
+    def getChildByName(self, name):
+        """
+        Return a child step by name
+        """
+        if not self.canHaveChildren:
+            return
+
+        for step in self._children:
+            if step.name == name:
+                return step
+
+    def getChildByPath(self, path):
+        """
+        Return a child step by relative path
+        """
+        if not self.canHaveChildren:
+            return
+
+        if '/' in path:
+            childName, grandChildPath = path.split('/', 1)
+            child = self.getChildByName(childName)
+            if child:
+                return child.getChildByPath(grandChildPath)
+        else:
+            return self.getChildByName(path)
+
+    def childIterator(self):
+        """
+        Generator that yields all children, recursively.
+        """
+        if not self.canHaveChildren:
+            return
+        for child in self._children:
+            if child.isDisabled:
+                continue
+            yield child
+            for descendant in child.childIterator():
+                yield descendant
+
+    def actionIterator(self):
+        """
+        Return a generator that yields all actions for this step.
+        """
+        if self._actionProxy:
+            for elem in self._actionProxy.actionIterator():
+                yield elem
+
+    def serialize(self):
+        """
+        Return this BuildStep as a serialized dict object
+        """
+        data = UnsortableOrderedDict()
+        data['name'] = self._name
+
+        if self.isDisabled:
+            data['isDisabled'] = True
+
+        if self._actionProxy:
+            data['action'] = self._actionProxy.serialize()
+
+        if self.numChildren() > 0:
+            # TODO: perform a recursion loop check
+            data['children'] = [c.serialize() for c in self._children]
+
+        return data
+
+    def deserialize(self, data):
+        """
+        Load configuration of this BuildStep from data
+
+        Args:
+            data: A dict containing serialized data for this step
+        """
+        self.isDisabled = data.get('isDisabled', False)
+
+        if 'action' in data:
+            newActionProxy = BuildActionProxy()
+            newActionProxy.deserialize(data['action'])
+            self.setActionProxy(newActionProxy)
+        else:
+            self._actionProxy = None
+
+        # set name after action, so that if no name has
+        # been set yet, it will initialized with the name
+        # of the action
+        self.setName(data.get('name', None))
+
+        # TODO: warn if throwing away children in a rare case that
+        #       both a proxy and children existed (maybe data was manually created).
+        if self.canHaveChildren:
+            # detach any existing children
+            self.clearChildren()
+            # deserialize all children, and connect them to this parent
+            self._children = [BuildStep.fromData(
+                c) for c in data.get('children', [])]
+            for child in self._children:
+                if child:
+                    child.setParentInternal(self)
+
+    @staticmethod
+    def getTopmostSteps(steps):
+        """
+        Return a copy of the list of BuildSteps that doesn't include
+        any BuildSteps that have a parent or distant parent in the list.
+        """
+
+        def hasAnyParent(step, parents):
+            for parent in parents:
+                if step != parent and step.hasParent(parent):
+                    return True
+            return False
+
+        topSteps = []
+
+        for step in steps:
+            if not hasAnyParent(step, steps):
+                topSteps.append(step)
+
+        return topSteps

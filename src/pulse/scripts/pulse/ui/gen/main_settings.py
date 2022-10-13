@@ -17,7 +17,7 @@ class Ui_MainSettings(object):
     def setupUi(self, MainSettings):
         if not MainSettings.objectName():
             MainSettings.setObjectName(u"MainSettings")
-        MainSettings.resize(414, 423)
+        MainSettings.resize(543, 455)
         MainSettings.setMinimumSize(QSize(350, 400))
         self.verticalLayout = QVBoxLayout(MainSettings)
         self.verticalLayout.setObjectName(u"verticalLayout")
@@ -31,7 +31,7 @@ class Ui_MainSettings(object):
         self.formLayout_2.setVerticalSpacing(2)
         self.file_path_label = QLabel(MainSettings)
         self.file_path_label.setObjectName(u"file_path_label")
-        self.file_path_label.setMinimumSize(QSize(80, 20))
+        self.file_path_label.setMinimumSize(QSize(120, 20))
         self.file_path_label.setAlignment(Qt.AlignRight|Qt.AlignTrailing|Qt.AlignVCenter)
 
         self.formLayout_2.setWidget(0, QFormLayout.LabelRole, self.file_path_label)
@@ -44,7 +44,7 @@ class Ui_MainSettings(object):
 
         self.rig_name_label = QLabel(MainSettings)
         self.rig_name_label.setObjectName(u"rig_name_label")
-        self.rig_name_label.setMinimumSize(QSize(80, 0))
+        self.rig_name_label.setMinimumSize(QSize(120, 0))
         self.rig_name_label.setAlignment(Qt.AlignRight|Qt.AlignTrailing|Qt.AlignVCenter)
 
         self.formLayout_2.setWidget(1, QFormLayout.LabelRole, self.rig_name_label)
@@ -53,6 +53,18 @@ class Ui_MainSettings(object):
         self.rig_name_edit.setObjectName(u"rig_name_edit")
 
         self.formLayout_2.setWidget(1, QFormLayout.FieldRole, self.rig_name_edit)
+
+        self.rig_node_fmt_label = QLabel(MainSettings)
+        self.rig_node_fmt_label.setObjectName(u"rig_node_fmt_label")
+        self.rig_node_fmt_label.setMinimumSize(QSize(120, 0))
+        self.rig_node_fmt_label.setAlignment(Qt.AlignRight|Qt.AlignTrailing|Qt.AlignVCenter)
+
+        self.formLayout_2.setWidget(2, QFormLayout.LabelRole, self.rig_node_fmt_label)
+
+        self.rig_node_fmt_edit = QLineEdit(MainSettings)
+        self.rig_node_fmt_edit.setObjectName(u"rig_node_fmt_edit")
+
+        self.formLayout_2.setWidget(2, QFormLayout.FieldRole, self.rig_node_fmt_edit)
 
 
         self.verticalLayout.addLayout(self.formLayout_2)
@@ -80,5 +92,9 @@ class Ui_MainSettings(object):
         self.rig_name_label.setStatusTip(QCoreApplication.translate("MainSettings", u"The name of the rig. Used to name the core hierarchy nodes and can be used by actions as well.", None))
 #endif // QT_CONFIG(statustip)
         self.rig_name_label.setText(QCoreApplication.translate("MainSettings", u"Rig Name", None))
+#if QT_CONFIG(statustip)
+        self.rig_node_fmt_label.setStatusTip(QCoreApplication.translate("MainSettings", u"The naming format to use for the parent rig node. Can use any settings key, such as {rigName}.", None))
+#endif // QT_CONFIG(statustip)
+        self.rig_node_fmt_label.setText(QCoreApplication.translate("MainSettings", u"Rig Node Name Format", None))
     # retranslateUi
 

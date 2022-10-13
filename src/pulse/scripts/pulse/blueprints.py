@@ -49,6 +49,14 @@ def _loadConfig(configFile):
         return yaml.load(fp)
 
 
+class BlueprintSettings(object):
+    """
+    Constants defining the keys for Blueprint settings.
+    """
+    RIG_NAME = 'rigName'
+    RIG_NODE_NAME_FORMAT = 'rigNodeNameFormat'
+
+
 class Blueprint(object):
     """
     A Blueprint contains all the information necessary to build
@@ -66,8 +74,12 @@ class Blueprint(object):
         return blueprint
 
     def __init__(self):
-        # the name of the rig this blueprint represents
-        self.rigName = ''
+        self.settings = {
+            # the name of the rig this blueprint represents
+            BlueprintSettings.RIG_NAME: '',
+            # the format to use for naming the parent rig node
+            BlueprintSettings.RIG_NODE_NAME_FORMAT: '{rigName}_rig',
+        }
         # the version of this blueprint
         self.version = BLUEPRINT_VERSION
         # the root step of this blueprint
@@ -77,20 +89,32 @@ class Blueprint(object):
         # the config, automatically loaded when calling `getConfig`
         self.config = None
 
+    def getSetting(self, key: str, default=None):
+        """
+        Return a Blueprint setting by key.
+        """
+        return self.settings.get(key, default)
+
+    def setSetting(self, key: str, value):
+        """
+        Set a Blueprint setting by key.
+        """
+        self.settings[key] = value
+
     def isEmpty(self):
         """
         Return True if this Blueprint is empty.
         """
-        if self.rigName.strip():
+        if self.getSetting(BlueprintSettings.RIG_NAME).strip():
             return False
-        if self.rootStep.numChildren > 0:
+        if self.rootStep.numChildren() > 0:
             return False
         return True
 
     def serialize(self):
         data = UnsortableOrderedDict()
         data['version'] = self.version
-        data['rigName'] = self.rigName
+        data['settings'] = self.settings
         data['steps'] = self.rootStep.serialize()
         return data
 
@@ -100,7 +124,7 @@ class Blueprint(object):
             True if the data was deserialized successfully
         """
         self.version = data.get('version', None)
-        self.rigName = data.get('rigName', None)
+        self.settings = data.get('settings', {})
         self.rootStep.deserialize(data.get('steps', {'name': 'Root'}))
         return True
 
@@ -351,7 +375,7 @@ class BlueprintBuilder(object):
             LOG.error('No Blueprint was provided')
             return False
 
-        if not blueprint.rigName:
+        if not blueprint.getSetting(BlueprintSettings.RIG_NAME):
             LOG.error('Rig name is not set')
             return False
 
@@ -389,8 +413,8 @@ class BlueprintBuilder(object):
             raise ValueError("Expected Blueprint, got {0}".format(
                 type(blueprint).__name__))
 
-        if not blueprint.rigName:
-            raise ValueError("Blueprint rigName is not set")
+        if not blueprint.getSetting(BlueprintSettings.RIG_NAME):
+            raise ValueError("Blueprint 'rigName' setting is not set.")
 
         # the name of this builder object, used in logs
         self.builderName = 'Builder'
@@ -413,6 +437,7 @@ class BlueprintBuilder(object):
         self.blueprint = blueprint
         self.blueprintFile = blueprintFile
         self.debug = debug
+        self.rigName = self.blueprint.getSetting(BlueprintSettings.RIG_NAME)
 
         # create a logger, and setup a file handler
         self.log = logging.getLogger('pulse.build')
@@ -428,7 +453,7 @@ class BlueprintBuilder(object):
 
         # the output directory for log files
         dateStr = datetime.now().strftime('%Y-%m-%d_%H%M%S')
-        rigName = self.blueprint.rigName if self.blueprint else 'test'
+        rigName = self.blueprint.getSetting(BlueprintSettings.RIG_NAME, 'test')
         logFileName = 'pulse_build_{0}_{1}.log'.format(rigName, dateStr)
         logFile = os.path.join(logDir, logFileName)
 
@@ -548,8 +573,7 @@ class BlueprintBuilder(object):
             self.log.info(startMsg)
 
     def getStartBuildLogMessage(self):
-        return "Started building rig: {0} (debug={1})".format(
-            self.blueprint.rigName, self.debug)
+        return f"Started building rig: {self.rigName} (debug={self.debug})"
 
     def onProgress(self, index, total, status):
         """
@@ -607,7 +631,7 @@ class BlueprintBuilder(object):
     def getFinishBuildLogMessage(self):
         errorCount = len(self.errors)
         return "Built Rig '{0}', {1:.3f} seconds, {2} error(s)".format(
-            self.blueprint.rigName, self.elapsedTime, errorCount)
+            self.rigName, self.elapsedTime, errorCount)
 
     def getFinishBuildInViewMessage(self):
         errorCount = len(self.errors)
@@ -692,7 +716,9 @@ class BlueprintBuilder(object):
 
     def createRigStructure(self):
         # create a new rig
-        self.rig = createRigNode(self.blueprint.rigName)
+        node_name_format = self.blueprint.getSetting(BlueprintSettings.RIG_NODE_NAME_FORMAT)
+        rig_node_name = node_name_format.format(rigName=self.rigName)
+        self.rig = createRigNode(rig_node_name)
         # add some additional meta data
         meta.updateMetaData(self.rig, RIG_METACLASS, dict(
             version=BLUEPRINT_VERSION,
@@ -738,13 +764,12 @@ class BlueprintValidator(BlueprintBuilder):
         return
 
     def getFinishBuildLogMessage(self):
-        errorCount = len(self.errors)
-        return "Validated Rig '{0}': {1} error(s)".format(
-            self.blueprint.rigName, errorCount)
+        error_count = len(self.errors)
+        return f"Validated Rig '{self.rigName}': {error_count} error(s)"
 
     def getFinishBuildInViewMessage(self):
-        errorCount = len(self.errors)
-        return 'Validate Finished with {0} error(s)'.format(errorCount)
+        error_count = len(self.errors)
+        return f'Validate Finished with {error_count} error(s)'
 
     def runBuildAction(self, step, action, index, actionCount):
         try:

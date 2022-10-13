@@ -16,7 +16,7 @@ import pymetanode as meta
 from .utils import CollapsibleFrame
 from .utils import dpiScale
 from .. import rigs
-from ..blueprints import Blueprint, BlueprintFile
+from ..blueprints import Blueprint, BlueprintFile, BlueprintSettings
 from ..buildItems import BuildStep, BuildAction
 from ..prefs import optionVarProperty
 from ..serializer import serializeAttrValue
@@ -319,15 +319,14 @@ class BlueprintUIModel(QtCore.QObject):
     # called when the modified status of the file has changed
     isFileModifiedChanged = QtCore.Signal(bool)
 
-    # a config property on the blueprint changed
-    # TODO: add more generic blueprint property data model
-    rigNameChanged = QtCore.Signal(str)
+    # called when the read-only state of the blueprint has changed
+    readOnlyChanged = QtCore.Signal(bool)
+
+    # called when a Blueprint setting has changed, passes the setting key and new value
+    settingChanged = QtCore.Signal(str, object)
 
     # called when the presence of a built rig has changed
     rigExistsChanged = QtCore.Signal()
-
-    # called when the read-only state of the blueprint has changed
-    readOnlyChanged = QtCore.Signal(bool)
 
     @classmethod
     def getDefaultModel(cls) -> 'BlueprintUIModel':
@@ -473,13 +472,12 @@ class BlueprintUIModel(QtCore.QObject):
 
         self._blueprintFile = BlueprintFile()
         self._blueprintFile.resolve_file_path(allow_existing=False)
-        self._blueprintFile.blueprint.rigName = 'untitled'
+        self._blueprintFile.blueprint.setSetting(BlueprintSettings.RIG_NAME, 'untitled')
 
         self.buildStepTreeModel.setBlueprint(self.blueprint)
         self.buildStepTreeModel.endResetModel()
 
         self.fileChanged.emit()
-        self.rigNameChanged.emit(self.blueprint.rigName)
         self.readOnlyChanged.emit(self.isReadOnly())
 
     def openFile(self, filePath: Optional[str] = None):
@@ -509,7 +507,6 @@ class BlueprintUIModel(QtCore.QObject):
         self.buildStepTreeModel.endResetModel()
 
         self.fileChanged.emit()
-        self.rigNameChanged.emit(self.blueprint.rigName)
         self.readOnlyChanged.emit(self.isReadOnly())
 
     def openFileWithPrompt(self):
@@ -632,14 +629,12 @@ class BlueprintUIModel(QtCore.QObject):
             self._blueprintFile.load()
             self.isFileModifiedChanged.emit(self.isFileModified())
             self.buildStepTreeModel.endResetModel()
-            self.rigNameChanged.emit(self.blueprint.rigName)
 
     def closeFile(self, promptSaveChanges=True) -> bool:
         """
         Close the current Blueprint File.
         Returns true if the file was successfully closed, or false if canceled due to unsaved changes.
         """
-        print(f'promptSaveChanges: {promptSaveChanges}')
         if promptSaveChanges and self.isFileModified():
             if not self.saveOrDiscardChangesWithPrompt():
                 return
@@ -652,21 +647,36 @@ class BlueprintUIModel(QtCore.QObject):
         self.buildStepTreeModel.endResetModel()
 
         self.fileChanged.emit()
-        self.rigNameChanged.emit(self.blueprint.rigName)
         self.readOnlyChanged.emit(self.isReadOnly())
         return True
 
-    def setRigName(self, newRigName):
+    def getRigName(self):
+        """
+        Helper to return the BlueprintSettings.RIG_NAME setting.
+        """
+        return self.getSetting(BlueprintSettings.RIG_NAME)
+
+    def getSetting(self, key, default=None):
+        """
+        Helper to return a Blueprint setting.
+        """
+        return self.blueprint.getSetting(key, default)
+
+    def setSetting(self, key, value):
+        """
+        Set a Blueprint setting.
+        """
         if self.isReadOnly():
-            LOG.error('setRigName: Cannot edit readonly Blueprint')
+            LOG.error('setSetting: Cannot edit readonly Blueprint')
             return
 
-        if self.blueprint.rigName != newRigName:
-            self.blueprint.rigName = newRigName
+        oldValue = self.blueprint.getSetting(key)
+        if oldValue != value:
+            self.blueprint.setSetting(key, value)
             # TOOD: store modified state in blueprint so blueprintFile doesn't have to be updated
             self._blueprintFile.modify()
             self.isFileModifiedChanged.emit(self.isFileModified())
-            self.rigNameChanged.emit(self.blueprint.rigName)
+            self.settingChanged.emit(key, value)
 
     def refreshRigExists(self):
         oldReadOnly = self.isReadOnly()
@@ -679,13 +689,14 @@ class BlueprintUIModel(QtCore.QObject):
     def _addSceneCallbacks(self):
         if not self._callbackIds:
             saveId = api.MSceneMessage.addCallback(api.MSceneMessage.kBeforeSave, self._onBeforeSaveScene)
-            beforeOpenId = api.MSceneMessage.addCallback(api.MSceneMessage.kBeforeOpen, self._onBeforeOpenScene)
-            afterOpenId = api.MSceneMessage.addCallback(api.MSceneMessage.kAfterOpen, self._onAfterOpenScene)
-            beforeNewId = api.MSceneMessage.addCallback(api.MSceneMessage.kBeforeNew, self._onBeforeNewScene)
-            afterNewId = api.MSceneMessage.addCallback(api.MSceneMessage.kAfterNew, self._onAfterNewScene)
             self._callbackIds.append(saveId)
+            beforeOpenId = api.MSceneMessage.addCallback(api.MSceneMessage.kBeforeOpen, self._onBeforeOpenScene)
+            self._callbackIds.append(beforeOpenId)
+            afterOpenId = api.MSceneMessage.addCallback(api.MSceneMessage.kAfterOpen, self._onAfterOpenScene)
             self._callbackIds.append(afterOpenId)
+            beforeNewId = api.MSceneMessage.addCallback(api.MSceneMessage.kBeforeNew, self._onBeforeNewScene)
             self._callbackIds.append(beforeNewId)
+            afterNewId = api.MSceneMessage.addCallback(api.MSceneMessage.kAfterNew, self._onAfterNewScene)
             self._callbackIds.append(afterNewId)
         LOG.debug('BlueprintUIModel: added scene callbacks')
 

@@ -69,7 +69,7 @@ def getSelectedRigs():
     return rigs
 
 
-def createRigNode(name):
+def createRigNode(name: str):
     """
     Create and return a new Rig node
 
@@ -77,13 +77,12 @@ def createRigNode(name):
         name: A str name of the rig
     """
     if cmds.objExists(name):
-        raise ValueError(
-            "Cannot create rig, node already exists: {0}".format(name))
+        raise ValueError(f"Cannot create rig, node already exists: {name}")
     node = pm.group(name=name, em=True)
     for a in ('tx', 'ty', 'tz', 'rx', 'ry', 'rz', 'sx', 'sy', 'sz'):
         node.attr(a).setLocked(True)
         node.attr(a).setKeyable(False)
-    # set initial meta data for the rig
+    # set initial metadata for the rig
     meta.setMetaData(node, RIG_METACLASS, {'name': name})
     return node
 

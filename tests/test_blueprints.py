@@ -2,7 +2,7 @@
 import unittest
 import pymel.core as pm
 
-import pulse.blueprints
+from pulse.blueprints import Blueprint, BlueprintSettings, BlueprintBuilder
 import pulse.buildItems
 import pulse.controlshapes
 import pulse.rigs
@@ -38,8 +38,8 @@ class TestBlueprints(unittest.TestCase):
         pm.delete(pulse.rigs.getAllRigs())
 
     def test_build(self):
-        bp = pulse.blueprints.Blueprint()
-        bp.rigName = 'testRig'
+        bp = Blueprint()
+        bp.setSetting(BlueprintSettings.RIG_NAME, 'testRig')
         bp.addDefaultActions()
 
         mainStep = bp.getStepByPath('Main')
@@ -52,7 +52,7 @@ class TestBlueprints(unittest.TestCase):
 
         self.assertTrue(len(mainStep.children) == 1)
 
-        builder = pulse.blueprints.BlueprintBuilder(bp)
+        builder = BlueprintBuilder(bp)
         builder.start()
 
         self.assertTrue(builder.isFinished)
@@ -74,7 +74,7 @@ class TestBlueprints(unittest.TestCase):
         self.assertTrue(len(assemblies) == 5)
 
     def test_build_steps(self):
-        bp = pulse.blueprints.Blueprint()
+        bp = Blueprint()
 
         stepA = pulse.buildItems.BuildStep('StepFirst')
         stepB = pulse.buildItems.BuildStep('StepB')
@@ -136,10 +136,10 @@ class TestBlueprints(unittest.TestCase):
         self.assertTrue(stepX.numChildren() == 0)
 
     def test_deserialize(self):
-        bp = pulse.blueprints.Blueprint()
+        bp = Blueprint()
         bp.loadFromYaml(EXAMPLE_BLUEPRINT_A)
 
-        self.assertEqual(bp.rigName, 'TestRig')
+        self.assertEqual(bp.getSetting(BlueprintSettings.RIG_NAME), 'TestRig')
         self.assertTrue(bp.rootStep.numChildren() == 4)
 
         stepA = bp.getStepByPath('Main/GroupA')

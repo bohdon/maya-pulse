@@ -8,7 +8,7 @@ import maya.cmds as cmds
 
 from ..vendor.Qt import QtWidgets
 from .. import editorutils
-from ..blueprints import BlueprintBuilder, BlueprintValidator
+from ..blueprints import BlueprintBuilder, BlueprintValidator, BlueprintSettings
 from ..rigs import openFirstRigBlueprint
 from .core import BlueprintUIModel
 from .main_settings import MainSettingsWindow
@@ -43,7 +43,7 @@ class MainToolbar(QtWidgets.QWidget):
         self.blueprintModel.isFileModifiedChanged.connect(self._onFileModifiedChanged)
         self.blueprintModel.rigExistsChanged.connect(self._onRigExistsChanged)
         self.blueprintModel.readOnlyChanged.connect(self._onReadOnlyChanged)
-        self.blueprintModel.rigNameChanged.connect(self._onRigNameChanged)
+        self.blueprintModel.settingChanged.connect(self._onSettingChanged)
 
         self.ui.new_blueprint_btn.clicked.connect(self.blueprintModel.newFile)
         self.ui.validate_btn.clicked.connect(self.runValidation)
@@ -71,8 +71,9 @@ class MainToolbar(QtWidgets.QWidget):
     def _onFileModifiedChanged(self, isModified):
         self._updateRigName()
 
-    def _onRigNameChanged(self, name):
-        self._updateRigName()
+    def _onSettingChanged(self, key: str, value: object):
+        if key == BlueprintSettings.RIG_NAME:
+            self._updateRigName()
 
     def _updateRigName(self):
         # prevent updating rig and file name while changing scenes
@@ -85,7 +86,7 @@ class MainToolbar(QtWidgets.QWidget):
         if self.blueprintModel.isFileModified():
             fileName += '*'
 
-        self.ui.rig_name_label.setText(self.blueprintModel.blueprint.rigName)
+        self.ui.rig_name_label.setText(self.blueprintModel.getSetting(BlueprintSettings.RIG_NAME))
         self.ui.blueprint_file_name_label.setText(fileName)
         self.ui.blueprint_file_name_label.setToolTip(self.blueprintModel.getBlueprintFilePath())
 
