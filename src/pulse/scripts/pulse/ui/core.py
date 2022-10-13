@@ -472,7 +472,7 @@ class BlueprintUIModel(QtCore.QObject):
 
         self._blueprintFile = BlueprintFile()
         self._blueprintFile.resolve_file_path(allow_existing=False)
-        self._blueprintFile.blueprint.setSetting(BlueprintSettings.RIG_NAME, 'untitled')
+        self._blueprintFile.blueprint.set_setting(BlueprintSettings.RIG_NAME, 'untitled')
 
         self.buildStepTreeModel.setBlueprint(self.blueprint)
         self.buildStepTreeModel.endResetModel()
@@ -660,7 +660,7 @@ class BlueprintUIModel(QtCore.QObject):
         """
         Helper to return a Blueprint setting.
         """
-        return self.blueprint.getSetting(key, default)
+        return self.blueprint.get_setting(key, default)
 
     def setSetting(self, key, value):
         """
@@ -670,9 +670,9 @@ class BlueprintUIModel(QtCore.QObject):
             LOG.error('setSetting: Cannot edit readonly Blueprint')
             return
 
-        oldValue = self.blueprint.getSetting(key)
+        oldValue = self.blueprint.get_setting(key)
         if oldValue != value:
-            self.blueprint.setSetting(key, value)
+            self.blueprint.set_setting(key, value)
             # TOOD: store modified state in blueprint so blueprintFile doesn't have to be updated
             self._blueprintFile.modify()
             self.isFileModifiedChanged.emit(self.isFileModified())
@@ -748,7 +748,7 @@ class BlueprintUIModel(QtCore.QObject):
         """
         if self.isFileOpen() and not self.isReadOnly():
             self.buildStepTreeModel.beginResetModel()
-            self.blueprint.addDefaultActions()
+            self.blueprint.add_default_actions()
             # TODO: again move modify to blueprint
             self._blueprintFile.modify()
             self.isFileModifiedChanged.emit(self.isFileModified())
@@ -770,7 +770,7 @@ class BlueprintUIModel(QtCore.QObject):
             LOG.error('createStep: Cannot edit readonly Blueprint')
             return
 
-        parentStep = self.blueprint.getStepByPath(parentPath)
+        parentStep = self.blueprint.get_step_by_path(parentPath)
         if not parentStep:
             LOG.error("createStep: failed to find parent step: %s", parentPath)
             return
@@ -801,7 +801,7 @@ class BlueprintUIModel(QtCore.QObject):
             LOG.error('deleteStep: Cannot edit readonly Blueprint')
             return False
 
-        step = self.blueprint.getStepByPath(stepPath)
+        step = self.blueprint.get_step_by_path(stepPath)
         if not step:
             LOG.error("deleteStep: failed to find step: %s", stepPath)
             return False
@@ -827,7 +827,7 @@ class BlueprintUIModel(QtCore.QObject):
             LOG.error('moveStep: Cannot edit readonly Blueprint')
             return
 
-        step = self.blueprint.getStepByPath(sourcePath)
+        step = self.blueprint.get_step_by_path(sourcePath)
         if not step:
             LOG.error("moveStep: failed to find step: %s", sourcePath)
             return
@@ -841,7 +841,7 @@ class BlueprintUIModel(QtCore.QObject):
         sourceParentPath = os.path.dirname(sourcePath)
         targetParentPath = os.path.dirname(targetPath)
         if sourceParentPath != targetParentPath:
-            step.setParent(self.blueprint.getStepByPath(targetParentPath))
+            step.setParent(self.blueprint.get_step_by_path(targetParentPath))
         targetName = os.path.basename(targetPath)
         step.setName(targetName)
 
@@ -854,7 +854,7 @@ class BlueprintUIModel(QtCore.QObject):
             LOG.error('renameStep: Cannot edit readonly Blueprint')
             return
 
-        step = self.blueprint.getStepByPath(stepPath)
+        step = self.blueprint.get_step_by_path(stepPath)
         if not step:
             LOG.error("moveStep: failed to find step: %s", stepPath)
             return
@@ -876,7 +876,7 @@ class BlueprintUIModel(QtCore.QObject):
         """
         Return the BuildStep at a path
         """
-        return self.blueprint.getStepByPath(stepPath)
+        return self.blueprint.get_step_by_path(stepPath)
 
     def getStepData(self, stepPath):
         """
@@ -1059,7 +1059,7 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
         Return a QModelIndex for a step by path
         """
         if self._blueprint:
-            step = self._blueprint.getStepByPath(path)
+            step = self._blueprint.get_step_by_path(path)
             return self.indexByStep(step)
         return QtCore.QModelIndex()
 
@@ -1397,7 +1397,7 @@ class BuildStepSelectionModel(QtCore.QItemSelectionModel):
             return
 
         blueprint = self.model()._blueprint
-        steps = [blueprint.getStepByPath(p) for p in paths]
+        steps = [blueprint.get_step_by_path(p) for p in paths]
         indexes = [self.model().indexByStep(s) for s in steps if s]
         self.clearSelection()
         for index in indexes:

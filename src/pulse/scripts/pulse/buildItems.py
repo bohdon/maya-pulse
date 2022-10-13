@@ -1,6 +1,7 @@
 import logging
 import os
 import re
+from typing import List, Iterable
 
 import maya.cmds as cmds
 
@@ -732,7 +733,7 @@ class BuildActionProxy(BuildActionData):
         variant.deserialize(data)
         return variant
 
-    def actionIterator(self):
+    def actionIterator(self) -> Iterable['BuildAction']:
         """
         Generator that yields all the BuildActions represented
         by this proxy. If variants are in use, constructs a BuildAction
@@ -1003,7 +1004,7 @@ class BuildStep(object):
         # the parent BuildStep
         self._parent = None
         # list of child BuildSteps
-        self._children = []
+        self._children: List[BuildStep] = []
         # the BuildActionProxy for this step
         self._actionProxy = actionProxy
 
@@ -1338,7 +1339,7 @@ class BuildStep(object):
         else:
             return self.getChildByName(path)
 
-    def childIterator(self):
+    def childIterator(self) -> Iterable['BuildStep']:
         """
         Generator that yields all children, recursively.
         """
@@ -1351,7 +1352,7 @@ class BuildStep(object):
             for descendant in child.childIterator():
                 yield descendant
 
-    def actionIterator(self):
+    def actionIterator(self) -> Iterable[BuildAction]:
         """
         Return a generator that yields all actions for this step.
         """

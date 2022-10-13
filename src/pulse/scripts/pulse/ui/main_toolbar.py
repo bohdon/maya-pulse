@@ -149,7 +149,7 @@ class MainToolbar(QtWidgets.QWidget):
     def runValidation(self):
         blueprint = self.blueprintModel.blueprint
         if blueprint is not None:
-            if not BlueprintBuilder.preBuildValidate(blueprint):
+            if not BlueprintBuilder.pre_build_validate(blueprint):
                 return
 
             validator = BlueprintValidator(blueprint, debug=True)
@@ -158,7 +158,7 @@ class MainToolbar(QtWidgets.QWidget):
     def runBuild(self):
         blueprint = self.blueprintModel.blueprint
         if blueprint is not None:
-            if not BlueprintBuilder.preBuildValidate(blueprint):
+            if not BlueprintBuilder.pre_build_validate(blueprint):
                 return
 
             # save maya scene
@@ -171,8 +171,8 @@ class MainToolbar(QtWidgets.QWidget):
                 if not self.blueprintModel.saveFileWithPrompt():
                     return
 
-            builder = BlueprintBuilder.createBuilderWithCurrentScene(blueprint, debug=True)
-            builder.showProgressUI = True
+            builder = BlueprintBuilder.from_current_scene(blueprint, debug=True)
+            builder.show_progress_ui = True
             builder.start()
 
             cmds.evalDeferred(self._onStateDirty)

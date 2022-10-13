@@ -137,7 +137,7 @@ class MainEditor(QtWidgets.QWidget):
     def debug_print_serialized(self):
         print(self.blueprint_model, self.blueprint_model.blueprint)
         print(self.blueprint_model.getBlueprintFilePath())
-        print(self.blueprint_model.blueprint.dumpYaml())
+        print(self.blueprint_model.blueprint.dump_yaml())
 
     def _on_action_selection_changed(self, selected: QtCore.QItemSelection, deselected: QtCore.QItemSelection):
         if not selected.isEmpty():

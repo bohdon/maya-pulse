@@ -41,7 +41,7 @@ class QuickColorWidget(QtWidgets.QWidget):
                 style.UIColors.asFGColor(style.UIColors.ERROR))
 
     def _getConfig(self):
-        config = self.blueprintModel.blueprint.getConfig()
+        config = self.blueprintModel.blueprint.get_config()
         return config if config else {}
 
     def setupUi(self, parent):

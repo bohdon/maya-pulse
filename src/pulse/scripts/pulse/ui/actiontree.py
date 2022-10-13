@@ -251,7 +251,7 @@ class MirrorActionUtil(object):
 
     def getConfig(self):
         if self._config is None:
-            self._config = self.blueprintModel.blueprint.getConfig()
+            self._config = self.blueprintModel.blueprint.get_config()
         return self._config
 
     def getMirroredStepName(self, stepName):

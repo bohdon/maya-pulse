@@ -9,7 +9,8 @@ import pulse.rigs
 
 EXAMPLE_BLUEPRINT_A = """
 version: 1.0.0
-rigName: TestRig
+settings:
+  rigName: TestRig
 steps:
   name: Root
   children:
@@ -39,10 +40,10 @@ class TestBlueprints(unittest.TestCase):
 
     def test_build(self):
         bp = Blueprint()
-        bp.setSetting(BlueprintSettings.RIG_NAME, 'testRig')
-        bp.addDefaultActions()
+        bp.set_setting(BlueprintSettings.RIG_NAME, 'testRig')
+        bp.add_default_actions()
 
-        mainStep = bp.getStepByPath('Main')
+        mainStep = bp.get_step_by_path('Main')
 
         ctlNode = pm.polyCube(n='my_ctl')[0]
 
@@ -55,7 +56,7 @@ class TestBlueprints(unittest.TestCase):
         builder = BlueprintBuilder(bp)
         builder.start()
 
-        self.assertTrue(builder.isFinished)
+        self.assertTrue(builder.is_finished)
         self.assertTrue(len(builder.errors) == 0)
 
         rig_node = pm.ls('testRig')
@@ -137,13 +138,13 @@ class TestBlueprints(unittest.TestCase):
 
     def test_deserialize(self):
         bp = Blueprint()
-        bp.loadFromYaml(EXAMPLE_BLUEPRINT_A)
+        bp.load_from_yaml(EXAMPLE_BLUEPRINT_A)
 
-        self.assertEqual(bp.getSetting(BlueprintSettings.RIG_NAME), 'TestRig')
+        self.assertEqual(bp.get_setting(BlueprintSettings.RIG_NAME), 'TestRig')
         self.assertTrue(bp.rootStep.numChildren() == 4)
 
-        stepA = bp.getStepByPath('Main/GroupA')
-        stepC = bp.getStepByPath('Main/GroupA/GroupC')
+        stepA = bp.get_step_by_path('Main/GroupA')
+        stepC = bp.get_step_by_path('Main/GroupA/GroupC')
         self.assertIsNotNone(stepC)
         self.assertEqual(stepC.parent, stepA)
         self.assertTrue(stepC.hasParent(bp.rootStep))

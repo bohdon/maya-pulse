@@ -681,7 +681,7 @@ def getNamedColor(name):
     """
     blueprint = getEditorBlueprint()
     if blueprint:
-        config = blueprint.getConfig()
+        config = blueprint.get_config()
         for color in config.get('colors', []):
             if color.get('name') == name:
                 color = color.get('color')

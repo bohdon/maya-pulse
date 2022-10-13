@@ -57,7 +57,7 @@ class QuickNameWidget(QtWidgets.QWidget):
         self.ui.help_label.setText(msg_config)
 
     def _get_config(self):
-        config = self.blueprint_model.blueprint.getConfig()
+        config = self.blueprint_model.blueprint.get_config()
         return config if config else {}
 
     def setup_prefixes_ui(self, parent, layout):

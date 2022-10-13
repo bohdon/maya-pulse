@@ -30,6 +30,7 @@ class PythonAction(BuildAction):
                 "function '%s' was not found in scripts file: %s" % (self.function, moduleFilepath))
 
     def run(self):
+        # TODO: use actual blueprint file, not maya scene
         blueprintFile = self.builder.blueprintFile
         if not blueprintFile:
             raise BuildActionError(
