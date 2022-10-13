@@ -26,14 +26,14 @@ class TestPulseCmds(unittest.TestCase):
         result = cmds.pulseCreateStep("", 0, "")
         self.assertEqual(result, ['New Step'])
 
-        self.assertTrue(bp.rootStep.numChildren() == 3)
+        self.assertTrue(bp.rootStep.num_children() == 3)
         cmds.undo()
-        self.assertTrue(bp.rootStep.numChildren() == 2)
+        self.assertTrue(bp.rootStep.num_children() == 2)
 
         cmds.pulseDeleteStep('StepA')
-        self.assertTrue(bp.rootStep.numChildren() == 1)
+        self.assertTrue(bp.rootStep.num_children() == 1)
         cmds.undo()
-        self.assertTrue(bp.rootStep.numChildren() == 2)
+        self.assertTrue(bp.rootStep.num_children() == 2)
 
         cmds.pulseMoveStep('StepB', 'StepA/StepBX')
         stepB = bp.get_step_by_path('StepA/StepBX')
@@ -43,7 +43,7 @@ class TestPulseCmds(unittest.TestCase):
         stepA = bp.get_step_by_path('StepA')
         stepB = bp.get_step_by_path('StepB')
         self.assertIsNotNone(stepB)
-        self.assertTrue(stepA.numChildren() == 0)
+        self.assertTrue(stepA.num_children() == 0)
 
         cmds.pulseMoveStep('StepB', 'StepBY')
         stepB = bp.get_step_by_path('StepBY')

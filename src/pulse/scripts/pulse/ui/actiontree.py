@@ -4,13 +4,13 @@ Tree widget for displaying the build step hierarchy of a blueprint.
 
 import logging
 from functools import partial
-from typing import Optional, Dict
+from typing import Optional, Dict, List
 
 import maya.cmds as cmds
 
 from ..vendor.Qt import QtCore, QtWidgets, QtGui
 from ..serializer import serializeAttrValue
-from ..buildItems import BuildStep, getRegisteredActionConfigs
+from ..buildItems import BuildStep, get_registered_action_configs
 from .. import sym
 from .core import BlueprintUIModel
 from .core import PulseWindow
@@ -98,16 +98,16 @@ class ActionTreeView(QtWidgets.QTreeView):
         if not indexes:
             return
 
-        steps = []
+        steps: List[BuildStep] = []
         for index in indexes:
-            step = self.model().stepForIndex(index)
+            step: BuildStep = self.model().stepForIndex(index)
             if step:
                 steps.append(step)
-        steps = BuildStep.getTopmostSteps(steps)
+        steps = BuildStep.get_topmost_steps(steps)
 
         paths = []
         for step in steps:
-            path = step.getFullPath()
+            path = step.get_full_path()
             print(step, path)
             if path:
                 paths.append(path)
@@ -144,15 +144,15 @@ class ActionTreeView(QtWidgets.QTreeView):
         if not indexes:
             return
 
-        steps = []
+        steps: List[BuildStep] = []
         for index in indexes:
-            step = self.model().stepForIndex(index)
+            step: BuildStep = self.model().stepForIndex(index)
             if step:
                 steps.append(step)
 
         mirrorUtil = MirrorActionUtil(self.blueprintModel)
         for step in steps:
-            if step.isAction():
+            if step.is_action():
                 mirrorUtil.mirrorAction(step)
 
 
@@ -217,7 +217,7 @@ class ActionTree(QtWidgets.QWidget):
 
         actions_menu.addSeparator()
 
-        allActionConfigs = getRegisteredActionConfigs()
+        allActionConfigs = get_registered_action_configs()
 
         grp_action = QtWidgets.QAction("Group", parent)
         grp_action.triggered.connect(self.blueprintModel.createGroup)
@@ -285,7 +285,7 @@ class MirrorActionUtil(object):
             self._config = self.blueprintModel.blueprint.get_config()
         return self._config
 
-    def getMirroredStepName(self, stepName):
+    def getMirroredStepName(self, stepName: str) -> Optional[str]:
         """
         Return the mirrored name of a BuildStep.
 
@@ -296,24 +296,24 @@ class MirrorActionUtil(object):
         if destName != stepName:
             return destName
 
-    def canMirrorStep(self, sourceStep):
+    def canMirrorStep(self, sourceStep: BuildStep):
         """
         Return True if a BuildStep can be mirrored
         """
-        return sourceStep.isAction() and self.getMirroredStepName(sourceStep.name) is not None
+        return sourceStep.is_action() and self.getMirroredStepName(sourceStep.name) is not None
 
-    def getMirroredStepPath(self, sourceStep):
+    def getMirroredStepPath(self, sourceStep: BuildStep):
         """
         Return the full path to a BuildStep by mirroring a steps name.
         """
         destStepName = self.getMirroredStepName(sourceStep.name)
         if destStepName:
-            parentPath = sourceStep.getParentPath()
+            parentPath = sourceStep.get_parent_path()
             if parentPath:
                 return parentPath + '/' + destStepName
             return destStepName
 
-    def getPairedStep(self, sourceStep):
+    def getPairedStep(self, sourceStep) -> BuildStep:
         """
         Return the BuildStep that is paired with a step, if any
         """
@@ -321,7 +321,7 @@ class MirrorActionUtil(object):
         if destStepPath:
             return self.blueprintModel.getStep(destStepPath)
 
-    def getOrCreatePairedStep(self, sourceStep):
+    def getOrCreatePairedStep(self, sourceStep: BuildStep) -> BuildStep:
         """
         Return the BuildStep that is paired with a step,
         creating a new BuildStep if necessary.
@@ -330,17 +330,16 @@ class MirrorActionUtil(object):
         if destStepPath:
             destStep = self.blueprintModel.getStep(destStepPath)
             if not destStep:
-                childIndex = sourceStep.indexInParent() + 1
+                childIndex = sourceStep.index_in_parent() + 1
                 newStepData = sourceStep.serialize()
                 newStepData['name'] = self.getMirroredStepName(sourceStep.name)
                 dataStr = serializeAttrValue(newStepData)
-                cmds.pulseCreateStep(
-                    sourceStep.getParentPath(), childIndex, dataStr)
+                cmds.pulseCreateStep(sourceStep.get_parent_path(), childIndex, dataStr)
                 return self.blueprintModel.getStep(destStepPath)
             else:
                 return destStep
 
-    def mirrorAction(self, sourceStep):
+    def mirrorAction(self, sourceStep: BuildStep):
         """
         Mirror a BuildStep
         """
@@ -355,34 +354,34 @@ class MirrorActionUtil(object):
         if not destStep:
             return False
 
-        sourceAction = sourceStep.actionProxy
-        destAction = destStep.actionProxy
+        sourceAction = sourceStep.action_proxy
+        destAction = destStep.action_proxy
 
-        if not destAction or destAction.getActionId() != sourceAction.getActionId():
+        if not destAction or destAction.get_action_id() != sourceAction.get_action_id():
             # action was setup incorrectly
             LOG.warning("Cannot mirror %s -> %s, destination action"
                         "is not tye same type", sourceStep, destStep)
             return False
 
-        destStepPath = destStep.getFullPath()
+        destStepPath = destStep.get_full_path()
 
         # match up variant attrs
-        for attr in sourceAction.getAttrs():
-            isVariant = sourceAction.isVariantAttr(attr['name'])
+        for attr in sourceAction.get_attrs():
+            isVariant = sourceAction.is_variant_attr(attr['name'])
             attrPath = destStepPath + '.' + attr['name']
-            if destAction.isVariantAttr(attr['name']) != isVariant:
+            if destAction.is_variant_attr(attr['name']) != isVariant:
                 cmds.pulseSetIsVariantAttr(attrPath, isVariant)
 
         # match up variant lengths
-        while sourceAction.numVariants() < destAction.numVariants():
-            destAction.removeVariantAt(-1)
-        while sourceAction.numVariants() > destAction.numVariants():
-            destAction.addVariant()
+        while sourceAction.num_variants() < destAction.num_variants():
+            destAction.remove_variant_at(-1)
+        while sourceAction.num_variants() > destAction.num_variants():
+            destAction.add_variant()
 
         #  mirror invariant attr values
-        for attr in sourceAction.getAttrs():
-            if not sourceAction.isVariantAttr(attr['name']):
-                value = sourceAction.getAttrValue(attr['name'])
+        for attr in sourceAction.get_attrs():
+            if not sourceAction.is_variant_attr(attr['name']):
+                value = sourceAction.get_attr_value(attr['name'])
                 mirroredValue = self.mirrorActionValue(attr, value)
                 attrPath = destStepPath + '.' + attr['name']
                 mirroredValueStr = serializeAttrValue(mirroredValue)
@@ -390,14 +389,14 @@ class MirrorActionUtil(object):
                 cmds.pulseSetActionAttr(attrPath, mirroredValueStr)
 
         # mirror variant attr values
-        for i in range(sourceAction.numVariants()):
-            variant = sourceAction.getVariant(i)
-            for attrName in sourceAction.getVariantAttrs():
-                attr = variant.getAttrConfig(attrName)
+        for i in range(sourceAction.num_variants()):
+            variant = sourceAction.get_variant(i)
+            for attrName in sourceAction.get_variant_attrs():
+                attr = variant.get_attr_config(attrName)
                 if not attr:
                     # possibly stale or removed attribute
                     continue
-                value = variant.getAttrValue(attrName)
+                value = variant.get_attr_value(attrName)
                 mirroredValue = self.mirrorActionValue(attr, value)
                 attrPath = destStepPath + '.' + attr['name']
                 mirroredValueStr = serializeAttrValue(mirroredValue)

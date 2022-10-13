@@ -9,7 +9,7 @@ from functools import partial
 import maya.cmds as cmds
 
 from ..vendor.Qt import QtCore, QtWidgets
-from ..buildItems import getRegisteredActionConfigs
+from ..buildItems import get_registered_action_configs
 from .core import BlueprintUIModel, PulseWindow
 
 from .gen.action_palette import Ui_ActionPalette
@@ -48,7 +48,7 @@ class ActionPalette(QtWidgets.QWidget):
         Build buttons for creating each action.
         """
 
-        allActionConfigs = getRegisteredActionConfigs()
+        allActionConfigs = get_registered_action_configs()
 
         # make button for each action
         categories = [c.get('category', 'Default') for c in allActionConfigs]

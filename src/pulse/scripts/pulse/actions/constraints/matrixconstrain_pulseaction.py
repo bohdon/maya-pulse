@@ -4,7 +4,7 @@ from pulse.buildItems import BuildAction, BuildActionError
 
 class MatrixConstrainAction(BuildAction):
 
-    def getMinApiVersion(self):
+    def get_min_api_version(self):
         return 20200000
 
     def validate(self):

@@ -16,7 +16,7 @@ class RenameSceneAction(BuildAction):
 
     def run(self):
         sceneName = pm.sceneName()
-        rigData = self.getRigMetaData()
+        rigData = self.get_rig_metadata()
         filename = self.filename.format(rig=rigData) + '.ma'
         newName = os.path.join(os.path.dirname(sceneName), filename)
         pm.renameFile(newName)

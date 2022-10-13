@@ -17,7 +17,7 @@ ANIM_CTL_METACLASS = 'pulse_animcontrol'
 
 class AnimControlAction(BuildAction):
 
-    def getMinApiVersion(self):
+    def get_min_api_version(self):
         if self.zeroOutMethod == 1:
             return 20200000
         return 0
@@ -59,7 +59,7 @@ class AnimControlAction(BuildAction):
         self.controlNode.rotateOrder.showInChannelBox(True)
 
         # update rig meta data
-        self.extendRigMetaDataList('animControls', [self.controlNode])
+        self.extend_rig_metadata_list('animControls', [self.controlNode])
 
 
 class AnimControlContextSubMenu(PulseNodeContextSubMenu):

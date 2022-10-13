@@ -19,12 +19,12 @@ def loadActionsFromDirectory(startDir):
     Args:
         startDir: A str path of the directory to search
     """
-    from .buildItems import registerAction
+    from .buildItems import register_actions
     from .loader import BuildActionLoader
 
     loader = BuildActionLoader()
     for config, action in loader.loadActionsFromDirectory(startDir):
-        registerAction(config, action)
+        register_actions(config, action)
 
 
 def loadBuiltinActions():

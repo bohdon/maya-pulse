@@ -107,11 +107,10 @@ class PulseCreateStepCmd(PulseCmdBase):
         blueprintModel = getBlueprintModel()
         if blueprintModel:
             stepData = deserializeAttrValue(self.stepStrData)
-            newStep = blueprintModel.createStep(
-                self.stepPath, self.stepChildIndex, stepData)
+            newStep = blueprintModel.createStep(self.stepPath, self.stepChildIndex, stepData)
             if not newStep:
                 raise RuntimeError("Failed to create BuildStep")
-            self.newStepPath = newStep.getFullPath()
+            self.newStepPath = newStep.get_full_path()
             self.clearResult()
             self.setResult(self.newStepPath)
 
@@ -161,7 +160,7 @@ class PulseDeleteStepCmd(PulseCmdBase):
                 raise RuntimeError(
                     "BuildStep not found: {0}".format(self.stepPath))
             self.deletedStrData = serializeAttrValue(step.serialize())
-            self.deletedChildIndex = step.indexInParent()
+            self.deletedChildIndex = step.index_in_parent()
             if not blueprintModel.deleteStep(self.stepPath):
                 raise RuntimeError("Failed to delete BuildStep")
 

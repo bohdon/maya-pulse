@@ -17,12 +17,12 @@ class CreateSpaceAction(BuildAction):
 
     def run(self):
         pulse.spaces.createSpace(self.node, self.name)
-        self.updateRigMetaDataDict('spaces', {self.name: self.node})
+        self.update_rig_metadata_dict('spaces', {self.name: self.node})
 
 
 class SpaceConstrainAction(BuildAction):
 
-    def getMinApiVersion(self):
+    def get_min_api_version(self):
         if self.useOffsetMatrix:
             return 20200000
         return 0

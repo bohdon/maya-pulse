@@ -55,8 +55,8 @@ class BindSkinAction(BuildAction):
         # TODO: support geomBind when using geodesic voxel binding
 
         if self.isRenderGeo:
-            self.extendRigMetaDataList('renderGeo', self.meshes)
-            self.extendRigMetaDataList('bakeNodes', bind_jnts)
+            self.extend_rig_metadata_list('renderGeo', self.meshes)
+            self.extend_rig_metadata_list('bakeNodes', bind_jnts)
 
     def getBindJoints(self):
         """

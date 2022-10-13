@@ -7,6 +7,7 @@ import logging
 import maya.cmds as cmds
 import pymel.core as pm
 
+from ..buildItems import BuildStep, BuildActionProxy
 from ..vendor import pymetanode as meta
 from ..serializer import serializeAttrValue
 from ..vendor.Qt import QtCore, QtWidgets
@@ -104,10 +105,10 @@ class ActionAttrForm(QtWidgets.QFrame):
             return
 
         if self.isVariant():
-            variant = actionProxy.getVariant(self.variantIndex)
-            return variant.getAttrValueOrDefault(self.attr['name'])
+            variant = actionProxy.get_variant(self.variantIndex)
+            return variant.get_attr_value_or_default(self.attr['name'])
         else:
-            return actionProxy.getAttrValueOrDefault(self.attr['name'])
+            return actionProxy.get_attr_value_or_default(self.attr['name'])
 
     def setAttrValue(self, newValue):
         """
@@ -137,21 +138,21 @@ class ActionAttrForm(QtWidgets.QFrame):
         """
         raise NotImplementedError
 
-    def getStep(self):
+    def getStep(self) -> BuildStep:
         if self.index.isValid():
             return self.index.model().stepForIndex(self.index)
 
-    def getActionProxy(self):
+    def getActionProxy(self) -> BuildActionProxy:
         step = self.getStep()
-        if step and step.isAction():
-            return step.actionProxy
+        if step and step.is_action():
+            return step.action_proxy
 
     def getAttrPath(self):
         step = self.getStep()
         if not step:
             return
 
-        return '{0}.{1}'.format(step.getFullPath(), self.attr['name'])
+        return '{0}.{1}'.format(step.get_full_path(), self.attr['name'])
 
     def _setFormValue(self, attrValue):
         """
@@ -371,21 +372,21 @@ class BatchAttrForm(QtWidgets.QFrame):
         """
         self.formLayout.setLayout(0, QtWidgets.QFormLayout.FieldRole, layout)
 
-    def getStep(self):
+    def getStep(self) -> BuildStep:
         if self.index.isValid():
             return self.index.model().stepForIndex(self.index)
 
-    def getActionProxy(self):
+    def getActionProxy(self) -> BuildActionProxy:
         step = self.getStep()
-        if step and step.isAction():
-            return step.actionProxy
+        if step and step.is_action():
+            return step.action_proxy
 
     def getAttrPath(self):
         step = self.getStep()
         if not step:
             return
 
-        return '{0}.{1}'.format(step.getFullPath(), self.attr['name'])
+        return '{0}.{1}'.format(step.get_full_path(), self.attr['name'])
 
     def setVariantValues(self, values):
         attrPath = self.getAttrPath()

@@ -77,11 +77,11 @@ class Blueprint(object):
         self.settings = {}
         self.add_missing_settings()
         # the version of this blueprint
-        self.version = BLUEPRINT_VERSION
+        self.version: str = BLUEPRINT_VERSION
         # the root step of this blueprint
-        self.rootStep = BuildStep('Root')
+        self.rootStep: BuildStep = BuildStep('Root')
         # the config file to use when designing this Blueprint
-        self.config_file_path = get_default_config_file()
+        self.config_file_path: str = get_default_config_file()
         # the config, automatically loaded when calling `get_config`
         self.config: Optional[dict] = None
 
@@ -185,7 +185,7 @@ class Blueprint(object):
         if not path:
             return self.rootStep
         else:
-            step = self.rootStep.getChildByPath(path)
+            step = self.rootStep.get_child_by_path(path)
             if not step:
                 LOG.warning("could not find BuildStep: %s", path)
             return step
@@ -194,12 +194,12 @@ class Blueprint(object):
         """
         Add a set of core BuildActions to the blueprint.
         """
-        import_action = BuildStep(actionId='Pulse.ImportReferences')
-        hierarchy_action = BuildStep(actionId='Pulse.BuildCoreHierarchy')
-        hierarchy_action.actionProxy.setAttrValue('allNodes', True)
+        import_action = BuildStep(action_id='Pulse.ImportReferences')
+        hierarchy_action = BuildStep(action_id='Pulse.BuildCoreHierarchy')
+        hierarchy_action.action_proxy.set_attr_value('allNodes', True)
         main_group = BuildStep('Main')
-        rename_action = BuildStep(actionId='Pulse.RenameScene')
-        self.rootStep.addChildren([
+        rename_action = BuildStep(action_id='Pulse.RenameScene')
+        self.rootStep.add_children([
             import_action,
             hierarchy_action,
             main_group,
@@ -372,7 +372,7 @@ class BlueprintBuilder(object):
             LOG.error('Rig name is not set')
             return False
 
-        if not blueprint.rootStep.hasAnyChildren():
+        if not blueprint.rootStep.has_any_children():
             LOG.error('Blueprint has no actions. Create new actions to begin.')
             return False
 
@@ -664,7 +664,7 @@ class BlueprintBuilder(object):
                 The exception that occurred.
         """
         self.errors.append(error)
-        self.log.error('/%s (%s): %s', step.getFullPath(), action.getActionId(), error, exc_info=self.debug)
+        self.log.error('/%s (%s): %s', step.get_full_path(), action.get_action_id(), error, exc_info=self.debug)
 
     def action_iterator(self) -> Iterable[tuple[BuildStep, BuildAction]]:
         """
@@ -674,14 +674,14 @@ class BlueprintBuilder(object):
             A generator that yields a tuple of (BuildStep, BuildAction)
             for every action in the Blueprint.
         """
-        for step in self.blueprint.rootStep.childIterator():
+        for step in self.blueprint.rootStep.child_iterator():
             # try-catch each step, so we can stumble over
             # problematic steps without crashing the whole build
             try:
-                for action in step.actionIterator():
+                for action in step.action_iterator():
                     yield step, action
             except Exception as error:
-                self.on_step_error(step, step.actionProxy, error=error)
+                self.on_step_error(step, step.action_proxy, error=error)
 
     def build_generator(self) -> Iterable[dict]:
         """
@@ -702,7 +702,7 @@ class BlueprintBuilder(object):
             # TODO: include more data somehow so we can track variant action indexes
 
             # return progress for the action that is about to run
-            yield dict(index=index, total=action_count, status=step.getFullPath())
+            yield dict(index=index, total=action_count, status=step.get_full_path())
 
             # run the action
             action.builder = self
@@ -736,7 +736,7 @@ class BlueprintBuilder(object):
         end_time = time.time()
         duration = end_time - start_time
 
-        path = step.getFullPath()
+        path = step.get_full_path()
         self.log.info('[%s/%s] %s (%.03fs)', index + 1, action_count, path, duration)
 
 
@@ -773,6 +773,6 @@ class BlueprintValidator(BlueprintBuilder):
 
     def run_build_action(self, step: BuildStep, action: BuildAction, index: int, action_count: int):
         try:
-            action.runValidate()
+            action.run_validate()
         except Exception as error:
             self.on_step_error(step, action, error)

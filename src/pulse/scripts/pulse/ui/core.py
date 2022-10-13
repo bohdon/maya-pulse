@@ -4,7 +4,7 @@ UI model classes, and base classes for common widgets.
 
 import logging
 import os
-from typing import Optional
+from typing import Optional, List
 
 import maya.OpenMaya as api
 import maya.OpenMayaUI as mui
@@ -759,7 +759,7 @@ class BlueprintUIModel(QtCore.QObject):
             self.buildStepTreeModel.endResetModel()
             self.modify()
 
-    def createStep(self, parentPath, childIndex, data):
+    def createStep(self, parentPath, childIndex, data) -> Optional[BuildStep]:
         """
         Create a new BuildStep
 
@@ -785,12 +785,12 @@ class BlueprintUIModel(QtCore.QObject):
             parentIndex, childIndex, childIndex)
 
         try:
-            step = BuildStep.fromData(data)
+            step = BuildStep.from_data(data)
         except ValueError as e:
             LOG.error("Failed to create build step: %s" % e, exc_info=True)
             return
 
-        parentStep.insertChild(childIndex, step)
+        parentStep.insert_child(childIndex, step)
 
         self.buildStepTreeModel.endInsertRows()
         self.modify()
@@ -816,7 +816,7 @@ class BlueprintUIModel(QtCore.QObject):
         self.buildStepTreeModel.beginRemoveRows(
             stepIndex.parent(), stepIndex.row(), stepIndex.row())
 
-        step.removeFromParent()
+        step.remove_from_parent()
 
         self.buildStepTreeModel.endRemoveRows()
         self.modify()
@@ -848,13 +848,13 @@ class BlueprintUIModel(QtCore.QObject):
         sourceParentPath = os.path.dirname(sourcePath)
         targetParentPath = os.path.dirname(targetPath)
         if sourceParentPath != targetParentPath:
-            step.setParent(self.blueprint.get_step_by_path(targetParentPath))
+            step.set_parent(self.blueprint.get_step_by_path(targetParentPath))
         targetName = os.path.basename(targetPath)
-        step.setName(targetName)
+        step.set_name(targetName)
 
         self.buildStepTreeModel.layoutChanged.emit()
         self.modify()
-        return step.getFullPath()
+        return step.get_full_path()
 
     def renameStep(self, stepPath, targetName):
         if self.isReadOnly():
@@ -871,14 +871,14 @@ class BlueprintUIModel(QtCore.QObject):
             return
 
         oldName = step.name
-        step.setName(targetName)
+        step.set_name(targetName)
 
         if step.name != oldName:
             index = self.buildStepTreeModel.indexByStep(step)
             self.buildStepTreeModel.dataChanged.emit(index, index, [])
             self.modify()
 
-        return step.getFullPath()
+        return step.get_full_path()
 
     def createStepsForSelection(self, stepData: Optional[str] = None):
         """
@@ -898,14 +898,14 @@ class BlueprintUIModel(QtCore.QObject):
         if not selIndexes:
             selIndexes = [QtCore.QModelIndex()]
 
-        model = self.buildStepSelectionModel.model()
+        model: BuildStepTreeModel = self.buildStepSelectionModel.model()
 
-        def getParentAndInsertIndex(index):
+        def getParentAndInsertIndex(index) -> tuple[BuildStep, int]:
             step = model.stepForIndex(index)
             LOG.debug('step: %s', step)
-            if step.canHaveChildren:
-                LOG.debug('inserting at num children: %d', step.numChildren())
-                return step, step.numChildren()
+            if step.can_have_children():
+                LOG.debug('inserting at num children: %d', step.num_children())
+                return step, step.num_children()
             else:
                 LOG.debug('inserting at selected + 1: %d', index.row() + 1)
                 return step.parent, index.row() + 1
@@ -913,7 +913,7 @@ class BlueprintUIModel(QtCore.QObject):
         newPaths = []
         for index in selIndexes:
             parentStep, insertIndex = getParentAndInsertIndex(index)
-            parentPath = parentStep.getFullPath() if parentStep else None
+            parentPath = parentStep.get_full_path() if parentStep else None
             if not parentPath:
                 parentPath = ''
             if not stepData:
@@ -950,13 +950,13 @@ class BlueprintUIModel(QtCore.QObject):
         newPaths = self.createStepsForSelection(stepData=stepData)
         self.buildStepSelectionModel.setSelectedItemPaths(newPaths)
 
-    def getStep(self, stepPath):
+    def getStep(self, stepPath: str) -> BuildStep:
         """
         Return the BuildStep at a path
         """
         return self.blueprint.get_step_by_path(stepPath)
 
-    def getStepData(self, stepPath):
+    def getStepData(self, stepPath: str):
         """
         Return the serialized data for a step at a path
         """
@@ -964,7 +964,7 @@ class BlueprintUIModel(QtCore.QObject):
         if step:
             return step.serialize()
 
-    def getActionData(self, stepPath):
+    def getActionData(self, stepPath: str):
         """
         Return serialized data for a BuildActionProxy
         """
@@ -972,12 +972,12 @@ class BlueprintUIModel(QtCore.QObject):
         if not step:
             return
 
-        if not step.isAction():
+        if not step.is_action():
             LOG.error(
                 'getActionData: %s step is not an action', step)
             return
 
-        return step.actionProxy.serialize()
+        return step.action_proxy.serialize()
 
     def setActionData(self, stepPath, data):
         """
@@ -987,12 +987,12 @@ class BlueprintUIModel(QtCore.QObject):
         if not step:
             return
 
-        if not step.isAction():
+        if not step.is_action():
             LOG.error(
                 'setActionData: %s step is not an action', step)
             return
 
-        step.actionProxy.deserialize(data)
+        step.action_proxy.deserialize(data)
 
         index = self.buildStepTreeModel.indexByStepPath(stepPath)
         self.buildStepTreeModel.dataChanged.emit(index, index, [])
@@ -1015,16 +1015,16 @@ class BlueprintUIModel(QtCore.QObject):
         if not step:
             return
 
-        if not step.isAction():
+        if not step.is_action():
             LOG.error('getActionAttr: %s is not an action', step)
             return
 
         if variantIndex >= 0:
-            if step.actionProxy.numVariants() > variantIndex:
-                actionData = step.actionProxy.getVariant(variantIndex)
-                return actionData.getAttrValue(attrName)
+            if step.action_proxy.num_variants() > variantIndex:
+                actionData = step.action_proxy.get_variant(variantIndex)
+                return actionData.get_attr_value(attrName)
         else:
-            return step.actionProxy.getAttrValue(attrName)
+            return step.action_proxy.get_attr_value(attrName)
 
     def setActionAttr(self, attrPath, value, variantIndex=-1):
         """
@@ -1040,15 +1040,15 @@ class BlueprintUIModel(QtCore.QObject):
         if not step:
             return
 
-        if not step.isAction():
+        if not step.is_action():
             LOG.error('setActionAttr: %s is not an action', step)
             return
 
         if variantIndex >= 0:
-            variant = step.actionProxy.getOrCreateVariant(variantIndex)
-            variant.setAttrValue(attrName, value)
+            variant = step.action_proxy.get_or_create_variant(variantIndex)
+            variant.set_attr_value(attrName, value)
         else:
-            step.actionProxy.setAttrValue(attrName, value)
+            step.action_proxy.set_attr_value(attrName, value)
 
         index = self.buildStepTreeModel.indexByStepPath(stepPath)
         self.buildStepTreeModel.dataChanged.emit(index, index, [])
@@ -1058,12 +1058,12 @@ class BlueprintUIModel(QtCore.QObject):
         stepPath, attrName = attrPath.split('.')
 
         step = self.getStep(stepPath)
-        if not step.isAction():
+        if not step.is_action():
             LOG.error(
                 "isActionAttrVariant: {0} is not an action".format(step))
             return
 
-        return step.actionProxy.isVariantAttr(attrName)
+        return step.action_proxy.is_variant_attr(attrName)
 
     def setIsActionAttrVariant(self, attrPath, isVariant):
         """
@@ -1078,12 +1078,12 @@ class BlueprintUIModel(QtCore.QObject):
         if not step:
             return
 
-        if not step.isAction():
+        if not step.is_action():
             LOG.error(
                 "setIsActionAttrVariant: {0} is not an action".format(step))
             return
 
-        step.actionProxy.setIsVariantAttr(attrName, isVariant)
+        step.action_proxy.set_is_variant_attr(attrName, isVariant)
 
         index = self.buildStepTreeModel.indexByStepPath(stepPath)
         self.buildStepTreeModel.dataChanged.emit(index, index, [])
@@ -1121,7 +1121,7 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
             return parent.isReadOnly()
         return False
 
-    def stepForIndex(self, index):
+    def stepForIndex(self, index: QtCore.QModelIndex) -> Optional[BuildStep]:
         """
         Return the BuildStep of a QModelIndex.
         """
@@ -1130,9 +1130,9 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
         if self._blueprint:
             return self._blueprint.rootStep
 
-    def indexByStep(self, step):
+    def indexByStep(self, step: BuildStep):
         if step and step != self._blueprint.rootStep:
-            return self.createIndex(step.indexInParent(), 0, step)
+            return self.createIndex(step.index_in_parent(), 0, step)
         return QtCore.QModelIndex()
 
     def indexByStepPath(self, path):
@@ -1152,8 +1152,8 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
             return QtCore.QModelIndex()
 
         parentStep = self.stepForIndex(parent)
-        if parentStep and parentStep.canHaveChildren:
-            childStep = parentStep.getChildAt(row)
+        if parentStep and parentStep.can_have_children():
+            childStep = parentStep.get_child_at(row)
             if childStep:
                 return self.createIndex(row, column, childStep)
 
@@ -1172,7 +1172,7 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
         if parentStep is None or parentStep == self._blueprint.rootStep:
             return QtCore.QModelIndex()
 
-        return self.createIndex(parentStep.indexInParent(), 0, parentStep)
+        return self.createIndex(parentStep.index_in_parent(), 0, parentStep)
 
     def flags(self, index):
         if not index.isValid():
@@ -1187,7 +1187,7 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
             flags |= QtCore.Qt.ItemIsDragEnabled | QtCore.Qt.ItemIsEditable
 
         step = self.stepForIndex(index)
-        if step and step.canHaveChildren:
+        if step and step.can_have_children():
             flags |= QtCore.Qt.ItemIsDropEnabled
 
         return flags
@@ -1197,7 +1197,7 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
 
     def rowCount(self, parent=QtCore.QModelIndex()):
         step = self.stepForIndex(parent)
-        return step.numChildren() if step else 0
+        return step.num_children() if step else 0
 
     def data(self, index, role=QtCore.Qt.DisplayRole):
         if not index.isValid():
@@ -1208,13 +1208,13 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
             return
 
         if role == QtCore.Qt.DisplayRole:
-            return step.getDisplayName()
+            return step.get_display_name()
 
         elif role == QtCore.Qt.EditRole:
             return step.name
 
         elif role == QtCore.Qt.DecorationRole:
-            iconFile = step.getIconFile()
+            iconFile = step.get_icon_file()
             if iconFile:
                 return QtGui.QIcon(iconFile)
 
@@ -1222,9 +1222,9 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
             return QtCore.QSize(0, 20)
 
         elif role == QtCore.Qt.ForegroundRole:
-            color = step.getColor()
+            color = step.get_color()
             # dim color if step is disabled
-            if step.isDisabledInHierarchy():
+            if step.is_disabled_in_hierarchy():
                 color = [c * 0.4 for c in color]
             return QtGui.QColor(*[c * 255 for c in color])
 
@@ -1239,7 +1239,7 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
         if role == QtCore.Qt.EditRole:
             if not value:
                 value = ''
-            stepPath = step.getFullPath()
+            stepPath = step.get_full_path()
             cmds.pulseRenameStep(stepPath, value)
             return True
 
@@ -1283,7 +1283,7 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
             step = self.stepForIndex(index)
             if step:
                 steps.append(step)
-        steps = BuildStep.getTopmostSteps(steps)
+        steps = BuildStep.get_topmost_steps(steps)
 
         stepDataList = [step.serialize() for step in steps]
         data_str = meta.encodeMetaData(stepDataList)
@@ -1337,14 +1337,14 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
         if parentIndex.isValid():
             parentStep = self.stepForIndex(parentIndex)
             if parentStep:
-                if parentStep.canHaveChildren:
+                if parentStep.can_have_children():
                     # drop into step group
-                    beginRow = parentStep.numChildren()
-                    parentPath = parentStep.getFullPath()
+                    beginRow = parentStep.num_children()
+                    parentPath = parentStep.get_full_path()
                 else:
                     # drop next to step
                     beginRow = parentIndex.row()
-                    parentPath = os.path.dirname(parentStep.getFullPath())
+                    parentPath = os.path.dirname(parentStep.get_full_path())
 
         if not parentPath:
             parentPath = ''
@@ -1380,16 +1380,16 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
             indexes.append(index)
 
         # TODO: provide better api for deleting groups of steps
-        steps = []
+        steps: List[BuildStep] = []
         for index in indexes:
             step = self.stepForIndex(index)
             if step:
                 steps.append(step)
-        steps = BuildStep.getTopmostSteps(steps)
+        steps = BuildStep.get_topmost_steps(steps)
 
         paths = []
         for step in steps:
-            path = step.getFullPath()
+            path = step.get_full_path()
             if path:
                 paths.append(path)
 
@@ -1427,15 +1427,15 @@ class BuildStepSelectionModel(QtCore.QItemSelectionModel):
     the BlueprintUIModel for a specific Blueprint.
     """
 
-    def getSelectedItems(self):
+    def getSelectedItems(self) -> List[BuildStep]:
         """
         Return the currently selected BuildSteps
         """
         indexes = self.selectedIndexes()
-        items = []
+        items: List[BuildStep] = []
         for index in indexes:
             if index.isValid():
-                buildStep = self.model.stepForIndex(index)
+                buildStep: BuildStep = self.model.stepForIndex(index)
                 # buildStep = index.internalPointer()
                 if buildStep:
                     items.append(buildStep)
@@ -1449,9 +1449,9 @@ class BuildStepSelectionModel(QtCore.QItemSelectionModel):
         indeces = []
         for index in indexes:
             if index.isValid():
-                buildStep = self.model.stepForIndex(index)
+                buildStep: BuildStep = self.model.stepForIndex(index)
                 # buildStep = index.internalPointer()
-                if buildStep and buildStep.canHaveChildren:
+                if buildStep and buildStep.can_have_children():
                     indeces.append(index)
                 # TODO: get parent until we have an item that supports children
         return list(set(indeces))
@@ -1468,7 +1468,7 @@ class BuildStepSelectionModel(QtCore.QItemSelectionModel):
         Return the full paths of the selected BuildSteps
         """
         items = self.getSelectedItems()
-        return [i.getFullPath() for i in items]
+        return [i.get_full_path() for i in items]
 
     def setSelectedItemPaths(self, paths):
         """

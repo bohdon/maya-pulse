@@ -6,9 +6,11 @@ Editor widgets for inspecting and editing BuildSteps and BuildActions.
 import logging
 import os
 from functools import partial
+from typing import Optional
 
 import maya.cmds as cmds
 
+from ..buildItems import BuildActionProxy, BuildStep, BuildActionData
 from ..vendor.Qt import QtCore, QtWidgets, QtGui
 from .actionattrform import ActionAttrForm, BatchAttrForm
 from .core import BlueprintUIModel
@@ -50,17 +52,17 @@ class BuildStepForm(QtWidgets.QWidget):
             return
 
         if self.displayNameLabel:
-            self.displayNameLabel.setText(step.getDisplayName())
+            self.displayNameLabel.setText(step.get_display_name())
 
-    def step(self):
+    def step(self) -> BuildStep:
         """
         Return the BuildStep being edited by this form
         """
         if self.index.isValid():
             return self.index.model().stepForIndex(self.index)
 
-    def getStepColor(self, step):
-        color = step.getColor()
+    def getStepColor(self, step: BuildStep):
+        color = step.get_color()
         if color:
             return [int(c * 255) for c in color]
         else:
@@ -114,7 +116,7 @@ class BuildStepForm(QtWidgets.QWidget):
         self.displayNameLabel = QtWidgets.QLabel(parent)
         self.displayNameLabel.setMinimumHeight(18)
         self.displayNameLabel.setFont(font)
-        self.displayNameLabel.setText(step.getDisplayName())
+        self.displayNameLabel.setText(step.get_display_name())
         layout.addWidget(self.displayNameLabel)
 
     def setupBodyUi(self, parent):
@@ -124,8 +126,8 @@ class BuildStepForm(QtWidgets.QWidget):
         layout.setMargin(6)
         layout.setSpacing(0)
 
-        if step.isAction():
-            formCls = step.actionProxy.getEditorFormClass()
+        if step.is_action():
+            formCls = step.action_proxy.get_editor_form_class()
             if not formCls:
                 formCls = BuildActionProxyForm
             self.actionForm = formCls(self.index, parent)
@@ -157,20 +159,20 @@ class BuildActionDataForm(QtWidgets.QWidget):
 
         self.updateAttrFormList()
 
-    def getStep(self):
+    def getStep(self) -> BuildStep:
         if self.index.isValid():
             return self.index.model().stepForIndex(self.index)
 
-    def getActionData(self):
+    def getActionData(self) -> BuildActionData:
         """
-        Return the BuildActionProxy being edited by this form
+        Return the BuildActionData being edited by this form
         """
         step = self.getStep()
-        if step and step.isAction():
-            actionProxy = step.actionProxy
+        if step and step.is_action():
+            actionProxy = step.action_proxy
             if self.variantIndex >= 0:
-                if actionProxy.numVariants() > self.variantIndex:
-                    return actionProxy.getVariant(self.variantIndex)
+                if actionProxy.num_variants() > self.variantIndex:
+                    return actionProxy.get_variant(self.variantIndex)
             else:
                 return actionProxy
 
@@ -197,12 +199,12 @@ class BuildActionDataForm(QtWidgets.QWidget):
         if not hasattr(self, 'missingLabel'):
             self.missingLabel = None
 
-        if actionData.isMissingConfig():
+        if actionData.is_missing_config():
             # add warning that the action config was not found
             if not self.missingLabel:
                 self.missingLabel = QtWidgets.QLabel(self)
                 self.missingLabel.setText(
-                    "Failed to find action config for: `%s`" % actionData.getActionId())
+                    "Failed to find action config for: `%s`" % actionData.get_action_id())
                 self.attrListLayout.addWidget(self.missingLabel)
             return
         else:
@@ -215,12 +217,12 @@ class BuildActionDataForm(QtWidgets.QWidget):
 
         # remove forms for non existent attrs
         for attrName, attrForm in list(self._attrForms.items()):
-            if not actionData.hasAttr(attrName):
+            if not actionData.has_attr(attrName):
                 self.attrListLayout.removeWidget(attrForm)
                 attrForm.setParent(None)
                 del self._attrForms[attrName]
 
-        for i, attr in enumerate(actionData.getAttrs()):
+        for i, attr in enumerate(actionData.get_attrs()):
 
             # the current attr form, if any
             attrForm = self._attrForms.get(attr['name'], None)
@@ -272,10 +274,10 @@ class MainBuildActionDataForm(BuildActionDataForm):
     BatchAttrForms for variant attributes.
     """
 
-    def createAttrForm(self, actionData, attr, parent):
+    def createAttrForm(self, actionData: BuildActionData, attr, parent):
         isVariant = False
-        # duck type of actionProxy
-        if hasattr(actionData, 'isVariantAttr'):
+        # duck type of action proxy
+        if hasattr(actionData, 'is_variant_attr'):
             isVariant = actionData.isVariantAttr(attr['name'])
 
         if isVariant:
@@ -300,19 +302,19 @@ class MainBuildActionDataForm(BuildActionDataForm):
         attrForm.toggleVariantBtn = toggleVariantBtn
         return attrForm
 
-    def shouldRecreateAttrForm(self, actionData, attr, attrForm):
+    def shouldRecreateAttrForm(self, actionData: BuildActionData, attr, attrForm):
         isVariant = False
-        # duck type of actionProxy
-        if hasattr(actionData, 'isVariantAttr'):
+        # duck type of action proxy
+        if hasattr(actionData, 'is_variant_attr'):
             isVariant = actionData.isVariantAttr(attr['name'])
 
         return getattr(attrForm, 'isBatchForm', False) != isVariant
 
-    def updateAttrForm(self, actionData, attr, attrForm):
+    def updateAttrForm(self, actionData: BuildActionData, attr, attrForm):
         # update variant state of the attribute
         isVariant = False
-        # duck type of actionProxy
-        if hasattr(actionData, 'isVariantAttr'):
+        # duck type of action proxy
+        if hasattr(actionData, 'is_variant_attr'):
             isVariant = actionData.isVariantAttr(attr['name'])
 
         attrForm.toggleVariantBtn.setChecked(isVariant)
@@ -330,9 +332,9 @@ class MainBuildActionDataForm(BuildActionDataForm):
         if not actionProxy:
             return
 
-        attrPath = '{0}.{1}'.format(step.getFullPath(), attrName)
+        attrPath = '{0}.{1}'.format(step.get_full_path(), attrName)
 
-        isVariant = actionProxy.isVariantAttr(attrName)
+        isVariant = actionProxy.is_variant_attr(attrName)
         cmds.pulseSetIsVariantAttr(attrPath, not isVariant)
 
 
@@ -362,24 +364,24 @@ class BuildActionProxyForm(QtWidgets.QWidget):
         # TODO: get specific changes necessary to insert or remove indeces
         self.updateVariantFormList()
 
-    def getStep(self):
+    def getStep(self) -> Optional[BuildStep]:
         """
         Return the BuildStep being edited by this form
         """
         if self.index.isValid():
             return self.index.model().stepForIndex(self.index)
 
-    def getActionProxy(self):
+    def getActionProxy(self) -> Optional[BuildActionProxy]:
         """
         Return the BuildActionProxy being edited by this form
         """
         step = self.getStep()
-        if step and step.isAction():
-            return step.actionProxy
+        if step and step.is_action():
+            return step.action_proxy
 
     def shouldSetupVariantsUi(self):
         actionProxy = self.getActionProxy()
-        return actionProxy and actionProxy.numAttrs() > 0
+        return actionProxy and actionProxy.num_attrs() > 0
 
     def setupUi(self, parent):
         """
@@ -473,12 +475,12 @@ class BuildActionProxyForm(QtWidgets.QWidget):
             return
 
         self.variantsLabel.setText(
-            "Variants: {0}".format(actionProxy.numVariants()))
+            "Variants: {0}".format(actionProxy.num_variants()))
 
-        while self.variantListLayout.count() < actionProxy.numVariants():
+        while self.variantListLayout.count() < actionProxy.num_variants():
             self.insertVariantForm(self.variantListLayout.count())
 
-        while self.variantListLayout.count() > actionProxy.numVariants():
+        while self.variantListLayout.count() > actionProxy.num_variants():
             self.removeVariantForm(-1)
 
         for i in range(self.variantListLayout.count()):
@@ -522,7 +524,7 @@ class BuildActionProxyForm(QtWidgets.QWidget):
         if not actionProxy:
             return
 
-        actionProxy.addVariant()
+        actionProxy.add_variant()
         self.updateVariantFormList()
 
     def removeVariantAtIndex(self, index):
@@ -532,10 +534,10 @@ class BuildActionProxyForm(QtWidgets.QWidget):
 
         # TODO: implement plugin command
         # step = self.getStep()
-        # stepPath = step.getFullPath()
+        # stepPath = step.get_full_path()
         # cmds.pulseRemoveVariant(stepPath, self.variantIndex)
 
-        actionProxy.removeVariantAt(index)
+        actionProxy.remove_variant_at(index)
         self.updateVariantFormList()
 
     def removeVariantFromEnd(self):
@@ -543,7 +545,7 @@ class BuildActionProxyForm(QtWidgets.QWidget):
         if not actionProxy:
             return
 
-        actionProxy.removeVariantAt(-1)
+        actionProxy.remove_variant_at(-1)
         self.updateVariantFormList()
 
 

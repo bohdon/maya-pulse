@@ -13,129 +13,134 @@ LOG = logging.getLogger(__name__)
 LOG_LEVEL_KEY = 'PYLOG_%s' % LOG.name.split('.')[0].upper()
 LOG.setLevel(os.environ.get(LOG_LEVEL_KEY, 'INFO').upper())
 
-BUILDACTIONMAP = {}
+BUILD_ACTION_MAP = {}
 
 
-def _incrementName(name):
-    numMatch = re.match('(.*?)([0-9]+$)', name)
-    if numMatch:
-        base, num = numMatch.groups()
+def _increment_name(name: str) -> str:
+    """
+    Increment a name by adding or increasing a numerical suffix.
+    """
+    num_match = re.match('(.*?)([0-9]+$)', name)
+    if num_match:
+        base, num = num_match.groups()
         return base + str(int(num) + 1)
     else:
         return name + ' 1'
 
 
-def _copyData(data, refNode=None):
+def _copy_data(data, ref_node=None):
     """
-    Performs a deep copy of the given data using pymetanode to
-    encode and decode the values.
+    Performs a deep copy of the given data using pymetanode to encode and decode the values.
     """
-    return meta.decodeMetaData(meta.encodeMetaData(data), refNode)
+    return meta.decodeMetaData(meta.encodeMetaData(data), ref_node)
 
 
-def getRegisteredAction(actionId) -> dict:
+def get_registered_action(action_id) -> Optional[dict]:
     """
-    Return a BuildAction config and class by action id
+    Find a BuildAction config and class by action id
 
     Args:
-        actionId (str): A BuildAction id
+        action_id (str): A BuildAction id
 
     Returns:
         A dict containing {'config':dict, 'class':class}
     """
-    if actionId in BUILDACTIONMAP:
-        return BUILDACTIONMAP[actionId]
+    # TODO: use a class for the entry instead of just a specific layout dict
+    if action_id in BUILD_ACTION_MAP:
+        return BUILD_ACTION_MAP[action_id]
 
 
-def getBuildActionConfig(actionId) -> dict:
+def get_build_action_config(action_id) -> Optional[dict]:
     """
     Return a BuildAction config by action id
 
     Args:
-        actionId (str): A BuildAction id
+        action_id (str): A BuildAction id
     """
-    action = getRegisteredAction(actionId)
+    action = get_registered_action(action_id)
     if action:
         return action['config']
 
 
-def _getBuildActionConfigForClass(actionClass):
+def _get_build_action_config_for_class(action_cls: type['BuildAction']) -> Optional[dict]:
     """
     Return the config that is associated with a BuildAction class.
     Performs the search by looking for a matching class and returning
     its paired config, instead of looking for the config by id.
 
     Args:
-        actionClass: A BuildAction class
+        action_cls: A BuildAction class
     """
-    for v in BUILDACTIONMAP.values():
-        if v['class'] is actionClass:
+    for v in BUILD_ACTION_MAP.values():
+        if v['class'] is action_cls:
             return v['config']
 
 
-def getBuildActionClass(actionId) -> type['BuildAction']:
+def get_build_action_class(action_id) -> type['BuildAction']:
     """
     Return a BuildAction class by action id
 
     Args:
-        actionId (str): A BuildAction id
+        action_id (str): A BuildAction id
     """
-    action = getRegisteredAction(actionId)
+    action = get_registered_action(action_id)
     if action:
         return action['class']
 
 
-def getRegisteredActionIds() -> Iterable[str]:
+def get_registered_action_ids() -> Iterable[str]:
     """
     Return all the ids of registered BuildActions
     """
-    return BUILDACTIONMAP.keys()
+    return BUILD_ACTION_MAP.keys()
 
 
-def getRegisteredActions() -> dict[str, dict]:
+def get_registered_actions() -> dict[str, dict]:
     """
     Return all registered BuildAction configs and classes organized by their id
 
     Returns:
         A dict of {str: {'config': dict, 'class': BuildAction class}}
     """
-    return {k: v for k, v in BUILDACTIONMAP.items()}
+    return {k: v for k, v in BUILD_ACTION_MAP.items()}
 
 
-def getRegisteredActionConfigs() -> List[dict]:
+def get_registered_action_configs() -> List[dict]:
     """
     Return all registered BuildAction configs
 
     Returns:
         A dict of {str: {'config': dict, 'class': BuildAction class}}
     """
-    return [i['config'] for i in BUILDACTIONMAP.values()]
+    return [i['config'] for i in BUILD_ACTION_MAP.values()]
 
 
-def registerAction(actionConfig, actionClass):
+def register_actions(action_config: dict, action_cls: type['BuildAction']):
     """
     Register one or more BuildAction classes
 
     Args:
-        actionClass: A BuildAction class
-        actionConfig (dict): A config dict for a BuildAction
+        action_config: dict
+            A config dict for a BuildAction.
+        action_cls: BuildAction class
+            A BuildAction class.
     """
     # TODO: prevent registration of invalid configs
     action = {
-        'config': actionConfig,
-        'class': actionClass,
+        'config': action_config,
+        'class': action_cls,
     }
-    actionId = actionConfig['id']
-    if actionId in BUILDACTIONMAP:
-        LOG.error("A BuildAction already exists with id: {0}".format(actionId))
+    action_id = action_config['id']
+    if action_id in BUILD_ACTION_MAP:
+        LOG.error("A BuildAction already exists with id: %s", action_id)
         return
 
-    BUILDACTIONMAP[actionId] = action
+    BUILD_ACTION_MAP[action_id] = action
 
 
-def unregisterAction(actionId):
-    if actionId in BUILDACTIONMAP:
-        del BUILDACTIONMAP[actionId]
+def unregister_action(action_id):
+    if action_id in BUILD_ACTION_MAP:
+        del BUILD_ACTION_MAP[action_id]
 
 
 class BuildActionError(Exception):
@@ -154,195 +159,195 @@ class BuildActionData(object):
     # TODO: add another base class with less cluttered namespace
     #       for use as the base of BuildActions
 
-    def __init__(self, actionId=None):
-        self._actionId = actionId
-        self.configFile = None
+    def __init__(self, action_id=None):
+        self._action_id = action_id
         self._config = None
-        self._attrValues = {}
-        # true if the actionId is set, but config data could not be found
-        self._isMissingConfig = False
+        self._attr_values = {}
+        # true if the action_id is set, but config data could not be found
+        self._is_missing_config = False
 
-        if self._actionId:
-            self.retrieveActionConfig()
+        if self._action_id:
+            self.find_action_config()
 
     def __repr__(self):
-        return "<{0} '{1}'>".format(self.__class__.__name__, self.getActionId())
+        return f"<{self.__class__.__name__} '{self.get_action_id()}'>"
 
     @property
-    def config(self):
+    def config(self) -> dict:
         if self._config is not None:
             return self._config
         return {}
 
-    def isValid(self):
+    def is_valid(self) -> bool:
         """
         Return True if there is a valid config data for this action
         """
         return self._config is not None
 
-    def isActionIdValid(self):
-        return self._actionId is not None
+    def is_action_id_valid(self) -> bool:
+        return self._action_id is not None
 
-    def isMissingConfig(self):
+    def is_missing_config(self) -> bool:
         """
-        Is there no config defined for the current actionId?
+        Is there no config defined for the current action_id?
         """
-        return self._isMissingConfig
+        return self._is_missing_config
 
-    def getActionId(self):
+    def get_action_id(self) -> str:
         """
         Return the id of the BuildAction
         """
-        return self._actionId
+        return self._action_id
 
-    def getShortActionId(self):
+    def get_short_action_id(self) -> str:
         """
-        Return the last part of the actions id, after any '.'
+        Return the last part of the action's id, after any '.'
         """
-        if self._actionId:
-            return self._actionId.split('.')[-1]
+        if self._action_id:
+            return self._action_id.split('.')[-1]
 
-    def retrieveActionConfig(self):
+    def find_action_config(self):
         """
-        Get the config for the current actionId and store it on this data
+        Get the config for the current action_id and store it on this data
         """
-        self._config = getBuildActionConfig(self._actionId)
+        self._config = get_build_action_config(self._action_id)
         if self._config is None:
-            self._isMissingConfig = True
-            LOG.warning(
-                "Failed to find action config for {0}".format(self._actionId))
+            self._is_missing_config = True
+            LOG.warning(f"Failed to find action config for %s", self._action_id)
         else:
-            self._isMissingConfig = False
+            self._is_missing_config = False
 
-    def numAttrs(self):
+    def num_attrs(self) -> int:
         """
         Return the number of attributes that this BuildAction has
         """
-        return len(self.getAttrs())
+        return len(self.get_attrs())
 
-    def getAttrs(self):
+    def get_attrs(self) -> List[dict]:
         """
         Return all attrs for this BuildAction class
 
         Returns:
             A list of dict representing all attr configs
         """
-        if not self.isValid():
+        if not self.is_valid():
             return []
 
         return self.config['attrs']
 
-    def getAttrNames(self):
+    def get_attr_names(self) -> Iterable[str]:
         """
         Return a list of attribute names for this BuildAction class
         """
-        for attr in self.getAttrs():
+        for attr in self.get_attrs():
             yield attr['name']
 
-    def hasAttrConfig(self, attrName):
+    def has_attr_config(self, attr_name) -> bool:
         """
         Return True if this action's config contains the attribute.
         """
-        return self.getAttrConfig(attrName) is not None
+        return self.get_attr_config(attr_name) is not None
 
-    def hasAttr(self, attrName):
+    def has_attr(self, attr_name) -> bool:
         """
         Return True if this action data includes the attribute.
         This doesn't mean it has a value for the attribute, only
         that it can potentially.
         """
-        return attrName in self.getAttrNames()
+        return attr_name in self.get_attr_names()
 
-    def getAttrConfig(self, attrName):
+    def get_attr_config(self, attr_name) -> Optional[dict]:
         """
         Return config data for an attribute
 
         Args:
-            attrName (str): The name of a BuildAction attribute
+            attr_name (str): The name of a BuildAction attribute
         """
-        if not self.isValid():
+        if not self.is_valid():
             return
 
         for attr in self.config['attrs']:
-            if attr['name'] == attrName:
+            if attr['name'] == attr_name:
                 return attr
 
-    def getAttrDefaultValue(self, attr):
+    def get_attr_default_value(self, attr: dict):
         """
         Return the default value for an attribute
 
         Args:
             attr (dict): A BuildAction attribute config object
         """
-        if not self.isValid():
+        if not self.is_valid():
             return
 
         if 'value' in attr:
             return attr['value']
         else:
-            attrType = attr['type']
-            if 'list' in attrType:
+            attr_type = attr['type']
+            if 'list' in attr_type:
                 return []
-            elif attrType == 'bool':
+            elif attr_type == 'bool':
                 return False
-            elif attrType in ['int', 'float']:
+            elif attr_type in ['int', 'float']:
                 return 0
-            elif attrType == 'string':
+            elif attr_type == 'string':
                 return ''
 
-    def hasAttrValue(self, attrName):
+    def has_attr_value(self, attr_name) -> bool:
         """
         Return True if this action data contains a non-default value
         for the attribute.
 
         Args:
-            attrName (str): The name of a BuildAction attribute
+            attr_name (str): The name of a BuildAction attribute
         """
-        return attrName in self._attrValues
+        return attr_name in self._attr_values
 
-    def getAttrValue(self, attrName, default=None):
+    def get_attr_value(self, attr_name, default=None):
         """
         Return the value for an attribute, or default if its
         value is not overridden in this action data.
-        Use `getAttrValueOrDefault` to default to the config-default
+        Use `get_attr_value_or_default` to default to the config-default
         value for the attribute.
 
         Args:
-            attrName (str): The name of a BuildAction attribute
+            attr_name: str
+                The name of a BuildAction attribute.
+            default: Any
+                The default value to return if the attribute is not set.
         """
-        return self._attrValues.get(attrName, default)
+        return self._attr_values.get(attr_name, default)
 
-    def getAttrValueOrDefault(self, attrName):
-        if attrName in self._attrValues:
-            return self._attrValues[attrName]
+    def get_attr_value_or_default(self, attr_name):
+        if attr_name in self._attr_values:
+            return self._attr_values[attr_name]
         else:
-            config = self.getAttrConfig(attrName)
+            config = self.get_attr_config(attr_name)
             if config:
-                return self.getAttrDefaultValue(config)
+                return self.get_attr_default_value(config)
             else:
-                LOG.warning("BuildActionData attribute "
-                            "not found: {0}".format(attrName))
+                LOG.warning(f"BuildActionData attribute not found: %s", attr_name)
 
-    def setAttrValue(self, attrName, value):
+    def set_attr_value(self, attr_name, value):
         if value is None:
-            self.delAttrValue(attrName)
+            self.del_attr_value(attr_name)
         else:
-            self._attrValues[attrName] = value
+            self._attr_values[attr_name] = value
 
-    def delAttrValue(self, attrName):
-        if attrName in self._attrValues:
-            del self._attrValues[attrName]
+    def del_attr_value(self, attr_name):
+        if attr_name in self._attr_values:
+            del self._attr_values[attr_name]
 
     def serialize(self):
         """
         Return this BuildActionData as a serialized dict object
         """
         data = UnsortableOrderedDict()
-        data['id'] = self._actionId
-        if self.isValid():
-            for attr in self.getAttrs():
-                if self.hasAttrValue(attr['name']):
-                    data[attr['name']] = self._attrValues[attr['name']]
+        data['id'] = self._action_id
+        if self.is_valid():
+            for attr in self.get_attrs():
+                if self.has_attr_value(attr['name']):
+                    data[attr['name']] = self._attr_values[attr['name']]
         return data
 
     def deserialize(self, data):
@@ -352,25 +357,23 @@ class BuildActionData(object):
         Args:
             data: A dict containing serialized data for this action
         """
-        self._actionId = data['id']
+        self._action_id = data['id']
 
         # update config
-        if self._actionId:
-            self.retrieveActionConfig()
+        if self._action_id:
+            self.find_action_config()
 
         # load values for all action attrs
-        if self.isValid():
-            for attr in self.getAttrs():
+        if self.is_valid():
+            for attr in self.get_attrs():
                 if attr['name'] in data:
-                    self._attrValues[attr['name']] = data[attr['name']]
+                    self._attr_values[attr['name']] = data[attr['name']]
 
         elif len(data) > 1:
             # if config didn't load, don't throw away the attribute values
-            LOG.warning(
-                "Failed to find BuildAction config: {0}, "
-                "preserving serialized attr values".format(self._actionId))
+            LOG.warning("Failed to find BuildAction config: %s, preserving serialized attr values", self._action_id)
             for k, v in data.items():
-                self._attrValues[k] = v
+                self._attr_values[k] = v
 
 
 class BuildActionDataVariant(BuildActionData):
@@ -378,106 +381,106 @@ class BuildActionDataVariant(BuildActionData):
     Contains a partial set of attribute values.
     """
 
-    # TODO: prevent setting an attribute thats not in the variant
+    # TODO: prevent setting an attribute that's not in the variant
 
-    def __init__(self, actionId=None):
-        super(BuildActionDataVariant, self).__init__(actionId=actionId)
+    def __init__(self, action_id=None):
+        super(BuildActionDataVariant, self).__init__(action_id=action_id)
         # names of all attributes that are in this variant
-        self._variantAttrs = []
+        self._variant_attrs: List[str] = []
 
-    def getVariantAttrs(self):
+    def get_variant_attrs(self) -> List[str]:
         """
         Return the list of all variant attribute names
         """
-        return self._variantAttrs
+        return self._variant_attrs
 
-    def getAttrs(self):
+    def get_attrs(self):
         """
         Return all attrs for this BuildAction class
 
         Returns:
             A list of dict representing all attr configs
         """
-        if not self.isValid():
+        if not self.is_valid():
             return []
 
-        return [a for a in self.config['attrs'] if a['name'] in self.getVariantAttrs()]
+        return [a for a in self.config['attrs'] if a['name'] in self.get_variant_attrs()]
 
-    def isVariantAttr(self, attrName):
+    def is_variant_attr(self, attr_name):
         """
         Return True if the attribute is contained in this variant.
         This doesn't mean a non-default value is set for the attribute.
 
         Args:
-            attrName (str): The name of a BuildAction attribute
+            attr_name (str): The name of a BuildAction attribute
         """
-        return attrName in self.getVariantAttrs()
+        return attr_name in self.get_variant_attrs()
 
-    def setIsVariantAttr(self, attrName, isVariant):
+    def set_is_variant_attr(self, attr_name: str, is_variant: bool):
         """
         Set whether an attr is variant or not.
 
         Args:
-            attrName (str): The name of a BuildAction attribute
-            isVariant (bool): Whether the attribute should be variant or not
+            attr_name (str): The name of a BuildAction attribute
+            is_variant (bool): Whether the attribute should be variant or not
         """
-        if isVariant:
-            self.addVariantAttr(attrName)
+        if is_variant:
+            self.add_variant_attr(attr_name)
         else:
-            self.removeVariantAttr(attrName)
+            self.remove_variant_attr(attr_name)
 
-    def addVariantAttr(self, attrName):
+    def add_variant_attr(self, attr_name: str):
         """
         Add an attribute to this variant.
 
         Args:
-            attrName (str): The name of a BuildAction attribute
+            attr_name (str): The name of a BuildAction attribute
         """
-        if attrName in self._variantAttrs:
+        if attr_name in self._variant_attrs:
             return
 
-        if not self.hasAttrConfig(attrName):
+        if not self.has_attr_config(attr_name):
             return
 
-        self._variantAttrs.append(attrName)
-        self._variantAttrs.sort()
+        self._variant_attrs.append(attr_name)
+        self._variant_attrs.sort()
 
-    def removeVariantAttr(self, attrName):
+    def remove_variant_attr(self, attr_name: str):
         """
         Remove an attribute from the list of variant attributes,
         copying the value from the first variant into the default set
         of attr values if applicable.
 
         Args:
-            attrName (str): The name of an action attribute
+            attr_name (str): The name of an action attribute
         """
-        if attrName not in self._variantAttrs:
+        if attr_name not in self._variant_attrs:
             return
 
-        self._variantAttrs.remove(attrName)
+        self._variant_attrs.remove(attr_name)
 
-        if self.hasAttrValue(attrName):
-            self.delAttrValue(attrName)
+        if self.has_attr_value(attr_name):
+            self.del_attr_value(attr_name)
 
-    def clearVariantAttrs(self):
+    def clear_variant_attrs(self):
         """
         Remove all variant attributes, copying the values
         from the first variant into the default set of attr values
         if applicable.
         """
-        attrNames = self._variantAttrs[:]
-        for attrName in attrNames:
-            self.removeVariantAttr(attrName)
+        attr_names = self._variant_attrs[:]
+        for attrName in attr_names:
+            self.remove_variant_attr(attrName)
 
     def serialize(self):
         data = super(BuildActionDataVariant, self).serialize()
-        data['variantAttrs'] = self._variantAttrs
+        data['variantAttrs'] = self._variant_attrs
         return data
 
     def deserialize(self, data):
         # must deserialize attrs first before attempting
         # to set values in super deserialize
-        self._variantAttrs = data.get('variantAttrs', [])
+        self._variant_attrs = data.get('variantAttrs', [])
 
         super(BuildActionDataVariant, self).deserialize(data)
 
@@ -493,189 +496,188 @@ class BuildActionProxy(BuildActionData):
     values that are unique per variant need to be set, and the
     remaining attributes will be the same on all actions.
 
-    The proxy provides a method `actionIterator` which performs the
+    The proxy provides a method `action_iterator` which performs the
     actual construction of BuildActions for use at build time.
     """
 
-    def __init__(self, actionId=None):
-        super(BuildActionProxy, self).__init__(actionId=actionId)
+    def __init__(self, action_id=None):
+        super(BuildActionProxy, self).__init__(action_id=action_id)
         # names of all attributes that are unique per variant
-        self._variantAttrs = []
+        self._variantAttrs: List[str] = []
         # all BuildActionDataVariant instances in this proxy
-        self._variants = []
+        self._variants: List[BuildActionDataVariant] = []
 
-    def getEditorFormClass(self):
+    def get_editor_form_class(self):
         """
         Return the custom BuildActionProxyForm class to use for this action
         """
         return self.config.get('editorFormClassObj')
 
-    def getDisplayName(self):
+    def get_display_name(self):
         """
         Return the display name of the BuildAction.
         """
-        return self.config.get('displayName', self.getShortActionId())
+        return self.config.get('displayName', self.get_short_action_id())
 
-    def getColor(self):
+    def get_color(self):
         """
         Return the color of this action when represented in the UI
         """
-        if self.isMissingConfig():
+        if self.is_missing_config():
             return [0.8, 0, 0]
         else:
             return self.config.get('color', [1, 1, 1])
 
-    def getIconFile(self):
+    def get_icon_file(self):
         """
         Return the full path to icon for this build action
         """
         filename = self.config.get('icon')
-        configFile = self.config.get('configFile')
-        if configFile:
-            actiondir = os.path.dirname(configFile)
+        config_file = self.config.get('configFile')
+        if config_file:
+            action_dir = os.path.dirname(config_file)
             if filename:
-                return os.path.join(actiondir, filename)
+                return os.path.join(action_dir, filename)
 
-    def isVariantAction(self):
+    def is_variant_action(self):
         """
         Returns true of this action proxy has any variant attributes.
         """
         return bool(self._variantAttrs)
 
-    def isVariantAttr(self, attrName):
+    def is_variant_attr(self, attr_name: str):
         """
         Return True if the attribute is variant, meaning it is unique
         per each variant instance, and does not exist in the main
         action data.
 
         Args:
-            attrName (str): The name of a BuildAction attribute
+            attr_name (str): The name of a BuildAction attribute
         """
-        return attrName in self._variantAttrs
+        return attr_name in self._variantAttrs
 
-    def setIsVariantAttr(self, attrName, isVariant):
+    def set_is_variant_attr(self, attr_name: str, is_variant: bool):
         """
         Set whether an attr is variant or not.
 
         Args:
-            attrName (str): The name of a BuildAction attribute
-            isVariant (bool): Whether the attribute should be variant or not
+            attr_name (str): The name of a BuildAction attribute
+            is_variant (bool): Whether the attribute should be variant or not
         """
-        if isVariant:
-            self.addVariantAttr(attrName)
+        if is_variant:
+            self.add_variant_attr(attr_name)
         else:
-            self.removeVariantAttr(attrName)
+            self.remove_variant_attr(attr_name)
 
-    def addVariantAttr(self, attrName):
+    def add_variant_attr(self, attr_name: str):
         """
         Add an attribute to the list of variant attributes, removing
         any invariant values for the attribute, and creating
         variant values instead if applicable.
 
         Args:
-            attrName (str): The name of an action attribute
+            attr_name (str): The name of an action attribute
         """
-        if attrName in self._variantAttrs:
+        if attr_name in self._variantAttrs:
             return
 
         # add attr to variant attrs list
-        self._variantAttrs.append(attrName)
+        self._variantAttrs.append(attr_name)
         for variant in self._variants:
-            variant.addVariantAttr(attrName)
+            variant.add_variant_attr(attr_name)
 
         # if no variants exist, add one
-        if self.numVariants() == 0:
-            self.addVariant()
+        if self.num_variants() == 0:
+            self.add_variant()
 
         # set the attribute value on all variants using
         # current invariant value if one exists
-        if self.hasAttrValue(attrName):
-            value = self.getAttrValue(attrName)
-            self.delAttrValue(attrName)
+        if self.has_attr_value(attr_name):
+            value = self.get_attr_value(attr_name)
+            self.del_attr_value(attr_name)
 
             for variant in self._variants:
-                if not variant.hasAttrValue(attrName):
-                    variant.setAttrValue(attrName, value)
+                if not variant.has_attr_value(attr_name):
+                    variant.set_attr_value(attr_name, value)
 
-    def removeVariantAttr(self, attrName):
+    def remove_variant_attr(self, attr_name: str):
         """
         Remove an attribute from the list of variant attributes,
         copying the value from the first variant into the default set
         of attr values if applicable.
 
         Args:
-            attrName (str): The name of an action attribute
+            attr_name (str): The name of an action attribute
         """
-        if attrName not in self._variantAttrs:
+        if attr_name not in self._variantAttrs:
             return
 
         # remove from attributes list
-        self._variantAttrs.remove(attrName)
+        self._variantAttrs.remove(attr_name)
 
         # transfer first variant value to the invariant values
         if len(self._variants):
-            firstVariant = self._variants[0]
-            if firstVariant.hasAttrValue(attrName):
-                value = firstVariant.getAttrValue(attrName)
-                self.setAttrValue(attrName, value)
+            first_variant = self._variants[0]
+            if first_variant.has_attr_value(attr_name):
+                value = first_variant.get_attr_value(attr_name)
+                self.set_attr_value(attr_name, value)
 
         # remove attr from variant instances
         for variant in self._variants:
-            variant.removeVariantAttr(attrName)
+            variant.remove_variant_attr(attr_name)
 
-    def getVariantAttrs(self):
+    def get_variant_attrs(self):
         """
         Return the list of all variant attribute names
         """
         return self._variantAttrs
 
-    def clearVariantAttrs(self):
+    def clear_variant_attrs(self):
         """
         Remove all variant attributes, copying the values
         from the first variant into the default set of attr values
         if applicable.
         """
-        attrNames = self._variantAttrs[:]
-        for attrName in attrNames:
-            self.removeVariantAttr(attrName)
+        attr_names = self._variantAttrs[:]
+        for attrName in attr_names:
+            self.remove_variant_attr(attrName)
 
-    def _createVariant(self):
+    def _create_variant(self):
         """
         Return a new BuildActionDataVariant instance
         for use with this action proxy.
         """
-        variant = BuildActionDataVariant(actionId=self._actionId)
+        variant = BuildActionDataVariant(action_id=self._action_id)
         for attrName in self._variantAttrs:
-            variant.addVariantAttr(attrName)
+            variant.add_variant_attr(attrName)
         return variant
 
-    def getVariant(self, index):
-        # type: (int) -> BuildActionDataVariant
+    def get_variant(self, index: int) -> BuildActionDataVariant:
         """
         Return the BuildActionDataVariant instance at an index
         """
         return self._variants[index]
 
-    def getOrCreateVariant(self, index):
+    def get_or_create_variant(self, index) -> BuildActionDataVariant:
         if index >= 0:
-            while self.numVariants() <= index:
-                self.addVariant()
-        return self.getVariant(index)
+            while self.num_variants() <= index:
+                self.add_variant()
+        return self.get_variant(index)
 
-    def numVariants(self):
+    def num_variants(self):
         """
         Return how many variants exist on this action proxy
         """
         return len(self._variants)
 
-    def addVariant(self):
+    def add_variant(self):
         """
         Add a variant of attribute values. Does nothing if there
         are no variant attributes.
         """
-        self._variants.append(self._createVariant())
+        self._variants.append(self._create_variant())
 
-    def insertVariant(self, index):
+    def insert_variant(self, index):
         """
         Insert a variant of attribute values. Does nothing if there
         are no variant attributes.
@@ -683,9 +685,9 @@ class BuildActionProxy(BuildActionData):
         Args:
             index (int): The index at which to insert the new variant
         """
-        self._variants.insert(index, self._createVariant())
+        self._variants.insert(index, self._create_variant())
 
-    def removeVariantAt(self, index):
+    def remove_variant_at(self, index):
         """
         Remove a variant of attribute values.
 
@@ -693,10 +695,10 @@ class BuildActionProxy(BuildActionData):
             index (int): The index at which to remove the variant
         """
         count = len(self._variants)
-        if index >= -count and index < count:
+        if -count <= index < count:
             del self._variants[index]
 
-    def clearVariants(self):
+    def clear_variants(self):
         """
         Remove all variant instances.
         Does not clear the list of variant attributes.
@@ -709,61 +711,60 @@ class BuildActionProxy(BuildActionData):
             data['variantAttrs'] = self._variantAttrs
         if self._variants:
             data['variants'] = [
-                self.serializeVariant(v) for v in self._variants]
+                self.serialize_variant(v) for v in self._variants]
         return data
 
     def deserialize(self, data):
         super(BuildActionProxy, self).deserialize(data)
         self._variantAttrs = data.get('variantAttrs', [])
         self._variants = [
-            self.deserializeVariant(v) for v in data.get('variants', [])]
+            self.deserialize_variant(v) for v in data.get('variants', [])]
 
-    def serializeVariant(self, variant):
+    def serialize_variant(self, variant):
         data = variant.serialize()
         # prune unnecessary data from the variant for optimization
         del data['id']
         del data['variantAttrs']
         return data
 
-    def deserializeVariant(self, data):
+    def deserialize_variant(self, data):
         variant = BuildActionDataVariant()
         # add necessary additional data for deserializing the variant
-        data['id'] = self._actionId
+        data['id'] = self._action_id
         data['variantAttrs'] = self._variantAttrs
         variant.deserialize(data)
         return variant
 
-    def actionIterator(self) -> Iterable['BuildAction']:
+    def action_iterator(self) -> Iterable['BuildAction']:
         """
         Generator that yields all the BuildActions represented
         by this proxy. If variants are in use, constructs a BuildAction
         for each set of variant attribute values.
         """
-        if not self.isActionIdValid():
+        if not self.is_action_id_valid():
             raise Exception("BuildActionProxy has no valid action id: %s" % self)
-        if self.isMissingConfig():
+        if self.is_missing_config():
             raise Exception("Failed to find BuildAction config: %s" %
-                            self.getActionId())
+                            self.get_action_id())
 
-        if self.isVariantAction():
+        if self.is_variant_action():
             # ensure there are no invariant values for variant attrs
             for attrName in self._variantAttrs:
-                if self.hasAttrValue(attrName):
-                    LOG.warning("Found invariant value for a variant attr: "
-                                "{0}.{1}".format(self.getActionId(), attrName))
+                if self.has_attr_value(attrName):
+                    LOG.warning("Found invariant value for a variant attr: %s.%s", self.get_action_id(), attrName)
 
             # create and yield new build actions for each variant
-            mainData = self.serialize()
+            main_data = self.serialize()
             for variant in self._variants:
                 # TODO: update serialization to ensure variants only return
                 #       data for the attributes they're supposed to modify
                 data = variant.serialize()
-                data.update(_copyData(mainData))
-                newAction = BuildAction.fromData(data)
-                yield newAction
+                data.update(_copy_data(main_data))
+                new_action = BuildAction.from_data(data)
+                yield new_action
         else:
             # no variants, just create one action
-            yield BuildAction.fromData(_copyData(self.serialize()))
+            yield BuildAction.from_data(_copy_data(self.serialize()))
 
 
 class BuildAction(BuildActionData):
@@ -777,22 +778,22 @@ class BuildAction(BuildActionData):
     """
 
     @staticmethod
-    def fromActionId(actionId):
+    def from_action_id(action_id):
         """
-        Create and return a BuildAction by class actionId.
+        Create and return a BuildAction by class action_id.
 
         Args:
-            actionId (str): A BuildAction id.
+            action_id (str): A BuildAction id.
         """
-        actionClass = getBuildActionClass(actionId)
-        if not actionClass:
-            raise ValueError("Failed to find BuildAction class: {0}".format(actionId))
+        action_cl = get_build_action_class(action_id)
+        if not action_cl:
+            raise ValueError(f"Failed to find BuildAction class: {action_id}")
 
-        item = actionClass()
+        item = action_cl()
         return item
 
     @staticmethod
-    def fromData(data):
+    def from_data(data):
         """
         Create and return a BuildAction based on the given serialized data.
 
@@ -802,20 +803,15 @@ class BuildAction(BuildActionData):
         Args:
             data: A dict object containing serialized BuildAction data
         """
-        actionClass = getBuildActionClass(data['id'])
-        if not actionClass:
-            raise ValueError("Failed to find BuildAction class: {0}".format(data['id']))
+        action_cls = get_build_action_class(data['id'])
+        if not action_cls:
+            raise ValueError(f"Failed to find BuildAction class: {data['id']}")
 
-        item = actionClass()
+        item = action_cls()
         item.deserialize(data)
         return item
 
-    def __init__(self, **attrKwargs):
-        """
-        Args:
-            attrKwargs: A dict of default values for this actions attributes.
-                Only values corresponding to a valid config attribute are used.
-        """
+    def __init__(self):
         super(BuildAction, self).__init__()
 
         # logger is initialized the first time its accessed
@@ -827,139 +823,137 @@ class BuildAction(BuildActionData):
         self.rig = None
 
         # pull action name from the class name
-        self._config = _getBuildActionConfigForClass(self.__class__)
+        self._config = _get_build_action_config_for_class(self.__class__)
         if self._config:
             self._actionId = self.config['id']
         else:
-            LOG.warning("Constructed an unregistered BuildAction: {0}, "
-                        "cannot retrieve config".format(self.__class__.__name__))
+            LOG.warning("Constructed an unregistered BuildAction: %s, cannot retrieve config", self.__class__.__name__)
             return
 
     def __repr__(self):
-        return "<{0}>".format(self.__class__.__name__)
+        return f"<{self.__class__.__name__}>"
 
     def __getattr__(self, name):
-        attrConfig = self.getAttrConfig(name)
-        if attrConfig:
-            if name in self._attrValues:
-                return self._attrValues[name]
+        attr_config = self.get_attr_config(name)
+        if attr_config:
+            if name in self._attr_values:
+                return self._attr_values[name]
             else:
-                return self.getAttrDefaultValue(attrConfig)
+                return self.get_attr_default_value(attr_config)
         else:
-            raise AttributeError(
-                "'{0}' object has no attribute '{1}'".format(type(self).__name__, name))
+            raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
 
-    def retrieveActionConfig(self):
+    def find_action_config(self):
         # do nothing. BuildAction classes automatically retrieve
-        # their config on init using the class itself to lookup
+        # their config on init using the class itself to look up
         # a registered config.
         pass
 
-    def getLoggerName(self):
+    def get_logger_name(self):
         """
         Return the name of the logger for this BuildAction
         """
-        return 'pulse.action.' + self.getActionId()
+        return 'pulse.action.' + self.get_action_id()
 
     @property
     def log(self):
         if not self._log:
-            self._log = logging.getLogger(self.getLoggerName())
+            self._log = logging.getLogger(self.get_logger_name())
         return self._log
 
-    def getMinApiVersion(self):
+    def get_min_api_version(self):
         """
         Override to return the minimum Maya api version required for this BuildAction.
-        (This compares against `cmds.about(api=True)`)
+        This compares against `cmds.about(api=True)`.
         """
         return 0
 
-    def getRigMetaData(self):
+    def get_rig_metadata(self):
         """
-        Return all meta data on the rig being built
+        Return all metadata on the rig being built
         """
         if not self.rig:
             self.log.error('Cannot get rig meta data, no rig is set')
             return {}
         return meta.getMetaData(self.rig, RIG_METACLASS)
 
-    def updateRigMetaData(self, data):
+    def update_rig_metadata(self, data):
         """
-        Add some meta data to the rig being built
+        Add some metadata to the rig being built
 
         Args:
-            data: A dict containing meta data to update on the rig
+            data: A dict containing metadata to update on the rig
         """
         if not self.rig:
             self.log.error('Cannot update rig meta data, no rig is set')
             return
         meta.updateMetaData(self.rig, RIG_METACLASS, data)
 
-    def extendRigMetaDataList(self, key, data):
+    def extend_rig_metadata_list(self, key, data):
         """
-        Extend a list value in the meta data of the rig being built.
+        Extend a list value in the metadata of the rig being built.
 
         Args:
-            key (str): The meta data key for the list
-            data (list): A list of any basic python object to add to the meta data list value
+            key (str): The metadata key for the list
+            data (list): A list of any basic python object to add to the metadata list value
         """
         # get current value for the meta data key
-        rigData = self.getRigMetaData()
-        currentValue = rigData.get(key, [])
+        rig_data = self.get_rig_metadata()
+        current_value = rig_data.get(key, [])
         # append or extend the new data
-        newValue = list(set(currentValue + data))
+        new_value = list(set(current_value + data))
         # update meta data
-        self.updateRigMetaData({key: newValue})
+        self.update_rig_metadata({key: new_value})
 
-    def updateRigMetaDataDict(self, key, data):
+    def update_rig_metadata_dict(self, key, data):
         """
-        Update a dict value in the meta data of the rig being built.
+        Update a dict value in the metadata of the rig being built.
 
         Args:
-            key (str): The meta data key for the list
-            data (dict): A dict of any basic python objects to update the meta data value with
+            key (str): The metadata key for the list
+            data (dict): A dict of any basic python objects to update the metadata value with
         """
         # get current value for the meta data key
-        rigData = self.getRigMetaData()
-        value = rigData.get(key, {})
+        rig_data = self.get_rig_metadata()
+        value = rig_data.get(key, {})
         # update dict value with the new data
         value.update(data)
         # update meta data
-        self.updateRigMetaData({key: value})
+        self.update_rig_metadata({key: value})
 
-    def validateApiVersion(self):
+    def validate_api_version(self):
         """
         Validate that the current Maya version meets the requirements for this build action
         """
-        minApiVersion = self.getMinApiVersion()
-        if minApiVersion > 0 and cmds.about(api=True) < minApiVersion:
+        min_api_version = self.get_min_api_version()
+        if min_api_version > 0 and cmds.about(api=True) < min_api_version:
             raise BuildActionError(
-                "Maya api version %s is required to use %s" % (minApiVersion, self._actionId))
+                "Maya api version %s is required to use %s" % (min_api_version, self._actionId))
 
-    def runValidate(self):
+    def run_validate(self):
         """
         Run the validate function and perform some other basic
         checks to make sure the build action is valid for use.
         """
-        self.validateApiVersion()
-        self.validateAttrValues()
+        self.validate_api_version()
+        self.validate_attr_values()
         self.validate()
 
-    def validateAttrValues(self):
+    def validate_attr_values(self):
         """
         Check each action attribute to ensure it has a
         valid value for its attribute type. Checks for things
         like missing nodes or invalid options.
         """
-        for attr in self.getAttrs():
-            attrName = attr['name']
-            attrType = attr['type']
-            if self.hasAttrValue(attrName):
-                attrValue = self.getAttrValue(attrName)
-                if attrType == 'nodelist':
-                    if None in attrValue:
+        for attr in self.get_attrs():
+            attr_name = attr['name']
+            attr_type = attr['type']
+            if self.has_attr_value(attr_name):
+                attr_value = self.get_attr_value(attr_name)
+                if attr_type == 'nodelist':
+                    if None in attr_value:
                         raise BuildActionError(
-                            '%s contains a missing object' % attrName)
+                            '%s contains a missing object' % attr_name)
 
     def validate(self):
         """
@@ -985,11 +979,13 @@ class BuildStep(object):
     cannot have children.
     """
 
+    default_name = 'New Step'
+
     # TODO (bsayre): consider adding method to change the action type of the current proxy,
     #       whilst preserving or transferring as much attr data as possible
 
     @staticmethod
-    def fromData(data):
+    def from_data(data):
         """
         Return a new BuildStep instance created
         from serialized data.
@@ -997,177 +993,175 @@ class BuildStep(object):
         Args:
             data (dict): Serialized BuildStep data
         """
-        newStep = BuildStep()
-        newStep.deserialize(data)
-        return newStep
+        new_step = BuildStep()
+        new_step.deserialize(data)
+        return new_step
 
-    def __init__(self, name=None, actionProxy=None, actionId=None):
+    def __init__(self, name=None, action_proxy: BuildActionProxy = None, action_id: str = None):
         # the name of this step (unique among siblings)
-        self._name = None
+        self._name: Optional[str] = None
         # the parent BuildStep
-        self._parent = None
+        self._parent: Optional[BuildStep] = None
         # list of child BuildSteps
         self._children: List[BuildStep] = []
         # the BuildActionProxy for this step
-        self._actionProxy = actionProxy
+        self._action_proxy = action_proxy
 
         # is this build step currently disabled?
         self.isDisabled = False
 
-        # auto-create a basic BuildActionProxy if an actionId was given
-        if actionId:
-            self._actionProxy = BuildActionProxy(actionId)
+        # auto-create a basic BuildActionProxy if an action_id was given
+        if action_id:
+            self._action_proxy = BuildActionProxy(action_id)
 
         # set the name, potentially defaulting to the action's name
-        self.setName(name)
+        self.set_name(name)
 
     @property
     def name(self):
         return self._name
 
-    def setName(self, newName):
+    def set_name(self, new_name):
         """
         Set the name of the BuildStep, modifying it if necessary
         to ensure that it is unique among siblings.
 
         Args:
-            newName (str): The new name of the step
+            new_name (str): The new name of the step
         """
-        newNameClean = self.getCleanName(newName)
-        if self._name != newNameClean:
-            self._name = newNameClean
-            self.ensureUniqueName()
+        new_name_clean = self.get_clean_name(new_name)
+        if self._name != new_name_clean:
+            self._name = new_name_clean
+            self.ensure_unique_name()
 
-    def getCleanName(self, name):
-        # ensure a non-null name
+    def get_clean_name(self, name) -> str:
+        """
+        Return a name for the build step, ensuring one is set if it hasn't
+        already been, and cleaning trailing spaces, etc.
+        """
+        # ensure a name is set
         if not name:
-            if self._actionProxy:
-                name = self._actionProxy.getDisplayName()
+            if self._action_proxy:
+                name = self._action_proxy.get_display_name()
             else:
-                name = 'New Step'
+                name = self.default_name
         return name.strip()
 
-    def setNameFromAction(self):
+    def set_name_from_action(self):
         """
         Set the name of the BuildStep to match the action it contains.
         """
-        if self._actionProxy:
-            self.setName(self._actionProxy.getDisplayName())
+        if self._action_proxy:
+            self.set_name(self._action_proxy.get_display_name())
 
-    def isDisabledInHierarchy(self):
+    def is_disabled_in_hierarchy(self):
         """
-        Return true if this step or any of its parents is disabled
+        Return true if this step or any of its parents are disabled.
         """
         if self.isDisabled:
             return True
         if self._parent:
-            return self._parent.isDisabledInHierarchy()
+            return self._parent.is_disabled_in_hierarchy()
         return False
 
-    def isAction(self):
-        return self._actionProxy is not None
+    def is_action(self):
+        return self._action_proxy is not None
 
     @property
-    def actionProxy(self) -> BuildActionProxy:
-        return self._actionProxy
+    def action_proxy(self) -> BuildActionProxy:
+        return self._action_proxy
 
-    def setActionProxy(self, actionProxy):
+    def set_action_proxy(self, action_proxy: BuildActionProxy):
         """
-        Set a BuildActionProxy for this step. Will fail if
-        the step has any children.
+        Set a BuildActionProxy for this step. Will fail if the step has any children.
 
         Args:
-            actionProxy (BuildActionProxy): The new action proxy
+            action_proxy: BuildActionProxy
+                The new action proxy.
         """
         if self._children:
-            LOG.warning("Cannot set a BuildActionProxy on a step with children. "
-                        "Clear all children first")
+            LOG.warning("Cannot set a BuildActionProxy on a step with children. Clear all children first")
             return
 
-        self._actionProxy = actionProxy
+        self._action_proxy = action_proxy
 
-    @property
-    def canHaveChildren(self):
-        return not self.isAction()
+    def can_have_children(self) -> bool:
+        return not self.is_action()
 
     @property
     def parent(self):
         return self._parent
 
-    def setParentInternal(self, newParent):
-        self._parent = newParent
-        self.onParentChanged()
+    def set_parent_internal(self, new_parent: Optional['BuildStep']):
+        self._parent = new_parent
+        self._on_parent_changed()
 
-    def setParent(self, newParent):
+    def set_parent(self, new_parent: Optional['BuildStep']):
         """
-        Set the parent of this BuildStep, removing it from
-        its old parent if necessary.
+        Set the parent of this BuildStep, removing it from its old parent if necessary.
         """
-        if newParent and not newParent.canHaveChildren:
-            raise ValueError(
-                "Cannot set parent to step that cannot have children: {0}".format(newParent))
+        if new_parent and not new_parent.can_have_children():
+            raise ValueError(f"Cannot set parent to step that cannot have children: {new_parent}")
 
-        if self._parent is not newParent:
+        if self._parent is not new_parent:
             if self._parent:
-                self._parent.removeChildInternal(self)
+                self._parent.remove_child_internal(self)
                 self._parent = None
-            if newParent:
-                newParent.addChild(self)
+            if new_parent:
+                new_parent.add_child(self)
             else:
-                self.setParentInternal(None)
+                self.set_parent_internal(None)
 
-    def onParentChanged(self):
-        self.ensureUniqueName()
+    def _on_parent_changed(self):
+        self.ensure_unique_name()
 
     @property
     def children(self):
         return self._children
 
     def __repr__(self):
-        return "<BuildStep '{0}'>".format(self.getDisplayName())
+        return f"<BuildStep '{self.get_display_name()}'>"
 
-    def ensureUniqueName(self):
+    def ensure_unique_name(self):
         """
-        Change this step's name to ensure that
-        it is unique among siblings.
+        Change this step's name to ensure that it is unique among siblings.
         """
         if self._parent:
             siblings = [c for c in self._parent.children if not (c is self)]
-            siblingNames = [s.name for s in siblings]
-            while self._name in siblingNames:
-                self._name = _incrementName(self._name)
+            sibling_names = [s.name for s in siblings]
+            while self._name in sibling_names:
+                self._name = _increment_name(self._name)
 
-    def getDisplayName(self):
+    def get_display_name(self) -> str:
         """
         Return the display name for this step.
         """
-        if self._actionProxy:
-            if self._actionProxy.isVariantAction():
-                return '{0} (x{1})'.format(
-                    self._name, self._actionProxy.numVariants())
+        if self._action_proxy:
+            if self._action_proxy.is_variant_action():
+                return f'{self._name} (x{self._action_proxy.num_variants()})'
             else:
-                return '{0}'.format(self._name)
+                return f'{self._name}'
         else:
-            return '{0} ({1})'.format(self._name, self.numChildren())
+            return f'{self._name} ({self.num_children()})'
 
-    def getColor(self):
+    def get_color(self):
         """
         Return the color of this BuildStep when represented in the UI
         """
-        if self._actionProxy:
-            return self._actionProxy.getColor()
+        if self._action_proxy:
+            return self._action_proxy.get_color()
         return [1, 1, 1]
 
-    def getIconFile(self):
+    def get_icon_file(self):
         """
         Return the full path to this build step's icon
         """
-        if self._actionProxy:
-            return self._actionProxy.getIconFile()
+        if self._action_proxy:
+            return self._action_proxy.get_icon_file()
         else:
             pass
 
-    def getFullPath(self):
+    def get_full_path(self):
         """
         Return the full path to this BuildStep.
 
@@ -1176,116 +1170,114 @@ class BuildStep(object):
             e.g. 'MyGroupA/MyGroupB/MyBuildStep'
         """
         if self._parent:
-            parentPath = self._parent.getFullPath()
-            if parentPath:
-                return '{0}/{1}'.format(parentPath, self._name)
+            parent_path = self._parent.get_full_path()
+            if parent_path:
+                return f'{parent_path}/{self._name}'
             else:
                 return self._name
         else:
             # a root step, or step without a parent has no path
             return None
 
-    def getParentPath(self):
+    def get_parent_path(self):
         """
         Return the full path to this BuildStep's parent
         """
         if self._parent:
-            return self._parent.getFullPath()
+            return self._parent.get_full_path()
 
-    def indexInParent(self):
+    def index_in_parent(self):
         """
         Return the index of this within its parent's list of children.
         """
         if self.parent:
-            return self.parent.getChildIndex(self)
+            return self.parent.get_child_index(self)
         else:
             return 0
 
-    def clearChildren(self):
-        if not self.canHaveChildren:
+    def clear_children(self):
+        if not self.can_have_children():
             return
 
         for step in self._children:
-            step.setParentInternal(None)
+            step.set_parent_internal(None)
 
         self._children = []
 
-    def addChild(self, step):
-        if not self.canHaveChildren:
+    def add_child(self, step: 'BuildStep'):
+        if not self.can_have_children():
             return
 
         if step is self:
             raise ValueError('Cannot add step as child of itself')
 
         if not isinstance(step, BuildStep):
-            raise TypeError(
-                'Expected BuildStep, got {0}'.format(type(step).__name__))
+            raise TypeError(f'Expected BuildStep, got {type(step).__name__}')
 
         if step not in self._children:
             self._children.append(step)
-            step.setParentInternal(self)
+            step.set_parent_internal(self)
 
-    def addChildren(self, steps):
+    def add_children(self, steps: List['BuildStep']):
         for step in steps:
-            self.addChild(step)
+            self.add_child(step)
 
-    def removeChild(self, step):
-        if not self.canHaveChildren:
+    def remove_child(self, step: 'BuildStep'):
+        if not self.can_have_children():
             return
 
         if step in self._children:
             self._children.remove(step)
-            step.setParentInternal(None)
+            step.set_parent_internal(None)
 
-    def removeChildInternal(self, step):
+    def remove_child_internal(self, step):
         if step in self._children:
             self._children.remove(step)
 
-    def removeChildren(self, index, count):
+    def remove_children(self, index, count):
         for _ in range(count):
-            self.removeChildAt(index)
+            self.remove_child_at(index)
 
-    def removeChildAt(self, index):
-        if not self.canHaveChildren:
+    def remove_child_at(self, index):
+        if not self.can_have_children():
             return
 
         if index < 0 or index >= len(self._children):
             return
 
         step = self._children[index]
-        step.setParentInternal(None)
+        step.set_parent_internal(None)
 
         del self._children[index]
 
-    def removeFromParent(self):
+    def remove_from_parent(self):
         """
         Remove this item from its parent, if any.
         """
         if self.parent:
-            self.parent.removeChild(self)
+            self.parent.remove_child(self)
 
-    def insertChild(self, index, step):
-        if not self.canHaveChildren:
+    def insert_child(self, index, step: 'BuildStep'):
+        if not self.can_have_children():
             return
 
         if not isinstance(step, BuildStep):
-            raise TypeError(
-                'Expected BuildStep, got {0}'.format(type(step).__name__))
+            raise TypeError(f'Expected BuildStep, got {type(step).__name__}')
 
         if step not in self._children:
             self._children.insert(index, step)
-            step.setParentInternal(self)
+            step.set_parent_internal(self)
 
-    def numChildren(self) -> int:
-        if not self.canHaveChildren:
+    def num_children(self) -> int:
+        if not self.can_have_children():
             return 0
 
         return len(self._children)
 
-    def hasAnyChildren(self):
-        return self.numChildren() != 0
+    def has_any_children(self):
+        return self.num_children() != 0
 
-    def hasParent(self, step):
+    def has_parent(self, step: 'BuildStep'):
         """
         Return True if the step is an immediate or distance parent of this step.
         """
@@ -1293,74 +1285,73 @@ class BuildStep(object):
             if self.parent == step:
                 return True
             else:
-                return self.parent.hasParent(step)
+                return self.parent.has_parent(step)
         return False
 
-    def getChildAt(self, index):
-        if not self.canHaveChildren:
+    def get_child_at(self, index: int) -> Optional['BuildStep']:
+        if not self.can_have_children():
             return
 
         if index < 0 or index >= len(self._children):
-            LOG.error("child index out of range: {0}, num children: {1}".format(
-                index, len(self._children)))
+            LOG.error("child index out of range: %d, num children: %d", index, len(self._children))
             return
 
         return self._children[index]
 
-    def getChildIndex(self, step):
+    def get_child_index(self, step: 'BuildStep'):
         """
         Return the index of a BuildStep within this step's list of children
         """
-        if not self.canHaveChildren:
+        if not self.can_have_children():
             return -1
 
         return self._children.index(step)
 
-    def getChildByName(self, name):
+    def get_child_by_name(self, name: str) -> Optional['BuildStep']:
         """
         Return a child step by name
         """
-        if not self.canHaveChildren:
+        if not self.can_have_children():
             return
 
         for step in self._children:
             if step.name == name:
                 return step
 
-    def getChildByPath(self, path):
+    def get_child_by_path(self, path: str) -> Optional['BuildStep']:
         """
         Return a child step by relative path
         """
-        if not self.canHaveChildren:
+        if not self.can_have_children():
             return
 
         if '/' in path:
-            childName, grandChildPath = path.split('/', 1)
-            child = self.getChildByName(childName)
+            child_name, grand_child_path = path.split('/', 1)
+            child = self.get_child_by_name(child_name)
             if child:
-                return child.getChildByPath(grandChildPath)
+                return child.get_child_by_path(grand_child_path)
         else:
-            return self.getChildByName(path)
+            return self.get_child_by_name(path)
 
-    def childIterator(self) -> Iterable['BuildStep']:
+    def child_iterator(self) -> Iterable['BuildStep']:
         """
         Generator that yields all children, recursively.
         """
-        if not self.canHaveChildren:
+        if not self.can_have_children():
             return
         for child in self._children:
             if child.isDisabled:
                 continue
             yield child
-            for descendant in child.childIterator():
+            for descendant in child.child_iterator():
                 yield descendant
 
-    def actionIterator(self) -> Iterable[BuildAction]:
+    def action_iterator(self) -> Iterable[BuildAction]:
         """
         Return a generator that yields all actions for this step.
         """
-        if self._actionProxy:
-            for elem in self._actionProxy.actionIterator():
+        if self._action_proxy:
+            for elem in self._action_proxy.action_iterator():
                 yield elem
 
     def serialize(self):
@@ -1373,10 +1364,10 @@ class BuildStep(object):
         if self.isDisabled:
             data['isDisabled'] = True
 
-        if self._actionProxy:
-            data['action'] = self._actionProxy.serialize()
+        if self._action_proxy:
+            data['action'] = self._action_proxy.serialize()
 
-        if self.numChildren() > 0:
+        if self.num_children() > 0:
             # TODO: perform a recursion loop check
             data['children'] = [c.serialize() for c in self._children]
 
@@ -1392,46 +1383,45 @@ class BuildStep(object):
         self.isDisabled = data.get('isDisabled', False)
 
         if 'action' in data:
-            newActionProxy = BuildActionProxy()
-            newActionProxy.deserialize(data['action'])
-            self.setActionProxy(newActionProxy)
+            new_action_proxy = BuildActionProxy()
+            new_action_proxy.deserialize(data['action'])
+            self.set_action_proxy(new_action_proxy)
         else:
-            self._actionProxy = None
+            self._action_proxy = None
 
         # set name after action, so that if no name has
-        # been set yet, it will initialized with the name
+        # been set yet, it will be initialized with the name
         # of the action
-        self.setName(data.get('name', None))
+        self.set_name(data.get('name', None))
 
         # TODO: warn if throwing away children in a rare case that
         #       both a proxy and children existed (maybe data was manually created).
-        if self.canHaveChildren:
+        if self.can_have_children():
             # detach any existing children
-            self.clearChildren()
+            self.clear_children()
             # deserialize all children, and connect them to this parent
-            self._children = [BuildStep.fromData(
-                c) for c in data.get('children', [])]
+            self._children = [BuildStep.from_data(c) for c in data.get('children', [])]
             for child in self._children:
                 if child:
-                    child.setParentInternal(self)
+                    child.set_parent_internal(self)
 
     @staticmethod
-    def getTopmostSteps(steps):
+    def get_topmost_steps(steps: List['BuildStep']) -> List['BuildStep']:
         """
         Return a copy of the list of BuildSteps that doesn't include
         any BuildSteps that have a parent or distant parent in the list.
         """
 
-        def hasAnyParent(step, parents):
+        def has_any_parent(step: BuildStep, parents: List['BuildStep']):
             for parent in parents:
-                if step != parent and step.hasParent(parent):
+                if step != parent and step.has_parent(parent):
                     return True
             return False
 
-        topSteps = []
+        top_steps = []
 
         for step in steps:
-            if not hasAnyParent(step, steps):
-                topSteps.append(step)
+            if not has_any_parent(step, steps):
+                top_steps.append(step)
 
-        return topSteps
+        return top_steps
