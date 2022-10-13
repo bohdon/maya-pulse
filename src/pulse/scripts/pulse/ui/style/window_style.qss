@@ -115,5 +115,5 @@ QFrame[cssClasses~="toolbar-blueprint"] {
 }
 
 QFrame[cssClasses~="toolbar-rig"] {
-    background-color: rgba(120, 60, 60, 50%);
+    background-color: rgba(60, 120, 94, 50%);
 }
