@@ -17,6 +17,10 @@ QToolButton {
     border: none;
 }
 
+QToolButton:checked {
+    background-color: rgba(0, 0, 0, 20%);
+}
+
 QToolButton:hover {
     border: none;
     border-radius: 2px;

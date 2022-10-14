@@ -17,8 +17,8 @@ class Ui_ActionEditor(object):
     def setupUi(self, ActionEditor):
         if not ActionEditor.objectName():
             ActionEditor.setObjectName(u"ActionEditor")
-        ActionEditor.resize(411, 545)
-        ActionEditor.setMinimumSize(QSize(300, 400))
+        ActionEditor.resize(300, 200)
+        ActionEditor.setMinimumSize(QSize(300, 200))
         self.verticalLayout_3 = QVBoxLayout(ActionEditor)
         self.verticalLayout_3.setObjectName(u"verticalLayout_3")
         self.verticalLayout_3.setContentsMargins(0, 0, 0, 0)
@@ -46,10 +46,11 @@ class Ui_ActionEditor(object):
         self.scroll_area.setWidgetResizable(True)
         self.scroll_area_widget = QWidget()
         self.scroll_area_widget.setObjectName(u"scroll_area_widget")
-        self.scroll_area_widget.setGeometry(QRect(0, 0, 409, 543))
+        self.scroll_area_widget.setGeometry(QRect(0, 0, 298, 198))
         self.verticalLayout = QVBoxLayout(self.scroll_area_widget)
         self.verticalLayout.setObjectName(u"verticalLayout")
         self.items_layout = QVBoxLayout()
+        self.items_layout.setSpacing(14)
         self.items_layout.setObjectName(u"items_layout")
 
         self.verticalLayout.addLayout(self.items_layout)
@@ -69,7 +70,7 @@ class Ui_ActionEditor(object):
 
         self.retranslateUi(ActionEditor)
 
-        self.main_stack.setCurrentIndex(0)
+        self.main_stack.setCurrentIndex(1)
 
 
         QMetaObject.connectSlotsByName(ActionEditor)

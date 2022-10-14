@@ -1148,7 +1148,7 @@ class BuildStep(object):
         """
         if self._action_proxy:
             return self._action_proxy.get_color()
-        return [1, 1, 1]
+        return [1.0, 1.0, 1.0]
 
     def get_icon_file(self):
         """

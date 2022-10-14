@@ -331,6 +331,7 @@ class BatchAttrForm(QtWidgets.QFrame):
         # add some space above the label so it lines up
         self.label.setMargin(2)
         self.label.setText(names.toTitle(self.attr.name))
+        self.label.setStyleSheet('color: rgba(255, 255, 255, 20%);')
         # set description tooltips
         description = self.attr.description
         if description:

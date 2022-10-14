@@ -52,7 +52,7 @@ class BuildStepForm(QtWidgets.QWidget):
             return
 
         if self.displayNameLabel:
-            self.displayNameLabel.setText(step.get_display_name())
+            self.displayNameLabel.setText(self.getStepDisplayName(step))
 
     def step(self) -> BuildStep:
         """
@@ -60,6 +60,9 @@ class BuildStepForm(QtWidgets.QWidget):
         """
         if self.index.isValid():
             return self.index.model().stepForIndex(self.index)
+
+    def getStepDisplayName(self, step: BuildStep):
+        return f'{step.get_parent_path()}/{step.get_display_name()}'.replace('/', ' / ')
 
     def getStepColor(self, step: BuildStep):
         color = step.get_color()
@@ -79,40 +82,38 @@ class BuildStepForm(QtWidgets.QWidget):
 
         # main layout containing header and body
         layout = QtWidgets.QVBoxLayout(parent)
-        layout.setSpacing(4)
+        layout.setSpacing(2)
         layout.setMargin(0)
 
         # header frame
         headerFrame = QtWidgets.QFrame(parent)
-        headerColor = "rgba({0}, {1}, {2}, 40)".format(*self.getStepColor(step))
-        headerFrame.setStyleSheet(f".QFrame{{ background-color: {headerColor}; border-radius: 2px; }}")
-        layout.addWidget(headerFrame)
-
         self.setupHeaderUi(headerFrame)
+        layout.addWidget(headerFrame)
 
         # body layout
         bodyFrame = QtWidgets.QFrame(parent)
         bodyFrame.setObjectName("bodyFrame")
-        bodyColor = "rgba(255, 255, 255, 5)"
-        bodyFrame.setStyleSheet(f".QFrame#bodyFrame{{ background-color: {bodyColor}; }}")
+        bodyColorStr = "rgba(255, 255, 255, 5)"
+        bodyFrame.setStyleSheet(f".QFrame#bodyFrame{{ background-color: {bodyColorStr}; }}")
         layout.addWidget(bodyFrame)
 
         self.setupBodyUi(bodyFrame)
 
     def setupHeaderUi(self, parent):
         step = self.step()
+        color = self.getStepColor(step)
+        bgColor = [c * 0.15 for c in color]
+
+        colorStr = "rgb({0}, {1}, {2})".format(*color)
+        bgColorStr = "rgba({0}, {1}, {2}, 50%)".format(*bgColor)
 
         layout = QtWidgets.QHBoxLayout(parent)
-        layout.setContentsMargins(10, 4, 4, 4)
+        layout.setMargin(0)
 
-        # display name label
-        font = QtGui.QFont()
-        font.setWeight(75)
-        font.setBold(True)
         self.displayNameLabel = QtWidgets.QLabel(parent)
-        self.displayNameLabel.setMinimumHeight(18)
-        self.displayNameLabel.setFont(font)
-        self.displayNameLabel.setText(step.get_display_name())
+        self.displayNameLabel.setText(self.getStepDisplayName(step))
+        self.displayNameLabel.setProperty('cssClasses', 'section-title')
+        self.displayNameLabel.setStyleSheet(f".QLabel{{ color: {colorStr}; background-color: {bgColorStr} }}")
         layout.addWidget(self.displayNameLabel)
 
     def setupBodyUi(self, parent):
@@ -282,10 +283,13 @@ class MainBuildActionDataForm(BuildActionDataForm):
         attrForm.isBatchForm = isVariant
 
         # add toggle variant button to label layout
-        toggleVariantBtn = QtWidgets.QPushButton(parent)
+        toggleVariantBtn = QtWidgets.QToolButton(parent)
         toggleVariantBtn.setCheckable(True)
-        toggleVariantBtn.setText("·")
-        toggleVariantBtn.setFixedSize(QtCore.QSize(14, 20))
+        toggleVariantBtn.setFixedSize(QtCore.QSize(20, 20))
+        toggleVariantBtn.setStyleSheet('padding: 4px;')
+        toggleVariantBtn.setStatusTip('Toggle this attribute between singular and variant. Variants allow multiple '
+                                      'actions to be defined in one place, with a mix of different properties.')
+
         attrForm.labelLayout.insertWidget(0, toggleVariantBtn)
         attrForm.labelLayout.setAlignment(toggleVariantBtn, QtCore.Qt.AlignTop)
         toggleVariantBtn.clicked.connect(partial(self.toggleIsVariantAttr, attr.name))
@@ -309,7 +313,15 @@ class MainBuildActionDataForm(BuildActionDataForm):
             isVariant = actionData.is_variant_attr(attr.name)
 
         attrForm.toggleVariantBtn.setChecked(isVariant)
-        attrForm.toggleVariantBtn.setText("⋮" if isVariant else "·")
+
+        if isVariant:
+            variantIcon = QtGui.QIcon()
+            variantIcon.addFile(u":/res/bars_staggered.svg", QtCore.QSize(), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+            attrForm.toggleVariantBtn.setIcon(variantIcon)
+        else:
+            normalIcon = QtGui.QIcon()
+            normalIcon.addFile(u":/res/minus.svg", QtCore.QSize(), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+            attrForm.toggleVariantBtn.setIcon(normalIcon)
 
         super(MainBuildActionDataForm, self).updateAttrForm(actionData, attr, attrForm)
 
@@ -407,25 +419,30 @@ class BuildActionProxyForm(QtWidgets.QWidget):
 
     def setupVariantsUi(self, parent, layout):
         # variant header
-        variantHeader = QtWidgets.QFrame(parent)
-        variantHeader.setStyleSheet(".QFrame{ background-color: rgb(255, 255, 255, 15); border-radius: 2px }")
-        layout.addWidget(variantHeader)
+        self.variantHeader = QtWidgets.QFrame(parent)
+        self.variantHeader.setStyleSheet(".QFrame{ background-color: rgb(0, 0, 0, 10%); border-radius: 2px }")
+        layout.addWidget(self.variantHeader)
 
-        variantHeaderLayout = QtWidgets.QHBoxLayout(variantHeader)
+        variantHeaderLayout = QtWidgets.QHBoxLayout(self.variantHeader)
         variantHeaderLayout.setContentsMargins(10, 4, 4, 4)
         variantHeaderLayout.setSpacing(4)
 
-        self.variantsLabel = QtWidgets.QLabel(variantHeader)
+        self.variantsLabel = QtWidgets.QLabel(self.variantHeader)
         self.variantsLabel.setText("Variants: ")
+        self.variantsLabel.setProperty('cssClasses', 'help')
         variantHeaderLayout.addWidget(self.variantsLabel)
 
         spacer = QtWidgets.QSpacerItem(20, 4, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
         layout.addItem(spacer)
 
         # add variant button
-        addVariantBtn = QtWidgets.QPushButton(variantHeader)
-        addVariantBtn.setText('+')
-        addVariantBtn.setFixedSize(QtCore.QSize(20, 20))
+        addVariantBtn = QtWidgets.QToolButton(self.variantHeader)
+        addVariantBtn.setFixedSize(QtCore.QSize(40, 20))
+        addVariantBtn.setStyleSheet('padding: 4px')
+        addVariantBtn.setStatusTip('Add a variant to this action.')
+        icon = QtGui.QIcon()
+        icon.addFile(u":/res/plus.svg", QtCore.QSize(), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        addVariantBtn.setIcon(icon)
         addVariantBtn.clicked.connect(self.addVariant)
         variantHeaderLayout.addWidget(addVariantBtn)
 
@@ -443,9 +460,13 @@ class BuildActionProxyForm(QtWidgets.QWidget):
         dataForm = BuildActionDataForm(self.index, variantIndex, parent=parent)
 
         # add remove variant button
-        removeVariantBtn = QtWidgets.QPushButton(parent)
-        removeVariantBtn.setText('x')
+        removeVariantBtn = QtWidgets.QToolButton(parent)
         removeVariantBtn.setFixedSize(QtCore.QSize(20, 20))
+        removeVariantBtn.setStyleSheet('padding: 4px')
+        removeVariantBtn.setStatusTip('Remove this variant.')
+        icon = QtGui.QIcon()
+        icon.addFile(u":/res/xmark.svg", QtCore.QSize(), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        removeVariantBtn.setIcon(icon)
         removeVariantBtn.clicked.connect(partial(self.removeVariantAtIndex, variantIndex))
         dataForm.layout.insertWidget(0, removeVariantBtn)
 
@@ -459,6 +480,7 @@ class BuildActionProxyForm(QtWidgets.QWidget):
         if not actionProxy:
             return
 
+        self.variantHeader.setVisible(actionProxy.is_variant_action())
         self.variantsLabel.setText(f"Variants: {actionProxy.num_variants()}")
 
         while self.variantListLayout.count() < actionProxy.num_variants():

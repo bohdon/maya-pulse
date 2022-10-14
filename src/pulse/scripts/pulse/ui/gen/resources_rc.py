@@ -6,6 +6,57 @@
 from PySide2 import QtCore
 
 qt_resource_data = b"\
+\x00\x00\x03\x10\
+<\
+svg xmlns=\x22http:\
+//www.w3.org/200\
+0/svg\x22 viewBox=\x22\
+0 0 512 512\x22><!-\
+-! Font Awesome \
+Pro 6.2.0 by @fo\
+ntawesome - http\
+s://fontawesome.\
+com License - ht\
+tps://fontawesom\
+e.com/license (C\
+ommercial Licens\
+e) Copyright 202\
+2 Fonticons, Inc\
+. --><style type\
+=\x22text/css\x22>.st0\
+{fill:#BBB;}</st\
+yle><path class=\
+\x22st0\x22 d=\x22M360 22\
+4L272 224v-56c0-\
+9.531-5.656-18.1\
+6-14.38-22C248.9\
+ 142.2 238.7 143\
+.9 231.7 150.4l-\
+96 88.75C130.8 2\
+43.7 128 250.1 1\
+28 256.8c.3125 7\
+.781 2.875 13.25\
+ 7.844 17.75l96 \
+87.25c7.031 6.40\
+6 17.19 8.031 25\
+.88 4.188s14.28-\
+12.44 14.28-21.9\
+4l-.002-56L360 2\
+88C373.3 288 384\
+ 277.3 384 264v-\
+16C384 234.8 373\
+.3 224 360 224zM\
+256 0C114.6 0 0 \
+114.6 0 256s114.\
+6 256 256 256s25\
+6-114.6 256-256S\
+397.4 0 256 0zM2\
+56 464c-114.7 0-\
+208-93.31-208-20\
+8S141.3 48 256 4\
+8s208 93.31 208 \
+208S370.7 464 25\
+6 464z\x22/></svg>\
 \x00\x00\x05[\
 <\
 svg xmlns=\x22http:\
@@ -94,7 +145,35 @@ c6.6-11 14-21.4 \
 -80s-80 35.8-80 \
 80s35.8 80 80 80\
 z\x22/></svg>\
-\x00\x00\x03\x10\
+\x00\x00\x01\x97\
+<\
+svg xmlns=\x22http:\
+//www.w3.org/200\
+0/svg\x22 viewBox=\x22\
+0 0 448 512\x22><!-\
+-! Font Awesome \
+Pro 6.2.0 by @fo\
+ntawesome - http\
+s://fontawesome.\
+com License - ht\
+tps://fontawesom\
+e.com/license (C\
+ommercial Licens\
+e) Copyright 202\
+2 Fonticons, Inc\
+. --><style type\
+=\x22text/css\x22>.st0\
+{fill:#BBB;}</st\
+yle><path class=\
+\x22st0\x22 d=\x22M432 25\
+6c0 17.7-14.3 32\
+-32 32L48 288c-1\
+7.7 0-32-14.3-32\
+-32s14.3-32 32-3\
+2l352 0c17.7 0 3\
+2 14.3 32 32z\x22/>\
+</svg>\
+\x00\x00\x02K\
 <\
 svg xmlns=\x22http:\
 //www.w3.org/200\
@@ -114,37 +193,25 @@ e) Copyright 202\
 =\x22text/css\x22>.st0\
 {fill:#BBB;}</st\
 yle><path class=\
-\x22st0\x22 d=\x22M360 22\
-4L272 224v-56c0-\
-9.531-5.656-18.1\
-6-14.38-22C248.9\
- 142.2 238.7 143\
-.9 231.7 150.4l-\
-96 88.75C130.8 2\
-43.7 128 250.1 1\
-28 256.8c.3125 7\
-.781 2.875 13.25\
- 7.844 17.75l96 \
-87.25c7.031 6.40\
-6 17.19 8.031 25\
-.88 4.188s14.28-\
-12.44 14.28-21.9\
-4l-.002-56L360 2\
-88C373.3 288 384\
- 277.3 384 264v-\
-16C384 234.8 373\
-.3 224 360 224zM\
-256 0C114.6 0 0 \
-114.6 0 256s114.\
-6 256 256 256s25\
-6-114.6 256-256S\
-397.4 0 256 0zM2\
-56 464c-114.7 0-\
-208-93.31-208-20\
-8S141.3 48 256 4\
-8s208 93.31 208 \
-208S370.7 464 25\
-6 464z\x22/></svg>\
+\x22st0\x22 d=\x22M0 96C0\
+ 78.3 14.3 64 32\
+ 64H416c17.7 0 3\
+2 14.3 32 32s-14\
+.3 32-32 32H32C1\
+4.3 128 0 113.7 \
+0 96zM64 256c0-1\
+7.7 14.3-32 32-3\
+2H480c17.7 0 32 \
+14.3 32 32s-14.3\
+ 32-32 32H96c-17\
+.7 0-32-14.3-32-\
+32zM448 416c0 17\
+.7-14.3 32-32 32\
+H32c-17.7 0-32-1\
+4.3-32-32s14.3-3\
+2 32-32H416c17.7\
+ 0 32 14.3 32 32\
+z\x22/></svg>\
 \x00\x00\x02\x9b\
 <\
 svg xmlns=\x22http:\
@@ -189,6 +256,45 @@ zM325.8 139.7l14\
 5-60.1c1.4-5.6 4\
 .3-10.8 8.4-14.9\
 z\x22/></svg>\
+\x00\x00\x02I\
+<\
+svg xmlns=\x22http:\
+//www.w3.org/200\
+0/svg\x22 viewBox=\x22\
+0 0 320 512\x22><!-\
+-! Font Awesome \
+Pro 6.2.0 by @fo\
+ntawesome - http\
+s://fontawesome.\
+com License - ht\
+tps://fontawesom\
+e.com/license (C\
+ommercial Licens\
+e) Copyright 202\
+2 Fonticons, Inc\
+. --><style type\
+=\x22text/css\x22>.st0\
+{fill:#BBB;}</st\
+yle><path class=\
+\x22st0\x22 d=\x22M310.6 \
+150.6c12.5-12.5 \
+12.5-32.8 0-45.3\
+s-32.8-12.5-45.3\
+ 0L160 210.7 54.\
+6 105.4c-12.5-12\
+.5-32.8-12.5-45.\
+3 0s-12.5 32.8 0\
+ 45.3L114.7 256 \
+9.4 361.4c-12.5 \
+12.5-12.5 32.8 0\
+ 45.3s32.8 12.5 \
+45.3 0L160 301.3\
+ 265.4 406.6c12.\
+5 12.5 32.8 12.5\
+ 45.3 0s12.5-32.\
+8 0-45.3L205.3 2\
+56 310.6 150.6z\x22\
+/></svg>\
 \x00\x00\x02\x14\
 <\
 svg xmlns=\x22http:\
@@ -309,6 +415,39 @@ l51.9-51.9c9-9 2\
  64-64 64H64c-35\
 .3 0-64-28.7-64-\
 64z\x22/></svg>\
+\x00\x00\x01\xe8\
+<\
+svg xmlns=\x22http:\
+//www.w3.org/200\
+0/svg\x22 viewBox=\x22\
+0 0 448 512\x22><!-\
+-! Font Awesome \
+Pro 6.2.0 by @fo\
+ntawesome - http\
+s://fontawesome.\
+com License - ht\
+tps://fontawesom\
+e.com/license (C\
+ommercial Licens\
+e) Copyright 202\
+2 Fonticons, Inc\
+. --><style type\
+=\x22text/css\x22>.st0\
+{fill:#BBB;}</st\
+yle><path class=\
+\x22st0\x22 d=\x22M256 80\
+c0-17.7-14.3-32-\
+32-32s-32 14.3-3\
+2 32V224H48c-17.\
+7 0-32 14.3-32 3\
+2s14.3 32 32 32H\
+192V432c0 17.7 1\
+4.3 32 32 32s32-\
+14.3 32-32V288H4\
+00c17.7 0 32-14.\
+3 32-32s-14.3-32\
+-32-32H256V80z\x22/\
+></svg>\
 \x00\x00\x01\xdb\
 <\
 svg xmlns=\x22http:\
@@ -348,19 +487,32 @@ qt_resource_name = b"\
 \x00\x00x\xc3\
 \x00r\
 \x00e\x00s\
-\x00\x08\
-\x0b\x85Wg\
-\x00g\
-\x00e\x00a\x00r\x00.\x00s\x00v\x00g\
 \x00\x0f\
 \x0a\x93\x9e\xa7\
 \x00c\
 \x00i\x00r\x00c\x00l\x00e\x00_\x00l\x00e\x00f\x00t\x00.\x00s\x00v\x00g\
+\x00\x08\
+\x0b\x85Wg\
+\x00g\
+\x00e\x00a\x00r\x00.\x00s\x00v\x00g\
+\x00\x09\
+\x05\xc6\xb2\xc7\
+\x00m\
+\x00i\x00n\x00u\x00s\x00.\x00s\x00v\x00g\
+\x00\x12\
+\x07\xda\x84\xc7\
+\x00b\
+\x00a\x00r\x00s\x00_\x00s\x00t\x00a\x00g\x00g\x00e\x00r\x00e\x00d\x00.\x00s\x00v\
+\x00g\
 \x00\x11\
 \x05p\x80\xc7\
 \x00a\
 \x00c\x00t\x00i\x00o\x00n\x00_\x00e\x00d\x00i\x00t\x00o\x00r\x00.\x00s\x00v\x00g\
 \
+\x00\x09\
+\x08\x8e\xa4\xa7\
+\x00x\
+\x00m\x00a\x00r\x00k\x00.\x00s\x00v\x00g\
 \x00\x0c\
 \x078\x05\x87\
 \x00v\
@@ -374,6 +526,10 @@ qt_resource_name = b"\
 \x00d\
 \x00e\x00s\x00i\x00g\x00n\x00_\x00t\x00o\x00o\x00l\x00k\x00i\x00t\x00.\x00s\x00v\
 \x00g\
+\x00\x08\
+\x03\xc6T'\
+\x00p\
+\x00l\x00u\x00s\x00.\x00s\x00v\x00g\
 \x00\x0e\
 \x02\x12,\x87\
 \x00a\
@@ -383,21 +539,29 @@ qt_resource_name = b"\
 qt_resource_struct = b"\
 \x00\x00\x00\x00\x00\x02\x00\x00\x00\x01\x00\x00\x00\x01\
 \x00\x00\x00\x00\x00\x00\x00\x00\
-\x00\x00\x00\x00\x00\x02\x00\x00\x00\x07\x00\x00\x00\x02\
+\x00\x00\x00\x00\x00\x02\x00\x00\x00\x0b\x00\x00\x00\x02\
 \x00\x00\x00\x00\x00\x00\x00\x00\
-\x00\x00\x00\x8c\x00\x00\x00\x00\x00\x01\x00\x00\x0d*\
+\x00\x00\x00\xe6\x00\x00\x00\x00\x00\x01\x00\x00\x13a\
 \x00\x00\x01\x83\xbb\x8d:\x12\
-\x00\x00\x00\xce\x00\x00\x00\x00\x00\x01\x00\x00\x12$\
+\x00\x00\x01>\x00\x00\x00\x00\x00\x01\x00\x00\x1aG\
 \x00\x00\x01\x83\xc0?O/\
-\x00\x00\x00\xa4\x00\x00\x00\x00\x00\x01\x00\x00\x0e\xf3\
+\x00\x00\x01(\x00\x00\x00\x00\x00\x01\x00\x00\x18[\
+\x00\x00\x01\x83\xd5\xb3jc\
+\x00\x00\x00\xfe\x00\x00\x00\x00\x00\x01\x00\x00\x15*\
 \x00\x00\x01\x83\xbb\x8d:\x13\
-\x00\x00\x00F\x00\x00\x00\x00\x00\x01\x00\x00\x08s\
+\x00\x00\x00\x88\x00\x00\x00\x00\x00\x01\x00\x00\x0c]\
 \x00\x00\x01\x83\xbb\x8d:\x11\
-\x00\x00\x00n\x00\x00\x00\x00\x00\x01\x00\x00\x0b\x12\
+\x00\x00\x00F\x00\x00\x00\x00\x00\x01\x00\x00\x08s\
+\x00\x00\x01\x83\xd5\xa7\xc7c\
+\x00\x00\x00\xc8\x00\x00\x00\x00\x00\x01\x00\x00\x11I\
 \x00\x00\x01\x83\xbb\x8d:\x13\
-\x00\x00\x00\x22\x00\x00\x00\x00\x00\x01\x00\x00\x05_\
-\x00\x00\x01\x83\xc0=r\xbc\
+\x00\x00\x00^\x00\x00\x00\x00\x00\x01\x00\x00\x0a\x0e\
+\x00\x00\x01\x83\xd5\xa7\xaa\xe4\
+\x00\x00\x00\xb0\x00\x00\x00\x00\x00\x01\x00\x00\x0e\xfc\
+\x00\x00\x01\x83\xd5\xb0X(\
 \x00\x00\x00\x0c\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00\
+\x00\x00\x01\x83\xc0=r\xbc\
+\x00\x00\x000\x00\x00\x00\x00\x00\x01\x00\x00\x03\x14\
 \x00\x00\x01\x83\xc0\x8cv\x9d\
 "
 
