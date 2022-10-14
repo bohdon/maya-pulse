@@ -48,6 +48,29 @@ if scene_name:
     pm.openFile(scene_name)
 ```
 
+## Adding Custom Actions
+
+Custom build actions can be added by registering a python package or directory. Actions are found by recursively
+searching a directory and loading individual `*_pulseaction.py` modules that contain one or more `BuildAction`
+subclasses. Add a custom actions directory during startup using the `BuildActionPackageRegistry`:
+
+```py
+# register a custom actions directory
+from pulse.loader import BuildActionPackageRegistry
+
+BuildActionPackageRegistry.get().add_dir('/path/to/my/actions')
+```
+
+An 'actions package' is just an empty python package whose location is used to find actions:
+
+```py
+# register a custom actions package
+from pulse.loader import BuildActionPackageRegistry
+from my_studio import my_pulse_actions
+
+BuildActionPackageRegistry.get().add_package(my_pulse_actions)
+```
+
 ## Roadmap
 
 You can track development on Pulse [here](https://bohdon.notion.site/f656af523ead43a5893679d13e36e6aa).
