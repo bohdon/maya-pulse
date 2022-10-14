@@ -50,9 +50,9 @@ if scene_name:
 
 ## Adding Custom Actions
 
-Custom build actions can be added by registering a python package or directory. Actions are found by recursively
-searching a directory and loading individual `*_pulseaction.py` modules that contain one or more `BuildAction`
-subclasses. Add a custom actions directory during startup using the `BuildActionPackageRegistry`:
+Actions are found by recursively searching a directory and loading individual `*_pulseaction.py` modules that contain
+one or more `BuildAction` subclasses. You can add additional actions directories to search during startup using
+the `BuildActionPackageRegistry`:
 
 ```py
 # register a custom actions directory
@@ -61,15 +61,30 @@ from pulse.loader import BuildActionPackageRegistry
 BuildActionPackageRegistry.get().add_dir('/path/to/my/actions')
 ```
 
-An 'actions package' is just an empty python package whose location is used to find actions:
+You can also use a python package, whose location will be used as the directory to search:
 
 ```py
 # register a custom actions package
 from pulse.loader import BuildActionPackageRegistry
-from my_studio import my_pulse_actions
+import my_pulse_actions
 
 BuildActionPackageRegistry.get().add_package(my_pulse_actions)
 ```
+
+In the above example, `my_pulse_actions` is a package somewhere on sys.path that may look like this:
+
+```
+my_pulse_actions/
+  __init__.py
+  my_action_pulseaction.py
+  my_action.pulseaction.yaml
+  some_folder/
+    my_otheraction_pulseaction.py
+    my_otheraction.pulseaction.yaml
+```
+
+Note that sub folders don't need to be python packages (there's no `some_folder/__init__.py`). Each `*_pulseaction.py`
+module is found and imported individually, the package is just used to locate the directory.
 
 ## Roadmap
 
