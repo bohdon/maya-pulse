@@ -62,7 +62,11 @@ class BuildStepForm(QtWidgets.QWidget):
             return self.index.model().stepForIndex(self.index)
 
     def getStepDisplayName(self, step: BuildStep):
-        return f'{step.get_parent_path()}/{step.get_display_name()}'.replace('/', ' / ')
+        parentPath = step.get_parent_path()
+        if parentPath:
+            return f'{step.get_parent_path()}/{step.get_display_name()}'.replace('/', ' / ')
+        else:
+            return step.get_display_name()
 
     def getStepColor(self, step: BuildStep):
         color = step.get_color()
@@ -113,7 +117,7 @@ class BuildStepForm(QtWidgets.QWidget):
         self.displayNameLabel = QtWidgets.QLabel(parent)
         self.displayNameLabel.setText(self.getStepDisplayName(step))
         self.displayNameLabel.setProperty('cssClasses', 'section-title')
-        self.displayNameLabel.setStyleSheet(f".QLabel{{ color: {colorStr}; background-color: {bgColorStr} }}")
+        self.displayNameLabel.setStyleSheet(f"color: {colorStr}; background-color: {bgColorStr}")
         layout.addWidget(self.displayNameLabel)
 
     def setupBodyUi(self, parent):
