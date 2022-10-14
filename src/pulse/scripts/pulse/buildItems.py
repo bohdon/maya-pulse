@@ -110,9 +110,9 @@ class BuildActionRegistry(object):
         # map of all registered actions by id
         self._registered_actions: dict[str, BuildActionSpec] = {}
 
-    def register_action(self, action_spec: BuildActionSpec):
+    def add_action(self, action_spec: BuildActionSpec):
         """
-        Register a BuildActionSpec.
+        Add a BuildActionSpec to the registry.
         """
         if not action_spec.is_valid():
             LOG.error("BuildActionSpec is not valid: %s", action_spec)
@@ -131,12 +131,18 @@ class BuildActionRegistry(object):
 
         self._registered_actions[action_id] = action_spec
 
-    def unregister_action(self, action_id):
+    def remove_action(self, action_id):
         """
-        Unregister a BuildActionSpec by id.
+        Remove a BuildActionSpec from the registry by id.
         """
         if action_id in self._registered_actions:
             del self._registered_actions[action_id]
+
+    def remove_all(self):
+        """
+        Remove all actions from this registry.
+        """
+        self._registered_actions = {}
 
     def get_action_map(self) -> dict[str, BuildActionSpec]:
         """

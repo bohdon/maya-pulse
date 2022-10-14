@@ -11,10 +11,9 @@ from typing import List
 
 from .buildItems import BuildAction, BuildActionSpec, BuildActionRegistry
 from .vendor import yaml
+from . import builtin_actions
 
 LOG = logging.getLogger(__name__)
-
-HAS_LOADED_BUILTIN_ACTIONS = False
 
 
 def _is_same_python_file(path_a, path_b):
@@ -26,21 +25,110 @@ def load_actions():
     """
     Load all available pulse actions.
     """
-    # TODO: add extensible action packages list to include
-    load_builtin_actions()
+    BuildActionPackageRegistry.get().load_actions()
 
 
-def load_builtin_actions():
+def reload_actions():
     """
-    Load all built-in pulse actions.
+    Clear all loaded actions from the registry and load actions again.
     """
-    from . import builtin_actions
+    BuildActionPackageRegistry.get().reload_actions()
 
-    global HAS_LOADED_BUILTIN_ACTIONS
-    if not HAS_LOADED_BUILTIN_ACTIONS:
+
+class BuildActionPackageRegistry(object):
+    """
+    A registry of packages or directories where actions should be loaded.
+    Also keeps track of whether the packages have been loaded, and can reload packages when necessary.
+    """
+
+    # the shared registry instance, accessible from `BuildActionPackageRegistry.get()`
+    _instance = None
+
+    @classmethod
+    def get(cls):
+        """
+        Return the main BuildActionPackageRegistry
+        """
+        if cls._instance is None:
+            cls._instance = cls()
+        return cls._instance
+
+    def __init__(self):
+        # map of all registered actions by id
+        self._registered_actions: dict[str, BuildActionSpec] = {}
+        # list of python packages containing pulse actions to load.
+        self.action_packages = []
+        # list of directories containing pulse actions to load.
+        self.action_dirs = []
+        # whether to include the builtin pulse actions package or not
+        self.use_builtin_actions = True
+        # true if the packages in this registry have been loaded
+        self.has_loaded_actions = False
+
+        if self.use_builtin_actions:
+            self.add_package(builtin_actions)
+
+    def add_package(self, package, reload=False):
+        """
+        Add an actions package to the registry.
+        Does not load the actions, intended to be called during startup.
+
+        Action modules are not connected to the package, but are instead imported individually and dynamically.
+        The package itself is simply used to locate the directory where the actions can be found.
+        """
+        if package not in self.action_packages:
+            self.action_packages.append(package)
+
+        if reload:
+            self.reload_actions()
+
+    def add_dir(self, actions_dir, reload=False):
+        """
+        Add an actions directory actions to the registry.
+        Does not load the actions, intended to be called during startup.
+        """
+        if actions_dir not in self.action_dirs:
+            self.action_dirs.append(actions_dir)
+
+        if reload:
+            self.reload_actions()
+
+    def remove_all(self, reload=False):
+        self.action_packages = []
+        self.action_dirs = []
+
+        if self.use_builtin_actions:
+            self.add_package(builtin_actions)
+
+        if reload:
+            self.reload_actions()
+
+    def load_actions(self):
+        """
+        Load all available pulse actions.
+        """
+        if self.has_loaded_actions:
+            return
+
         loader = BuildActionLoader()
-        loader.load_actions_from_package(builtin_actions)
-        HAS_LOADED_BUILTIN_ACTIONS = True
+
+        # load actions by package
+        for package in self.action_packages:
+            loader.load_actions_from_package(package)
+
+        # load actions by dir
+        for actions_dir in self.action_dirs:
+            loader.load_actions_from_dir(actions_dir)
+
+        self.has_loaded_actions = True
+
+    def reload_actions(self):
+        """
+        Clear all loaded actions from the registry and load actions again.
+        """
+        BuildActionRegistry.get().remove_all()
+        self.has_loaded_actions = False
+        self.load_actions()
 
 
 class BuildActionLoader(object):
@@ -102,12 +190,16 @@ class BuildActionLoader(object):
             package:
                 A python package used to locate the actions directory.
         """
-        if not hasattr(package, '__file__'):
+        paths = getattr(package, '__path__', None)
+        if not paths:
             LOG.warning(f'load_actions_from_package: {package} is not a valid python package')
             return []
 
-        start_dir = os.path.dirname(package.__file__)
-        return self.load_actions_from_dir(start_dir)
+        path = paths[0]
+        LOG.info(f'Loading Pulse actions from package: {package.__name__} ({path})...')
+
+        start_dir = os.path.dirname(path)
+        return self._load_actions_from_dir(start_dir)
 
     def load_actions_from_dir(self, start_dir: str) -> List[BuildActionSpec]:
         """
@@ -128,6 +220,18 @@ class BuildActionLoader(object):
             LOG.warning("Pulse actions directory not found: %s", start_dir)
             return []
 
+        LOG.info(f'Loading Pulse actions from directory: {start_dir}...')
+
+        return self._load_actions_from_dir(start_dir)
+
+    def _load_actions_from_dir(self, start_dir: str) -> List[BuildActionSpec]:
+        """
+        The internal load actions from dir that operates recursively.
+        Doesn't perform initial path handling and logging. `start_dir` must be valid.
+        """
+        if not os.path.isdir(start_dir):
+            raise ValueError(f'{start_dir} not found')
+
         result: List[BuildActionSpec] = []
 
         paths = os.listdir(start_dir)
@@ -140,7 +244,7 @@ class BuildActionLoader(object):
                     result.extend(self.load_actions_from_module(module))
 
             elif os.path.isdir(full_path):
-                result.extend(self.load_actions_from_dir(full_path))
+                result.extend(self._load_actions_from_dir(full_path))
 
         return result
 
@@ -149,7 +253,7 @@ class BuildActionLoader(object):
         Register action specs with the shared registry.
         """
         for action_spec in action_specs:
-            BuildActionRegistry.get().register_action(action_spec)
+            BuildActionRegistry.get().add_action(action_spec)
 
     def _load_config(self, config_file_path) -> dict:
         """
