@@ -196,7 +196,9 @@ class Blueprint(object):
         """
         import_action = BuildStep(action_id='Pulse.ImportReferences')
         hierarchy_action = BuildStep(action_id='Pulse.BuildCoreHierarchy')
-        hierarchy_action.action_proxy.set_attr_value('allNodes', True)
+        hierarchy_attr = hierarchy_action.action_proxy.get_attr('allNodes')
+        if hierarchy_attr:
+            hierarchy_attr.set_value(True)
         main_group = BuildStep('Main')
         rename_action = BuildStep(action_id='Pulse.RenameScene')
         self.rootStep.add_children([

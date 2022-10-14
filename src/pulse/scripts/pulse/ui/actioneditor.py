@@ -10,7 +10,7 @@ from typing import Optional
 
 import maya.cmds as cmds
 
-from ..buildItems import BuildActionProxy, BuildStep, BuildActionData
+from ..buildItems import BuildActionProxy, BuildStep, BuildActionData, BuildActionAttribute
 from ..vendor.Qt import QtCore, QtWidgets, QtGui
 from .actionattrform import ActionAttrForm, BatchAttrForm
 from .core import BlueprintUIModel
@@ -84,11 +84,8 @@ class BuildStepForm(QtWidgets.QWidget):
 
         # header frame
         headerFrame = QtWidgets.QFrame(parent)
-        headerColor = "rgba({0}, {1}, {2}, 40)".format(
-            *self.getStepColor(step))
-        headerFrame.setStyleSheet(
-            ".QFrame{{ background-color: {color}; "
-            "border-radius: 2px; }}".format(color=headerColor))
+        headerColor = "rgba({0}, {1}, {2}, 40)".format(*self.getStepColor(step))
+        headerFrame.setStyleSheet(f".QFrame{{ background-color: {headerColor}; border-radius: 2px; }}")
         layout.addWidget(headerFrame)
 
         self.setupHeaderUi(headerFrame)
@@ -97,8 +94,7 @@ class BuildStepForm(QtWidgets.QWidget):
         bodyFrame = QtWidgets.QFrame(parent)
         bodyFrame.setObjectName("bodyFrame")
         bodyColor = "rgba(255, 255, 255, 5)"
-        bodyFrame.setStyleSheet(
-            ".QFrame#bodyFrame{{ background-color: {color}; }}".format(color=bodyColor))
+        bodyFrame.setStyleSheet(f".QFrame#bodyFrame{{ background-color: {bodyColor}; }}")
         layout.addWidget(bodyFrame)
 
         self.setupBodyUi(bodyFrame)
@@ -203,7 +199,7 @@ class BuildActionDataForm(QtWidgets.QWidget):
             # add warning that the action config was not found
             if not self.missingLabel:
                 self.missingLabel = QtWidgets.QLabel(self)
-                self.missingLabel.setText(f"Failed to find action config for: '{actionData.action_id}'")
+                self.missingLabel.setText(f"Unknown action: '{actionData.action_id}'")
                 self.attrListLayout.addWidget(self.missingLabel)
             return
         else:
@@ -221,10 +217,10 @@ class BuildActionDataForm(QtWidgets.QWidget):
                 attrForm.setParent(None)
                 del self._attrForms[attrName]
 
-        for i, attr in enumerate(actionData.get_attrs()):
+        for i, attr in enumerate(actionData.get_attrs().values()):
 
             # the current attr form, if any
-            attrForm = self._attrForms.get(attr['name'], None)
+            attrForm = self._attrForms.get(attr.name, None)
 
             # the old version of the form.
             # if set, will be replaced with a new attr form
@@ -243,21 +239,20 @@ class BuildActionDataForm(QtWidgets.QWidget):
                 else:
                     self.attrListLayout.insertWidget(i, attrForm)
 
-                self._attrForms[attr['name']] = attrForm
+                self._attrForms[attr.name] = attrForm
 
             self.updateAttrForm(actionData, attr, attrForm)
 
-    def createAttrForm(self, actionData, attr, parent):
+    def createAttrForm(self, actionData: BuildActionData, attr: BuildActionAttribute, parent):
         """
         Create the form widget for an attribute
         """
-        return ActionAttrForm.createForm(
-            self.index, attr, self.variantIndex, parent=parent)
+        return ActionAttrForm.createForm(self.index, attr, self.variantIndex, parent=parent)
 
-    def shouldRecreateAttrForm(self, actionData, attr, attrForm):
+    def shouldRecreateAttrForm(self, actionData: BuildActionData, attr: BuildActionAttribute, attrForm):
         return False
 
-    def updateAttrForm(self, actionData, attr, attrForm):
+    def updateAttrForm(self, actionData: BuildActionData, attr: BuildActionAttribute, attrForm):
         """
         Called when updating the attr form list, on an
         attr form that already exists.
@@ -273,18 +268,16 @@ class MainBuildActionDataForm(BuildActionDataForm):
     BatchAttrForms for variant attributes.
     """
 
-    def createAttrForm(self, actionData: BuildActionData, attr, parent):
+    def createAttrForm(self, actionData: BuildActionData, attr: BuildActionAttribute, parent):
         isVariant = False
         # duck type of action proxy
         if hasattr(actionData, 'is_variant_attr'):
-            isVariant = actionData.is_variant_attr(attr['name'])
+            isVariant = actionData.is_variant_attr(attr.name)
 
         if isVariant:
-            attrForm = BatchAttrForm.createForm(
-                self.index, attr, parent=parent)
+            attrForm = BatchAttrForm.createForm(self.index, attr, parent=parent)
         else:
-            attrForm = ActionAttrForm.createForm(
-                self.index, attr, self.variantIndex, parent=parent)
+            attrForm = ActionAttrForm.createForm(self.index, attr, self.variantIndex, parent=parent)
 
         attrForm.isBatchForm = isVariant
 
@@ -295,43 +288,41 @@ class MainBuildActionDataForm(BuildActionDataForm):
         toggleVariantBtn.setFixedSize(QtCore.QSize(14, 20))
         attrForm.labelLayout.insertWidget(0, toggleVariantBtn)
         attrForm.labelLayout.setAlignment(toggleVariantBtn, QtCore.Qt.AlignTop)
-        toggleVariantBtn.clicked.connect(
-            partial(self.toggleIsVariantAttr, attr['name']))
+        toggleVariantBtn.clicked.connect(partial(self.toggleIsVariantAttr, attr.name))
 
         attrForm.toggleVariantBtn = toggleVariantBtn
         return attrForm
 
-    def shouldRecreateAttrForm(self, actionData: BuildActionData, attr, attrForm):
+    def shouldRecreateAttrForm(self, actionData: BuildActionData, attr: BuildActionAttribute, attrForm):
         isVariant = False
         # duck type of action proxy
         if hasattr(actionData, 'is_variant_attr'):
-            isVariant = actionData.is_variant_attr(attr['name'])
+            isVariant = actionData.is_variant_attr(attr.name)
 
         return getattr(attrForm, 'isBatchForm', False) != isVariant
 
-    def updateAttrForm(self, actionData: BuildActionData, attr, attrForm):
+    def updateAttrForm(self, actionData: BuildActionData, attr: BuildActionAttribute, attrForm):
         # update variant state of the attribute
         isVariant = False
         # duck type of action proxy
         if hasattr(actionData, 'is_variant_attr'):
-            isVariant = actionData.is_variant_attr(attr['name'])
+            isVariant = actionData.is_variant_attr(attr.name)
 
         attrForm.toggleVariantBtn.setChecked(isVariant)
         attrForm.toggleVariantBtn.setText("⋮" if isVariant else "·")
 
-        super(MainBuildActionDataForm, self).updateAttrForm(
-            actionData, attr, attrForm)
+        super(MainBuildActionDataForm, self).updateAttrForm(actionData, attr, attrForm)
 
-    def toggleIsVariantAttr(self, attrName):
+    def toggleIsVariantAttr(self, attrName: str):
         step = self.getStep()
         if not step:
             return
 
-        actionProxy = self.getActionData()
+        actionProxy: BuildActionProxy = self.getActionData()
         if not actionProxy:
             return
 
-        attrPath = '{0}.{1}'.format(step.get_full_path(), attrName)
+        attrPath = f'{step.get_full_path()}.{attrName}'
 
         isVariant = actionProxy.is_variant_attr(attrName)
         cmds.pulseSetIsVariantAttr(attrPath, not isVariant)
@@ -397,8 +388,7 @@ class BuildActionProxyForm(QtWidgets.QWidget):
         mainAttrForm = MainBuildActionDataForm(self.index, parent=parent)
         layout.addWidget(mainAttrForm)
 
-        spacer = QtWidgets.QSpacerItem(
-            20, 4, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
+        spacer = QtWidgets.QSpacerItem(20, 4, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
         layout.addItem(spacer)
 
         # variant form list
@@ -418,8 +408,7 @@ class BuildActionProxyForm(QtWidgets.QWidget):
     def setupVariantsUi(self, parent, layout):
         # variant header
         variantHeader = QtWidgets.QFrame(parent)
-        variantHeader.setStyleSheet(
-            ".QFrame{ background-color: rgb(255, 255, 255, 15); border-radius: 2px }")
+        variantHeader.setStyleSheet(".QFrame{ background-color: rgb(255, 255, 255, 15); border-radius: 2px }")
         layout.addWidget(variantHeader)
 
         variantHeaderLayout = QtWidgets.QHBoxLayout(variantHeader)
@@ -430,8 +419,7 @@ class BuildActionProxyForm(QtWidgets.QWidget):
         self.variantsLabel.setText("Variants: ")
         variantHeaderLayout.addWidget(self.variantsLabel)
 
-        spacer = QtWidgets.QSpacerItem(
-            20, 4, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
+        spacer = QtWidgets.QSpacerItem(20, 4, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
         layout.addItem(spacer)
 
         # add variant button
@@ -452,15 +440,13 @@ class BuildActionProxyForm(QtWidgets.QWidget):
         Create a widget that wraps a BuildActionDataForm widget
         for use in the variants list. Adds a button to remove the variant.
         """
-        dataForm = BuildActionDataForm(
-            self.index, variantIndex, parent=parent)
+        dataForm = BuildActionDataForm(self.index, variantIndex, parent=parent)
 
         # add remove variant button
         removeVariantBtn = QtWidgets.QPushButton(parent)
         removeVariantBtn.setText('x')
         removeVariantBtn.setFixedSize(QtCore.QSize(20, 20))
-        removeVariantBtn.clicked.connect(
-            partial(self.removeVariantAtIndex, variantIndex))
+        removeVariantBtn.clicked.connect(partial(self.removeVariantAtIndex, variantIndex))
         dataForm.layout.insertWidget(0, removeVariantBtn)
 
         return dataForm
@@ -473,8 +459,7 @@ class BuildActionProxyForm(QtWidgets.QWidget):
         if not actionProxy:
             return
 
-        self.variantsLabel.setText(
-            "Variants: {0}".format(actionProxy.num_variants()))
+        self.variantsLabel.setText(f"Variants: {actionProxy.num_variants()}")
 
         while self.variantListLayout.count() < actionProxy.num_variants():
             self.insertVariantForm(self.variantListLayout.count())

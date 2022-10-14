@@ -1,4 +1,3 @@
-
 import unittest
 import pymel.core as pm
 
@@ -48,7 +47,7 @@ class TestBlueprints(unittest.TestCase):
         ctlNode = pm.polyCube(n='my_ctl')[0]
 
         ctlStep = pulse.buildItems.BuildStep(action_id='Pulse.AnimControl')
-        ctlStep.action_proxy.set_attr_value('controlNode', ctlNode)
+        ctlStep.action_proxy.get_attr('controlNode').set_value(ctlNode)
         mainStep.add_child(ctlStep)
 
         self.assertTrue(len(mainStep.children) == 1)

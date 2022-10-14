@@ -10,7 +10,7 @@ import maya.cmds as cmds
 
 from ..vendor.Qt import QtCore, QtWidgets, QtGui
 from ..serializer import serializeAttrValue
-from ..buildItems import BuildStep, BuildActionRegistry, BuildActionSpec
+from ..buildItems import BuildStep, BuildActionRegistry, BuildActionSpec, BuildActionAttribute
 from .. import sym
 from .core import BlueprintUIModel
 from .core import PulseWindow
@@ -366,11 +366,11 @@ class MirrorActionUtil(object):
         destStepPath = destStep.get_full_path()
 
         # match up variant attrs
-        for attr in sourceAction.get_attrs():
-            isVariant = sourceAction.is_variant_attr(attr['name'])
-            attrPath = destStepPath + '.' + attr['name']
-            if destAction.is_variant_attr(attr['name']) != isVariant:
-                cmds.pulseSetIsVariantAttr(attrPath, isVariant)
+        for _, attr in sourceAction.get_attrs().items():
+            isVariant = sourceAction.is_variant_attr(attr.name)
+            destAttrPath = f'{destStepPath}.{attr.name}'
+            if destAction.is_variant_attr(attr.name) != isVariant:
+                cmds.pulseSetIsVariantAttr(destAttrPath, isVariant)
 
         # match up variant lengths
         while sourceAction.num_variants() < destAction.num_variants():
@@ -379,40 +379,38 @@ class MirrorActionUtil(object):
             destAction.add_variant()
 
         #  mirror invariant attr values
-        for attr in sourceAction.get_attrs():
-            if not sourceAction.is_variant_attr(attr['name']):
-                value = sourceAction.get_attr_value(attr['name'])
+        for _, attr in sourceAction.get_attrs().items():
+            if not sourceAction.is_variant_attr(attr.name):
+                value = attr.get_value()
                 mirroredValue = self.mirrorActionValue(attr, value)
-                attrPath = destStepPath + '.' + attr['name']
+                destAttrPath = f'{destStepPath}.{attr.name}'
                 mirroredValueStr = serializeAttrValue(mirroredValue)
                 LOG.debug('%s -> %s', value, mirroredValue)
-                cmds.pulseSetActionAttr(attrPath, mirroredValueStr)
+                cmds.pulseSetActionAttr(destAttrPath, mirroredValueStr)
 
         # mirror variant attr values
-        for i in range(sourceAction.num_variants()):
-            variant = sourceAction.get_variant(i)
-            for attrName in sourceAction.get_variant_attrs():
-                attr = variant.get_attr_config(attrName)
-                if not attr:
-                    # possibly stale or removed attribute
-                    continue
-                value = variant.get_attr_value(attrName)
+        for i, variant in enumerate(sourceAction.get_variants()):
+            for _, attr in variant.get_attrs().items():
+                value = attr.get_value()
                 mirroredValue = self.mirrorActionValue(attr, value)
-                attrPath = destStepPath + '.' + attr['name']
+                destAttrPath = f'{destStepPath}.{attr.name}'
                 mirroredValueStr = serializeAttrValue(mirroredValue)
                 LOG.debug('%s -> %s', value, mirroredValue)
-
-                cmds.pulseSetActionAttr(attrPath, mirroredValueStr, v=i)
+                cmds.pulseSetActionAttr(destAttrPath, mirroredValueStr, v=i)
 
         cmds.undoInfo(closeChunk=True)
 
         return True
 
-    def mirrorActionValue(self, attr, value):
+    def mirrorActionValue(self, attr: BuildActionAttribute, value):
         """
+        Return a mirrored value of an attribute, taking into account attribute types and config.
+
         Args:
-            attr (dict): The attribute config
-            value: The attribute value, of varying type
+            attr: BuildActionAttribute
+                The attribute to mirror.
+            value:
+                The attribute value to mirror.
         """
 
         def getPairedNodeOrSelf(node):
@@ -427,16 +425,18 @@ class MirrorActionUtil(object):
         if not value:
             return value
 
-        if attr['type'] == 'node':
+        # TODO: move mirror logic into BuildActionAttribute and type-specific subclasses?
+
+        if attr.type == 'node':
             return getPairedNodeOrSelf(value)
 
-        elif attr['type'] == 'nodelist':
+        elif attr.type == 'nodelist':
             return [getPairedNodeOrSelf(node) for node in value]
 
-        elif attr['type'] == 'string':
+        elif attr.type == 'string':
             return sym.getMirroredName(value, self.getConfig())
 
-        elif attr['type'] == 'stringlist':
+        elif attr.type == 'stringlist':
             return [sym.getMirroredName(v, self.getConfig()) for v in value]
 
         return value

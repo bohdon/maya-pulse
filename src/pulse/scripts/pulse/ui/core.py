@@ -1021,10 +1021,14 @@ class BlueprintUIModel(QtCore.QObject):
 
         if variantIndex >= 0:
             if step.action_proxy.num_variants() > variantIndex:
-                actionData = step.action_proxy.get_variant(variantIndex)
-                return actionData.get_attr_value(attrName)
+                variant = step.action_proxy.get_variant(variantIndex)
+                variant_attr = variant.get_attr(attrName)
+                if variant_attr:
+                    return variant_attr.get_value()
         else:
-            return step.action_proxy.get_attr_value(attrName)
+            attr = step.action_proxy.get_attr(attrName)
+            if attr:
+                return attr.get_value()
 
     def setActionAttr(self, attrPath, value, variantIndex=-1):
         """
@@ -1044,11 +1048,17 @@ class BlueprintUIModel(QtCore.QObject):
             LOG.error('setActionAttr: %s is not an action', step)
             return
 
+        # TODO: log errors for missing attributes
+
         if variantIndex >= 0:
             variant = step.action_proxy.get_or_create_variant(variantIndex)
-            variant.set_attr_value(attrName, value)
+            variant_attr = variant.get_attr(attrName)
+            if variant_attr:
+                variant_attr.set_value(value)
         else:
-            step.action_proxy.set_attr_value(attrName, value)
+            attr = step.action_proxy.get_attr(attrName)
+            if attr:
+                attr.set_value(value)
 
         index = self.buildStepTreeModel.indexByStepPath(stepPath)
         self.buildStepTreeModel.dataChanged.emit(index, index, [])
@@ -1079,11 +1089,13 @@ class BlueprintUIModel(QtCore.QObject):
             return
 
         if not step.is_action():
-            LOG.error(
-                "setIsActionAttrVariant: {0} is not an action".format(step))
+            LOG.error("setIsActionAttrVariant: %s is not an action", step)
             return
 
-        step.action_proxy.set_is_variant_attr(attrName, isVariant)
+        if isVariant:
+            step.action_proxy.add_variant_attr(attrName)
+        else:
+            step.action_proxy.remove_variant_attr(attrName)
 
         index = self.buildStepTreeModel.indexByStepPath(stepPath)
         self.buildStepTreeModel.dataChanged.emit(index, index, [])
