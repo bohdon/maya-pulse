@@ -39,6 +39,12 @@ class BuildActionSpec(object):
     def is_valid(self) -> bool:
         return self.get_action_id() and self.action_cls is not None
 
+    def is_equal(self, other: 'BuildActionSpec') -> bool:
+        """
+        Return true if this action spec is the same as another.
+        """
+        return self.action_cls == other.action_cls and self.file_path == other.file_path
+
     def get_action_id(self):
         return self.config.get('id')
 
@@ -115,8 +121,13 @@ class BuildActionRegistry(object):
         # store in action map by id
         action_id = action_spec.get_action_id()
         if action_id in self._registered_actions:
-            LOG.error("A BuildAction already exists with id: %s", action_id)
-            return
+            if self._registered_actions[action_id].is_equal(action_spec):
+                # this action spec is already registered
+                return
+            else:
+                # attempting to register a new action spec with the same id
+                LOG.error("A BuildAction already exists with id: %s", action_id)
+                return
 
         self._registered_actions[action_id] = action_spec
 

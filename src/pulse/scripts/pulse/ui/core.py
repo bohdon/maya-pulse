@@ -14,7 +14,7 @@ from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
 
 from ..vendor import pymetanode as meta
 from ..vendor.Qt import QtCore, QtWidgets, QtGui
-from .. import rigs
+from .. import loader, rigs
 from ..blueprints import Blueprint, BlueprintFile, BlueprintSettings
 from ..buildItems import BuildStep, BuildAction
 from ..prefs import optionVarProperty
@@ -362,6 +362,9 @@ class BlueprintUIModel(QtCore.QObject):
     def __init__(self, parent=None):
         super(BlueprintUIModel, self).__init__(parent=parent)
 
+        # load actions if they haven't been already
+        loader.load_actions()
+
         # the currently open blueprint file
         self._blueprintFile: Optional[BlueprintFile] = None
 
@@ -705,14 +708,12 @@ class BlueprintUIModel(QtCore.QObject):
             self._callbackIds.append(beforeNewId)
             afterNewId = api.MSceneMessage.addCallback(api.MSceneMessage.kAfterNew, self._onAfterNewScene)
             self._callbackIds.append(afterNewId)
-        LOG.debug('BlueprintUIModel: added scene callbacks')
 
     def _removeSceneCallbacks(self):
         if self._callbackIds:
             while self._callbackIds:
                 callbackId = self._callbackIds.pop()
                 api.MMessage.removeCallback(callbackId)
-            LOG.debug('BlueprintUIModel: removed scene callbacks')
 
     def _onBeforeSaveScene(self, clientData=None):
         if self._shouldAutoSave():

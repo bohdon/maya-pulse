@@ -6,8 +6,6 @@ from functools import partial
 
 from ..vendor.Qt import QtCore, QtWidgets
 
-import pulse
-
 from .actioneditor import ActionEditorWindow
 from .actiontree import ActionTree, ActionTreeWindow
 from .actionpalette import ActionPaletteWindow
@@ -26,8 +24,6 @@ class MainEditor(QtWidgets.QWidget):
 
     def __init__(self, parent):
         super(MainEditor, self).__init__(parent)
-
-        pulse.load_builtin_actions()
 
         self.blueprint_model = BlueprintUIModel.getDefaultModel()
         self.selection_model = self.blueprint_model.buildStepSelectionModel

@@ -9,16 +9,38 @@ import sys
 from fnmatch import fnmatch
 from typing import List
 
-from .buildItems import BuildAction, BuildActionSpec
+from .buildItems import BuildAction, BuildActionSpec, BuildActionRegistry
 from .vendor import yaml
-from .ui.actioneditor import BuildActionProxyForm
 
 LOG = logging.getLogger(__name__)
+
+HAS_LOADED_BUILTIN_ACTIONS = False
 
 
 def _is_same_python_file(path_a, path_b):
     return (os.path.normpath(os.path.splitext(path_a)[0]) ==
             os.path.normpath(os.path.splitext(path_b)[0]))
+
+
+def load_actions():
+    """
+    Load all available pulse actions.
+    """
+    # TODO: add extensible action packages list to include
+    load_builtin_actions()
+
+
+def load_builtin_actions():
+    """
+    Load all built-in pulse actions.
+    """
+    from . import builtin_actions
+
+    global HAS_LOADED_BUILTIN_ACTIONS
+    if not HAS_LOADED_BUILTIN_ACTIONS:
+        loader = BuildActionLoader()
+        loader.load_actions_from_package(builtin_actions)
+        HAS_LOADED_BUILTIN_ACTIONS = True
 
 
 class BuildActionLoader(object):
@@ -28,13 +50,22 @@ class BuildActionLoader(object):
     build action registry for use.
     """
 
-    def __init__(self):
+    def __init__(self, use_registry=True):
+        # if true, automatically register loaded actions, otherwise just return them
+        self.use_registry = use_registry
+        # the action module name format to match against
+        self.file_pattern = '*_pulseaction.py'
+        # the action config file extension to search for
         self.config_extension = 'yaml'
 
     def load_actions_from_module(self, module) -> List[BuildActionSpec]:
         """
         Find all BuildAction subclasses in a module, load associated config data for them,
         and return a list of BuildActionConfigs with the results.
+
+        Args:
+            module:
+                A single pulse actions python module that contains one or more Build Actions.
 
         Returns:
             A list of BuildActionSpec for each Build Action class and corresponding
@@ -43,7 +74,7 @@ class BuildActionLoader(object):
         config_file_path = f'{os.path.splitext(module.__file__)[0]}.{self.config_extension}'
         action_configs = self._load_config(config_file_path)
 
-        result: List[BuildActionSpec] = []
+        action_specs: List[BuildActionSpec] = []
         for name in dir(module):
             obj = getattr(module, name)
 
@@ -53,28 +84,49 @@ class BuildActionLoader(object):
                 if action_config:
                     action_spec = BuildActionSpec(action_config, config_file_path, obj, module)
                     LOG.debug('Loaded BuildAction: %s', action_spec)
-                    result.append(action_spec)
+                    action_specs.append(action_spec)
                 else:
                     LOG.error("Build Action config key '%s' was not found in: %s", name, config_file_path)
-        return result
 
-    def load_actions_from_dir(self, start_dir: str, pattern: str = '*_pulseaction.py') -> List[BuildActionSpec]:
+        if self.use_registry:
+            self.register_actions(action_specs)
+
+        return action_specs
+
+    def load_actions_from_package(self, package) -> List[BuildActionSpec]:
         """
-        Return BuildStep type map data for all BuildActions found
-        by searching a directory. Search is performed recursively for
-        any python files matching a pattern.
+        Recursively find all pulse actions in a python package's directory.
+        Searches for python modules by matching against a file name pattern.
+
+        Args:
+            package:
+                A python package used to locate the actions directory.
+        """
+        if not hasattr(package, '__file__'):
+            LOG.warning(f'load_actions_from_package: {package} is not a valid python package')
+            return []
+
+        start_dir = os.path.dirname(package.__file__)
+        return self.load_actions_from_dir(start_dir)
+
+    def load_actions_from_dir(self, start_dir: str) -> List[BuildActionSpec]:
+        """
+        Recursively load all build actions in a directory.
+        Searches for python modules by matching against a file name pattern.
 
         Args:
             start_dir: str
                 The directory to search for actions.
-            pattern: str
-                The file pattern to match for finding action python modules.
 
         Returns:
             A list of BuildActionConfigs representing the loaded config and BuildAction class.
         """
         if '~' in start_dir:
             start_dir = os.path.expanduser(start_dir)
+
+        if not os.path.isdir(start_dir):
+            LOG.warning("Pulse actions directory not found: %s", start_dir)
+            return []
 
         result: List[BuildActionSpec] = []
 
@@ -83,14 +135,21 @@ class BuildActionLoader(object):
             full_path = os.path.join(start_dir, path)
 
             if os.path.isfile(full_path):
-                if fnmatch(path, pattern):
+                if fnmatch(path, self.file_pattern):
                     module = self._import_module_from_file(full_path)
                     result.extend(self.load_actions_from_module(module))
 
             elif os.path.isdir(full_path):
-                result.extend(self.load_actions_from_dir(full_path, pattern))
+                result.extend(self.load_actions_from_dir(full_path))
 
         return result
+
+    def register_actions(self, action_specs: List[BuildActionSpec]):
+        """
+        Register action specs with the shared registry.
+        """
+        for action_spec in action_specs:
+            BuildActionRegistry.get().register_action(action_spec)
 
     def _load_config(self, config_file_path) -> dict:
         """
