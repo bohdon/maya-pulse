@@ -8,4 +8,4 @@ RenameSceneAction:
       type: string
       description: The new scene name, can contain format specifiers that
         accept the rig's meta data.
-      value: "{rig[name]}_rig"
+      value: "{rig[name]}_built"
