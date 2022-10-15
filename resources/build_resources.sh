@@ -48,6 +48,7 @@ build_ui main_editor
 build_ui main_settings
 build_ui main_toolbar
 build_ui quick_name_editor
+build_ui test
 
 # build all resources
 echo "Building resource files..."

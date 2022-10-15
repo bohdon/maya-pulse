@@ -627,6 +627,16 @@ class BuildActionData(object):
         """
         return self._is_missing_spec
 
+    def has_warnings(self):
+        """
+        Return true if there are any invalid attributes or other problems
+        with this action data.
+        """
+        for _, attr in self._attrs.items():
+            attr.validate()
+            if not attr.is_value_valid():
+                return True
+
     def get_short_action_id(self) -> str:
         """
         Return the last part of the action's id, after any '.'
@@ -836,6 +846,23 @@ class BuildActionProxy(BuildActionData):
             action_dir = os.path.dirname(config_file)
             if filename:
                 return os.path.join(action_dir, filename)
+
+    def has_warnings(self):
+        """
+        Return true if this action has any warnings due to invalid attributes or build validation.
+        """
+        for attr_name, attr in self._attrs.items():
+            if not self.is_variant_attr(attr_name):
+                attr.validate()
+                if not attr.is_value_valid():
+                    return True
+
+        # check variants
+        for variant in self._variants:
+            if variant.has_warnings():
+                return True
+
+        return False
 
     def is_variant_action(self):
         """

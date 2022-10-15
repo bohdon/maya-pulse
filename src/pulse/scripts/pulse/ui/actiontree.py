@@ -26,20 +26,8 @@ class ActionTreeStyledItemDelegate(QtWidgets.QStyledItemDelegate):
 
         self.blueprintModel = BlueprintUIModel.getDefaultModel()
 
-    def paint(self, painter, option, index):
-        opt = option
-        self.initStyleOption(opt, index)
-        opt.font.setItalic(self.shouldBeItalic(index))
-
-        step = self.blueprintModel.buildStepTreeModel.stepForIndex(index)
-        if (step):
-            opt.font.setStrikeOut(step.isDisabled)
-
-        super(ActionTreeStyledItemDelegate, self).paint(
-            painter, opt, index)
-
-    def shouldBeItalic(self, index):
-        return self.blueprintModel.isReadOnly()
+    def paint(self, painter: QtGui.QPainter, option: QtWidgets.QStyleOptionViewItem, index: QtCore.QModelIndex):
+        super(ActionTreeStyledItemDelegate, self).paint(painter, option, index)
 
 
 class ActionTreeView(QtWidgets.QTreeView):

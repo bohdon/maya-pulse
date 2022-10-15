@@ -4,12 +4,20 @@
     <file>angle_left.svg</file>
     <file>bars_staggered.svg</file>
     <file>build.svg</file>
+    <file>check.svg</file>
+    <file>check_small.svg</file>
     <file>circle_left.svg</file>
     <file>design_toolkit.svg</file>
+    <file>diamond.svg</file>
     <file>gear.svg</file>
     <file>minus.svg</file>
     <file>plus.svg</file>
+    <file>step_action.svg</file>
+    <file>step_action_disabled.svg</file>
+    <file>step_group.svg</file>
+    <file>step_group_disabled.svg</file>
     <file>validate.svg</file>
+    <file>warning.svg</file>
     <file>xmark.svg</file>
   </qresource>
 </RCC>

@@ -1223,13 +1223,30 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
         if role == QtCore.Qt.DisplayRole:
             return step.get_display_name()
 
+        elif role == QtCore.Qt.FontRole:
+            font = QtGui.QFont()
+            font.setItalic(self.isReadOnly())
+            return font
+
         elif role == QtCore.Qt.EditRole:
             return step.name
 
         elif role == QtCore.Qt.DecorationRole:
-            iconFile = step.get_icon_file()
-            if iconFile:
-                return QtGui.QIcon(iconFile)
+            iconName: str
+            if not step.is_action():
+                if step.is_disabled_in_hierarchy():
+                    iconName = 'step_group_disabled'
+                else:
+                    iconName = 'step_group'
+            else:
+                if step.action_proxy.has_warnings():
+                    iconName = 'warning'
+                elif step.is_disabled_in_hierarchy():
+                    iconName = 'step_action_disabled'
+                else:
+                    iconName = 'step_action'
+
+            return QtGui.QIcon(f':/res/{iconName}.svg')
 
         elif role == QtCore.Qt.SizeHintRole:
             return QtCore.QSize(0, 20)
@@ -1240,6 +1257,10 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
             if step.is_disabled_in_hierarchy():
                 color = [c * 0.4 for c in color]
             return QtGui.QColor(*[c * 255 for c in color])
+
+        elif role == QtCore.Qt.BackgroundRole:
+            if step.is_action() and step.action_proxy.has_warnings():
+                return QtGui.QColor(255, 205, 110, 25)
 
     def setData(self, index, value, role=QtCore.Qt.EditRole):
         if self.isReadOnly():
