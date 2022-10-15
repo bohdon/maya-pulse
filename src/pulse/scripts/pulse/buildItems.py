@@ -1,7 +1,7 @@
 import logging
 import os
 import re
-from typing import List, Iterable, Optional
+from typing import List, Iterable, Optional, Any
 
 import maya.cmds as cmds
 
@@ -185,24 +185,77 @@ class BuildActionError(Exception):
     pass
 
 
+class BuildActionAttributeType(object):
+    """
+    Constants defining the build action attribute types.
+    """
+    UNKNOWN = None
+    BOOL = 'bool'
+    INT = 'int'
+    FLOAT = 'float'
+    VECTOR3 = 'vector3'
+    STRING = 'string'
+    STRING_LIST = 'stringlist'
+    OPTION = 'option'
+    NODE = 'node'
+    NODE_LIST = 'nodelist'
+
+
 class BuildActionAttribute(object):
     """
     A single attribute of a build action.
-    Contains the attributes config as well as current value
-    and validation logic.
+    Contains the attributes config as well as current value and validation logic.
+
+    When creating instances you should use `BuildActionAttribute.from_spec()` to ensure
+    the appropriate subclass will be instanced based on the attributes type, since
+    each subclass has its own validation logic, etc.
     """
 
-    # TODO: subclass for each attribute type and add ui-less validation logic
+    # the attribute type that this class is designed to handle
+    class_attr_type: Optional[str] = BuildActionAttributeType.UNKNOWN
+
+    # cached map of attribute types to BuildActionAttribute classes for faster lookup
+    _attr_class_map: dict[Optional[str]: type['BuildActionAttribute']] = {}
+
+    @classmethod
+    def from_spec(cls, name: str, action_spec: BuildActionSpec = None):
+        """
+        Create a BuildActionAttribute object from a name and spec, using the
+        appropriate class based on the attribute type.
+        """
+        # Note: for some reason, logging a warning or printing anything during the construction
+        #       of a BuildActionAttribute causes Maya to crash during blueprint reload.
+        attr_type: str = cls._find_attr_config(name, action_spec).get('type')
+        subclass: Optional[type[BuildActionAttribute]] = cls._find_attr_class(attr_type)
+        if subclass:
+            return subclass(name, action_spec)
+        else:
+            return BuildActionAttribute(name, action_spec)
+
+    @classmethod
+    def _find_attr_class(cls, attr_type):
+        # check in cache first
+        if attr_type in cls._attr_class_map:
+            return cls._attr_class_map[attr_type]
+        # iterate subclasses, and cache if found
+        for subclass in cls.__subclasses__():
+            if subclass.class_attr_type == attr_type:
+                cls._attr_class_map[attr_type] = subclass
+                return subclass
 
     def __init__(self, name: str, action_spec: BuildActionSpec = None):
         # the name of the attribute
         self._name = name
         # the action spec with config containing information about the attribute
         self.action_spec = action_spec
-        # the cached config for this attribute, retrieved on demand
-        self._attr_config = None
+        # the cached config for this attribute
+        self._attr_config: Optional[dict] = None
         # the current value of the attribute
         self._value = None
+        # whether the attributes value is currently valid
+        self._is_valid = True
+        # the current reason the value is not valid, if any
+        self._invalid_reason: Optional[str] = None
 
     def __repr__(self):
         return f"<{self.__class__.__name__} '{self.get_action_id()}.{self.name}'>"
@@ -214,14 +267,15 @@ class BuildActionAttribute(object):
         """
         return self.action_spec is not None and self.name is not None
 
-    def _find_attr_config(self) -> dict:
+    @classmethod
+    def _find_attr_config(cls, attr_name: str, action_spec: BuildActionSpec) -> dict:
         """
-        Find and return the config for this specific attribute from the action spec.
+        Find and return the config for an attribute from an action spec.
         """
-        if self.action_spec:
-            attrs_config = self.action_spec.config.get('attrs', [])
+        if action_spec:
+            attrs_config = action_spec.config.get('attrs', [])
             for attr_config in attrs_config:
-                if attr_config.get('name') == self.name:
+                if attr_config.get('name') == attr_name:
                     return attr_config
         return {}
 
@@ -235,7 +289,7 @@ class BuildActionAttribute(object):
         Return the config for this attribute.
         """
         if self._attr_config is None:
-            self._attr_config = self._find_attr_config()
+            self._attr_config = self._find_attr_config(self.name, self.action_spec)
         return self._attr_config
 
     @property
@@ -251,26 +305,29 @@ class BuildActionAttribute(object):
         return self.config.get('description')
 
     @property
-    def default_value(self):
+    def is_optional(self):
+        return self.config.get('optional', False)
+
+    @property
+    def default_value(self) -> Any:
         """
         Return the default value of the attribute.
         """
         # 'value' key represents the default value of the attribute in the config
         if 'value' in self.config:
             return self.config['value']
+        return self._get_type_default_value()
 
+    def _get_type_default_value(self):
+        """
+        Return the default value for the attribute type of this class.
+        """
         # TODO: do this in type-specific BuildActionAttribute subclasses
         attr_type = self.type
         if 'list' in attr_type:
             return []
-        elif attr_type == 'bool':
-            return False
-        elif attr_type == 'int':
-            return 0
-        elif attr_type == 'float':
-            return 0.0
-        elif attr_type == 'string':
-            return ''
+
+        return None
 
     def get_value(self):
         """
@@ -282,8 +339,22 @@ class BuildActionAttribute(object):
         return self.default_value
 
     def set_value(self, new_value):
-        # TODO: validate the value, specific to each attribute type
-        self._value = new_value
+        if self.is_acceptable_value(new_value):
+            if new_value == self.default_value:
+                # clear the value when default, so it doesn't serialize
+                self.clear_value()
+            else:
+                self._value = new_value
+        else:
+            LOG.error(f"'{new_value}' is not an acceptable value for attribute'{self.name}' ({self.type})")
+
+    def is_acceptable_value(self, new_value):
+        """
+        Return true if a value is acceptable. This doesn't mean the value won't
+        be invalid for some other reason, just that it's the correct type and
+        the attribute can be set to it.
+        """
+        return True
 
     def is_value_set(self):
         """
@@ -292,11 +363,203 @@ class BuildActionAttribute(object):
         """
         return self._value is not None
 
+    def validate(self):
+        """
+        Validate the attribute, checking its current value and other requirements
+        and storing the reason it is invalid if applicable.
+        """
+        if self.class_attr_type == BuildActionAttributeType.UNKNOWN:
+            self._invalid_reason = 'unknown_type'
+            self._is_valid = False
+        else:
+            self._invalid_reason = None
+            self._is_valid = True
+
+    def is_value_valid(self) -> bool:
+        """
+        Return true if the current value of this attribute is valid.
+        Must call `validate` first to check the value, call `get_invalid_reason`
+        to determine why the attribute is invalid if applicable.
+        """
+        return self._is_valid
+
+    def get_invalid_reason(self) -> str:
+        return self._invalid_reason
+
     def clear_value(self):
         """
         Clear the assigned value of this attribute, resetting it to the default value.
         """
         self._value = None
+
+
+class BuildActionBoolAttribute(BuildActionAttribute):
+    """
+    A bool attribute.
+    """
+
+    class_attr_type = BuildActionAttributeType.BOOL
+
+    def _get_type_default_value(self):
+        return False
+
+    def is_acceptable_value(self, new_value):
+        return new_value in (False, True)
+
+
+class BuildActionIntAttribute(BuildActionAttribute):
+    """
+    An int attribute.
+    """
+
+    class_attr_type = BuildActionAttributeType.INT
+
+    def _get_type_default_value(self):
+        return 0
+
+    def is_acceptable_value(self, new_value):
+        return isinstance(new_value, int)
+
+
+class BuildActionFloatAttribute(BuildActionAttribute):
+    """
+    A float attribute.
+    """
+
+    class_attr_type = BuildActionAttributeType.FLOAT
+
+    def _get_type_default_value(self):
+        return 0.0
+
+    def is_acceptable_value(self, new_value):
+        return isinstance(new_value, (int, float))
+
+
+class BuildActionVector3Attribute(BuildActionAttribute):
+    """
+    A vector attribute with 3 components.
+    """
+
+    class_attr_type = BuildActionAttributeType.VECTOR3
+
+    def _get_type_default_value(self):
+        return [0.0, 0.0, 0.0]
+
+    def is_acceptable_value(self, new_value):
+        return (isinstance(new_value, list) and
+                len(new_value) == 3 and
+                all([isinstance(v, (int, float)) for v in new_value]))
+
+
+class BuildActionStringAttribute(BuildActionAttribute):
+    """
+    A string attribute.
+    """
+
+    class_attr_type = BuildActionAttributeType.STRING
+
+    def _get_type_default_value(self):
+        return ''
+
+    def is_acceptable_value(self, new_value):
+        return isinstance(new_value, str)
+
+    def validate(self):
+        # unless explicitly optional, there must be a value (default is accepted)
+        if not self.is_optional and not self.get_value():
+            self._invalid_reason = 'required'
+            self._is_valid = False
+        else:
+            self._invalid_reason = None
+            self._is_valid = True
+
+
+class BuildActionStringListAttribute(BuildActionAttribute):
+    """
+    An attribute that stores a list of strings.
+    """
+
+    class_attr_type = BuildActionAttributeType.STRING_LIST
+
+    def _get_type_default_value(self):
+        return []
+
+    def is_acceptable_value(self, new_value):
+        return isinstance(new_value, list) and all([isinstance(v, str) for v in new_value])
+
+
+class BuildActionOptionAttribute(BuildActionAttribute):
+    """
+    An attribute that allows selecting from a list of options. Value is an int.
+    """
+
+    class_attr_type = BuildActionAttributeType.OPTION
+
+    def _get_type_default_value(self):
+        return 0
+
+    def is_acceptable_value(self, new_value):
+        return isinstance(new_value, int)
+
+    def validate(self):
+        value = self.get_value()
+        num_options = len(self.config.get('options', []))
+        if value < 0 or value >= num_options:
+            self._invalid_reason = 'out_of_range'
+            self._is_valid = False
+            print(f'0 <= {self.get_value()} < {num_options}, {self}')
+        else:
+            self._invalid_reason = None
+            self._is_valid = True
+
+
+class BuildActionNodeAttribute(BuildActionAttribute):
+    """
+    An attribute that references a single node.
+    """
+
+    class_attr_type = BuildActionAttributeType.NODE
+
+    def _get_type_default_value(self):
+        return None
+
+    def is_acceptable_value(self, new_value):
+        import pymel.core as pm
+        return new_value is None or isinstance(new_value, pm.nt.DependNode)
+
+    def validate(self):
+        # unless explicitly optional, a value must be set
+        if not self.is_optional and not self.is_value_set():
+            self._invalid_reason = 'required'
+            self._is_valid = False
+        else:
+            self._invalid_reason = None
+            self._is_valid = True
+
+
+class BuildActionNodeListAttribute(BuildActionAttribute):
+    """
+    An attribute that references a list of nodes.
+    """
+
+    class_attr_type = BuildActionAttributeType.NODE_LIST
+
+    def _get_type_default_value(self):
+        return []
+
+    def is_acceptable_value(self, new_value):
+        import pymel.core as pm
+        return isinstance(new_value, list) and all([isinstance(v, pm.nt.DependNode) for v in new_value])
+
+    def validate(self):
+        # unless explicitly optional, a value must be set
+        if not self.is_optional and not self.is_value_set():
+            self._invalid_reason = 'required'
+            self._is_valid = False
+            return
+
+        self._invalid_reason = None
+        self._is_valid = True
 
 
 class BuildActionData(object):
@@ -410,7 +673,7 @@ class BuildActionData(object):
         Add an action attribute. Does nothing if the attribute already exists.
         """
         if name not in self._attrs:
-            attr = BuildActionAttribute(name, self._action_spec)
+            attr = BuildActionAttribute.from_spec(name, self._action_spec)
             self._attrs[name] = attr
             return attr
         else:
@@ -483,10 +746,10 @@ class BuildActionData(object):
 
         elif len(data) > 1:
             # if spec wasn't found didn't load, don't throw away the attribute values
-            LOG.warning("Failed to find BuildAction config: %s, preserving serialized attr values", self._action_id)
+            LOG.warning("Failed to find BuildActionSpec '%s', action values will be preserved.", self._action_id)
             for attr_name, value in data.items():
                 if attr_name not in self._attrs:
-                    attr = BuildActionAttribute(attr_name)
+                    attr = BuildActionAttribute.from_spec(attr_name)
                     attr.set_value(value)
                     self._attrs[attr_name] = value
 

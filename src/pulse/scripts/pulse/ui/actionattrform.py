@@ -59,7 +59,7 @@ class ActionAttrForm(QtWidgets.QFrame):
     def addFormType(cls, typeName: Optional[str], formClass: type['ActionAttrForm']):
         cls.TYPE_MAP[typeName] = formClass
 
-    def __init__(self, index, attr: BuildActionAttribute, variantIndex, parent=None):
+    def __init__(self, index, attr: BuildActionAttribute, variantIndex: int, parent=None):
         super(ActionAttrForm, self).__init__(parent=parent)
         self.setObjectName('actionAttrForm')
 
@@ -68,8 +68,6 @@ class ActionAttrForm(QtWidgets.QFrame):
         self.attr = attr
         # the index of the variant being edited
         self.variantIndex = variantIndex
-        # the cached value of the attribute
-        self.attrValue = self.getAttrValue()
 
         # build the ui
         self.setupUi(self)
@@ -86,7 +84,10 @@ class ActionAttrForm(QtWidgets.QFrame):
         """
         Update the state of the ui to represent whether the attribute value is currently valid.
         """
-        self.isValueValid = self._isValueTypeValid(self.attrValue) and self._isValueValid(self.attrValue)
+        # TODO: consider form valid state here as well e.g. 'is there a pending form value that we cant set yet?'
+
+        self.attr.validate()
+        self.isValueValid = self._isFormValueValid() and self.attr.is_value_valid()
         self._setUiValidState(self.isValueValid)
 
     def onModelDataChanged(self):
@@ -102,9 +103,9 @@ class ActionAttrForm(QtWidgets.QFrame):
             self.hide()
             return
 
-        # update cached value and form
-        self.attrValue = self.getAttrValue()
-        self._setFormValue(self.attrValue)
+        # update form
+        self._setFormValue(self.getAttrValue())
+        self._updateValidState()
 
     def isVariant(self):
         return self.variantIndex >= 0
@@ -118,20 +119,18 @@ class ActionAttrForm(QtWidgets.QFrame):
         Performs partial validation and prevents actually setting
         the attribute value if it's type is invalid.
         """
-        # value doesn't need to be valid as long as it has the right type
-        if self._isValueTypeValid(newValue):
-            # TODO: clean up relationship between preview value and actual value.
-            #       how is preview value stored other than widgets?
-            self.attrValue = newValue
-            self._setFormValue(newValue)
-            self._updateValidState()
+        if not self.attr.is_acceptable_value(newValue):
+            # invalid type or otherwise unacceptable value
+            return
 
-            attrPath = self.getAttrPath()
-            if not attrPath:
-                return
+        attrPath = self.getAttrPath()
+        if not attrPath:
+            return
 
-            strValue = serializeAttrValue(newValue)
-            cmds.pulseSetActionAttr(attrPath, strValue, v=self.variantIndex)
+        strValue = serializeAttrValue(newValue)
+        cmds.pulseSetActionAttr(attrPath, strValue, v=self.variantIndex)
+        # refresh form to the new value in case it was cleaned up or processed
+        self._setFormValue(self.attr.get_value())
 
     def setupUi(self, parent):
         """
@@ -163,51 +162,39 @@ class ActionAttrForm(QtWidgets.QFrame):
 
     def _getFormValue(self):
         """
-        Return the current attribute value from the UI form. The result must always
-        be of a valid type for this attr, though the value itself can be invalid.
+        Return the current value entered into the form.
+        It may not be an acceptable or valid attribute value.
         """
-        raise NotImplementedError
+        # default implementation has no separate form value
+        return self.getAttrValue()
 
-    def _isFormValid(self):
+    def _isFormValueValid(self):
         """
         Return True if the current form contains valid data.
+        The attribute value will not be set unless the form has valid data to prevent a bad state.
         """
-        return True
-
-    def _isValueTypeValid(self, attrValue):
-        """
-        Return True if a potential value for the attribute matches the type of attribute.
-        Attributes of at least a valid type can be saved, even though they may cause issues if not
-        fixed before building.
-        """
-        # TODO: use BuildActionAttribute validation instead of only implementing this in the ui
-        return True
-
-    def _isValueValid(self, attrValue):
-        """
-        Return True if a potential value for the attribute is valid
-        """
-        return True
+        return self.attr.is_acceptable_value(self._getFormValue())
 
     def _onValueEdited(self):
         """
-        Update the current attrValue and isValueValid state. Should be called whenever relevant UI values change.
-        The new value will be retrieved by using `_getFormValue`, and validated using `_isValueValid`
+        Called when the value represented in the form has been edited by the user.
+        Try to set the attribute to the new value, or update the valid state of the form.
         """
-        # only emit when form is valid
-        if self._isFormValid():
-            # TODO: why set it here and then set it again (but only if type is valid?)
-            self.attrValue = self._getFormValue()
-            self._updateValidState()
-            self.setAttrValue(self.attrValue)
+        if self._isFormValueValid():
+            # update the attributes value
+            self.setAttrValue(self._getFormValue())
         else:
-            self._setUiValidState(False)
+            # cant set the attribute, but indicate invalid state
+            self._updateValidState()
 
     def _setUiValidState(self, isValid):
         # TODO: use cssClasses
         if isValid:
+            self.label.setToolTip('')
             self.setStyleSheet('')
         else:
+            reason = self.attr.get_invalid_reason()
+            self.label.setToolTip(f'Invalid: {reason}')
             self.setStyleSheet('QFrame#actionAttrForm { background-color: rgb(255, 0, 0, 35); }')
 
     def setupDefaultFormUi(self, parent):
@@ -237,7 +224,6 @@ class ActionAttrForm(QtWidgets.QFrame):
         # set description tooltips
         description = self.attr.description
         if description:
-            self.label.setToolTip(description)
             self.label.setStatusTip(description)
 
         self.labelLayout.addWidget(self.label)
@@ -335,7 +321,6 @@ class BatchAttrForm(QtWidgets.QFrame):
         # set description tooltips
         description = self.attr.description
         if description:
-            self.label.setToolTip(description)
             self.label.setStatusTip(description)
 
         self.labelLayout.addWidget(self.label)
@@ -396,8 +381,8 @@ class DefaultAttrForm(ActionAttrForm):
         self.textEdit = QtWidgets.QLineEdit(parent)
         # TODO: use cssClasses
         self.textEdit.setStyleSheet('font: 8pt "Consolas";')
-        if self._isValueTypeValid(self.attrValue):
-            self._setFormValue(self.attrValue)
+
+        self._setFormValue(self.getAttrValue())
 
         self.textEdit.editingFinished.connect(self._onValueEdited)
 
@@ -412,7 +397,7 @@ class DefaultAttrForm(ActionAttrForm):
     def _getFormValue(self):
         return meta.decodeMetaData(self.textEdit.text())
 
-    def _isFormValid(self):
+    def _isFormValueValid(self):
         try:
             meta.decodeMetaData(self.textEdit.text())
             return True
@@ -432,8 +417,7 @@ class BoolAttrForm(ActionAttrForm):
         self.setupDefaultFormUi(parent)
 
         self.checkbox = QtWidgets.QCheckBox(parent)
-        if self._isValueTypeValid(self.attrValue):
-            self._setFormValue(self.attrValue)
+        self._setFormValue(self.getAttrValue())
         self.checkbox.setMinimumHeight(self.LABEL_HEIGHT)
         self.checkbox.stateChanged.connect(self._onValueEdited)
 
@@ -444,9 +428,6 @@ class BoolAttrForm(ActionAttrForm):
 
     def _getFormValue(self):
         return self.checkbox.isChecked()
-
-    def _isValueTypeValid(self, attrValue):
-        return attrValue is True or attrValue is False
 
 
 # TODO: put attribute type names in an enum class
@@ -465,8 +446,7 @@ class IntAttrForm(ActionAttrForm):
         self.spinBox.setMinimumHeight(self.LABEL_HEIGHT)
         self.spinBox.setMinimumWidth(self.FORM_WIDTH_SMALL)
         self.spinBox.setRange(self.attr.config.get('min', 0), self.attr.config.get('max', 100))
-        if self._isValueTypeValid(self.attrValue):
-            self._setFormValue(self.attrValue)
+        self._setFormValue(self.getAttrValue())
         self.spinBox.valueChanged.connect(self._onValueEdited)
 
         self.setDefaultFormWidget(self.spinBox)
@@ -476,9 +456,6 @@ class IntAttrForm(ActionAttrForm):
 
     def _getFormValue(self):
         return self.spinBox.value()
-
-    def _isValueTypeValid(self, attrValue):
-        return isinstance(attrValue, int)
 
 
 ActionAttrForm.addFormType('int', IntAttrForm)
@@ -498,8 +475,7 @@ class FloatAttrForm(ActionAttrForm):
         self.spinBox.setDecimals(self.attr.config.get('decimals', 3))
         self.spinBox.setSingleStep(self.attr.config.get('stepSize', 0.1))
         self.spinBox.setRange(self.attr.config.get('min', 0), self.attr.config.get('max', 100))
-        if self._isValueTypeValid(self.attrValue):
-            self._setFormValue(self.attrValue)
+        self._setFormValue(self.getAttrValue())
         self.spinBox.valueChanged.connect(self._onValueEdited)
 
         self.setDefaultFormWidget(self.spinBox)
@@ -509,9 +485,6 @@ class FloatAttrForm(ActionAttrForm):
 
     def _getFormValue(self):
         return self.spinBox.value()
-
-    def _isValueTypeValid(self, attrValue):
-        return isinstance(attrValue, float)
 
 
 ActionAttrForm.addFormType('float', FloatAttrForm)
@@ -527,8 +500,7 @@ class StringAttrForm(ActionAttrForm):
 
         self.lineEdit = QtWidgets.QLineEdit(parent)
         self.lineEdit.setMinimumHeight(self.LABEL_HEIGHT)
-        if self._isValueTypeValid(self.attrValue):
-            self._setFormValue(self.attrValue)
+        self._setFormValue(self.getAttrValue())
         self.lineEdit.editingFinished.connect(self._onValueEdited)
 
         self.setDefaultFormWidget(self.lineEdit)
@@ -537,10 +509,7 @@ class StringAttrForm(ActionAttrForm):
         self.lineEdit.setText(attrValue)
 
     def _getFormValue(self):
-        return self.lineEdit.text()
-
-    def _isValueTypeValid(self, attrValue):
-        return isinstance(attrValue, str)
+        return self.lineEdit.text().strip(' ')
 
 
 ActionAttrForm.addFormType('string', StringAttrForm)
@@ -548,7 +517,7 @@ ActionAttrForm.addFormType('string', StringAttrForm)
 
 class OptionAttrForm(ActionAttrForm):
     """
-    A options list form that uses a combo box
+    An options list form that uses a combo box
     to display options and keeps data stored as an int value
     """
 
@@ -558,8 +527,7 @@ class OptionAttrForm(ActionAttrForm):
         self.combo = QtWidgets.QComboBox(parent)
         for option in self.attr.config.get('options', []):
             self.combo.addItem(option)
-        if self._isValueTypeValid(self.attrValue):
-            self._setFormValue(self.attrValue)
+        self._setFormValue(self.getAttrValue())
         self.combo.currentIndexChanged.connect(self._onValueEdited)
 
         self.setDefaultFormWidget(self.combo)
@@ -569,12 +537,6 @@ class OptionAttrForm(ActionAttrForm):
 
     def _getFormValue(self):
         return self.combo.currentIndex()
-
-    def _isValueTypeValid(self, attrValue):
-        return isinstance(attrValue, int)
-
-    def _isValueValid(self, attrValue):
-        return attrValue >= 0 and attrValue < len(self.attr.config.get('options', []))
 
 
 ActionAttrForm.addFormType('option', OptionAttrForm)
@@ -607,8 +569,7 @@ class NodeAttrForm(ActionAttrForm):
         hlayout.addWidget(self.pickButton)
         hlayout.setAlignment(self.pickButton, QtCore.Qt.AlignTop)
 
-        if self._isValueTypeValid(self.attrValue):
-            self._setFormValue(self.attrValue)
+        self._setFormValue(self.getAttrValue())
 
         self.setDefaultFormLayout(hlayout)
 
@@ -620,12 +581,6 @@ class NodeAttrForm(ActionAttrForm):
             uuid = meta.getUUID(attrValue)
             item.setData(QtCore.Qt.UserRole, uuid)
             self.listWidget.addItem(item)
-
-    def _getFormValue(self):
-        return self.attrValue
-
-    def _isValueTypeValid(self, attrValue):
-        return attrValue is None or isinstance(attrValue, pm.nt.DependNode)
 
     def setFromSelection(self):
         sel = pm.selected()
@@ -675,8 +630,7 @@ class NodeListAttrForm(ActionAttrForm):
 
         self.setDefaultFormLayout(hlayout)
 
-        if self._isValueTypeValid(self.attrValue):
-            self._setFormValue(self.attrValue)
+        self._setFormValue(self.getAttrValue())
 
     def _setFormValue(self, attrValue):
         while self.listWidget.takeItem(0):
@@ -692,14 +646,6 @@ class NodeListAttrForm(ActionAttrForm):
         # 13px line height per item, clamped in range 40..120, added 8px buffer
         newHeight = max(40, min(120, 8 + 13 * self.listWidget.count()))
         self.listWidget.setFixedHeight(newHeight)
-
-    def _getFormValue(self):
-        return self.attrValue
-
-    def _isValueTypeValid(self, attrValue):
-        if not isinstance(attrValue, list):
-            return False
-        return all([isinstance(n, pm.nt.DependNode) for n in attrValue])
 
     def setFromSelection(self):
         self.setAttrValue(pm.selected())

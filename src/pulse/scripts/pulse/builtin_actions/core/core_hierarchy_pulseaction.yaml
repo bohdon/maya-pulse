@@ -18,3 +18,4 @@ BuildCoreHierarchyAction:
     - name: nodes
       type: nodelist
       value: [ ]
+      optional: true

@@ -13,14 +13,17 @@ BindSkinAction:
     - name: jointHierarchies
       description: List of joint hierarchies to bind.
       type: nodelist
+      optional: true
 
     - name: excludeJoints
       description: List of joints to exclude from Joint Hierarchies
       type: nodelist
+      optional: true
 
     - name: explicitJoints
       description: List of explicit joints to bind. If Joint Hierarchies is also used, both sets of joints will be combined.
       type: nodelist
+      optional: true
 
     - name: isRenderGeo
       description: Whether the bound meshes represent rendered geometry, will affect
