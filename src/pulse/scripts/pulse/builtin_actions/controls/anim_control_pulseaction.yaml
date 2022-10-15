@@ -21,3 +21,4 @@ AnimControlAction:
       description: Defines attributes that can be animated. All others will be locked
       type: stringlist
       value: [ "t", "r", "s" ]
+      canMirror: false

@@ -400,6 +400,9 @@ class MirrorActionUtil(object):
             value:
                 The attribute value to mirror.
         """
+        if not attr.config.get('canMirror', True):
+            # don't mirror the attributes value, just copy it
+            return value
 
         def getPairedNodeOrSelf(node):
             """
