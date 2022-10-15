@@ -5,11 +5,57 @@ import os
 
 import pymel.core as pm
 
-from pulse.vendor.Qt import QtWidgets
-from .core import BlueprintUIModel, PulseWindow
-
-from .gen.main_settings import Ui_MainSettings
+from pulse.vendor.Qt import QtCore, QtGui, QtWidgets
 from ..blueprints import BlueprintSettings
+from ..loader import BuildActionPackageRegistry
+from . import utils
+from .core import BlueprintUIModel, PulseWindow
+from .gen.main_settings import Ui_MainSettings
+
+
+class ActionPackagesList(QtWidgets.QWidget):
+    """
+    Displays the list of action packages in the BuildActionPackagesRegistry.
+    """
+
+    def __init__(self, parent=None):
+        super(ActionPackagesList, self).__init__(parent=parent)
+
+        self._labelStylesheet = 'background-color: rgba(255, 255, 255, 5%); border-radius: 2px; padding: 2px'
+
+        self.setupUi(self)
+        self._updatePackageList()
+
+    def setupUi(self, parent):
+        self.layout = QtWidgets.QVBoxLayout(parent)
+        self.layout.setMargin(0)
+
+    def _updatePackageList(self):
+        utils.clearLayout(self.layout)
+
+        registry = BuildActionPackageRegistry.get()
+
+        for package in registry.action_packages:
+            label = QtWidgets.QLabel(self)
+            label.setTextInteractionFlags(QtCore.Qt.LinksAccessibleByMouse | QtCore.Qt.TextSelectableByMouse)
+            label.setStyleSheet(self._labelStylesheet)
+            label.setText(self.getPackageDisplayName(package))
+            self.layout.addWidget(label)
+
+        for actions_dir in registry.action_dirs:
+            label = QtWidgets.QLabel(self)
+            label.setTextInteractionFlags(QtCore.Qt.LinksAccessibleByMouse | QtCore.Qt.TextSelectableByMouse)
+            label.setStyleSheet(self._labelStylesheet)
+            label.setText(actions_dir)
+            self.layout.addWidget(label)
+
+    def getPackageDisplayName(self, package):
+        return f'{package.__name__} ({package.__path__[0]})'
+
+    def showEvent(self, event: QtGui.QShowEvent):
+        super(ActionPackagesList, self).showEvent(event)
+
+        self._updatePackageList()
 
 
 class MainSettings(QtWidgets.QWidget):
@@ -21,11 +67,13 @@ class MainSettings(QtWidgets.QWidget):
         super(MainSettings, self).__init__(parent=parent)
 
         self.blueprintModel = BlueprintUIModel.getDefaultModel()
-        self.setEnabled(not self.blueprintModel.isReadOnly())
         self.model = self.blueprintModel.buildStepTreeModel
 
         self.ui = Ui_MainSettings()
         self.ui.setupUi(self)
+
+        action_pkgs = ActionPackagesList(self)
+        self.ui.action_pkgs_layout.addWidget(action_pkgs)
 
         self.ui.file_path_text_label.setText(self._getSceneRelativeBlueprintFilePath())
         self._updateAllSettingValues()
@@ -36,6 +84,8 @@ class MainSettings(QtWidgets.QWidget):
         self.blueprintModel.settingChanged.connect(self._onSettingChanged)
         self.blueprintModel.fileChanged.connect(self._onFileChanged)
         self.blueprintModel.readOnlyChanged.connect(self._onReadOnlyChanged)
+
+        self._onReadOnlyChanged(self.blueprintModel.isReadOnly())
 
     def _updateAllSettingValues(self):
         self.ui.rig_name_edit.setText(self.blueprintModel.getSetting(BlueprintSettings.RIG_NAME))
@@ -62,7 +112,7 @@ class MainSettings(QtWidgets.QWidget):
             self.ui.rig_node_fmt_edit.setText(str(value))
 
     def _onReadOnlyChanged(self, isReadOnly):
-        self.setEnabled(not isReadOnly)
+        self.ui.blueprint_tab.setEnabled(not isReadOnly)
 
     def _getSceneRelativeBlueprintFilePath(self):
         return self._getSceneRelativeFilePath(self.blueprintModel.getBlueprintFilePath())
