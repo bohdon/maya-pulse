@@ -69,6 +69,19 @@ class Ui_MainSettings(object):
 
         self.formLayout_2.setWidget(2, QFormLayout.FieldRole, self.rig_node_fmt_edit)
 
+        self.debug_build_label = QLabel(self.blueprint_tab)
+        self.debug_build_label.setObjectName(u"debug_build_label")
+        self.debug_build_label.setMinimumSize(QSize(120, 0))
+        self.debug_build_label.setAlignment(Qt.AlignRight|Qt.AlignTrailing|Qt.AlignVCenter)
+
+        self.formLayout_2.setWidget(3, QFormLayout.LabelRole, self.debug_build_label)
+
+        self.debug_build_check = QCheckBox(self.blueprint_tab)
+        self.debug_build_check.setObjectName(u"debug_build_check")
+        self.debug_build_check.setMinimumSize(QSize(0, 20))
+
+        self.formLayout_2.setWidget(3, QFormLayout.FieldRole, self.debug_build_check)
+
 
         self.verticalLayout_2.addLayout(self.formLayout_2)
 
@@ -133,6 +146,11 @@ class Ui_MainSettings(object):
         self.rig_node_fmt_label.setStatusTip(QCoreApplication.translate("MainSettings", u"The naming format to use for the parent rig node. Can use any settings key, such as {rigName}.", None))
 #endif // QT_CONFIG(statustip)
         self.rig_node_fmt_label.setText(QCoreApplication.translate("MainSettings", u"Rig Node Name", None))
+#if QT_CONFIG(statustip)
+        self.debug_build_label.setStatusTip(QCoreApplication.translate("MainSettings", u"The naming format to use for the parent rig node. Can use any settings key, such as {rigName}.", None))
+#endif // QT_CONFIG(statustip)
+        self.debug_build_label.setText(QCoreApplication.translate("MainSettings", u"Debug Build", None))
+        self.debug_build_check.setText("")
         self.blueprint_help_label.setText(QCoreApplication.translate("MainSettings", u"Settings for the current blueprint.", None))
         self.blueprint_help_label.setProperty("cssClasses", QCoreApplication.translate("MainSettings", u"help", None))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.blueprint_tab), QCoreApplication.translate("MainSettings", u"Blueprint", None))

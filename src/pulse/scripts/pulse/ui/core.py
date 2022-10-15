@@ -1239,7 +1239,7 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
                 else:
                     iconName = 'step_group'
             else:
-                if step.action_proxy.has_warnings():
+                if step.has_warnings():
                     iconName = 'warning'
                 elif step.is_disabled_in_hierarchy():
                     iconName = 'step_action_disabled'
@@ -1259,7 +1259,7 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
             return QtGui.QColor(*[c * 255 for c in color])
 
         elif role == QtCore.Qt.BackgroundRole:
-            if step.is_action() and step.action_proxy.has_warnings():
+            if step.is_action() and step.has_warnings():
                 return QtGui.QColor(255, 205, 110, 25)
 
     def setData(self, index, value, role=QtCore.Qt.EditRole):

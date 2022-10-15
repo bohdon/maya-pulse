@@ -123,6 +123,38 @@
          <item row="2" column="1">
           <widget class="QLineEdit" name="rig_node_fmt_edit"/>
          </item>
+         <item row="3" column="0">
+          <widget class="QLabel" name="debug_build_label">
+           <property name="minimumSize">
+            <size>
+             <width>120</width>
+             <height>0</height>
+            </size>
+           </property>
+           <property name="statusTip">
+            <string>The naming format to use for the parent rig node. Can use any settings key, such as {rigName}.</string>
+           </property>
+           <property name="text">
+            <string>Debug Build</string>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="1">
+          <widget class="QCheckBox" name="debug_build_check">
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>20</height>
+            </size>
+           </property>
+           <property name="text">
+            <string/>
+           </property>
+          </widget>
+         </item>
         </layout>
        </item>
        <item>

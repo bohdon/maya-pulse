@@ -80,6 +80,7 @@ class MainSettings(QtWidgets.QWidget):
 
         self.ui.rig_name_edit.textEdited.connect(self._onEditRigName)
         self.ui.rig_node_fmt_edit.textEdited.connect(self._onEditRigNodeNameFormat)
+        self.ui.debug_build_check.stateChanged.connect(self._onEditDebugBuild)
 
         self.blueprintModel.settingChanged.connect(self._onSettingChanged)
         self.blueprintModel.fileChanged.connect(self._onFileChanged)
@@ -104,6 +105,9 @@ class MainSettings(QtWidgets.QWidget):
 
     def _onEditRigNodeNameFormat(self):
         self.blueprintModel.setSetting(BlueprintSettings.RIG_NODE_NAME_FORMAT, self.ui.rig_node_fmt_edit.text())
+
+    def _onEditDebugBuild(self):
+        self.blueprintModel.setSetting(BlueprintSettings.DEBUG_BUILD, self.ui.debug_build_check.isChecked())
 
     def _onSettingChanged(self, key: str, value: object):
         if key == BlueprintSettings.RIG_NAME:

@@ -1057,7 +1057,7 @@ class BuildActionProxy(BuildActionData):
             # warn if there are invariant base values set on variant attrs
             for attr_name in self._variant_attr_names:
                 attr = self.get_attr(attr_name)
-                if attr.is_value_set():
+                if attr and attr.is_value_set():
                     LOG.warning("Found invariant value for a variant attr: %s.%s", self.action_id, attr_name)
 
             # create and yield new build actions for each variant
@@ -1307,9 +1307,10 @@ class BuildStep(object):
         self._children: List[BuildStep] = []
         # the BuildActionProxy for this step
         self._action_proxy = action_proxy
-
         # is this build step currently disabled?
         self.isDisabled = False
+        # the last known results of a build validation for this step
+        self._validate_results: List[Exception] = []
 
         # auto-create a basic BuildActionProxy if an action_id was given
         if action_id:
@@ -1654,6 +1655,31 @@ class BuildStep(object):
         if self._action_proxy:
             for elem in self._action_proxy.action_iterator():
                 yield elem
+
+    def get_validate_results(self):
+        return self._validate_results
+
+    def clear_validate_results(self):
+        """
+        Clear the results of the last full rig validation that was done on this step.
+        """
+        self._validate_results = []
+
+    def add_validate_error(self, exc: Exception):
+        """
+        Add a validation exception that was encountered when running a build validator.
+        """
+        print(f"added exception '{exc}' to {self}")
+        self._validate_results.append(exc)
+
+    def has_validation_errors(self) -> bool:
+        return bool(self._validate_results)
+
+    def has_warnings(self) -> bool:
+        """
+        Return true if this step has any validation warnings, or if its action has any warnings.
+        """
+        return self.has_validation_errors() or (self.is_action() and self.action_proxy.has_warnings())
 
     def serialize(self):
         """

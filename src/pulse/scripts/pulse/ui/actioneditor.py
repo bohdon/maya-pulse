@@ -5,6 +5,7 @@ Editor widgets for inspecting and editing BuildSteps and BuildActions.
 
 import logging
 import os
+import traceback
 from functools import partial
 from typing import Optional
 
@@ -21,6 +22,40 @@ from .gen.action_editor import Ui_ActionEditor
 LOG = logging.getLogger(__name__)
 LOG_LEVEL_KEY = 'PYLOG_%s' % LOG.name.split('.')[0].upper()
 LOG.setLevel(os.environ.get(LOG_LEVEL_KEY, 'INFO').upper())
+
+
+class BuildStepNotificationsList(QtWidgets.QWidget):
+    """
+    Displays the current list of notifications, warnings, and errors for an action.
+    """
+
+    def __init__(self, step: BuildStep, parent=None):
+        super(BuildStepNotificationsList, self).__init__(parent=parent)
+        self.setObjectName('formFrame')
+
+        self.step = step
+
+        self.setupUi(self)
+
+    def setupUi(self, parent):
+        self.layout = QtWidgets.QVBoxLayout(parent)
+        self.layout.setMargin(0)
+
+        hasNotifications = False
+        for validate_result in self.step.get_validate_results():
+            label = QtWidgets.QLabel(parent)
+            label.setProperty('cssClasses', 'notification error')
+            label.setTextInteractionFlags(QtCore.Qt.LinksAccessibleByMouse | QtCore.Qt.TextSelectableByMouse)
+            label.setText(str(validate_result))
+            label.setToolTip(self.formatErrorText(validate_result))
+            self.layout.addWidget(label)
+            hasNotifications = True
+
+        self.setVisible(hasNotifications)
+
+    def formatErrorText(self, exc: Exception):
+        lines = traceback.format_exception(type(exc), exc, exc.__traceback__)
+        return ''.join(lines).strip()
 
 
 class BuildStepForm(QtWidgets.QWidget):
@@ -93,6 +128,10 @@ class BuildStepForm(QtWidgets.QWidget):
         headerFrame = QtWidgets.QFrame(parent)
         self.setupHeaderUi(headerFrame)
         layout.addWidget(headerFrame)
+
+        # notifications
+        notifications = BuildStepNotificationsList(step, parent)
+        layout.addWidget(notifications)
 
         # body layout
         bodyFrame = QtWidgets.QFrame(parent)

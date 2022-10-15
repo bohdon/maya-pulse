@@ -54,6 +54,7 @@ class BlueprintSettings(object):
     """
     RIG_NAME = 'rigName'
     RIG_NODE_NAME_FORMAT = 'rigNodeNameFormat'
+    DEBUG_BUILD = 'debugBuild'
 
 
 class Blueprint(object):
@@ -93,6 +94,8 @@ class Blueprint(object):
             self.set_setting(BlueprintSettings.RIG_NAME, '')
         if BlueprintSettings.RIG_NODE_NAME_FORMAT not in self.settings:
             self.set_setting(BlueprintSettings.RIG_NODE_NAME_FORMAT, '{rigName}_rig')
+        if BlueprintSettings.DEBUG_BUILD not in self.settings:
+            self.set_setting(BlueprintSettings.DEBUG_BUILD, False)
 
     def get_setting(self, key: str, default=None):
         """
@@ -381,17 +384,17 @@ class BlueprintBuilder(object):
         return True
 
     @classmethod
-    def from_current_scene(cls, blueprint: Blueprint, debug=False) -> 'BlueprintBuilder':
+    def from_current_scene(cls, blueprint: Blueprint) -> 'BlueprintBuilder':
         """
         Create and return a new BlueprintBuilder instance
         using a blueprint and the current scene.
         """
         # TODO: embed scene path in Blueprint settings when created and use it instead of guess-associating here
         scene_file_path = str(pm.sceneName())
-        builder = cls(blueprint, scene_file_path=scene_file_path, debug=debug)
+        builder = cls(blueprint, scene_file_path=scene_file_path)
         return builder
 
-    def __init__(self, blueprint: Blueprint, scene_file_path: Optional[str] = None, debug=False, log_dir=None):
+    def __init__(self, blueprint: Blueprint, scene_file_path: Optional[str] = None, debug=None, log_dir=None):
         """
         Initialize a BlueprintBuilder
 
@@ -427,7 +430,11 @@ class BlueprintBuilder(object):
 
         self.blueprint = blueprint
         self.scene_file_path = scene_file_path
+
+        if debug is None:
+            debug = self.blueprint.get_setting(BlueprintSettings.DEBUG_BUILD)
         self.debug = debug
+
         self.rig_name: str = self.blueprint.get_setting(BlueprintSettings.RIG_NAME)
 
         # create a logger, and setup a file handler
@@ -653,7 +660,7 @@ class BlueprintBuilder(object):
         self.errors.append(error)
         self.log.error(error, exc_info=self.debug)
 
-    def on_step_error(self, step: BuildStep, action: BuildActionData, error: Exception):
+    def on_step_error(self, step: BuildStep, action: BuildActionData, exc: Exception):
         """
         Called when an error occurs while running a BuildAction
 
@@ -662,11 +669,13 @@ class BlueprintBuilder(object):
                 The step on which the error occurred.
             action: BuildActionData
                 The action or proxy for which the error occurred.
-            error: Exception
+            exc: Exception
                 The exception that occurred.
         """
-        self.errors.append(error)
-        self.log.error('/%s (%s): %s', step.get_full_path(), action.action_id, error, exc_info=self.debug)
+        step.add_validate_error(exc)
+
+        self.errors.append(exc)
+        self.log.error('/%s (%s): %s', step.get_full_path(), action.action_id, exc, exc_info=self.debug)
 
     def action_iterator(self) -> Iterable[tuple[BuildStep, BuildAction]]:
         """
@@ -682,8 +691,8 @@ class BlueprintBuilder(object):
             try:
                 for action in step.action_iterator():
                     yield step, action
-            except Exception as error:
-                self.on_step_error(step, step.action_proxy, error=error)
+            except Exception as exc:
+                self.on_step_error(step, step.action_proxy, exc=exc)
 
     def build_generator(self) -> Iterable[dict]:
         """
@@ -700,6 +709,12 @@ class BlueprintBuilder(object):
         # recursively iterate through all build actions
         all_actions = list(self.action_iterator())
         action_count = len(all_actions)
+
+        # clear all validate results before running
+        for step, action in all_actions:
+            # this will be redundant for steps with multiple variants, but it's simple
+            step.clear_validate_results()
+
         for index, (step, action) in enumerate(all_actions):
             # TODO: include more data somehow so we can track variant action indexes
 
@@ -763,7 +778,7 @@ class BlueprintValidator(BlueprintBuilder):
         pass
 
     def get_start_build_log_message(self):
-        return
+        return f"Started validating blueprint: {self.rig_name} (debug={self.debug})"
 
     def get_finish_build_log_message(self):
         error_count = len(self.errors)

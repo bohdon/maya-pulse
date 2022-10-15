@@ -153,7 +153,7 @@ class MainToolbar(QtWidgets.QWidget):
             if not BlueprintBuilder.pre_build_validate(blueprint):
                 return
 
-            validator = BlueprintValidator(blueprint, debug=True)
+            validator = BlueprintValidator(blueprint)
             validator.start()
 
     def runBuild(self):
@@ -172,7 +172,7 @@ class MainToolbar(QtWidgets.QWidget):
                 if not self.blueprintModel.saveFileWithPrompt():
                     return
 
-            builder = BlueprintBuilder.from_current_scene(blueprint, debug=True)
+            builder = BlueprintBuilder.from_current_scene(blueprint)
             builder.show_progress_ui = True
             builder.start()
 

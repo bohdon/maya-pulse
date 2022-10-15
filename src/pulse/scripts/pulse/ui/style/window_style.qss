@@ -123,6 +123,24 @@ QFrame[cssClasses~="toolbar-rig"] {
 }
 
 
+/* Notifications */
+QLabel[cssClasses~="notification"] {
+    background-color: rgba(0, 0, 0, 10%);
+    padding: 16px;
+    border-radius: 4px;
+}
+
+QLabel[cssClasses~="notification"][cssClasses~="warning"] {
+    color: rgb(255, 205, 110);
+    background-color: rgb(255, 205, 110, 10%);
+}
+
+QLabel[cssClasses~="notification"][cssClasses~="error"] {
+    color: rgb(255, 130, 110);
+    background-color: rgb(255, 80, 80, 10%);
+}
+
+
 /* Warning and error indication */
 [cssClasses~="warning"] QLabel {
     color: rgb(255, 205, 110);
