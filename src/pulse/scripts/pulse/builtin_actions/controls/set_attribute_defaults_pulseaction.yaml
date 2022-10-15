@@ -12,6 +12,7 @@ SetAttributeDefaultsAction:
     - name: nodes
       description: The list of nodes to set defaults on
       type: nodelist
+      optional: true
     - name: extraAttrs
       description: List of extra attributes to set defaults for
       type: stringlist
