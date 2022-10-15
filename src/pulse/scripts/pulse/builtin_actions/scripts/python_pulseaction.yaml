@@ -11,3 +11,4 @@ PythonAction:
     - name: nodes
       description: An optional list of nodes to pass in as arguments to the script. Can be accessed using `action.nodes`
       type: nodelist
+      optional: true
