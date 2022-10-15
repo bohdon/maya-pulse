@@ -30,3 +30,4 @@ ThreeBoneIKFKAction:
     - name: extraControls
       description: Additional controls to add ikfk meta data to, so they can be used with ikfk switching utils
       type: nodelist
+      optional: true

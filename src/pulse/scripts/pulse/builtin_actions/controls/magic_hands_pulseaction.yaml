@@ -27,12 +27,16 @@ MagicHandsAction:
     - name: ctl1
       type: node
       description: The metacarpal ctl of the finger
+      optional: true
     - name: ctl2
       type: node
       description: The proximal ctl of the finger
+      optional: true
     - name: ctl3
       type: node
       description: The middle ctl of the finger
+      optional: true
     - name: ctl4
       type: node
       description: The distal ctl of the finger
+      optional: true

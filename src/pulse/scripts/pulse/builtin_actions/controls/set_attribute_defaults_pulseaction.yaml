@@ -14,7 +14,7 @@ SetAttributeDefaultsAction:
       type: nodelist
     - name: extraAttrs
       description: List of extra attributes to set defaults for
-      type: strlist
+      type: stringlist
       value: [ 'space' ]
     - name: includeNonKeyable
       description: If true, set defaults for all keyable and non-keyable as well. Does not prevent non-keyable attributes from being added in extraAttrs.

@@ -12,11 +12,11 @@ TwistJointsAction:
       type: node
     - name: forwardAxis
       description: The forward axis of the joint that should be preserved
-      type: vector
+      type: vector3
       value: [ 1, 0, 0 ]
     - name: alignAxis
       description: The secondary axis used to align the twist joint with the align joint. Recommended to use up axis for shoulders, and left axis for hands.
-      type: vector
+      type: vector3
       value: [ 0, 0, 1 ]
     - name: alignToRestPose
       description: When true, align to the the un-rotated or resting position of the align joint. This is useful for making a twist joint that un-twists rotates from a parent align joint, such as in the upper arm.

@@ -40,6 +40,8 @@ FootControlAction:
     - name: ballControl
       description: The optional control that drives the ball joint. Used only in meta data so that it can be found by utils.
       type: node
+      optional: true
     - name: extraControls
       description: Extra controls that should be marked for use with foot control utils
       type: nodelist
+      optional: true

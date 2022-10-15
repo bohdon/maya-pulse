@@ -11,18 +11,19 @@ AimConstrainAction:
       type: node
       description: The node to aim at
     - name: aimVector
-      type: vector
+      type: vector3
       value: [ 1, 0, 0 ]
       description: The forward vector to use for the aim
     - name: upVector
-      type: vector
+      type: vector3
       value: [ 0, 1, 0 ]
       description: The local up vector to align with the target world up vector
     - name: worldUpObject
       type: node
+      optional: true
       description: The node to use for retrieving world up vector
     - name: worldUpVector
-      type: vector
+      type: vector3
       value: [ 0, 1, 0 ]
       description: The vector that upVector should align with if using ObjectRotation
     - name: worldUpType
