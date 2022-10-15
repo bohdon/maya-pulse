@@ -316,17 +316,13 @@ class BuildActionAttribute(object):
         # 'value' key represents the default value of the attribute in the config
         if 'value' in self.config:
             return self.config['value']
-        return self._get_type_default_value()
+        return self.get_type_default_value()
 
-    def _get_type_default_value(self):
+    def get_type_default_value(self):
         """
-        Return the default value for the attribute type of this class.
+        Return the default value for any attribute of this type.
+        Does not use the config defined default.
         """
-        # TODO: do this in type-specific BuildActionAttribute subclasses
-        attr_type = self.type
-        if 'list' in attr_type:
-            return []
-
         return None
 
     def get_value(self):
@@ -400,7 +396,7 @@ class BuildActionBoolAttribute(BuildActionAttribute):
 
     class_attr_type = BuildActionAttributeType.BOOL
 
-    def _get_type_default_value(self):
+    def get_type_default_value(self):
         return False
 
     def is_acceptable_value(self, new_value):
@@ -414,7 +410,7 @@ class BuildActionIntAttribute(BuildActionAttribute):
 
     class_attr_type = BuildActionAttributeType.INT
 
-    def _get_type_default_value(self):
+    def get_type_default_value(self):
         return 0
 
     def is_acceptable_value(self, new_value):
@@ -428,7 +424,7 @@ class BuildActionFloatAttribute(BuildActionAttribute):
 
     class_attr_type = BuildActionAttributeType.FLOAT
 
-    def _get_type_default_value(self):
+    def get_type_default_value(self):
         return 0.0
 
     def is_acceptable_value(self, new_value):
@@ -442,7 +438,7 @@ class BuildActionVector3Attribute(BuildActionAttribute):
 
     class_attr_type = BuildActionAttributeType.VECTOR3
 
-    def _get_type_default_value(self):
+    def get_type_default_value(self):
         return [0.0, 0.0, 0.0]
 
     def is_acceptable_value(self, new_value):
@@ -458,7 +454,7 @@ class BuildActionStringAttribute(BuildActionAttribute):
 
     class_attr_type = BuildActionAttributeType.STRING
 
-    def _get_type_default_value(self):
+    def get_type_default_value(self):
         return ''
 
     def is_acceptable_value(self, new_value):
@@ -481,7 +477,7 @@ class BuildActionStringListAttribute(BuildActionAttribute):
 
     class_attr_type = BuildActionAttributeType.STRING_LIST
 
-    def _get_type_default_value(self):
+    def get_type_default_value(self):
         return []
 
     def is_acceptable_value(self, new_value):
@@ -495,7 +491,7 @@ class BuildActionOptionAttribute(BuildActionAttribute):
 
     class_attr_type = BuildActionAttributeType.OPTION
 
-    def _get_type_default_value(self):
+    def get_type_default_value(self):
         return 0
 
     def is_acceptable_value(self, new_value):
@@ -520,7 +516,7 @@ class BuildActionNodeAttribute(BuildActionAttribute):
 
     class_attr_type = BuildActionAttributeType.NODE
 
-    def _get_type_default_value(self):
+    def get_type_default_value(self):
         return None
 
     def is_acceptable_value(self, new_value):
@@ -544,7 +540,7 @@ class BuildActionNodeListAttribute(BuildActionAttribute):
 
     class_attr_type = BuildActionAttributeType.NODE_LIST
 
-    def _get_type_default_value(self):
+    def get_type_default_value(self):
         return []
 
     def is_acceptable_value(self, new_value):

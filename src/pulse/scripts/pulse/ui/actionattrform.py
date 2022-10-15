@@ -395,14 +395,33 @@ class DefaultAttrForm(ActionAttrForm):
             self.textEdit.setText(meta.encodeMetaData(attrValue))
 
     def _getFormValue(self):
-        return meta.decodeMetaData(self.textEdit.text())
+        try:
+            return meta.decodeMetaData(self.textEdit.text())
+        except:
+            return None
 
     def _isFormValueValid(self):
         try:
             meta.decodeMetaData(self.textEdit.text())
-            return True
         except Exception as e:
             return False
+        return super(DefaultAttrForm, self)._isFormValueValid()
+
+    def _onValueEdited(self):
+        """
+        If the form value is set to an empty string, and that empty string
+        is not an acceptable value for the attribute, reset the form to the default value for the type.
+
+        Note that that's not the same as the default value that may be set in the config, e.g. an empty list
+        instead of potentially a list with config-defined default values in it.
+        """
+        if not self._getFormValue():
+            if not self._isFormValueValid():
+                self._setFormValue(self.attr.get_type_default_value())
+                self._updateValidState()
+                return
+
+        super(DefaultAttrForm, self)._onValueEdited()
 
 
 ActionAttrForm.addFormType(None, DefaultAttrForm)
