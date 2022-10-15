@@ -1239,10 +1239,10 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
                 else:
                     iconName = 'step_group'
             else:
-                if step.has_warnings():
-                    iconName = 'warning'
-                elif step.is_disabled_in_hierarchy():
+                if step.is_disabled_in_hierarchy():
                     iconName = 'step_action_disabled'
+                elif step.has_warnings():
+                    iconName = 'warning'
                 else:
                     iconName = 'step_action'
 
