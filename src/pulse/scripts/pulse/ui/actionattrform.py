@@ -394,6 +394,17 @@ class DefaultAttrForm(ActionAttrForm):
         else:
             self.textEdit.setText(meta.encodeMetaData(attrValue))
 
+    def _hasSyntaxErrors(self) -> bool:
+        """
+        Return true if the current form value has syntax errors that prevent
+        it from being able to decode.
+        """
+        try:
+            meta.decodeMetaData(self.textEdit.text())
+            return True
+        except:
+            return False
+
     def _getFormValue(self):
         try:
             return meta.decodeMetaData(self.textEdit.text())
@@ -409,15 +420,15 @@ class DefaultAttrForm(ActionAttrForm):
 
     def _onValueEdited(self):
         """
-        If the form value is set to an empty string, and that empty string
-        is not an acceptable value for the attribute, reset the form to the default value for the type.
+        If the form text is empty, but the value is not acceptable, reset the attribute to the default
+        value for the type. Useful for list or complex data types where typing the default value would be tedious.
 
         Note that that's not the same as the default value that may be set in the config, e.g. an empty list
         instead of potentially a list with config-defined default values in it.
         """
-        if not self._getFormValue():
-            if not self._isFormValueValid():
-                self._setFormValue(self.attr.get_type_default_value())
+        if not self._isFormValueValid():
+            if not self.textEdit.text().strip(' '):
+                self.setAttrValue(self.attr.get_type_default_value())
                 self._updateValidState()
                 return
 
