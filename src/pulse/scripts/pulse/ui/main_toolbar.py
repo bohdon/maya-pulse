@@ -62,11 +62,12 @@ class MainToolbar(QtWidgets.QWidget):
         self._onStateDirty()
 
     def _onChangeSceneFinished(self):
-        self._updateRigName()
         self._updateMode()
+        self._updateRigName()
 
     def _onFileChanged(self):
         self._updateMode()
+        self._updateRigName()
 
     def _onFileModifiedChanged(self, isModified):
         self._updateRigName()
