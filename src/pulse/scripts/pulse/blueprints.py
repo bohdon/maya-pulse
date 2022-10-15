@@ -426,7 +426,7 @@ class BlueprintBuilder(object):
 
         # the rig root node, available after the builder starts,
         # and create_rig_structure has been called
-        self.rig = None
+        self.rig: Optional[pm.nt.Transform] = None
 
         self.blueprint = blueprint
         self.scene_file_path = scene_file_path

@@ -1123,13 +1123,15 @@ class BuildAction(BuildActionData):
     def __init__(self):
         super(BuildAction, self).__init__()
 
+        import pymel.core as pm
+
         # logger is initialized the first time its accessed
         self._log = None
         # builder is only available during build
         from pulse.blueprints import BlueprintBuilder
         self.builder: Optional[BlueprintBuilder] = None
         # rig is only available during build
-        self.rig = None
+        self.rig: Optional[pm.nt.Transform] = None
 
         # retrieve action spec using this class
         self._action_spec = BuildActionRegistry.get().find_action_by_class(self.__class__)

@@ -3,7 +3,7 @@ CreateSpaceAction:
   displayName: Create Space
   description: Create a Space that can be used for dynamic constraints
   color: [ .4, .42, .8 ]
-  category: Space Switching
+  category: Spaces
   sortOrder: 0
   attrs:
     - name: node
@@ -16,7 +16,7 @@ SpaceConstrainAction:
   displayName: Space Constrain
   description: Creates a dynamic constraint to one or more defined spaces
   color: [ .4, .42, .8 ]
-  category: Space Switching
+  category: Spaces
   sortOrder: 1
   attrs:
     - name: node
@@ -33,6 +33,10 @@ ApplySpacesAction:
   displayName: Apply Spaces
   description: Resolves and connects all Space Constraints in the rig
   color: [ .4, .42, .8 ]
-  category: Space Switching
+  category: Spaces
   sortOrder: 2
-  attrs: [ ]
+  attrs:
+    - name: createWorldSpace
+      type: bool
+      value: true
+      description: Automatically create a 'world' space node.

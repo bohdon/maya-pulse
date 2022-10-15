@@ -50,6 +50,11 @@ class ApplySpacesAction(BuildAction):
         pass
 
     def run(self):
+        if self.createWorldSpace:
+            world_node = pm.group(name='world_space', empty=True, parent=self.rig)
+            pulse.spaces.createSpace(world_node, 'world')
+            self.update_rig_metadata_dict('spaces', {'world': world_node})
+
         # TODO: only gather not-yet-created constraints
         allConstraints = pulse.spaces.getAllSpaceConstraints()
         pulse.spaces.connectSpaceConstraints(allConstraints)

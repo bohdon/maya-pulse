@@ -69,7 +69,7 @@ def getSelectedRigs():
     return rigs
 
 
-def createRigNode(name: str):
+def createRigNode(name: str) -> pm.nt.Transform:
     """
     Create and return a new Rig node
 
