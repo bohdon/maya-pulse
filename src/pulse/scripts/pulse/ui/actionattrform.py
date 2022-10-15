@@ -61,7 +61,7 @@ class ActionAttrForm(QtWidgets.QFrame):
 
     def __init__(self, index, attr: BuildActionAttribute, variantIndex: int, parent=None):
         super(ActionAttrForm, self).__init__(parent=parent)
-        self.setObjectName('actionAttrForm')
+        self.setObjectName('formFrame')
 
         self.index = QtCore.QPersistentModelIndex(index)
         # the attribute being edited
@@ -74,7 +74,6 @@ class ActionAttrForm(QtWidgets.QFrame):
 
         # update valid state, check both type and value here
         # because the current value may be of an invalid type
-        self.isValueValid = True
         self._updateValidState()
 
         # listen to model change events
@@ -84,11 +83,14 @@ class ActionAttrForm(QtWidgets.QFrame):
         """
         Update the state of the ui to represent whether the attribute value is currently valid.
         """
-        # TODO: consider form valid state here as well e.g. 'is there a pending form value that we cant set yet?'
+        # if false, the input is not acceptable, e.g. badly formatted
+        isFormValid = self._isFormValueValid()
 
+        # if false, the type might be wrong, value out of range, or missing a required input
         self.attr.validate()
-        self.isValueValid = self._isFormValueValid() and self.attr.is_value_valid()
-        self._setUiValidState(self.isValueValid)
+        isValueValid = self._isFormValueValid() and self.attr.is_value_valid()
+
+        self._setUiValidState(isValueValid, isFormValid)
 
     def onModelDataChanged(self):
         """
@@ -187,15 +189,20 @@ class ActionAttrForm(QtWidgets.QFrame):
             # cant set the attribute, but indicate invalid state
             self._updateValidState()
 
-    def _setUiValidState(self, isValid):
-        # TODO: use cssClasses
+    def _setUiValidState(self, isValid, isFormValid):
         if isValid:
             self.label.setToolTip('')
-            self.setStyleSheet('')
-        else:
+            self.setProperty('cssClasses', '')
+        elif isFormValid:
             reason = self.attr.get_invalid_reason()
             self.label.setToolTip(f'Invalid: {reason}')
-            self.setStyleSheet('QFrame#actionAttrForm { background-color: rgb(255, 0, 0, 35); }')
+            self.setProperty('cssClasses', 'warning')
+        else:
+            self.label.setToolTip('Invalid input')
+            self.setProperty('cssClasses', 'error')
+
+        # force a styling refresh to make use of cssClasses
+        self.setStyleSheet('')
 
     def setupDefaultFormUi(self, parent):
         """
@@ -280,6 +287,7 @@ class BatchAttrForm(QtWidgets.QFrame):
 
     def __init__(self, index, attr: BuildActionAttribute, parent=None):
         super(BatchAttrForm, self).__init__(parent=parent)
+        self.setObjectName('formFrame')
 
         self.index = QtCore.QPersistentModelIndex(index)
         self.attr = attr
@@ -310,14 +318,14 @@ class BatchAttrForm(QtWidgets.QFrame):
 
         self.labelLayout = QtWidgets.QHBoxLayout(parent)
 
-        # attribute name
+        # attribute name label
         self.label = QtWidgets.QLabel(parent)
         self.label.setMinimumSize(QtCore.QSize(self.LABEL_WIDTH, self.LABEL_HEIGHT))
         self.label.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignTrailing | QtCore.Qt.AlignTop)
         # add some space above the label so it lines up
         self.label.setMargin(2)
+        self.label.setEnabled(False)
         self.label.setText(names.toTitle(self.attr.name))
-        self.label.setStyleSheet('color: rgba(255, 255, 255, 20%);')
         # set description tooltips
         description = self.attr.description
         if description:
