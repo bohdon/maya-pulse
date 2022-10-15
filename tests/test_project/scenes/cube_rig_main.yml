@@ -7,20 +7,17 @@ steps:
       id: Pulse.ImportReferences
     name: Import References
   - action:
-      allNodes: false
       id: Pulse.BuildCoreHierarchy
       variantAttrs:
       - groupName
       - allNodes
       - nodes
       variants:
-      - allNodes: false
-        groupName: core
+      - groupName: core
         nodes:
         - !node '6506B2DD-486F-185B-BFB8-E38F2984AD20'
       - allNodes: true
         groupName: ctls
-        nodes: []
     name: Build Core Hierarchy
   - children:
     - action:
