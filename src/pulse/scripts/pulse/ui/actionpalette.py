@@ -8,6 +8,7 @@ from functools import partial
 
 import maya.cmds as cmds
 
+from ..colors import LinearColor
 from ..vendor.Qt import QtCore, QtWidgets
 from ..buildItems import BuildActionRegistry
 from .core import BlueprintUIModel, PulseWindow
@@ -51,7 +52,7 @@ class ActionPalette(QtWidgets.QWidget):
         allActionSpecs = BuildActionRegistry.get().get_all_actions()
 
         # make button for each action
-        categories = [spec.config.get('category', 'Default') for spec in allActionSpecs]
+        categories = [spec.category for spec in allActionSpecs]
         categories = list(set(categories))
         categoryLayouts = {}
 
@@ -69,12 +70,13 @@ class ActionPalette(QtWidgets.QWidget):
             catLay.addWidget(label)
 
         for actionSpec in allActionSpecs:
-            actionId = actionSpec.config['id']
-            actionCategory = actionSpec.config.get('category', 'Default')
-            color = self.getActionColor(actionSpec.config)
+            actionId = actionSpec.id
+            actionCategory = actionSpec.category
+            color = LinearColor.from_seq(actionSpec.color)
+            color.a = 0.12
             btn = QtWidgets.QPushButton(parent)
-            btn.setText(actionSpec.config['displayName'])
-            btn.setStyleSheet('background-color:rgba({0}, {1}, {2}, 30)'.format(*color))
+            btn.setText(actionSpec.display_name)
+            btn.setStyleSheet(color.as_bg_style())
             btn.clicked.connect(partial(self.blueprintModel.createAction, actionId))
             categoryLayouts[actionCategory].addWidget(btn)
 
@@ -82,14 +84,6 @@ class ActionPalette(QtWidgets.QWidget):
             0, 0, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
 
         layout.addItem(spacer)
-
-    @staticmethod
-    def getActionColor(actionConfig):
-        color = actionConfig.get('color', [1, 1, 1])
-        if color:
-            return [int(c * 255) for c in color]
-        else:
-            return [255, 255, 255]
 
     def _onReadOnlyChanged(self, isReadOnly):
         self.ui.group_btn.setEnabled(not isReadOnly)

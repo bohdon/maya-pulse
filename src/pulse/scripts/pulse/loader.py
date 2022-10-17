@@ -133,9 +133,8 @@ class BuildActionPackageRegistry(object):
 
 class BuildActionLoader(object):
     """
-    Handles finding and loading Build Action configs and modules and returning
-    them as BuildActionSpec objects. They can then be registered with the
-    build action registry for use.
+    Handles finding and loading Build Action modules and returning them as BuildActionSpec objects.
+    They can then be registered with the build action registry for use.
     """
 
     def __init__(self, use_registry=True):
@@ -143,38 +142,26 @@ class BuildActionLoader(object):
         self.use_registry = use_registry
         # the action module name format to match against
         self.file_pattern = '*_pulseaction.py'
-        # the action config file extension to search for
-        self.config_extension = 'yaml'
 
     def load_actions_from_module(self, module) -> List[BuildActionSpec]:
         """
-        Find all BuildAction subclasses in a module, load associated config data for them,
-        and return a list of BuildActionConfigs with the results.
+        Find all BuildAction subclasses in a module and return a BuildActionSpec for each one.
 
         Args:
             module:
                 A single pulse actions python module that contains one or more Build Actions.
 
         Returns:
-            A list of BuildActionSpec for each Build Action class and corresponding
-            yml config in the module.
+            A list of BuildActionSpec for each Build Action found.
         """
-        config_file_path = f'{os.path.splitext(module.__file__)[0]}.{self.config_extension}'
-        action_configs = self._load_config(config_file_path)
-
         action_specs: List[BuildActionSpec] = []
         for name in dir(module):
             obj = getattr(module, name)
 
             if self._is_valid_build_action_class(obj):
-                # get config for the action class
-                action_config = action_configs.get(name, {})
-                if action_config:
-                    action_spec = BuildActionSpec(action_config, config_file_path, obj, module)
-                    LOG.debug('Loaded BuildAction: %s', action_spec)
-                    action_specs.append(action_spec)
-                else:
-                    LOG.error("Build Action config key '%s' was not found in: %s", name, config_file_path)
+                action_spec = BuildActionSpec(obj, module)
+                LOG.debug('Loaded BuildAction: %s', action_spec)
+                action_specs.append(action_spec)
 
         if self.use_registry:
             self.register_actions(action_specs)
@@ -211,7 +198,7 @@ class BuildActionLoader(object):
                 The directory to search for actions.
 
         Returns:
-            A list of BuildActionConfigs representing the loaded config and BuildAction class.
+            A list of BuildActionSpecs representing the BuildAction class.
         """
         if '~' in start_dir:
             start_dir = os.path.expanduser(start_dir)
@@ -254,20 +241,6 @@ class BuildActionLoader(object):
         """
         for action_spec in action_specs:
             BuildActionRegistry.get().add_action(action_spec)
-
-    def _load_config(self, config_file_path) -> dict:
-        """
-        Load a build action config file. Note that an action config file may contain
-        config entries for multiple build actions.
-        """
-        if not os.path.isfile(config_file_path):
-            LOG.error("Config file not found: %s", config_file_path)
-            return {}
-
-        with open(config_file_path, 'r') as fp:
-            config = yaml.load(fp.read())
-
-        return config
 
     def _import_module_from_file(self, file_path: str):
         """

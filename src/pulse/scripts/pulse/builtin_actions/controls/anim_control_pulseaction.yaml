@@ -4,7 +4,6 @@ AnimControlAction:
   description: Configures a node to be used as an animation control
   color: [ .85, .65, .4 ]
   category: Controls
-  controlMetaClass: pulse_animcontrol
   attrs:
     - name: controlNode
       description: The control node to mark as an animation control

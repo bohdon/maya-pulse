@@ -1,7 +1,18 @@
-from pulse.buildItems import BuildAction, BuildActionError
+from pulse.buildItems import BuildAction, BuildActionError, BuildActionAttribute, BuildActionAttributeType
 
 
 class ParentAction(BuildAction):
+    id = 'Pulse.ParentAction'
+    display_name = 'Parent'
+    description = 'Parent a node to another node.'
+    color = [.4, .6, .8]
+    category = 'Constraints'
+    attr_definitions = [
+        {'name': 'parent',
+         'type': BuildActionAttributeType.NODE},
+        {'name': 'child',
+         'type': BuildActionAttributeType.NODE}
+    ]
 
     def validate(self):
         if not self.parent:

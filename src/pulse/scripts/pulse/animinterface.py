@@ -1,12 +1,14 @@
 from .vendor import pymetanode as meta
 from .vendor import yaml
 
+ANIM_CTL_METACLASS = 'pulse_animcontrol'
+
 
 def getAllAnimControls():
     """
     Return all animation controls in the scene
     """
-    return meta.findMetaNodes('pulse_animcontrol')
+    return meta.findMetaNodes(ANIM_CTL_METACLASS)
 
 
 def getRigAnimInterface(ctls, excludeAttrs=None):

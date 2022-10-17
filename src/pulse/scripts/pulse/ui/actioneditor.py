@@ -172,7 +172,7 @@ class BuildStepForm(QtWidgets.QWidget):
         layout.setSpacing(0)
 
         if step.is_action() and step.action_proxy.is_valid():
-            formCls = step.action_proxy.action_spec.editor_form_cls
+            formCls = step.action_proxy.spec.editor_form_cls
             if not formCls:
                 formCls = BuildActionProxyForm
             self.actionForm = formCls(self.index, parent)
@@ -183,8 +183,8 @@ class BuildStepForm(QtWidgets.QWidget):
         Open the python file for this action in a source editor.
         """
         step = self.getStep()
-        if step.is_action() and step.action_proxy.action_spec:
-            sourceeditor.open_module(step.action_proxy.action_spec.module)
+        if step.is_action() and step.action_proxy.spec:
+            sourceeditor.open_module(step.action_proxy.spec.module)
 
 
 class BuildActionDataForm(QtWidgets.QWidget):

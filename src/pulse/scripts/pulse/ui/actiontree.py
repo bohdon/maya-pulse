@@ -212,7 +212,7 @@ class ActionTree(QtWidgets.QWidget):
         actions_menu.addAction(grp_action)
 
         # create action sub menu for each category
-        categories = [spec.config.get('category', 'Default') for spec in allActionSpecs]
+        categories = [spec.category for spec in allActionSpecs]
         categories = list(set(categories))
         cat_menus: Dict[str, QtWidgets.QMenu] = {}
 
@@ -221,11 +221,11 @@ class ActionTree(QtWidgets.QWidget):
             cat_menus[cat] = cat_menu
 
         for actionSpec in allActionSpecs:
-            actionId = actionSpec.config['id']
-            actionCategory = actionSpec.config.get('category', 'Default')
-            description = actionSpec.config.get('description')
+            actionId = actionSpec.id
+            actionCategory = actionSpec.category
+            description = actionSpec.description
 
-            action = QtWidgets.QAction(actionSpec.config['displayName'], parent)
+            action = QtWidgets.QAction(actionSpec.display_name, parent)
             if description:
                 action.setStatusTip(description)
             action.triggered.connect(partial(self.blueprintModel.createAction, actionId))

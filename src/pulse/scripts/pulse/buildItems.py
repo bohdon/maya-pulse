@@ -22,53 +22,69 @@ class BuildActionSpec(object):
     Contains information about a registered build action class and its config.
     """
 
-    def __init__(self, config: dict, file_path: str, action_cls: type['BuildAction'], module):
-        # the action's config info as defined in the yaml file
-        self.config = config
-        # the full path to the actions config file
-        self.file_path = file_path
-        # the BuildAction subclass defined in the python file
+    def __init__(self, action_cls: type['BuildAction'], module):
+        # the BuildAction subclass
         self.action_cls = action_cls
         # the python module containing the BuildAction
         self.module = module
-        # the optional custom editor form class
-        self.editor_form_cls = self._find_editor_form_class()
 
     def __repr__(self):
-        return f"<{self.__class__.__name__} '{self.get_action_id()}'>"
+        return f"<{self.__class__.__name__} '{self.id}'>"
 
     def is_valid(self) -> bool:
-        return self.get_action_id() and self.action_cls is not None
+        return self.action_cls is not None and self.id
 
     def is_equal(self, other: 'BuildActionSpec') -> bool:
         """
         Return true if this action spec is the same as another.
         """
-        return self.action_cls == other.action_cls and self.file_path == other.file_path
+        return self.action_cls == other.action_cls
 
-    def get_action_id(self):
-        return self.config.get('id')
-
-    def _find_editor_form_class(self):
+    @property
+    def id(self):
         """
-        Find the BuildActionProxyForm class to use for this action, if any.
+        The globally unique action id.
         """
-        from pulse.ui.actioneditor import BuildActionProxyForm
+        return self.action_cls.id if self.action_cls else None
 
-        cls_name = self.config.get('editorFormClass')
-        if not cls_name:
-            # no custom editor form class was specified
-            return
+    @property
+    def display_name(self):
+        """
+        The display name of the action.
+        """
+        return self.action_cls.display_name
 
-        if self.module and hasattr(self.module, cls_name):
-            obj = getattr(self.module, cls_name)
-            if isinstance(obj, type) and issubclass(obj, BuildActionProxyForm):
-                # store the editor form class object in the config
-                return obj
-            else:
-                LOG.error("%s is not a valid BuildActionProxyForm subclass", cls_name)
-        else:
-            LOG.error("Failed to find a BuildActionProxyForm named '%s' in module %s", cls_name, self.module)
+    @property
+    def description(self):
+        """
+        The description of the action.
+        """
+        return self.action_cls.description
+
+    @property
+    def color(self):
+        """
+        The display color of the action.
+        """
+        return self.action_cls.color
+
+    @property
+    def category(self):
+        """
+        The menu category where the action will be grouped.
+        """
+        return self.action_cls.category
+
+    @property
+    def attrs(self):
+        """
+        The list of all attribute definitions.
+        """
+        return self.action_cls.attr_definitions
+
+    @property
+    def editor_form_cls(self):
+        return self.action_cls.editorFormClass
 
 
 def _increment_name(name: str) -> str:
@@ -108,8 +124,8 @@ class BuildActionRegistry(object):
         return cls._instance
 
     def __init__(self):
-        # map of all registered actions by id
-        self._registered_actions: dict[str, BuildActionSpec] = {}
+        # map of all registered action specs by id
+        self._action_specs: dict[str, BuildActionSpec] = {}
 
     def add_action(self, action_spec: BuildActionSpec):
         """
@@ -120,9 +136,9 @@ class BuildActionRegistry(object):
             return
 
         # store in action map by id
-        action_id = action_spec.get_action_id()
-        if action_id in self._registered_actions:
-            if self._registered_actions[action_id].is_equal(action_spec):
+        action_id = action_spec.id
+        if action_id in self._action_specs:
+            if self._action_specs[action_id].is_equal(action_spec):
                 # this action spec is already registered
                 return
             else:
@@ -130,53 +146,53 @@ class BuildActionRegistry(object):
                 LOG.error("A BuildAction already exists with id: %s", action_id)
                 return
 
-        self._registered_actions[action_id] = action_spec
+        self._action_specs[action_id] = action_spec
 
     def remove_action(self, action_id):
         """
         Remove a BuildActionSpec from the registry by id.
         """
-        if action_id in self._registered_actions:
-            del self._registered_actions[action_id]
+        if action_id in self._action_specs:
+            del self._action_specs[action_id]
 
     def remove_all(self):
         """
         Remove all actions from this registry.
         """
-        self._registered_actions = {}
+        self._action_specs = {}
 
     def get_action_map(self) -> dict[str, BuildActionSpec]:
         """
         Return the registered BuildActionSpecs map, indexed by action ids.
         """
-        return self._registered_actions
+        return self._action_specs
 
     def get_all_actions(self) -> Iterable[BuildActionSpec]:
         """
         Return all registered BuildActionSpecs.
         """
-        return self._registered_actions.values()
+        return self._action_specs.values()
 
     def get_action_ids(self) -> Iterable[str]:
         """
         Return all registered action ids.
         """
-        return self._registered_actions.keys()
+        return self._action_specs.keys()
 
     def find_action(self, action_id: str) -> Optional[BuildActionSpec]:
         """
         Find a BuildActionSpec by action id
         """
-        if action_id in self._registered_actions:
-            return self._registered_actions[action_id]
+        if action_id in self._action_specs:
+            return self._action_specs[action_id]
 
     def find_action_by_class(self, action_cls: type['BuildAction']) -> Optional[BuildActionSpec]:
         """
         Find a BuildActionSpec by action class.
         """
-        for config in self._registered_actions.values():
-            if config.action_cls == action_cls:
-                return config
+        for spec in self._action_specs.values():
+            if spec.action_cls == action_cls:
+                return spec
 
 
 class BuildActionError(Exception):
@@ -219,7 +235,7 @@ class BuildActionAttribute(object):
     _attr_class_map: dict[Optional[str]: type['BuildActionAttribute']] = {}
 
     @classmethod
-    def from_spec(cls, name: str, action_spec: BuildActionSpec = None):
+    def from_spec(cls, name: str, action_spec: BuildActionSpec = None, action_id: str = None) -> 'BuildActionAttribute':
         """
         Create a BuildActionAttribute object from a name and spec, using the
         appropriate class based on the attribute type.
@@ -229,9 +245,9 @@ class BuildActionAttribute(object):
         attr_type: str = cls._find_attr_config(name, action_spec).get('type')
         subclass: Optional[type[BuildActionAttribute]] = cls._find_attr_class(attr_type)
         if subclass:
-            return subclass(name, action_spec)
+            return subclass(name, action_spec, action_id)
         else:
-            return BuildActionAttribute(name, action_spec)
+            return BuildActionAttribute(name, action_spec, action_id)
 
     @classmethod
     def _find_attr_class(cls, attr_type):
@@ -244,11 +260,13 @@ class BuildActionAttribute(object):
                 cls._attr_class_map[attr_type] = subclass
                 return subclass
 
-    def __init__(self, name: str, action_spec: BuildActionSpec = None):
+    def __init__(self, name: str, action_spec: BuildActionSpec = None, action_id: str = None):
         # the name of the attribute
         self._name = name
-        # the action spec with config containing information about the attribute
+        # the action spec with the attributes definition
         self.action_spec = action_spec
+        # the action id of the spec, provided sometimes alone when the spec is not found
+        self.action_id = self.action_spec.id if self.action_spec else action_id
         # the cached config for this attribute
         self._attr_config: Optional[dict] = None
         # the current value of the attribute
@@ -259,7 +277,7 @@ class BuildActionAttribute(object):
         self._invalid_reason: Optional[str] = None
 
     def __repr__(self):
-        return f"<{self.__class__.__name__} '{self.get_action_id()}.{self.name}'>"
+        return f"<{self.__class__.__name__} '{self.action_id}.{self.name}'>"
 
     def is_valid_attribute(self) -> bool:
         """
@@ -274,15 +292,11 @@ class BuildActionAttribute(object):
         Find and return the config for an attribute from an action spec.
         """
         if action_spec:
-            attrs_config = action_spec.config.get('attrs', [])
+            attrs_config = action_spec.attrs
             for attr_config in attrs_config:
                 if attr_config.get('name') == attr_name:
                     return attr_config
         return {}
-
-    def get_action_id(self) -> Optional[str]:
-        if self.action_spec:
-            return self.action_spec.get_action_id()
 
     @property
     def config(self) -> dict:
@@ -338,7 +352,7 @@ class BuildActionAttribute(object):
     def set_value(self, new_value):
         if self.is_acceptable_value(new_value):
             if new_value == self.default_value:
-                # clear the value when default, so it doesn't serialize
+                # clear the value when defaulted, so it doesn't serialize
                 self.clear_value()
             else:
                 self._value = new_value
@@ -504,7 +518,6 @@ class BuildActionOptionAttribute(BuildActionAttribute):
         if value < 0 or value >= num_options:
             self._invalid_reason = 'out_of_range'
             self._is_valid = False
-            print(f'0 <= {self.get_value()} < {num_options}, {self}')
         else:
             self._invalid_reason = None
             self._is_valid = True
@@ -568,14 +581,14 @@ class BuildActionData(object):
         # the unique id of this action, used to identify the action when serialized
         self._action_id: str = action_id
         # the BuildActionSpec containing config and other info
-        self._action_spec: Optional[BuildActionSpec] = None
+        self._spec: Optional[BuildActionSpec] = None
         # true if the action_id is set, but spec was not found, indicating an error
         self._is_missing_spec = False
         # the list of attributes and their values for this action
+        # not to be confused with their definitions which are in `self.attrs`
         self._attrs: dict[str, BuildActionAttribute] = {}
 
-        if self._action_id:
-            self.find_action_spec()
+        self.find_spec()
 
         self._init_attrs()
 
@@ -588,9 +601,10 @@ class BuildActionData(object):
         """
         # clear existing attributes
         self._attrs = {}
-        # add all attributes in the config
-        attr_names = [a.get('name') for a in self.config.get('attrs', [])]
-        self.add_attrs(attr_names)
+        # add attribute instances for all attribute definitions in the spec
+        if self.spec:
+            attr_names = [a.get('name') for a in self.spec.attrs]
+            self.add_attrs(attr_names)
 
     @property
     def action_id(self) -> str:
@@ -600,30 +614,24 @@ class BuildActionData(object):
         return self._action_id
 
     @property
-    def action_spec(self) -> BuildActionSpec:
+    def spec(self) -> BuildActionSpec:
         """
         Return the BuildActionSpec for this action.
         """
-        return self._action_spec
-
-    @property
-    def config(self) -> dict:
-        if self._action_spec:
-            return self._action_spec.config
-        return {}
+        return self._spec
 
     def is_valid(self) -> bool:
         """
         Return True if there is a valid spec for this action
         """
-        return self._action_spec is not None
+        return self._spec is not None
 
     def is_action_id_valid(self) -> bool:
         return self._action_id is not None
 
     def is_missing_spec(self) -> bool:
         """
-        Is there no action spec config for the current action_id?
+        Is there no action spec for the current action_id?
         This may be true if an action was renamed or not registered.
         """
         return self._is_missing_spec
@@ -638,23 +646,17 @@ class BuildActionData(object):
             if not attr.is_value_valid():
                 return True
 
-    def get_short_action_id(self) -> str:
-        """
-        Return the last part of the action's id, after any '.'
-        """
-        if self._action_id:
-            return self._action_id.split('.')[-1]
-
-    def find_action_spec(self):
+    def find_spec(self):
         """
         Find the action spec for this data using the current action_id.
         """
-        self._action_spec = BuildActionRegistry.get().find_action(self._action_id)
-        if self._action_spec:
-            self._is_missing_spec = False
-        else:
-            self._is_missing_spec = True
-            LOG.warning(f"Failed to find action spec for '%s'", self._action_id)
+        if self._action_id:
+            self._spec = BuildActionRegistry.get().find_action(self._action_id)
+            if self._spec:
+                self._is_missing_spec = False
+            else:
+                self._is_missing_spec = True
+                LOG.warning(f"Failed to find action spec for '%s'", self._action_id)
 
     def num_attrs(self) -> int:
         """
@@ -680,7 +682,7 @@ class BuildActionData(object):
         Add an action attribute. Does nothing if the attribute already exists.
         """
         if name not in self._attrs:
-            attr = BuildActionAttribute.from_spec(name, self._action_spec)
+            attr = BuildActionAttribute.from_spec(name, self._spec, self._action_id)
             self._attrs[name] = attr
             return attr
         else:
@@ -722,11 +724,10 @@ class BuildActionData(object):
         data = UnsortableOrderedDict()
         data['id'] = self._action_id
         # serialize all attributes
-        if self.is_valid():
-            for attr_name, attr in self._attrs.items():
-                # don't serialize default attribute values
-                if attr.is_value_set():
-                    data[attr_name] = attr.get_value()
+        for attr_name, attr in self._attrs.items():
+            # don't serialize default attribute values
+            if attr.is_value_set():
+                data[attr_name] = attr.get_value()
         return data
 
     def deserialize(self, data):
@@ -739,8 +740,7 @@ class BuildActionData(object):
         self._action_id = data['id']
 
         # update spec
-        if self._action_id:
-            self.find_action_spec()
+        self.find_spec()
 
         # reset attributes
         self._init_attrs()
@@ -751,14 +751,20 @@ class BuildActionData(object):
                 if attr_name in data:
                     attr.set_value(data[attr_name])
 
-        elif len(data) > 1:
-            # if spec wasn't found didn't load, don't throw away the attribute values
+        else:
+            # if spec wasn't found, don't throw away the attribute values
             LOG.warning("Failed to find BuildActionSpec '%s', action values will be preserved.", self._action_id)
+
+            # do a fake init of attributes based solely on the data
+            for attr_name in data.keys():
+                if attr_name not in self._attrs and attr_name not in ('id', 'variantAttrs', 'variants'):
+                    self.add_attr(attr_name)
+
+            # set attribute values
             for attr_name, value in data.items():
-                if attr_name not in self._attrs:
-                    attr = BuildActionAttribute.from_spec(attr_name)
+                attr = self.get_attr(attr_name)
+                if attr:
                     attr.set_value(value)
-                    self._attrs[attr_name] = value
 
 
 class BuildActionDataVariant(BuildActionData):
@@ -790,7 +796,7 @@ class BuildActionDataVariant(BuildActionData):
     def serialize(self):
         data = super(BuildActionDataVariant, self).serialize()
         # store the subset of attribute names available to this variant.
-        data['variantAttrs'] = self.get_attr_names()
+        data['variantAttrs'] = list(self.get_attr_names())
         return data
 
     def deserialize(self, data):
@@ -826,7 +832,7 @@ class BuildActionProxy(BuildActionData):
         """
         Return the display name of the BuildAction.
         """
-        return self.config.get('displayName', self.get_short_action_id())
+        return self.spec.display_name
 
     def get_color(self) -> LinearColor:
         """
@@ -835,18 +841,7 @@ class BuildActionProxy(BuildActionData):
         if self.is_missing_spec():
             return LinearColor(0.8, 0, 0)
         else:
-            return LinearColor.from_seq(self.config.get('color', [1, 1, 1]))
-
-    def get_icon_file(self):
-        """
-        Return the full path to icon for this build action
-        """
-        filename = self.config.get('icon')
-        config_file = self.config.get('configFile')
-        if config_file:
-            action_dir = os.path.dirname(config_file)
-            if filename:
-                return os.path.join(action_dir, filename)
+            return LinearColor.from_seq(self.spec.color)
 
     def has_warnings(self):
         """
@@ -1020,7 +1015,7 @@ class BuildActionProxy(BuildActionData):
         self._variant_attr_names = data.get('variantAttrs', [])
         self._variants = [self.deserialize_variant(v) for v in data.get('variants', [])]
 
-    def serialize_variant(self, variant):
+    def serialize_variant(self, variant: BuildActionDataVariant):
         """
         Serialize a variant for storing in this action's data.
         Removes redundant information that is the same for all variants like id and attribute list.
@@ -1031,7 +1026,7 @@ class BuildActionProxy(BuildActionData):
         del data['variantAttrs']
         return data
 
-    def deserialize_variant(self, data):
+    def deserialize_variant(self, data: dict):
         """
         Deserialize a variant from this action's 'variantAttrs' data.
         Injects missing information that are the same for all variants like id and attribute list.
@@ -1050,9 +1045,9 @@ class BuildActionProxy(BuildActionData):
         for each set of variant attribute values.
         """
         if not self.is_action_id_valid():
-            raise Exception("BuildActionProxy has no valid action id: %s" % self)
+            raise Exception(f"BuildActionProxy has no action id: {self}")
         if self.is_missing_spec():
-            raise Exception("Failed to find BuildAction config: %s" % self.action_id)
+            raise Exception(f"Failed to find BuildActionSpec for: {self.action_id}")
 
         if self.is_variant_action():
             # warn if there are invariant base values set on variant attrs
@@ -1084,6 +1079,28 @@ class BuildAction(BuildActionData):
     Optionally override `validate` to perform operations that can check
     the validity of the actions properties.
     """
+
+    # the globally unique id for the action
+    id = None
+
+    # the display name of the action as seen in the UI
+    display_name = 'Unknown'
+
+    # the description of the action
+    description = ''
+
+    # the color of the action for highlighting
+    color = (1, 1, 1)
+
+    # the menu category where the action will be grouped
+    category = 'General'
+
+    # the list of attribute definition configs for this action
+    # should be of at least the form: {'name': 'myAttr', 'type':BuildActionAttributeType.BOOL}
+    attr_definitions: list[dict] = []
+
+    # the custom form widget class to display in the action editor for this action
+    editorFormClass: Optional[type] = None
 
     @staticmethod
     def from_action_id(action_id: str) -> Optional['BuildAction']:
@@ -1122,7 +1139,8 @@ class BuildAction(BuildActionData):
         return action
 
     def __init__(self):
-        super(BuildAction, self).__init__()
+        # action id is hard coded for on all BuildAction subclasses, so use it to init super
+        super(BuildAction, self).__init__(self.id)
 
         import pymel.core as pm
 
@@ -1134,14 +1152,6 @@ class BuildAction(BuildActionData):
         # rig is only available during build
         self.rig: Optional[pm.nt.Transform] = None
 
-        # retrieve action spec using this class
-        self._action_spec = BuildActionRegistry.get().find_action_by_class(self.__class__)
-        if self._action_spec:
-            self._action_id = self._action_spec.get_action_id()
-        else:
-            LOG.warning("Constructed an unregistered BuildAction: %s, cannot retrieve config", self.__class__.__name__)
-            return
-
     def __repr__(self):
         return f"<{self.__class__.__name__}>"
 
@@ -1151,12 +1161,6 @@ class BuildAction(BuildActionData):
             return attr.get_value()
         else:
             raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'")
-
-    def find_action_spec(self):
-        # do nothing. BuildAction classes automatically retrieve
-        # their config on init using the class itself to look up
-        # a registered config.
-        pass
 
     def get_logger_name(self):
         """
@@ -1261,17 +1265,15 @@ class BuildAction(BuildActionData):
 
     def validate(self):
         """
-        Validate this build action. Can be implemented
-        in subclasses to check the action's config data
-        and raise BuildActionErrors if anything is invalid.
+        Validate this build action. Can be implemented in subclasses to check the
+        action's attribute values and raise BuildActionErrors if anything is invalid.
         """
         pass
 
     def run(self):
         """
-        Run this build action. Should be implemented
-        in subclasses to perform the rigging operation
-        that is desired.
+        Perform the main functionality of this build action.
+        Attribute values can be accessed using `self.myAttr`.
         """
         raise NotImplementedError
 
@@ -1456,15 +1458,6 @@ class BuildStep(object):
         if self._action_proxy:
             return self._action_proxy.get_color()
         return LinearColor(1.0, 1.0, 1.0)
-
-    def get_icon_file(self):
-        """
-        Return the full path to this build step's icon
-        """
-        if self._action_proxy:
-            return self._action_proxy.get_icon_file()
-        else:
-            pass
 
     def get_full_path(self):
         """
@@ -1672,7 +1665,6 @@ class BuildStep(object):
         """
         Add a validation exception that was encountered when running a build validator.
         """
-        print(f"added exception '{exc}' to {self}")
         self._validate_results.append(exc)
 
     def has_validation_errors(self) -> bool:

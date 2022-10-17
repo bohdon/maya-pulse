@@ -3,16 +3,13 @@ import pymel.core as pm
 import pulse.nodes
 from pulse.vendor import pymetanode as meta
 from pulse.buildItems import BuildAction, BuildActionError
+from pulse.animinterface import ANIM_CTL_METACLASS
 from pulse.ui.contextmenus import PulseNodeContextSubMenu
 
 try:
     import resetter
 except ImportError:
     resetter = None
-
-# TODO: move config into python, so this doesn't have to be defined twice
-# the meta class for anim controls, should match controlMetaClass in the action config
-ANIM_CTL_METACLASS = 'pulse_animcontrol'
 
 
 class AnimControlAction(BuildAction):
@@ -27,9 +24,9 @@ class AnimControlAction(BuildAction):
             raise BuildActionError('controlNode is not set')
 
     def run(self):
-        # add meta class to the control, making it
+        # add metaclass to the control, making it
         # easy to search for by anim tools, etc
-        meta.setMetaData(self.controlNode, self.config['controlMetaClass'], {})
+        meta.setMetaData(self.controlNode, ANIM_CTL_METACLASS, {})
 
         if self.zeroOutMethod == 1:
             # freeze offset matrix
@@ -69,7 +66,6 @@ class AnimControlContextSubMenu(PulseNodeContextSubMenu):
 
     @classmethod
     def shouldBuildSubMenu(cls, menu) -> bool:
-        # TODO: get access to config here, or move config into python for easier use
         return cls.isNodeWithMetaClassSelected(ANIM_CTL_METACLASS)
 
     def buildMenuItems(self):
