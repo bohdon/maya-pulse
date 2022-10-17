@@ -4,10 +4,22 @@ import pulse.nodes
 import pulse.spaces
 from pulse.vendor import pymetanode as meta
 from pulse.buildItems import BuildAction, BuildActionError
+from pulse.buildItems import BuildActionAttributeType as AttrType
 from pulse.ui.contextmenus import PulseNodeContextSubMenu
 
 
 class CreateSpaceAction(BuildAction):
+    id = 'Pulse.CreateSpace'
+    display_name = 'Create Space'
+    description = 'Create a Space that can be used for dynamic constraints'
+    color = (.4, .42, .8)
+    category = 'Spaces'
+    sort_order = 0
+
+    attr_definitions = [
+        dict(name='node', type=AttrType.NODE),
+        dict(name='name', type=AttrType.STRING),
+    ]
 
     def validate(self):
         if not self.node:
@@ -21,6 +33,20 @@ class CreateSpaceAction(BuildAction):
 
 
 class SpaceConstrainAction(BuildAction):
+    id = 'Pulse.SpaceConstrain'
+    display_name = 'Space Constrain'
+    description = 'Creates a dynamic constraint to one or more defined spaces'
+    color = (.4, .42, .8)
+    category = 'Spaces'
+    sort_order = 1
+
+    attr_definitions = [
+        dict(name='node', type=AttrType.NODE),
+        dict(name='spaces', type=AttrType.STRING_LIST),
+        dict(name='useOffsetMatrix', type=AttrType.BOOL, value=True,
+             description="If true, constrain the node using offsetParentMatrix, "
+                         "and avoid creating anextra offset transform.")
+    ]
 
     def get_min_api_version(self):
         if self.useOffsetMatrix:
@@ -45,6 +71,17 @@ class SpaceConstrainAction(BuildAction):
 
 
 class ApplySpacesAction(BuildAction):
+    id = 'Pulse.ApplySpaces'
+    display_name = 'Apply Spaces'
+    description = 'Resolves and connects all Space Constraints in the rig'
+    color = (.4, .42, .8)
+    category = 'Spaces'
+    sort_order = 2
+
+    attr_definitions = [
+        dict(name='createWorldSpace', type=AttrType.BOOL, value=True,
+             description="Automatically create a 'world' space node.")
+    ]
 
     def validate(self):
         pass

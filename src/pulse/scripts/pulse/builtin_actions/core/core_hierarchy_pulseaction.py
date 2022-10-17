@@ -14,7 +14,7 @@ class BuildCoreHierarchyAction(BuildAction):
     """
 
     id = 'Pulse.BuildCoreHierarchy'
-    displayName = 'Build Core Hierarchy'
+    display_name = 'Build Core Hierarchy'
     description = 'Gathers nodes into a core hierarchy of the rig'
     category = 'Core'
     attr_definitions = [

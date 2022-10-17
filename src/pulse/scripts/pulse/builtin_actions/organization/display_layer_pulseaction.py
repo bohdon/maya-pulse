@@ -9,6 +9,7 @@ class DisplayLayerAction(BuildAction):
     display_name = 'Display Layer'
     description = 'Create a display layer'
     category = 'Organization'
+
     attr_definitions = [
         dict(name='name', type=AttrType.STRING, description='The name of the display layer'),
         dict(name='objects', type=AttrType.NODE_LIST, description='List of objects to add to the display layer'),

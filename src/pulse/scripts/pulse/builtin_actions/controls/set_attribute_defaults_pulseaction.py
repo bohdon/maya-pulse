@@ -1,5 +1,6 @@
 import pulse.nodes
 from pulse.buildItems import BuildAction, BuildActionError
+from pulse.buildItems import BuildActionAttributeType as AttrType
 
 try:
     import resetter

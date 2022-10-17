@@ -4,6 +4,7 @@ import pulse.nodes
 import pulse.utilnodes
 from pulse.vendor import pymetanode as meta
 from pulse.buildItems import BuildAction, BuildActionError
+from pulse.buildItems import BuildActionAttributeType as AttrType
 
 MAGIC_FEET_CTL_METACLASSNAME = 'pulse_magicfeet_ctl'
 MAGIC_FEET_LIFT_CTL_METACLASSNAME = 'pulse_magicfeet_lift_ctl'

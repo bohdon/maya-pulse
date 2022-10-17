@@ -6,6 +6,7 @@ from importlib.machinery import SourceFileLoader
 import pymel.core as pm
 
 from pulse.buildItems import BuildAction, BuildActionError
+from pulse.buildItems import BuildActionAttributeType as AttrType
 from pulse.vendor.Qt import QtWidgets
 from pulse.ui.actioneditor import BuildActionProxyForm
 from pulse import sourceeditor
@@ -24,55 +25,6 @@ def {functionName}(action: BuildAction):
     print(action.rig)
     print(action.nodes)
 """
-
-
-class PythonAction(BuildAction):
-
-    def validate(self):
-        # TODO: remove since required attributes should be handled generally instead of in each actions validate()
-        if not self.function:
-            raise BuildActionError("function name is required")
-
-        scene_file_name = pm.sceneName()
-        if not scene_file_name:
-            raise BuildActionError("File is not saved, could not determine scripts file path")
-
-        module_filepath = os.path.splitext(scene_file_name)[0] + '_scripts.py'
-
-        if not os.path.isfile(module_filepath):
-            raise BuildActionError(f"Scripts file does not exist: {module_filepath}")
-
-        func = self.import_function(self.function, module_filepath)
-        if func is None:
-            raise BuildActionError(
-                "function '%s' was not found in scripts file: %s" % (self.function, module_filepath))
-
-    def run(self):
-        # TODO: use actual blueprint file, not maya scene
-        scene_file_path = self.builder.scene_file_path
-        if not scene_file_path:
-            raise BuildActionError("Failed to get blueprint file name from builder")
-
-        module_file_path = os.path.splitext(scene_file_path)[0] + '_scripts.py'
-        func = self.import_function(self.function, module_file_path)
-        func(self)
-
-    def import_function(self, function_name, module_file_path):
-        """
-        Import a module by full path, and return a function from the loaded module by name
-        """
-        module_name = os.path.splitext(os.path.basename(module_file_path))[0]
-
-        # delete the module if it already exists (so that it's re-imported)
-        if module_name in sys.modules:
-            del sys.modules[module_name]
-
-        module = SourceFileLoader(module_name, module_file_path).load_module()
-
-        if hasattr(module, function_name):
-            attr = getattr(module, function_name)
-            if callable(attr):
-                return attr
 
 
 class PythonActionForm(BuildActionProxyForm):
@@ -130,3 +82,64 @@ class PythonActionForm(BuildActionProxyForm):
         new_content = FUNCTION_TEMPLATE.format(functionName=functionName)
         with open(filePath, 'a') as fp:
             fp.write(new_content)
+
+
+class PythonAction(BuildAction):
+    id = 'Pulse.Python'
+    display_name = 'Python'
+    description = 'Run a python script'
+    category = 'Scripts'
+    editorFormClass = PythonActionForm
+    attr_definitions = [
+        dict(name='function', type=AttrType.STRING, value='my_function',
+             description="The name of the function to run. Should accept a single argument for the"
+                         "BuildAction being run."),
+        dict(name='nodes', type=AttrType.NODE_LIST, optional=True,
+             description="An optional list of nodes to pass in as arguments to the script.")
+    ]
+
+    def validate(self):
+        # TODO: remove since required attributes should be handled generally instead of in each actions validate()
+        if not self.function:
+            raise BuildActionError("function name is required")
+
+        scene_file_name = pm.sceneName()
+        if not scene_file_name:
+            raise BuildActionError("File is not saved, could not determine scripts file path")
+
+        module_filepath = os.path.splitext(scene_file_name)[0] + '_scripts.py'
+
+        if not os.path.isfile(module_filepath):
+            raise BuildActionError(f"Scripts file does not exist: {module_filepath}")
+
+        func = self.import_function(self.function, module_filepath)
+        if func is None:
+            raise BuildActionError(
+                "function '%s' was not found in scripts file: %s" % (self.function, module_filepath))
+
+    def run(self):
+        # TODO: use actual blueprint file, not maya scene
+        scene_file_path = self.builder.scene_file_path
+        if not scene_file_path:
+            raise BuildActionError("Failed to get blueprint file name from builder")
+
+        module_file_path = os.path.splitext(scene_file_path)[0] + '_scripts.py'
+        func = self.import_function(self.function, module_file_path)
+        func(self)
+
+    def import_function(self, function_name, module_file_path):
+        """
+        Import a module by full path, and return a function from the loaded module by name
+        """
+        module_name = os.path.splitext(os.path.basename(module_file_path))[0]
+
+        # delete the module if it already exists (so that it's re-imported)
+        if module_name in sys.modules:
+            del sys.modules[module_name]
+
+        module = SourceFileLoader(module_name, module_file_path).load_module()
+
+        if hasattr(module, function_name):
+            attr = getattr(module, function_name)
+            if callable(attr):
+                return attr

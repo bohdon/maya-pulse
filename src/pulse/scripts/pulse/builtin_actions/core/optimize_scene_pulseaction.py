@@ -2,6 +2,7 @@
 import pymel.core as pm
 
 from pulse.buildItems import BuildAction
+from pulse.buildItems import BuildActionAttributeType as AttrType
 
 
 class OptimizeSceneAction(BuildAction):

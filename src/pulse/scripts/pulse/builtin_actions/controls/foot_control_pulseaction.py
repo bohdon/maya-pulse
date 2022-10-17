@@ -4,6 +4,7 @@ import pulse.nodes
 from pulse.vendor import pymetanode as meta
 from pulse import utilnodes, nodes
 from pulse.buildItems import BuildAction, BuildActionError
+from pulse.buildItems import BuildActionAttributeType as AttrType
 from pulse.ui.contextmenus import PulseNodeContextSubMenu
 
 FOOT_CTL_METACLASSNAME = 'pulse_foot_ctl'

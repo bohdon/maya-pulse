@@ -6,9 +6,47 @@ from maya import cmds
 import pulse.joints
 import pulse.skins
 from pulse.buildItems import BuildAction, BuildActionError
+from pulse.buildItems import BuildActionAttributeType as AttrType
 
 
 class BindSkinAction(BuildAction):
+    id = 'Pulse.BindSkin'
+    display_name = 'Bind Skin'
+    description = 'Binds a mesh to a joint hierarchy'
+    color = (1.0, .85, 0.5)
+    category = 'Deformers'
+
+    attr_definitions = [
+        dict(name='meshes', type=AttrType.NODE_LIST,
+             description="Meshes to bind"),
+        dict(name='jointHierarchies', type=AttrType.NODE_LIST, optional=True,
+             description="List of joint hierarchies to bind"),
+        dict(name='excludeJoints', type=AttrType.NODE_LIST, optional=True,
+             description="List of joints to exclude from Joint Hierarchies"),
+        dict(name='explicitJoints', type=AttrType.NODE_LIST, optional=True,
+             description="List of explicit joints to bind. If Joint Hierarchies is also used, both sets of "
+                         "joints will be combined."),
+        dict(name='isRenderGeo', type=AttrType.BOOL, value=True,
+             description="Whether the bound meshes represent rendered geometry, will affect how joints are "
+                         "stored in the rigs meta data."),
+        dict(name='bindMethod', type=AttrType.OPTION, value=1,
+             options=['Closest Distance', 'Closest in Hierarchy', 'Heat Map', 'Geodesic Voxel'],
+             description="Binding algorithm to use."),
+        dict(name='skinMethod', type=AttrType.OPTION, value=0,
+             options=['Classic Linear', 'Dual Quaternion', 'Weighted Blend'],
+             description="List of joints to exclude from Joint Hierarchies"),
+        dict(name='normalizeWeights', type=AttrType.OPTION, value=1, options=['None', 'Interactive', 'Post'],
+             description="The weight normalization mode to apply."),
+        dict(name='weightDistribution', type=AttrType.OPTION, value=1, options=['Distance', 'Neighbors'],
+             description="How to redistribute weights when normalizing, such as when painting subtractive values."),
+        dict(name='maxInfluences', type=AttrType.INT, value=4, min=1, max=30,
+             description="How to redistribute weights when normalizing, such as when painting subtractive values."),
+        dict(name='maintainMaxInfuence', type=AttrType.BOOL, value=True),
+        dict(name='dropoffRate', type=AttrType.FLOAT, value=4.0, min=0.1, max=10.0),
+        dict(name='heatmapFalloff', type=AttrType.FLOAT, value=0.68, min=0.0, max=1.0),
+        dict(name='removeUnusedInfluences', type=AttrType.BOOL, value=False),
+
+    ]
 
     @classmethod
     def util_fromSelection(cls):
@@ -85,6 +123,18 @@ class BindSkinAction(BuildAction):
 
 
 class ApplySkinWeightsAction(BuildAction):
+    id = 'Pulse.ApplySkinWeights'
+    display_name = 'Apply Skin Weights'
+    description = 'Applies data from a .weights file to a skinned mesh'
+    color = (1.0, .85, 0.5)
+    category = 'Deformers'
+
+    attr_definitions = [
+        dict(name='meshes', type=AttrType.NODE_LIST,
+             description="The meshes to apply weights to."),
+        dict(name='fileName', type=AttrType.STRING,
+             description="The name of the .weights file, relative to the blueprint."),
+    ]
 
     def validate(self):
         if not len(self.meshes):

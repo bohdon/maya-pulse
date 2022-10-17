@@ -2,6 +2,7 @@ import pymel.core as pm
 
 import pulse.nodes
 from pulse.buildItems import BuildAction, BuildActionError
+from pulse.buildItems import BuildActionAttributeType as AttrType
 
 
 class SimpleConstrainAction(BuildAction):

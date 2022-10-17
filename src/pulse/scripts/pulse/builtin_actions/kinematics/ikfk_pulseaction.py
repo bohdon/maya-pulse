@@ -6,12 +6,33 @@ import pulse.nodes
 import pulse.utilnodes
 from pulse.vendor import pymetanode as meta
 from pulse.buildItems import BuildAction, BuildActionError
+from pulse.buildItems import BuildActionAttributeType as AttrType
 from pulse.ui.contextmenus import PulseNodeContextSubMenu
 
 IKFK_CONTROL_METACLASS = 'pulse_ikfk_control'
 
 
 class ThreeBoneIKFKAction(BuildAction):
+    id = 'Pulse.ThreeBoneIKFK'
+    display_name = '3-Bone IK FK'
+    description = 'Creates a 3-bone IK chain that can switch to FK'
+    color = (.4, .6, .8)
+    category = 'Kinematics'
+
+    attr_definitions = [
+        dict(name='endJoint', type=AttrType.NODE,
+             description="The end joint of the IK chain. Mid and root joint are retrieved automatically"),
+        dict(name='rootCtl', type=AttrType.NODE, description="The root joint control"),
+        dict(name='midCtlIk', type=AttrType.NODE,
+             description="The mid joint control during IK (the pole vector control)"),
+        dict(name='midCtlFk', type=AttrType.NODE, description="The mid joint control during FK"),
+        dict(name='endCtlIk', type=AttrType.NODE, description="The end joint control during IK"),
+        dict(name='endCtlFk', type=AttrType.NODE, description="The end joint control during FK"),
+        dict(name='addPoleLine', type=AttrType.BOOL, value=True,
+             description="Add a curve shape to the mid FK control that draws a line to the bone"),
+        dict(name='extraControls', type=AttrType.NODE, optional=True,
+             description="Additional controls to add ikfk metadata to, so they can be used with ikfk switching utils"),
+    ]
 
     def validate(self):
         if not self.endJoint:

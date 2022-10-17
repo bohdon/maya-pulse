@@ -1,6 +1,6 @@
 import pulse.references
 from pulse.buildItems import BuildAction
-from pulse.buildItems import BuildActionAttributeType as AttributeType
+from pulse.buildItems import BuildActionAttributeType as AttrType
 
 
 class ImportReferencesAction(BuildAction):
@@ -9,9 +9,9 @@ class ImportReferencesAction(BuildAction):
     description = 'Import all file references into the scene.'
     category = 'Core'
     attr_definitions = [
-        dict(name='loadUnloaded', type=AttributeType.BOOL, value=True),
-        dict(name='depthLimit', type=AttributeType.INT, value=10, min=1),
-        dict(name='removeNamespace', type=AttributeType.BOOL, value=True),
+        dict(name='loadUnloaded', type=AttrType.BOOL, value=True),
+        dict(name='depthLimit', type=AttrType.INT, value=10, min=1),
+        dict(name='removeNamespace', type=AttrType.BOOL, value=True),
     ]
 
     def run(self):
