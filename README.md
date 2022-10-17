@@ -77,10 +77,8 @@ In the above example, `my_pulse_actions` is a package somewhere on sys.path that
 my_pulse_actions/
   __init__.py
   my_action_pulseaction.py
-  my_action.pulseaction.yaml
   some_folder/
-    my_otheraction_pulseaction.py
-    my_otheraction.pulseaction.yaml
+    my_other_action_pulseaction.py
 ```
 
 Note that sub folders don't need to be python packages (there's no `some_folder/__init__.py`). Each `*_pulseaction.py`
