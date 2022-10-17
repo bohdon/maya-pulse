@@ -11,6 +11,7 @@ from typing import Optional
 
 import maya.cmds as cmds
 
+from .. import sourceeditor
 from ..buildItems import BuildActionProxy, BuildStep, BuildActionData, BuildActionAttribute
 from ..vendor.Qt import QtCore, QtWidgets, QtGui
 from ..colors import LinearColor
@@ -85,14 +86,14 @@ class BuildStepForm(QtWidgets.QWidget):
             self.hide()
             return
 
-        step = self.step()
+        step = self.getStep()
         if not step:
             return
 
         if self.displayNameLabel:
             self.displayNameLabel.setText(self.getStepDisplayName(step))
 
-    def step(self) -> BuildStep:
+    def getStep(self) -> BuildStep:
         """
         Return the BuildStep being edited by this form
         """
@@ -111,7 +112,7 @@ class BuildStepForm(QtWidgets.QWidget):
         Create a basic header and body layout to contain the generic
         or action proxy forms.
         """
-        step = self.step()
+        step = self.getStep()
         if not step:
             return
 
@@ -139,7 +140,7 @@ class BuildStepForm(QtWidgets.QWidget):
         self.setupBodyUi(bodyFrame)
 
     def setupHeaderUi(self, parent):
-        step = self.step()
+        step = self.getStep()
         color = step.get_color()
         colorStr = color.as_style()
 
@@ -156,8 +157,15 @@ class BuildStepForm(QtWidgets.QWidget):
         self.displayNameLabel.setStyleSheet(f"color: {colorStr}; background-color: {bgColorStr}")
         layout.addWidget(self.displayNameLabel)
 
+        if step.is_action():
+            editBtn = QtWidgets.QToolButton(parent)
+            editBtn.setIcon(QtGui.QIcon(':/res/file_pen.svg'))
+            editBtn.setStatusTip('Edit this actions python script.')
+            editBtn.clicked.connect(self._openActionScriptInSourceEditor)
+            layout.addWidget(editBtn)
+
     def setupBodyUi(self, parent):
-        step = self.step()
+        step = self.getStep()
 
         layout = QtWidgets.QVBoxLayout(parent)
         layout.setMargin(6)
@@ -169,6 +177,14 @@ class BuildStepForm(QtWidgets.QWidget):
                 formCls = BuildActionProxyForm
             self.actionForm = formCls(self.index, parent)
             layout.addWidget(self.actionForm)
+
+    def _openActionScriptInSourceEditor(self):
+        """
+        Open the python file for this action in a source editor.
+        """
+        step = self.getStep()
+        if step.is_action() and step.action_proxy.action_spec:
+            sourceeditor.open_module(step.action_proxy.action_spec.module)
 
 
 class BuildActionDataForm(QtWidgets.QWidget):

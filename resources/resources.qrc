@@ -1,7 +1,5 @@
 <RCC>
   <qresource prefix="res">
-    <file>palette.svg</file>
-    <file>spell_check.svg</file>
     <file>action_editor.svg</file>
     <file>angle_left.svg</file>
     <file>bars_staggered.svg</file>
@@ -9,11 +7,16 @@
     <file>check.svg</file>
     <file>check_small.svg</file>
     <file>circle_left.svg</file>
+    <file>code.svg</file>
     <file>design_toolkit.svg</file>
     <file>diamond.svg</file>
+    <file>file_code.svg</file>
+    <file>file_pen.svg</file>
     <file>gear.svg</file>
     <file>minus.svg</file>
+    <file>palette.svg</file>
     <file>plus.svg</file>
+    <file>spell_check.svg</file>
     <file>step_action.svg</file>
     <file>step_action_disabled.svg</file>
     <file>step_group.svg</file>
