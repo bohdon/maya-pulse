@@ -1,8 +1,9 @@
 """
 The built-in Pulse actions package.
-
-Action modules are not connected to this package, but are instead imported individually and dynamically.
-This allows more easily adding new actions without needing to maintain the python package.
-
-The package itself is simply used to locate the directory where the actions can be found.
 """
+
+from pulse import loader
+
+# dynamically import all subpackages and submodules recursively so that
+# actions can be easily added and removed without having to maintain package imports
+loader.import_all_submodules(__name__)

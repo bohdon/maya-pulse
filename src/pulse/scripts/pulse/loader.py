@@ -6,14 +6,50 @@ import importlib
 import logging
 import os
 import sys
+import types
 from fnmatch import fnmatch
 from typing import List
 
 from .buildItems import BuildAction, BuildActionSpec, BuildActionRegistry
-from .vendor import yaml
-from . import builtin_actions
 
 LOG = logging.getLogger(__name__)
+
+
+def import_all_submodules(pkg_name: str):
+    """
+    Import all python modules within a package recursively.
+    Used to make sure all build actions are loaded within an actions package
+    so that they can be found by the loader.
+
+    Designed to be called in the root __init__.py of every actions package:
+
+        > from pulse import loader
+        > loader.import_all_submodules(__name__)
+
+    Args:
+        pkg_name: The name of python package where everything will be imported
+    """
+    # get the full path to the pkg
+    pkg_module = sys.modules[pkg_name]
+    pkg_path = pkg_module.__path__[0]
+
+    # find all __init__.py files recursively
+    for base_dir, dir_names, file_names in os.walk(pkg_path):
+        # potential name of a sub-package
+        if os.path.basename(base_dir) in ('__pycache__',):
+            continue
+
+        sub_pkg_name = os.path.relpath(base_dir, pkg_path).replace('/', '.').replace('\\', '.')
+
+        for file_name in file_names:
+            if file_name in ('__init__.py', '__main__.py'):
+                continue
+
+            if fnmatch(file_name, '*.py'):
+                module_name = os.path.splitext(file_name)[0]
+                # leading dot to make sure it's a relative import to the root package
+                sub_module_name = f'.{sub_pkg_name}.{module_name}'
+                importlib.import_module(sub_module_name, pkg_name)
 
 
 def _is_same_python_file(path_a, path_b):
@@ -37,8 +73,8 @@ def reload_actions():
 
 class BuildActionPackageRegistry(object):
     """
-    A registry of packages or directories where actions should be loaded.
-    Also keeps track of whether the packages have been loaded, and can reload packages when necessary.
+    A registry of packages where actions should be loaded.
+    Also keeps track of whether all packages have been loaded, and can reload packages when necessary.
     """
 
     # the shared registry instance, accessible from `BuildActionPackageRegistry.get()`
@@ -58,23 +94,22 @@ class BuildActionPackageRegistry(object):
         self._registered_actions: dict[str, BuildActionSpec] = {}
         # list of python packages containing pulse actions to load.
         self.action_packages = []
-        # list of directories containing pulse actions to load.
-        self.action_dirs = []
         # whether to include the builtin pulse actions package or not
         self.use_builtin_actions = True
         # true if the packages in this registry have been loaded
         self.has_loaded_actions = False
 
         if self.use_builtin_actions:
-            self.add_package(builtin_actions)
+            self._add_builtin_actions()
+
+    def _add_builtin_actions(self):
+        from . import builtin_actions
+        self.add_package(builtin_actions)
 
     def add_package(self, package, reload=False):
         """
         Add an actions package to the registry.
         Does not load the actions, intended to be called during startup.
-
-        Action modules are not connected to the package, but are instead imported individually and dynamically.
-        The package itself is simply used to locate the directory where the actions can be found.
         """
         if package not in self.action_packages:
             self.action_packages.append(package)
@@ -82,23 +117,11 @@ class BuildActionPackageRegistry(object):
         if reload:
             self.reload_actions()
 
-    def add_dir(self, actions_dir, reload=False):
-        """
-        Add an actions directory actions to the registry.
-        Does not load the actions, intended to be called during startup.
-        """
-        if actions_dir not in self.action_dirs:
-            self.action_dirs.append(actions_dir)
-
-        if reload:
-            self.reload_actions()
-
     def remove_all(self, reload=False):
         self.action_packages = []
-        self.action_dirs = []
 
         if self.use_builtin_actions:
-            self.add_package(builtin_actions)
+            self._add_builtin_actions()
 
         if reload:
             self.reload_actions()
@@ -115,10 +138,6 @@ class BuildActionPackageRegistry(object):
         # load actions by package
         for package in self.action_packages:
             loader.load_actions_from_package(package)
-
-        # load actions by dir
-        for actions_dir in self.action_dirs:
-            loader.load_actions_from_dir(actions_dir)
 
         self.has_loaded_actions = True
 
@@ -140,100 +159,57 @@ class BuildActionLoader(object):
     def __init__(self, use_registry=True):
         # if true, automatically register loaded actions, otherwise just return them
         self.use_registry = use_registry
-        # the action module name format to match against
-        self.file_pattern = '*_pulseaction.py'
 
-    def load_actions_from_module(self, module) -> List[BuildActionSpec]:
+    def load_actions_from_package(self, package: types.ModuleType) -> List[BuildActionSpec]:
         """
-        Find all BuildAction subclasses in a module and return a BuildActionSpec for each one.
+        Recursively find all pulse actions in a python package.
+        Searches BuildAction subclasses recursively in all submodules.
+        Automatically register each spec if `self.use_registry` is True.
 
         Args:
-            module:
-                A single pulse actions python module that contains one or more Build Actions.
-
-        Returns:
-            A list of BuildActionSpec for each Build Action found.
+            package: A python package containing BuildActions
         """
+        LOG.info(f'Loading Pulse actions from package: {package}')
+
+        return self._load_actions_from_module(package)
+
+    def _load_actions_from_module(self, module: types.ModuleType) -> List[BuildActionSpec]:
+        """
+        Perform the actual recursive loading of actions within a package or module.
+        """
+        LOG.debug(f'Loading actions from module: {module}')
+
         action_specs: List[BuildActionSpec] = []
         for name in dir(module):
             obj = getattr(module, name)
 
-            if self._is_valid_build_action_class(obj):
+            if self._is_submodule(obj, module):
+                # recursively load submodule
+                action_specs.extend(self._load_actions_from_module(obj))
+
+            elif self._is_valid_build_action_class(obj):
+                # load BuildAction subclass
                 action_spec = BuildActionSpec(obj, module)
-                LOG.debug('Loaded BuildAction: %s', action_spec)
                 action_specs.append(action_spec)
+                LOG.debug('Loaded BuildAction: %s', action_spec)
 
         if self.use_registry:
             self.register_actions(action_specs)
 
         return action_specs
 
-    def load_actions_from_package(self, package) -> List[BuildActionSpec]:
-        """
-        Recursively find all pulse actions in a python package's directory.
-        Searches for python modules by matching against a file name pattern.
+    def _is_module(self, obj) -> bool:
+        return isinstance(obj, types.ModuleType)
 
-        Args:
-            package:
-                A python package used to locate the actions directory.
-        """
-        paths = getattr(package, '__path__', None)
-        if not paths:
-            LOG.warning(f'load_actions_from_package: {package} is not a valid python package')
-            return []
-
-        path = paths[0]
-        LOG.info(f'Loading Pulse actions from package: {package.__name__} ({path})...')
-
-        start_dir = os.path.dirname(path)
-        return self._load_actions_from_dir(start_dir)
-
-    def load_actions_from_dir(self, start_dir: str) -> List[BuildActionSpec]:
-        """
-        Recursively load all build actions in a directory.
-        Searches for python modules by matching against a file name pattern.
-
-        Args:
-            start_dir: str
-                The directory to search for actions.
-
-        Returns:
-            A list of BuildActionSpecs representing the BuildAction class.
-        """
-        if '~' in start_dir:
-            start_dir = os.path.expanduser(start_dir)
-
-        if not os.path.isdir(start_dir):
-            LOG.warning("Pulse actions directory not found: %s", start_dir)
-            return []
-
-        LOG.info(f'Loading Pulse actions from directory: {start_dir}...')
-
-        return self._load_actions_from_dir(start_dir)
-
-    def _load_actions_from_dir(self, start_dir: str) -> List[BuildActionSpec]:
-        """
-        The internal load actions from dir that operates recursively.
-        Doesn't perform initial path handling and logging. `start_dir` must be valid.
-        """
-        if not os.path.isdir(start_dir):
-            raise ValueError(f'{start_dir} not found')
-
-        result: List[BuildActionSpec] = []
-
-        paths = os.listdir(start_dir)
-        for path in paths:
-            full_path = os.path.join(start_dir, path)
-
-            if os.path.isfile(full_path):
-                if fnmatch(path, self.file_pattern):
-                    module = self._import_module_from_file(full_path)
-                    result.extend(self.load_actions_from_module(module))
-
-            elif os.path.isdir(full_path):
-                result.extend(self._load_actions_from_dir(full_path))
-
-        return result
+    def _is_submodule(self, obj, parent_module) -> bool:
+        parent_name = parent_module.__name__
+        if self._is_module(obj):
+            if obj.__name__ == parent_module.__name__:
+                return False
+            if not obj.__package__:
+                return False
+            # add trailing . to ensure it's not some similarly named sibling
+            return obj.__package__ == parent_name or obj.__package__.startswith(f'{parent_name}.')
 
     def register_actions(self, action_specs: List[BuildActionSpec]):
         """
@@ -241,45 +217,6 @@ class BuildActionLoader(object):
         """
         for action_spec in action_specs:
             BuildActionRegistry.get().add_action(action_spec)
-
-    def _import_module_from_file(self, file_path: str):
-        """
-        Import and return a python module from a file path.
-
-        If the module is already found in sys modules it will be deleted to force a reload.
-
-        """
-        # get module name
-        name = os.path.splitext(os.path.basename(file_path))[0]
-
-        # check for existing module in sys.modules
-        if name in sys.modules:
-            if _is_same_python_file(sys.modules[name].__file__, file_path):
-                # correct module already imported, delete it to force reload
-                del sys.modules[name]
-            else:
-                raise ImportError(f"BuildAction module does not have a unique module name: {file_path}")
-
-        # add dir to sys path if necessary
-        dir_name = os.path.dirname(file_path)
-        is_not_in_sys_path = False
-
-        if dir_name not in sys.path:
-            sys.path.insert(0, dir_name)
-            is_not_in_sys_path = True
-
-        try:
-            # TODO(bsayre): error handling of import?
-            module = importlib.import_module(name)
-        except:
-            LOG.error("Failed to import Build Action module: %s", name)
-            pass
-        else:
-            return module
-        finally:
-            # remove path from sys
-            if is_not_in_sys_path:
-                sys.path.remove(dir_name)
 
     @staticmethod
     def _is_valid_build_action_class(obj) -> bool:

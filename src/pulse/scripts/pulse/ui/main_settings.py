@@ -40,13 +40,6 @@ class ActionPackagesList(QtWidgets.QWidget):
             label.setText(self.getPackageDisplayName(package))
             self.layout.addWidget(label)
 
-        for actions_dir in registry.action_dirs:
-            label = QtWidgets.QLabel(self)
-            label.setTextInteractionFlags(QtCore.Qt.LinksAccessibleByMouse | QtCore.Qt.TextSelectableByMouse)
-            label.setProperty('cssClasses', 'block')
-            label.setText(actions_dir)
-            self.layout.addWidget(label)
-
     def getPackageDisplayName(self, package):
         return f'{package.__name__} ({package.__path__[0]})'
 
