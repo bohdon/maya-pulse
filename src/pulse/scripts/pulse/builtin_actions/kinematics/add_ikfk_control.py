@@ -1,7 +1,6 @@
 import pymel.core as pm
 
-import pulse.nodes
-import pulse.utilnodes
+from pulse import nodes, utilnodes
 from pulse.buildItems import BuildAction, BuildActionError
 from pulse.buildItems import BuildActionAttributeType as AttrType
 
@@ -41,15 +40,15 @@ class AddIKFKControlAction(BuildAction):
             follower_pm = self.follower.pm.get()
             fk_offset = follower_pm * self.fkLeader.wim.get()
             ik_offset = follower_pm * self.ikLeader.wim.get()
-            fk_mtx = pulse.utilnodes.multMatrix(pm.dt.Matrix(fk_offset), self.fkLeader.wm)
+            fk_mtx = utilnodes.multMatrix(pm.dt.Matrix(fk_offset), self.fkLeader.wm)
             fk_mtx.node().rename(f"{self.follower.nodeName()}_ikfk_fk_offset")
-            ik_mtx = pulse.utilnodes.multMatrix(pm.dt.Matrix(ik_offset), self.ikLeader.wm)
+            ik_mtx = utilnodes.multMatrix(pm.dt.Matrix(ik_offset), self.ikLeader.wm)
             ik_mtx.node().rename(f"{self.follower.nodeName()}_ikfk_ik_offset")
-            mtx_choice = pulse.utilnodes.choice(ik_attr, fk_mtx, ik_mtx)
+            mtx_choice = utilnodes.choice(ik_attr, fk_mtx, ik_mtx)
         else:
-            mtx_choice = pulse.utilnodes.choice(ik_attr, self.fkLeader.wm, self.ikLeader.wm)
+            mtx_choice = utilnodes.choice(ik_attr, self.fkLeader.wm, self.ikLeader.wm)
 
         mtx_choice.node().rename(f"{self.follower.nodeName()}_ikfk_choice")
 
         # don't preserve position here, because offsets have already been calculated above
-        pulse.nodes.connectMatrix(mtx_choice, self.follower, pulse.nodes.ConnectMatrixMethod.SNAP)
+        nodes.connectMatrix(mtx_choice, self.follower, nodes.ConnectMatrixMethod.SNAP)

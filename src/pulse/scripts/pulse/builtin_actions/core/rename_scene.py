@@ -21,8 +21,8 @@ class RenameSceneAction(BuildAction):
             raise BuildActionError('Filename cannot be empty')
 
     def run(self):
-        sceneName = pm.sceneName()
-        rigData = self.get_rig_metadata()
-        filename = self.filename.format(rig=rigData) + '.ma'
-        newName = os.path.join(os.path.dirname(sceneName), filename)
-        pm.renameFile(newName)
+        scene_name = pm.sceneName()
+        rig_data = self.get_rig_metadata()
+        file_name = self.filename.format(rig=rig_data) + '.ma'
+        file_path = os.path.join(os.path.dirname(scene_name), file_name)
+        pm.renameFile(file_path)

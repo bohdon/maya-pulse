@@ -44,16 +44,16 @@ class AimConstrainAction(BuildAction):
             raise BuildActionError("worldUpObject must be set")
 
     def run(self):
-        shouldCreateOffset = False
+        should_create_offset = False
         if self.createFollowerOffset == 0:
             # Always
-            shouldCreateOffset = True
+            should_create_offset = True
         elif self.createFollowerOffset == 1 and self.follower.nodeType() != 'joint':
             # Exclude Joints and the follower is not a joint
-            shouldCreateOffset = True
+            should_create_offset = True
 
         _follower = self.follower
-        if shouldCreateOffset:
+        if should_create_offset:
             _follower = pulse.nodes.createOffsetTransform(self.follower)
 
         # create blend
@@ -70,30 +70,28 @@ class AimConstrainAction(BuildAction):
             aimOnNode.setParent(_follower.getParent())
 
             # create matrix blend between off and on
-            wtAdd = pm.createNode('wtAddMatrix')
-            aimOnNode.worldMatrix >> wtAdd.wtMatrix[0].matrixIn
-            aimOffNode.worldMatrix >> wtAdd.wtMatrix[1].matrixIn
-            pulse.nodes.connectMatrix(wtAdd.matrixSum, _follower, pulse.nodes.ConnectMatrixMethod.SNAP)
+            wt_add = pm.createNode('wtAddMatrix')
+            aimOnNode.worldMatrix >> wt_add.wtMatrix[0].matrixIn
+            aimOffNode.worldMatrix >> wt_add.wtMatrix[1].matrixIn
+            pulse.nodes.connectMatrix(wt_add.matrixSum, _follower, pulse.nodes.ConnectMatrixMethod.SNAP)
 
             # create blend attr and connect to matrix blend
             self.follower.addAttr("aimBlend", min=0, max=1, at='double',
                                   defaultValue=1, keyable=1)
-            blendAttr = self.follower.attr("aimBlend")
-            blendAttr >> wtAdd.wtMatrix[0].weightIn
-            pulse.utilnodes.reverse(blendAttr) >> wtAdd.wtMatrix[1].weightIn
+            blend_attr = self.follower.attr("aimBlend")
+            blend_attr >> wt_add.wtMatrix[0].weightIn
+            pulse.utilnodes.reverse(blend_attr) >> wt_add.wtMatrix[1].weightIn
 
             # use aimOn node as new follower for the aim constraint
             _follower = aimOnNode
 
         # create aim constrain
-        upTypeStr = [
-            'objectrotation',
-            'object',
-        ][self.worldUpType]
+        up_type_str = ['objectrotation', 'object'][self.worldUpType]
+
         ac = pm.aimConstraint(
             self.leader, _follower, mo=False,
             aimVector=self.aimVector, upVector=self.upVector,
-            worldUpType=upTypeStr, worldUpObject=self.worldUpObject,
+            worldUpType=up_type_str, worldUpObject=self.worldUpObject,
             worldUpVector=self.worldUpVector)
 
         # lockup the constraints

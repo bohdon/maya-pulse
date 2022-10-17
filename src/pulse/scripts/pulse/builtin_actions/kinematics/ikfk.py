@@ -1,9 +1,6 @@
 import pymel.core as pm
 
-import pulse.controlshapes
-import pulse.joints
-import pulse.nodes
-import pulse.utilnodes
+from pulse import nodes, utilnodes, joints, controlshapes
 from pulse.vendor import pymetanode as meta
 from pulse.buildItems import BuildAction, BuildActionError
 from pulse.buildItems import BuildActionAttributeType as AttrType
@@ -50,28 +47,29 @@ class ThreeBoneIKFKAction(BuildAction):
 
     def run(self):
         # retrieve mid and root joints
-        midJoint = self.endJoint.getParent()
-        rootJoint = midJoint.getParent()
+        mid_joint = self.endJoint.getParent()
+        root_joint = mid_joint.getParent()
 
         # duplicate joints for ik chain
-        ikJointNameFmt = '{0}_ik'
-        ikjnts = pulse.nodes.duplicateBranch(
-            rootJoint, self.endJoint, nameFmt=ikJointNameFmt)
-        for j in ikjnts:
+        ik_joint_name_fmt = '{0}_ik'
+        ik_jnts = nodes.duplicateBranch(root_joint, self.endJoint, nameFmt=ik_joint_name_fmt)
+
+        for j in ik_jnts:
             # TODO: debug settings for build actions
             j.v.set(True)
-        rootIkJoint = ikjnts[0]
-        midIkJoint = ikjnts[1]
-        endIkJoint = ikjnts[2]
+
+        root_ik_joint = ik_jnts[0]
+        mid_ik_joint = ik_jnts[1]
+        end_ik_joint = ik_jnts[2]
 
         # parent ik joints to root control
-        rootIkJoint.setParent(self.rootCtl)
+        root_ik_joint.setParent(self.rootCtl)
 
         # create ik and hook up pole object and controls
         handle, effector = pm.ikHandle(
-            name="{0}_ikHandle".format(endIkJoint),
-            startJoint=rootIkJoint,
-            endEffector=endIkJoint,
+            name="{0}_ikHandle".format(end_ik_joint),
+            startJoint=root_ik_joint,
+            endEffector=end_ik_joint,
             solver="ikRPsolver")
 
         # add twist attr to end control
@@ -86,54 +84,50 @@ class ThreeBoneIKFKAction(BuildAction):
 
         # TODO: use pick matrix and mult matrix to combine location from ik system with rotation/scale of ctl
         # constraint end joint scale and rotation to end control
-        pm.orientConstraint(self.endCtlIk, endIkJoint, mo=True)
-        pm.scaleConstraint(self.endCtlIk, endIkJoint, mo=True)
+        pm.orientConstraint(self.endCtlIk, end_ik_joint, mo=True)
+        pm.scaleConstraint(self.endCtlIk, end_ik_joint, mo=True)
 
         # setup ikfk switch attr (integer, not blend)
         self.rootCtl.addAttr("ik", min=0, max=1, at='short',
                              defaultValue=1, keyable=1)
-        ikAttr = self.rootCtl.attr("ik")
+        ik_attr = self.rootCtl.attr("ik")
 
         # create choices for world matrix from ik and fk targets
-        rootChoice = pulse.utilnodes.choice(
-            ikAttr, self.rootCtl.wm, rootIkJoint.wm)
-        rootChoice.node().rename(f"{rootJoint.nodeName()}_ikfk_choice")
-        midChoice = pulse.utilnodes.choice(
-            ikAttr, self.midCtlFk.wm, midIkJoint.wm)
-        midChoice.node().rename(f"{midJoint.nodeName()}_ikfk_choice")
-        endChoice = pulse.utilnodes.choice(
-            ikAttr, self.endCtlFk.wm, endIkJoint.wm)
-        endChoice.node().rename(f"{self.endJoint.nodeName()}_ikfk_choice")
+        root_choice = utilnodes.choice(ik_attr, self.rootCtl.wm, root_ik_joint.wm)
+        root_choice.node().rename(f"{root_joint.nodeName()}_ikfk_choice")
+        mid_choice = utilnodes.choice(ik_attr, self.midCtlFk.wm, mid_ik_joint.wm)
+        mid_choice.node().rename(f"{mid_joint.nodeName()}_ikfk_choice")
+        end_choice = utilnodes.choice(ik_attr, self.endCtlFk.wm, end_ik_joint.wm)
+        end_choice.node().rename(f"{self.endJoint.nodeName()}_ikfk_choice")
 
         # connect the target matrices to the joints
-        pulse.nodes.connectMatrix(rootChoice, rootJoint, pulse.nodes.ConnectMatrixMethod.SNAP)
-        pulse.nodes.connectMatrix(midChoice, midJoint, pulse.nodes.ConnectMatrixMethod.SNAP)
-        pulse.nodes.connectMatrix(endChoice, self.endJoint, pulse.nodes.ConnectMatrixMethod.SNAP)
+        nodes.connectMatrix(root_choice, root_joint, nodes.ConnectMatrixMethod.SNAP)
+        nodes.connectMatrix(mid_choice, mid_joint, nodes.ConnectMatrixMethod.SNAP)
+        nodes.connectMatrix(end_choice, self.endJoint, nodes.ConnectMatrixMethod.SNAP)
 
         # connect visibility
         self.midCtlIk.v.setLocked(False)
         self.endCtlIk.v.setLocked(False)
-        ikAttr >> self.midCtlIk.v
-        ikAttr >> self.endCtlIk.v
+        ik_attr >> self.midCtlIk.v
+        ik_attr >> self.endCtlIk.v
 
-        fkAttr = pulse.utilnodes.reverse(ikAttr)
+        fk_attr = utilnodes.reverse(ik_attr)
         self.midCtlFk.v.setLocked(False)
         self.endCtlFk.v.setLocked(False)
-        fkAttr >> self.midCtlFk.v
-        fkAttr >> self.endCtlFk.v
+        fk_attr >> self.midCtlFk.v
+        fk_attr >> self.endCtlFk.v
 
         # add connecting line shape
         if self.addPoleLine:
             # keep consistent color overrides for the mid ctl
-            color = pulse.nodes.getOverrideColor(self.midCtlIk)
-            pulse.controlshapes.createLineShape(
-                midIkJoint, self.midCtlIk, self.midCtlIk)
+            color = nodes.getOverrideColor(self.midCtlIk)
+            controlshapes.createLineShape(mid_ik_joint, self.midCtlIk, self.midCtlIk)
             if color:
-                pulse.nodes.setOverrideColor(self.midCtlIk, color)
+                nodes.setOverrideColor(self.midCtlIk, color)
 
         # cleanup
         handle.v.set(False)
-        for jnt in ikjnts:
+        for jnt in ik_jnts:
             # TODO: lock attrs
             jnt.v.set(False)
 
@@ -161,11 +155,11 @@ class IKFKControlUtils(object):
     """
 
     @staticmethod
-    def getIKFKData(ctl):
+    def get_ikfk_data(ctl):
         return meta.getMetaData(ctl, IKFK_CONTROL_METACLASS)
 
     @staticmethod
-    def getIKFKJointMatrices(ikfk_data: dict):
+    def get_ikfk_joint_matrices(ikfk_data: dict):
         """
         Return the list of matrices for the IKFK joint chain in the order (root, middle, end)
         """
@@ -180,11 +174,11 @@ class IKFKControlUtils(object):
         return root_joint.wm.get(), mid_joint.wm.get(), end_joint.wm.get()
 
     @staticmethod
-    def switchToFK(ctl):
-        ikfk_data = IKFKControlUtils.getIKFKData(ctl)
+    def switch_to_fk(ctl):
+        ikfk_data = IKFKControlUtils.get_ikfk_data(ctl)
 
         # get joint matrices
-        root_mtx, mid_mtx, end_mtx = IKFKControlUtils.getIKFKJointMatrices(ikfk_data)
+        root_mtx, mid_mtx, end_mtx = IKFKControlUtils.get_ikfk_joint_matrices(ikfk_data)
         if root_mtx is None:
             return
 
@@ -202,18 +196,18 @@ class IKFKControlUtils(object):
 
         # TODO: add support for joint-to-ctl offsets
         # snap to joints pretty much exactly
-        pulse.nodes.setWorldMatrix(root_fk_ctl, root_mtx)
-        pulse.nodes.setWorldMatrix(mid_fk_ctl, mid_mtx)
-        pulse.nodes.setWorldMatrix(end_fk_ctl, end_mtx)
+        nodes.setWorldMatrix(root_fk_ctl, root_mtx)
+        nodes.setWorldMatrix(mid_fk_ctl, mid_mtx)
+        nodes.setWorldMatrix(end_fk_ctl, end_mtx)
 
         root_fk_ctl.attr('ik').set(0)
 
     @staticmethod
-    def switchToIK(ctl):
-        ikfk_data = IKFKControlUtils.getIKFKData(ctl)
+    def switch_to_ik(ctl):
+        ikfk_data = IKFKControlUtils.get_ikfk_data(ctl)
 
         # get joint matrices
-        root_mtx, mid_mtx, end_mtx = IKFKControlUtils.getIKFKJointMatrices(ikfk_data)
+        root_mtx, mid_mtx, end_mtx = IKFKControlUtils.get_ikfk_joint_matrices(ikfk_data)
         if root_mtx is None:
             return
 
@@ -232,34 +226,36 @@ class IKFKControlUtils(object):
         # TODO: add support for joint-to-ctl offsets
         # TODO: incorporate delegate ctls into all 'move anim ctl here' functionality
         # move foot, and calculate new pole vector
-        end_ik_move_ctl = IKFKControlUtils.getDelegateControl(end_ik_ctl)
-        pulse.nodes.setWorldMatrix(end_ik_move_ctl, end_mtx)
+        end_ik_move_ctl = IKFKControlUtils.get_delegate_control(end_ik_ctl)
+        nodes.setWorldMatrix(end_ik_move_ctl, end_mtx)
 
         # move ik pole ctl
-        new_pole_pos = IKFKControlUtils.calculateIKPoleControlLocation(
+        new_pole_pos = IKFKControlUtils.calculate_ik_pole_ctl_location(
             mid_ik_ctl, root_mtx.translate, mid_mtx.translate, end_mtx.translate)
         mid_ik_ctl.setTranslation(new_pole_pos, space='world')
 
         root_ik_ctl.attr('ik').set(1)
 
     @staticmethod
-    def getDelegateControl(node):
+    def get_delegate_control(node):
         ctl_delegate_data = meta.getMetaData(node, 'pulse_ctl_delegate')
         if ctl_delegate_data:
             return ctl_delegate_data['delegate_ctl']
         return node
 
     @staticmethod
-    def calculateIKPoleControlLocation(ctl, root: pm.dt.Vector, mid: pm.dt.Vector, end: pm.dt.Vector):
+    def calculate_ik_pole_ctl_location(ctl, root: pm.dt.Vector, mid: pm.dt.Vector, end: pm.dt.Vector):
         """
         Calculate the new position for an ik pole ctl given the matrices of the ikfk joints
         """
-        pole_vector, pole_mid = pulse.joints.getIKPoleVectorAndMidPoint(root, mid, end)
+        # TODO: use IKPoleLinkPositioner functionality already in pulse
+
+        pole_vector, pole_mid = joints.getIKPoleVectorAndMidPoint(root, mid, end)
 
         # calculate distance based on followers current location
         current_dist = pole_vector.dot(ctl.getTranslation(space='world') - pole_mid)
 
-        # keep pole vector in front by at least 2x the distance from root to mid joint
+        # keep pole vector in front, by at least 2x the distance from root to mid-joint
         min_dist = 2 * (pm.dt.Vector(root) - pm.dt.Vector(mid)).length()
         dist = max(current_dist, min_dist)
 
@@ -277,15 +273,15 @@ class IKFKControlContextSubmenu(PulseNodeContextSubMenu):
         return cls.isNodeWithMetaClassSelected(IKFK_CONTROL_METACLASS)
 
     def buildMenuItems(self):
-        pm.menuItem('Switch To FK', rp=self.getSafeRadialPosition('NW'), c=pm.Callback(self.switchToFKForSelected))
-        pm.menuItem('Switch To IK', rp=self.getSafeRadialPosition('SW'), c=pm.Callback(self.switchToIKForSelected))
+        pm.menuItem('Switch To FK', rp=self.getSafeRadialPosition('NW'), c=pm.Callback(self.switch_to_fk_for_selected))
+        pm.menuItem('Switch To IK', rp=self.getSafeRadialPosition('SW'), c=pm.Callback(self.switch_to_ik_for_selected))
 
-    def switchToIKForSelected(self):
+    def switch_to_ik_for_selected(self):
         sel_ctls = self.getSelectedNodesWithMetaClass(IKFK_CONTROL_METACLASS)
         for ctl in sel_ctls:
-            IKFKControlUtils.switchToIK(ctl)
+            IKFKControlUtils.switch_to_ik(ctl)
 
-    def switchToFKForSelected(self):
+    def switch_to_fk_for_selected(self):
         sel_ctls = self.getSelectedNodesWithMetaClass(IKFK_CONTROL_METACLASS)
         for ctl in sel_ctls:
-            IKFKControlUtils.switchToFK(ctl)
+            IKFKControlUtils.switch_to_fk(ctl)

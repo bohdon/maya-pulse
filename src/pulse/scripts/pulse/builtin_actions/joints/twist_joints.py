@@ -1,7 +1,6 @@
 import pymel.core as pm
 
-import pulse.nodes
-import pulse.utilnodes
+from pulse import nodes, utilnodes
 from pulse.buildItems import BuildAction, BuildActionError
 from pulse.buildItems import BuildActionAttributeType as AttrType
 
@@ -54,7 +53,7 @@ class TwistJointsAction(BuildAction):
             twist_blend = self.twistJoint.attr('twistBlend')
 
         # get parent world matrix
-        parent_mtx = self.getParentMatrix(self.twistJoint)
+        parent_mtx = self._get_parent_matrix(self.twistJoint)
 
         if self.alignToRestPose:
             # Use the current world matrix of the align joint to calculate and store the resting position as
@@ -66,25 +65,25 @@ class TwistJointsAction(BuildAction):
                 # get align joint matrix relative to it's parent,
                 # don't trust the local matrix since inheritsTransform may not be used
                 offset_mtx = self.alignJoint.wm.get() * align_parent.wim.get()
-                align_tgt_mtx = pulse.utilnodes.multMatrix(offset_mtx, align_parent.wm)
+                align_tgt_mtx = utilnodes.multMatrix(offset_mtx, align_parent.wm)
                 pass
             else:
                 # no parent node, just store the current 'resting' matrix in a multMatrix
-                align_tgt_mtx = pulse.utilnodes.multMatrix(self.alignJoint.wm.get())
+                align_tgt_mtx = utilnodes.multMatrix(self.alignJoint.wm.get())
         else:
-            # use the align joint world matrix directly
+            # use to align joint world matrix directly
             align_tgt_mtx = self.alignJoint.wm
 
         # create aligned version of the parent matrix
-        aligned_pm = pulse.utilnodes.alignMatrixToDirection(parent_mtx, self.forwardAxis, self.alignAxis,
-                                                            self.alignAxis, align_tgt_mtx)
+        aligned_pm = utilnodes.alignMatrixToDirection(parent_mtx, self.forwardAxis, self.alignAxis,
+                                                      self.alignAxis, align_tgt_mtx)
 
         # blend aligned matrix with default parent matrix
-        blend_mtx = pulse.utilnodes.blendMatrix(parent_mtx, aligned_pm, twist_blend)
+        blend_mtx = utilnodes.blendMatrix(parent_mtx, aligned_pm, twist_blend)
 
-        pulse.nodes.connectMatrix(blend_mtx, self.twistJoint, pulse.nodes.ConnectMatrixMethod.CREATE_OFFSET)
+        nodes.connectMatrix(blend_mtx, self.twistJoint, nodes.ConnectMatrixMethod.CREATE_OFFSET)
 
-    def getParentMatrix(self, node):
+    def _get_parent_matrix(self, node):
         """
         Return the parent world matrix to use for a node, checking first for inputs to offsetParentMatrix,
         then for a parent node if available. Does not support nodes that have a connection to offsetParentMatrix

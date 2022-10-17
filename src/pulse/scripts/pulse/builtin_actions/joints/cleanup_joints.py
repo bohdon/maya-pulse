@@ -1,6 +1,6 @@
 import pymel.core as pm
 
-import pulse.joints
+from pulse import joints
 from pulse.buildItems import BuildAction, BuildActionError
 from pulse.buildItems import BuildActionAttributeType as AttrType
 
@@ -26,10 +26,10 @@ class CleanupJointsAction(BuildAction):
 
     def run(self):
         if self.removeEndJoints:
-            endJoints = pulse.joints.getEndJoints(self.rootJoint)
-            pm.delete(endJoints)
+            end_joints = joints.getEndJoints(self.rootJoint)
+            pm.delete(end_joints)
 
         if self.disableScaleCompensate:
-            allJoints = self.rootJoint.listRelatives(ad=True, typ='joint')
-            for joint in allJoints:
+            all_joints = self.rootJoint.listRelatives(ad=True, typ='joint')
+            for joint in all_joints:
                 joint.segmentScaleCompensate.set(False)

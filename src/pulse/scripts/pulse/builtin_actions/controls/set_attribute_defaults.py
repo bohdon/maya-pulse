@@ -1,4 +1,3 @@
-import pulse.nodes
 from pulse.buildItems import BuildAction, BuildActionError
 from pulse.buildItems import BuildActionAttributeType as AttrType
 
@@ -32,13 +31,13 @@ class SetAttributeDefaultsAction(BuildAction):
 
     def validate(self):
         if not resetter:
-            raise BuildActionError('resetter module is not installed')
+            raise BuildActionError("'resetter' module not found")
 
     def run(self):
-        nodes = set(self.nodes)
+        all_nodes = set(self.nodes)
 
         if self.useAnimControls:
-            nodes.update(pulse.animinterface.getAllAnimControls())
+            all_nodes.update(pulse.animinterface.getAllAnimControls())
 
-        nodes = list(nodes)
-        resetter.setDefaults(nodes, self.extraAttrs, nonkey=self.includeNonKeyable)
+        all_nodes = list(all_nodes)
+        resetter.setDefaults(all_nodes, self.extraAttrs, nonkey=self.includeNonKeyable)

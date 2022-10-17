@@ -1,6 +1,6 @@
 import pymel.core as pm
 
-import pulse.nodes
+from pulse import nodes
 from pulse.vendor import pymetanode as meta
 from pulse.buildItems import BuildAction, BuildActionError
 from pulse.buildItems import BuildActionAttributeType as AttrType
@@ -47,22 +47,21 @@ class AnimControlAction(BuildAction):
 
         if self.zeroOutMethod == 1:
             # freeze offset matrix
-            pulse.nodes.freezeOffsetMatrix(self.controlNode)
+            nodes.freezeOffsetMatrix(self.controlNode)
         elif self.zeroOutMethod == 2:
             # create an offset transform
-            pulse.nodes.createOffsetTransform(self.controlNode)
+            nodes.createOffsetTransform(self.controlNode)
 
         # lockup attributes
-        keyableAttrs = pulse.nodes.getExpandedAttrNames(self.keyableAttrs)
-        lockedAttrs = pulse.nodes.getExpandedAttrNames(
-            ['t', 'r', 'rp', 's', 'sp', 'ra', 'sh', 'v'])
-        lockedAttrs = list(set(lockedAttrs) - set(keyableAttrs))
+        keyable_attrs = nodes.getExpandedAttrNames(self.keyableAttrs)
+        locked_attrs = nodes.getExpandedAttrNames(['t', 'r', 'rp', 's', 'sp', 'ra', 'sh', 'v'])
+        locked_attrs = list(set(locked_attrs) - set(keyable_attrs))
 
-        for attrName in keyableAttrs:
+        for attrName in keyable_attrs:
             attr = self.controlNode.attr(attrName)
             attr.setKeyable(True)
 
-        for attrName in lockedAttrs:
+        for attrName in locked_attrs:
             attr = self.controlNode.attr(attrName)
             attr.setKeyable(False)
             attr.showInChannelBox(False)

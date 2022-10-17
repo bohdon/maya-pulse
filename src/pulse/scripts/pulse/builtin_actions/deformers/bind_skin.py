@@ -3,8 +3,7 @@ import os
 import pymel.core as pm
 from maya import cmds
 
-import pulse.joints
-import pulse.skins
+from pulse import skins
 from pulse.buildItems import BuildAction, BuildActionError
 from pulse.buildItems import BuildActionAttributeType as AttrType
 
@@ -48,28 +47,15 @@ class BindSkinAction(BuildAction):
 
     ]
 
-    @classmethod
-    def util_fromSelection(cls):
-        sel = pm.selected()
-        meshes = []
-        joints = []
-        for s in sel:
-            sh = s.getShape()
-            if sh and sh.nodeType() == 'mesh':
-                meshes.append(s)
-            elif s.nodeType() == 'joint':
-                joints.append(s)
-        return BindSkinAction(meshes=meshes, joints=joints)
-
     def validate(self):
         if not len(self.meshes):
             raise BuildActionError('meshes must have at least one value')
-        bind_jnts = self.getBindJoints()
+        bind_jnts = self._get_bind_joints()
         if not len(bind_jnts):
             raise BuildActionError('no bind joints were set')
 
     def run(self):
-        bind_jnts = self.getBindJoints()
+        bind_jnts = self._get_bind_joints()
 
         bindkwargs = dict(
             toSelectedBones=True,
@@ -96,7 +82,7 @@ class BindSkinAction(BuildAction):
             self.extend_rig_metadata_list('renderGeo', self.meshes)
             self.extend_rig_metadata_list('bakeNodes', bind_jnts)
 
-    def getBindJoints(self):
+    def _get_bind_joints(self):
         """
         Return the array of joints that should be bound.
         """
@@ -139,29 +125,29 @@ class ApplySkinWeightsAction(BuildAction):
     def validate(self):
         if not len(self.meshes):
             raise BuildActionError('meshes must have at least one value')
-        filePath = self.getWeightsFilePath()
-        if not os.path.isfile(filePath):
-            raise BuildActionError('file not found: %s' % filePath)
+        file_path = self._get_weights_file_path()
+        if not os.path.isfile(file_path):
+            raise BuildActionError('file not found: %s' % file_path)
 
     def run(self):
-        filePath = self.getWeightsFilePath()
-        skins = self.getSkinClusters()
-        pulse.skins.applySkinWeightsFromFile(filePath, *skins)
+        file_path = self._get_weights_file_path()
+        all_skins = self._get_skin_clusters()
+        skins.applySkinWeightsFromFile(file_path, *all_skins)
 
-    def getSkinClusters(self):
+    def _get_skin_clusters(self):
         result = []
         for mesh in self.meshes:
-            skin = pulse.skins.getSkinFromMesh(mesh)
+            skin = skins.getSkinFromMesh(mesh)
             if not skin:
                 raise BuildActionError(f"No skin cluster found for mesh: {mesh}")
             result.append(skin)
         return result
 
-    def getWeightsFilePath(self):
-        blueprintPath = str(pm.sceneName())
+    def _get_weights_file_path(self):
+        scene_path = str(pm.sceneName())
         if self.fileName:
             return os.path.join(
-                os.path.dirname(blueprintPath), self.fileName).replace('\\', '/')
+                os.path.dirname(scene_path), self.fileName).replace('\\', '/')
         else:
             # default to blueprint file name
-            return os.path.splitext(blueprintPath)[0] + '.weights'
+            return os.path.splitext(scene_path)[0] + '.weights'

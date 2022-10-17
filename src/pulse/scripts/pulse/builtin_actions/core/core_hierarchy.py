@@ -1,6 +1,6 @@
 import pymel.core as pm
 
-import pulse.nodes
+from pulse import nodes
 from pulse.buildItems import BuildAction
 from pulse.buildItems import BuildActionAttributeType as AttrType
 
@@ -30,43 +30,43 @@ class BuildCoreHierarchyAction(BuildAction):
 
     def run(self):
         if self.groupName:
-            grpNode = pm.group(name=self.groupName, em=True, p=self.rig)
+            grp_node = pm.group(name=self.groupName, em=True, p=self.rig)
             for a in ('tx', 'ty', 'tz', 'rx', 'ry', 'rz', 'sx', 'sy', 'sz'):
-                grpNode.attr(a).setLocked(True)
-                grpNode.attr(a).setKeyable(False)
+                grp_node.attr(a).setLocked(True)
+                grp_node.attr(a).setKeyable(False)
 
             # only modify group visibility if a new group was created
             if not self.groupVisible:
-                grpNode.v.set(False)
+                grp_node.v.set(False)
 
         else:
-            grpNode = self.rig
+            grp_node = self.rig
 
         # parent nodes to this group
-        nodes = self.nodes
+        all_nodes = self.nodes
 
-        if not nodes:
-            nodes = self.getUnorganizedNodes()
+        if not all_nodes:
+            all_nodes = self.get_unorganized_nodes()
 
-        if nodes:
-            tops = pulse.nodes.getParentNodes(nodes)
+        if all_nodes:
+            tops = nodes.getParentNodes(all_nodes)
             if len(tops) > 0:
-                pm.parent(tops, grpNode)
+                pm.parent(tops, grp_node)
 
-    def getUnorganizedNodes(self):
+    def get_unorganized_nodes(self):
         """
         Return all nodes in the scene that aren't already
         in the rig, and aren't default scene nodes.
         """
 
-        def shouldInclude(node):
+        def should_include(node):
             # filter out default cameras
             if node.numChildren() == 1 and len(node.getShapes(typ='camera')) == 1:
                 return False
             return True
 
-        nodes = pm.ls(assemblies=True)
-        if self.rig in nodes:
-            nodes.remove(self.rig)
-        nodes = [n for n in nodes if shouldInclude(n)]
-        return nodes
+        all_nodes: list[pm.nt.Transform] = pm.ls(assemblies=True)
+        if self.rig in all_nodes:
+            all_nodes.remove(self.rig)
+        all_nodes = [n for n in all_nodes if should_include(n)]
+        return all_nodes

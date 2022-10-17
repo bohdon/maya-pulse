@@ -31,16 +31,16 @@ class SimpleConstrainAction(BuildAction):
 
     def run(self):
 
-        shouldCreateOffset = False
+        should_create_offset = False
         if self.createFollowerOffset == 0:
             # Always
-            shouldCreateOffset = True
+            should_create_offset = True
         elif self.createFollowerOffset == 1 and self.follower.nodeType() != 'joint':
             # Exclude Joints and the follower is not a joint
-            shouldCreateOffset = True
+            should_create_offset = True
 
         _follower = self.follower
-        if shouldCreateOffset:
+        if should_create_offset:
             _follower = pulse.nodes.createOffsetTransform(self.follower)
 
         # parent constrain (translate and rotate)

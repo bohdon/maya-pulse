@@ -21,10 +21,10 @@ class ObjectSetAction(BuildAction):
             raise BuildActionError('name cannot be empty')
 
     def run(self):
-        objectSet = pm.ls(self.name)
-        if len(objectSet) and isinstance(objectSet[0], pm.nt.ObjectSet):
-            objectSet = objectSet[0]
+        object_set = pm.ls(self.name)
+        if len(object_set) and isinstance(object_set[0], pm.nt.ObjectSet):
+            object_set = object_set[0]
         else:
-            objectSet = pm.sets(n=self.name, empty=True)
+            object_set = pm.sets(n=self.name, empty=True)
 
-        objectSet.addMembers(self.objects)
+        object_set.addMembers(self.objects)
