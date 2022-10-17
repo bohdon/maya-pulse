@@ -8,6 +8,7 @@ import maya.cmds as cmds
 from .vendor import pymetanode as meta
 from .rigs import RIG_METACLASS
 from .serializer import UnsortableOrderedDict
+from .colors import LinearColor
 
 LOG = logging.getLogger(__name__)
 LOG_LEVEL_KEY = 'PYLOG_%s' % LOG.name.split('.')[0].upper()
@@ -827,14 +828,14 @@ class BuildActionProxy(BuildActionData):
         """
         return self.config.get('displayName', self.get_short_action_id())
 
-    def get_color(self):
+    def get_color(self) -> LinearColor:
         """
         Return the color of this action when represented in the UI
         """
         if self.is_missing_spec():
-            return [0.8, 0, 0]
+            return LinearColor(0.8, 0, 0)
         else:
-            return self.config.get('color', [1, 1, 1])
+            return LinearColor.from_seq(self.config.get('color', [1, 1, 1]))
 
     def get_icon_file(self):
         """
@@ -1448,13 +1449,13 @@ class BuildStep(object):
         else:
             return f'{self._name} ({self.num_children()})'
 
-    def get_color(self):
+    def get_color(self) -> LinearColor:
         """
         Return the color of this BuildStep when represented in the UI
         """
         if self._action_proxy:
             return self._action_proxy.get_color()
-        return [1.0, 1.0, 1.0]
+        return LinearColor(1.0, 1.0, 1.0)
 
     def get_icon_file(self):
         """

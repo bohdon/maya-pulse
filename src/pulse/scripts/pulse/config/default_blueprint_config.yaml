@@ -87,16 +87,11 @@ names:
     - name: grp
       sort: 202
 colors:
-  - name: root
-    color: "#f6bd15"
-  - name: c_main
-    color: "#f6bd15"
-  - name: c_alt
-    color: "#594407"
-  - name: l_main
-    color: "#186fd5"
-  - name: r_main
-    color: "#832121"
+  root: "#f6bd15"
+  main_c: "#f6bd15"
+  alt_c: "#594407"
+  main_l: "#186fd5"
+  main_r: "#832121"
 symmetry:
   pairs:
     - left: l

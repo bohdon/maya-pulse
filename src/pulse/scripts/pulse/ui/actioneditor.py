@@ -13,6 +13,7 @@ import maya.cmds as cmds
 
 from ..buildItems import BuildActionProxy, BuildStep, BuildActionData, BuildActionAttribute
 from ..vendor.Qt import QtCore, QtWidgets, QtGui
+from ..colors import LinearColor
 from .actionattrform import ActionAttrForm, BatchAttrForm
 from .core import BlueprintUIModel
 from .core import PulseWindow
@@ -63,7 +64,7 @@ class BuildStepForm(QtWidgets.QWidget):
     A form for editing a BuildStep
     """
 
-    def __init__(self, index, parent=None):
+    def __init__(self, index: QtCore.QModelIndex, parent=None):
         """
         Args:
             index (QModelIndex): The index of the BuildStep
@@ -73,7 +74,9 @@ class BuildStepForm(QtWidgets.QWidget):
         self.actionForm = None
 
         self.index = QtCore.QPersistentModelIndex(index)
+
         self.setupUi(self)
+
         self.index.model().dataChanged.connect(self.onModelDataChanged)
 
     def onModelDataChanged(self):
@@ -103,13 +106,6 @@ class BuildStepForm(QtWidgets.QWidget):
         else:
             return step.get_display_name()
 
-    def getStepColor(self, step: BuildStep):
-        color = step.get_color()
-        if color:
-            return [int(c * 255) for c in color]
-        else:
-            return [255, 255, 255]
-
     def setupUi(self, parent):
         """
         Create a basic header and body layout to contain the generic
@@ -136,7 +132,7 @@ class BuildStepForm(QtWidgets.QWidget):
         # body layout
         bodyFrame = QtWidgets.QFrame(parent)
         bodyFrame.setObjectName("bodyFrame")
-        bodyColorStr = "rgba(255, 255, 255, 5)"
+        bodyColorStr = LinearColor(1, 1, 1, 0.02).as_style()
         bodyFrame.setStyleSheet(f".QFrame#bodyFrame{{ background-color: {bodyColorStr}; }}")
         layout.addWidget(bodyFrame)
 
@@ -144,11 +140,12 @@ class BuildStepForm(QtWidgets.QWidget):
 
     def setupHeaderUi(self, parent):
         step = self.step()
-        color = self.getStepColor(step)
-        bgColor = [c * 0.15 for c in color]
+        color = step.get_color()
+        colorStr = color.as_style()
 
-        colorStr = "rgb({0}, {1}, {2})".format(*color)
-        bgColorStr = "rgba({0}, {1}, {2}, 50%)".format(*bgColor)
+        bgColor = color * 0.15
+        bgColor.a = 0.5
+        bgColorStr = bgColor.as_style()
 
         layout = QtWidgets.QHBoxLayout(parent)
         layout.setMargin(0)
@@ -397,8 +394,10 @@ class BuildActionProxyForm(QtWidgets.QWidget):
 
         self.index = QtCore.QPersistentModelIndex(index)
         self.hasVariantsUi = False
-        self.layout = self.setupUi(self)
+
+        self.setupUi(self)
         self.updateVariantFormList()
+
         self.index.model().dataChanged.connect(self.onModelDataChanged)
 
     def onModelDataChanged(self):
@@ -433,25 +432,23 @@ class BuildActionProxyForm(QtWidgets.QWidget):
         Build the content ui for this BatchBuildAction.
         Creates ui to manage the array of variant attributes.
         """
-        layout = QtWidgets.QVBoxLayout(parent)
-        layout.setSpacing(4)
-        layout.setMargin(0)
+        self.layout = QtWidgets.QVBoxLayout(parent)
+        self.layout.setSpacing(4)
+        self.layout.setMargin(0)
 
-        self.setupLayoutHeader(parent, layout)
+        self.setupLayoutHeader(parent, self.layout)
 
         # form for all main / invariant attributes
         mainAttrForm = MainBuildActionDataForm(self.index, parent=parent)
-        layout.addWidget(mainAttrForm)
+        self.layout.addWidget(mainAttrForm)
 
         spacer = QtWidgets.QSpacerItem(20, 4, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
-        layout.addItem(spacer)
+        self.layout.addItem(spacer)
 
         # variant form list
         if self.shouldSetupVariantsUi():
-            self.setupVariantsUi(parent, layout)
+            self.setupVariantsUi(parent, self.layout)
             self.hasVariantsUi = True
-
-        return layout
 
     def setupLayoutHeader(self, parent, layout):
         """

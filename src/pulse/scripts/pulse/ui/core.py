@@ -1255,8 +1255,9 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
             color = step.get_color()
             # dim color if step is disabled
             if step.is_disabled_in_hierarchy():
-                color = [c * 0.4 for c in color]
-            return QtGui.QColor(*[c * 255 for c in color])
+                color *= 0.4
+            color.a = 1.0
+            return QtGui.QColor(*color.as_8bit())
 
         elif role == QtCore.Qt.BackgroundRole:
             if step.is_action() and step.has_warnings():

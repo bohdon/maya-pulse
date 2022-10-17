@@ -4,7 +4,7 @@ import re
 import pymel.core as pm
 
 from .vendor import pymetanode as meta
-from . import colors
+from . import editorutils
 from . import joints
 from . import links
 from . import nodes
@@ -707,42 +707,15 @@ class MirrorColors(BlueprintMirrorOperation):
     def mirrorNode(self, sourceNode, destNode, isNewNode):
         sourceColor = nodes.getOverrideColor(sourceNode)
         if sourceColor:
-            sourceName = self.getColorName(sourceColor)
+            # get name of source color
+            sourceName = editorutils.getColorName(sourceColor)
             if sourceName:
-                destName = _getMirroredNameWithReplacements(
-                    sourceName, self.getReplacements())
-                destColor = self.getNamedColor(destName)
+                # mirror the name
+                destName = _getMirroredNameWithReplacements(sourceName, self.getReplacements())
+                # get color of mirrored name
+                destColor = editorutils.getNamedColor(destName)
                 if destColor:
-                    nodes.setOverrideColor(destNode, destColor)
-
-    def getNamedColor(self, name):
-        """
-        Return a color from the Blueprint config by name
-
-        Returns:
-            color (tuple of float)
-        """
-        configColors = self.getConfig().get('colors', [])
-        for configColor in configColors:
-            if configColor.get('name') == name:
-                hexColor = configColor.get('color')
-                if hexColor:
-                    return colors.hexToRGB01(hexColor)
-
-    def getColorName(self, color):
-        """
-        Return the name of a color, if it has one.
-
-        Args:
-            color (tuple of float): The color to search for
-        """
-        hexColor = colors.RGB01ToHex(color)
-        configColors = self.getConfig().get('colors', [])
-        for configColor in configColors:
-            if configColor.get('color') == hexColor:
-                return configColor.get('name')
-
-        LOG.warning('Color has no name: %s (%s)', color, hexColor)
+                    nodes.setOverrideColor(destNode, tuple(destColor))
 
 
 class MirrorLinks(BlueprintMirrorOperation):

@@ -1,4 +1,3 @@
-from ..style import UIColors
 from ..utils import getIcon
 from ..utils import undoAndRepeatPartial as cmd
 from ... import controlshapes
@@ -55,29 +54,23 @@ class ControlsDesignPanel(QtWidgets.QWidget):
         edit_layout.setMargin(0)
         edit_layout.setSpacing(2)
 
-        def createRotateComponentsButton(text, color, axis, degrees):
+        def createRotateComponentsButton(text, cssClasses: str, axis, degrees):
             _axes = {0: 'X', 1: 'Y', 2: 'Z'}
 
             btn = QtWidgets.QPushButton(parent)
             btn.setText(text)
-            btn.setStatusTip(
-                "Rotate the components of the selected controls "
-                "{0} degrees around the {1} axis".format(degrees, _axes[axis]))
-            btn.setStyleSheet(UIColors.asBGColor(color))
-            btn.clicked.connect(cmd(editorutils.rotateSelectedComponentsAroundAxis, axis, degrees))
-            return btn
+            btn.setStatusTip("Rotate the components of the selected controls "
+                             f"{degrees} degrees around the {_axes[axis]} axis")
+            btn.setProperty('cssClasses', cssClasses)
 
-        btn = createRotateComponentsButton('- X', UIColors.RED, 0, -90)
-        edit_layout.addWidget(btn)
-        btn = createRotateComponentsButton('+ X', UIColors.RED, 0, 90)
-        edit_layout.addWidget(btn)
-        btn = createRotateComponentsButton('- Y', UIColors.GREEN, 1, -90)
-        edit_layout.addWidget(btn)
-        btn = createRotateComponentsButton('+ Y', UIColors.GREEN, 1, 90)
-        edit_layout.addWidget(btn)
-        btn = createRotateComponentsButton('- Z', UIColors.BLUE, 2, -90)
-        edit_layout.addWidget(btn)
-        btn = createRotateComponentsButton('+ Z', UIColors.BLUE, 2, 90)
-        edit_layout.addWidget(btn)
+            btn.clicked.connect(cmd(editorutils.rotateSelectedComponentsAroundAxis, axis, degrees))
+            edit_layout.addWidget(btn)
+
+        createRotateComponentsButton('- X', 'x-axis', 0, -90)
+        createRotateComponentsButton('+ X', 'x-axis', 0, 90)
+        createRotateComponentsButton('- Y', 'y-axis', 1, -90)
+        createRotateComponentsButton('+ Y', 'y-axis', 1, 90)
+        createRotateComponentsButton('- Z', 'z-axis', 2, -90)
+        createRotateComponentsButton('+ Z', 'z-axis', 2, 90)
 
         layout.addLayout(edit_layout)

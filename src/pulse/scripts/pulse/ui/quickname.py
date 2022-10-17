@@ -9,7 +9,6 @@ import pymel.core as pm
 
 from ..vendor.Qt import QtCore, QtWidgets
 from .. import names
-from . import style
 from .core import PulseWindow, BlueprintUIModel
 from .gen.quick_name_editor import Ui_QuickNameEditor
 
@@ -31,11 +30,10 @@ class QuickNameWidget(QtWidgets.QWidget):
         self.names_config = self.config.get('names', {})
 
         self.active_keyword = None
-        self.active_keyword_color = style.UIColors.DARKGRAY
 
-        self.prefix_btns = {}
-        self.keyword_btns = {}
-        self.suffix_btns = {}
+        self.prefix_btns: dict[str, QtWidgets.QPushButton] = {}
+        self.keyword_btns: dict[str, QtWidgets.QPushButton] = {}
+        self.suffix_btns: dict[str, QtWidgets.QPushButton] = {}
 
         self.ui = Ui_QuickNameEditor()
         self.ui.setupUi(self)
@@ -93,7 +91,7 @@ class QuickNameWidget(QtWidgets.QWidget):
         else:
             no_names_label = QtWidgets.QLabel(parent)
             no_names_label.setText('no prefixes')
-            no_names_label.setStyleSheet(style.UIColors.asFGColor(style.UIColors.HELPTEXT))
+            no_names_label.setProperty('cssClasses', 'help')
             layout.addWidget(no_names_label)
 
     def setup_suffixes_ui(self, parent, layout):
@@ -129,7 +127,7 @@ class QuickNameWidget(QtWidgets.QWidget):
         else:
             no_names_label = QtWidgets.QLabel(parent)
             no_names_label.setText('no suffixes')
-            no_names_label.setStyleSheet(style.UIColors.asFGColor(style.UIColors.HELPTEXT))
+            no_names_label.setProperty('cssClasses', 'help')
             layout.addWidget(no_names_label)
 
     def setup_keywords_ui(self, parent, layout):
@@ -154,10 +152,10 @@ class QuickNameWidget(QtWidgets.QWidget):
         else:
             no_names_label = QtWidgets.QLabel(parent)
             no_names_label.setText('no keywords')
-            no_names_label.setStyleSheet(style.UIColors.asFGColor(style.UIColors.HELPTEXT))
+            no_names_label.setProperty('cssClasses', 'help')
             layout.addWidget(no_names_label)
 
-    def setupKeywordCategoryUi(self, parent, name, keywords):
+    def setupKeywordCategoryUi(self, parent, name: str, keywords: list[str]):
         """
         Build a keyword category layout and button grid.
         Returns the layout.
@@ -179,11 +177,11 @@ class QuickNameWidget(QtWidgets.QWidget):
             btn = QtWidgets.QPushButton()
             btn.setObjectName('keywordBtn_' + name)
             btn.setText(name)
-            # catBtnGrid.addWidget(btn, y, x, 1, 1)
-            layout.addWidget(btn)
-            self.keyword_btns[name] = btn
+            btn.setCheckable(True)
             btn.installEventFilter(self)
             btn.clicked.connect(partial(self._on_keyword_clicked, name))
+            layout.addWidget(btn)
+            self.keyword_btns[name] = btn
 
         spacer = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
         layout.addItem(spacer)
@@ -203,10 +201,9 @@ class QuickNameWidget(QtWidgets.QWidget):
         # color the clicked btn
         for btnKey, btn in self.keyword_btns.items():
             if btnKey == self.active_keyword:
-                btn.setStyleSheet(
-                    style.UIColors.asBGColor(self.active_keyword_color))
+                btn.setChecked(True)
             else:
-                btn.setStyleSheet('')
+                btn.setChecked(False)
 
     def refresh_preview_label(self):
         """

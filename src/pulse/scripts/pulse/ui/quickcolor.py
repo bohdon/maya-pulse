@@ -2,11 +2,11 @@
 Widget for quickly editing the color of animation controls.
 """
 
-from . import style
+from ..colors import LinearColor
+from ..vendor.Qt import QtCore, QtWidgets
 from .core import PulseWindow, BlueprintUIModel
 from .utils import undoAndRepeatPartial as cmd
-from .. import colors, editorutils
-from ..vendor.Qt import QtCore, QtWidgets
+from .. import editorutils
 
 
 class QuickColorWidget(QtWidgets.QWidget):
@@ -25,20 +25,16 @@ class QuickColorWidget(QtWidgets.QWidget):
         self.setupUi(self)
 
         if True:  # TODO: replace with 'is blueprint initialized' or similar
-            self.helpText.setText(
-                "Edit the Blueprint Config to modify naming keywords")
-            self.helpText.setStyleSheet(
-                style.UIColors.asFGColor(style.UIColors.HELPTEXT))
+            self.helpText.setText("Edit the Blueprint Config to modify colors")
+            self.helpText.setProperty('cssClasses', 'help')
         elif self.config:
-            self.helpText.setText(
-                "No Blueprint exists, using the default config")
-            self.helpText.setStyleSheet(
-                style.UIColors.asFGColor(style.UIColors.WARNING))
+            self.helpText.setText("No Blueprint exists, using the default config")
+            self.helpText.setProperty('cssClasses', 'help warning')
         else:
-            self.helpText.setText(
-                "No Blueprint config was found")
-            self.helpText.setStyleSheet(
-                style.UIColors.asFGColor(style.UIColors.ERROR))
+            self.helpText.setText("No Blueprint config was found")
+            self.helpText.setProperty('cssClasses', 'help errror')
+        # refresh style for css classes
+        self.helpText.setStyleSheet('')
 
     def _getConfig(self):
         config = self.blueprintModel.blueprint.get_config()
@@ -50,8 +46,7 @@ class QuickColorWidget(QtWidgets.QWidget):
         # clear color btn
         clearBtn = QtWidgets.QPushButton(parent)
         clearBtn.setText("Remove Color")
-        clearBtn.clicked.connect(
-            cmd(editorutils.disableColorOverrideForSelected))
+        clearBtn.clicked.connect(cmd(editorutils.disableColorOverrideForSelected))
         layout.addWidget(clearBtn)
 
         bodyLayout = self.setupBodyUi(parent)
@@ -59,7 +54,7 @@ class QuickColorWidget(QtWidgets.QWidget):
 
         # help text
         self.helpText = QtWidgets.QLabel()
-        self.helpText.setFont(style.UIFonts.getHelpTextFont())
+        self.helpText.setProperty('cssClasses', 'help')
         layout.addWidget(self.helpText)
 
         layout.setStretch(2, 1)
@@ -67,32 +62,27 @@ class QuickColorWidget(QtWidgets.QWidget):
     def setupBodyUi(self, parent):
         layout = QtWidgets.QVBoxLayout(parent)
 
-        config_colors = self.config.get('colors', [])
-        for colorData in config_colors:
-            if 'name' in colorData and 'color' in colorData:
-                name = colorData['name']
-                color = colors.hexToRGB01(colorData['color'])
-                btn = self.createColorButton(name, color, parent)
-                layout.addWidget(btn)
+        config_colors = self.config.get('colors', {})
+        for name, hex_color in config_colors.items():
+            color = LinearColor.from_hex(hex_color)
+            btn = self.createColorButton(name, color, parent)
+            layout.addWidget(btn)
 
         return layout
 
-    def createColorButton(self, name, color, parent):
+    def createColorButton(self, name: str, color: LinearColor, parent):
         btn = QtWidgets.QPushButton(parent)
         btn.setText(name)
-        # colors are given in range 0..1, convert to 0..255 for Qt
-        btn.setStyleSheet(style.UIColors.asBGColor([c * 255 for c in color]))
-        btn.clicked.connect(
-            cmd(editorutils.setOverrideColorForSelected, color))
+        btn.setStyleSheet(color.as_bg_style())
+        btn.clicked.connect(cmd(editorutils.setOverrideColorForSelected, color))
         return btn
 
 
 class QuickColorWindow(PulseWindow):
-
     OBJECT_NAME = 'pulseQuickColorWindow'
-    PREFERRED_SIZE = QtCore.QSize(400, 300)
-    STARTING_SIZE = QtCore.QSize(400, 300)
-    MINIMUM_SIZE = QtCore.QSize(400, 300)
+    PREFERRED_SIZE = QtCore.QSize(200, 300)
+    STARTING_SIZE = QtCore.QSize(200, 300)
+    MINIMUM_SIZE = QtCore.QSize(200, 300)
 
     WINDOW_MODULE = 'pulse.ui.quickcolor'
 

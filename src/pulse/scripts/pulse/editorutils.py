@@ -7,17 +7,18 @@ but still not dependent on a UI.
 
 import logging
 import os
+from typing import Optional
 
 import maya.cmds as cmds
 import pymel.core as pm
 
-from . import colors
 from . import joints
 from . import links
 from . import nodes
 from . import shapes
 from . import skins
 from . import sym
+from .colors import LinearColor
 from .vendor.mayacoretools import preservedSelection
 from .ui.core import BlueprintUIModel
 
@@ -675,18 +676,30 @@ def saveAllSkinWeights(filePath=None):
     skins.saveSkinWeightsToFile(filePath, *all_skins)
 
 
-def getNamedColor(name):
+def getNamedColor(name: str) -> Optional[LinearColor]:
     """
     Return a color by name from the config of the editor Blueprint
     """
     blueprint = getEditorBlueprint()
     if blueprint:
         config = blueprint.get_config()
-        for color in config.get('colors', []):
-            if color.get('name') == name:
-                color = color.get('color')
-                if color:
-                    return colors.hexToRGB01(color)
+        for color_config in config.get('colors', {}):
+            hex_color = color_config.get(name)
+            if hex_color:
+                return LinearColor.from_hex(hex_color)
+
+
+def getColorName(color: LinearColor) -> Optional[str]:
+    """
+    Return the name of a color as defined in the config of the editor Blueprint.
+    """
+    blueprint = getEditorBlueprint()
+    if blueprint:
+        color_config = blueprint.get_config().get('colors', {})
+        # build a reverse map of names indexed by color
+        colors_to_names = {h: n for n, h in color_config.items()}
+        hex_color = color.as_hex()
+        return colors_to_names.get(hex_color)
 
 
 def setOverrideColorForSelected(color):
