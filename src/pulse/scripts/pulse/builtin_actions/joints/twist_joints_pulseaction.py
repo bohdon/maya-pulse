@@ -7,6 +7,31 @@ from pulse.buildItems import BuildActionAttributeType as AttrType
 
 
 class TwistJointsAction(BuildAction):
+    id = 'Pulse.TwistJoints'
+    display_name = 'Twist Joints'
+    description = 'Sets up twist joints to solve deformation problems in areas like the arms and legs'
+    category = 'Joints'
+
+    attr_definitions = [
+        dict(name='twistJoint', type=AttrType.NODE,
+             description="The joint that should twist automatically based on other joints"),
+        dict(name='alignJoint', type=AttrType.NODE,
+             description="The joint that the twist joint should use to determine its twist, e.g. should for "
+                         "upper arm twist, or hand for lower arm twist"),
+        dict(name='forwardAxis', type=AttrType.VECTOR3, value=[1, 0, 0],
+             description="The forward axis of the joint that should be preserved"),
+        dict(name='alignAxis', type=AttrType.VECTOR3, value=[0, 0, 1],
+             description="The secondary axis used to align the twist joint with the align joint. "
+                         "Recommended to use up axis for shoulders, and left axis for hands."),
+        dict(name='alignToRestPose', type=AttrType.BOOL, value=False,
+             description="When true, align to the the un-rotated or resting position of the align joint. "
+                         "This is useful for making a twist joint that un-twists rotates from a parent align "
+                         "joint, such as in the upper arm."),
+        dict(name='twistControls', type=AttrType.NODE_LIST, optional=True,
+             description="List of anim controls to add the twist attribute to, "
+                         "which is used for blending how much twist to apply."),
+    ]
+
     def validate(self):
         if not self.twistJoint:
             raise BuildActionError('twistJoint must be set')

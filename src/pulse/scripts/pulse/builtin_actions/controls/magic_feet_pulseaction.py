@@ -11,7 +11,29 @@ MAGIC_FEET_LIFT_CTL_METACLASSNAME = 'pulse_magicfeet_lift_ctl'
 
 
 class MagicFeetAction(BuildAction):
+    id = 'Pulse.MagicFeet'
+    display_name = 'Magic Feet'
+    description = 'Allows controlling foot rotation, blending pivots between toe, heel and ankle'
+    color = (.85, .65, .4)
+    category = 'Controls'
+
     _offsetName = '{0}_magic'
+
+    attr_definitions = [
+        dict(name='follower', type=AttrType.NODE,
+             description="The control to drive with the final foot location."),
+        dict(name='toeFollower', type=AttrType.NODE,
+             description="The toe control to drive with the final toe location."),
+        dict(name='createFollowerOffset', type=AttrType.OPTION, value=1, options=['Always', 'Exclude Joints'],
+             description="Creates and constrains a parent transform for the follower node, "
+                         "instead of constraining the follower itself."),
+        dict(name='control', type=AttrType.NODE, description="The magic feet control."),
+        dict(name='liftControl', type=AttrType.NODE, description="The control to use when the foot is lifted."),
+        dict(name='toePivot', type=AttrType.NODE, description="Node where the ball should pivot."),
+        dict(name='plantedTarget', type=AttrType.NODE,
+             description="The transform to use as the planted target location, will be created if not given, "
+                         "allows creating a selectable node with custom shape."),
+    ]
 
     def validate(self):
         if not self.follower:

@@ -6,6 +6,22 @@ from pulse.buildItems import BuildActionAttributeType as AttrType
 
 
 class SimpleConstrainAction(BuildAction):
+    id = 'Pulse.SimpleConstrain'
+    display_name = 'Simple Constrain'
+    description = 'Create a simple full constraint between nodes'
+    color = [.4, .6, .8]
+    category = 'Constraints'
+
+    attr_definitions = [
+        dict(name='leader', type=AttrType.NODE),
+        dict(name='follower', type=AttrType.NODE),
+        dict(name='createFollowerOffset', type=AttrType.OPTION, value=1, options=['Always', 'Exclude Joints'],
+             description="Creates and constrains a parent transform for the follower node, instead of constraining "
+                         "the follower itself"),
+        dict(name='worldSpaceScaling', type=AttrType.BOOL, value=False,
+             description="Causes scale constraint to consider world space matrices to better handle situations where "
+                         "the leader and follower have different orientations"),
+    ]
 
     def validate(self):
         if not self.leader:

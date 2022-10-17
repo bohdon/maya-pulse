@@ -1,4 +1,3 @@
-
 import pymel.core as pm
 
 import pulse.nodes
@@ -8,6 +7,33 @@ from pulse.buildItems import BuildActionAttributeType as AttrType
 
 
 class AimConstrainAction(BuildAction):
+    id = 'Pulse.AimConstrain'
+    display_name = 'Aim Constrain'
+    description = 'Creates an aim constraint, optionally allowing for blending between aim and non-aim'
+    color = (.4, .6, .8)
+    category = 'Constraints'
+
+    attr_definitions = [
+        dict(name='leader', type=AttrType.NODE),
+        dict(name='follower', type=AttrType.NODE, description='The node to aim at'),
+        dict(name='aimVector', type=AttrType.VECTOR3, value=[1, 0, 0],
+             description='The forward vector to use for the aim'),
+        dict(name='upVector', type=AttrType.VECTOR3, value=[0, 1, 0],
+             description='The local up vector to align with the target world up vector'),
+        dict(name='worldUpObject', type=AttrType.NODE, optional=True,
+             description='The node to use for retrieving world up vector'),
+        dict(name='worldUpVector', type=AttrType.VECTOR3, value=[0, 1, 0],
+             description='The vector that upVector should align with if using ObjectRotation'),
+        dict(name='worldUpType', type=AttrType.OPTION, value=0, options=['ObjectRotation', 'Object'],
+             description="The world up type. ObjectRotation - the upVector is aligned to match the orientation of the "
+                         "worldUpObject, Object - the upVector is aimed towards the worldUpObject"),
+        dict(name='createFollowerOffset', type=AttrType.OPTION, value=1, options=['Always', 'Exclude Joints'],
+             description="Creates and constrains a parent transform for the follower node, instead of constraining "
+                         "the follower itself"),
+        dict(name='createBlend', type='bool', value=False,
+             description="If true, create an offset and setup a blend attribute on the node to allow switching "
+                         "between aim and non-aim"),
+    ]
 
     def validate(self):
         if not self.leader:

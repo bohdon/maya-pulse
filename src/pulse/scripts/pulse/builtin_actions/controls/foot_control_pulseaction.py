@@ -11,6 +11,41 @@ FOOT_CTL_METACLASSNAME = 'pulse_foot_ctl'
 
 
 class FootControlAction(BuildAction):
+    id = 'Pulse.FootControl'
+    display_name = 'Foot Control'
+    description = 'Creates a classic attribute-driven foot roll and tilt control'
+    color = (.85, .65, .4)
+    category = 'Controls'
+
+    attr_definitions = [
+
+        dict(name='ankleFollower', type=AttrType.NODE,
+             description="The follower node representing the ankle of the foot", ),
+        dict(name='toeFollower', type=AttrType.NODE,
+             description="The follower node representing the toe of the foot"),
+        dict(name='control', type=AttrType.NODE,
+             description="The control to use as the parent for the foot systems and attributes."),
+        dict(name='toePivot', type=AttrType.NODE,
+             description="The toe pivot locator for rolling the foot"),
+        dict(name='ballPivot', type=AttrType.NODE,
+             description="The ball pivot locator for rolling the foot"),
+        dict(name='outerTiltPivot', type=AttrType.NODE,
+             description="The outer pivot locator for tilting the foot"),
+        dict(name='innerTiltPivot', type=AttrType.NODE,
+             description="The inner pivot locator for tilting the foot"),
+        dict(name='heelPivot', type=AttrType.NODE,
+             description="The heel pivot locator for rolling the foot"),
+        dict(name='bendLimitDefault', type=AttrType.FLOAT, value=50,
+             description="The default value for the Bend Limit attribute"),
+        dict(name='straightAngleDefault', type=AttrType.FLOAT, value=70,
+             description="The default value for the Straight Angle attribute"),
+        dict(name='ballControl', type=AttrType.NODE, optional=True,
+             description="The optional control that drives the ball joint. "
+                         "Used only in meta data so that it can be found by utils."),
+        dict(name='extraControls', type=AttrType.NODE_LIST, optional=True,
+             description="Extra controls that should be marked for use with foot control utils"),
+
+    ]
 
     def validate(self):
         if not self.ankleFollower:
