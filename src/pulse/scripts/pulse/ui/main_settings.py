@@ -21,8 +21,6 @@ class ActionPackagesList(QtWidgets.QWidget):
     def __init__(self, parent=None):
         super(ActionPackagesList, self).__init__(parent=parent)
 
-        self._labelStylesheet = 'background-color: rgba(255, 255, 255, 5%); border-radius: 2px; padding: 2px'
-
         self.setupUi(self)
         self._updatePackageList()
 
@@ -38,14 +36,14 @@ class ActionPackagesList(QtWidgets.QWidget):
         for package in registry.action_packages:
             label = QtWidgets.QLabel(self)
             label.setTextInteractionFlags(QtCore.Qt.LinksAccessibleByMouse | QtCore.Qt.TextSelectableByMouse)
-            label.setStyleSheet(self._labelStylesheet)
+            label.setProperty('cssClasses', 'block')
             label.setText(self.getPackageDisplayName(package))
             self.layout.addWidget(label)
 
         for actions_dir in registry.action_dirs:
             label = QtWidgets.QLabel(self)
             label.setTextInteractionFlags(QtCore.Qt.LinksAccessibleByMouse | QtCore.Qt.TextSelectableByMouse)
-            label.setStyleSheet(self._labelStylesheet)
+            label.setProperty('cssClasses', 'block')
             label.setText(actions_dir)
             self.layout.addWidget(label)
 
@@ -77,6 +75,7 @@ class MainSettings(QtWidgets.QWidget):
 
         self.ui.file_path_text_label.setText(self._getSceneRelativeBlueprintFilePath())
         self._updateAllSettingValues()
+        self.ui.config_file_path_label.setText(self.blueprintModel.blueprint.config_file_path)
 
         self.ui.rig_name_edit.textEdited.connect(self._onEditRigName)
         self.ui.rig_node_fmt_edit.textEdited.connect(self._onEditRigNodeNameFormat)

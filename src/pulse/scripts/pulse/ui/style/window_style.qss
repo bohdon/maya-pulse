@@ -54,6 +54,13 @@ QLabel[cssClasses~="subtitle"] {
     font-weight: bold;
 }
 
+/* A highlighted label block */
+QLabel[cssClasses~="block"] {
+    background-color: rgba(255, 255, 255, 5%);
+    border-radius: 2px;
+    padding: 2px;
+}
+
 /* The current mode title text, large and uppercase, with an active and inactive state. */
 QLabel[cssClasses~="mode-title"] {
     font-size: 11pt;
