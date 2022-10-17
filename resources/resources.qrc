@@ -1,5 +1,7 @@
 <RCC>
   <qresource prefix="res">
+    <file>palette.svg</file>
+    <file>spell_check.svg</file>
     <file>action_editor.svg</file>
     <file>angle_left.svg</file>
     <file>bars_staggered.svg</file>

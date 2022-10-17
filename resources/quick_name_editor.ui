@@ -6,14 +6,14 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>505</width>
-    <height>281</height>
+    <width>542</width>
+    <height>370</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Form</string>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout_4" stretch="0,0,1,0">
+  <layout class="QVBoxLayout" name="verticalLayout_4">
    <property name="spacing">
     <number>2</number>
    </property>
@@ -66,6 +66,16 @@
          </property>
          <property name="cssClasses" stdset="0">
           <string> section-title</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLabel" name="spacer_label2">
+         <property name="text">
+          <string/>
+         </property>
+         <property name="cssClasses" stdset="0">
+          <string>section-title</string>
          </property>
         </widget>
        </item>
@@ -150,6 +160,16 @@
         </widget>
        </item>
        <item>
+        <widget class="QLabel" name="spacer_label">
+         <property name="text">
+          <string/>
+         </property>
+         <property name="cssClasses" stdset="0">
+          <string>section-title</string>
+         </property>
+        </widget>
+       </item>
+       <item>
         <layout class="QVBoxLayout" name="suffixes_vbox">
          <property name="spacing">
           <number>2</number>
@@ -174,17 +194,34 @@
     </layout>
    </item>
    <item>
-    <widget class="QLabel" name="help_label">
-     <property name="text">
-      <string>Edit the blueprint config to modify naming keywords.</string>
-     </property>
-     <property name="cssClasses" stdset="0">
-      <string>help</string>
-     </property>
-    </widget>
+    <layout class="QHBoxLayout" name="horizontalLayout_2">
+     <item>
+      <widget class="QToolButton" name="edit_config_btn">
+       <property name="text">
+        <string/>
+       </property>
+       <property name="icon">
+        <iconset resource="resources.qrc">
+         <normaloff>:/res/action_editor.svg</normaloff>:/res/action_editor.svg</iconset>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLabel" name="help_label">
+       <property name="text">
+        <string>Edit the blueprint config to modify naming keywords.</string>
+       </property>
+       <property name="cssClasses" stdset="0">
+        <string>help</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
    </item>
   </layout>
  </widget>
- <resources/>
+ <resources>
+  <include location="resources.qrc"/>
+ </resources>
  <connections/>
 </ui>

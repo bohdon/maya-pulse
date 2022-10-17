@@ -9,23 +9,24 @@ import pymel.core as pm
 
 from ..vendor.Qt import QtCore, QtWidgets
 from .. import names
+from .. import editorutils
 from .core import PulseWindow, BlueprintUIModel
 from .gen.quick_name_editor import Ui_QuickNameEditor
 
 
-class QuickNameWidget(QtWidgets.QWidget):
+class QuickNameEditor(QtWidgets.QWidget):
     """
     Widget for quickly naming nodes using preset lists of
     keywords, prefixes, and suffixes
     """
 
     def __init__(self, parent=None):
-        super(QuickNameWidget, self).__init__(parent=parent)
+        super(QuickNameEditor, self).__init__(parent=parent)
 
         self.blueprint_model = BlueprintUIModel.getDefaultModel()
 
         # the blueprint config
-        self.config = self._get_config()
+        self.config = self.blueprint_model.blueprint.get_config()
         # the section of the config that contains naming keywords
         self.names_config = self.config.get('names', {})
 
@@ -42,6 +43,7 @@ class QuickNameWidget(QtWidgets.QWidget):
         self.setup_suffixes_ui(parent, self.ui.suffixes_vbox)
 
         self.ui.set_name_btn.clicked.connect(self._on_preview_btn_clicked)
+        self.ui.edit_config_btn.clicked.connect(editorutils.openBlueprintConfigInSourceEditor)
 
         self.refresh_preview_label()
         self._update_help_text()
@@ -53,10 +55,6 @@ class QuickNameWidget(QtWidgets.QWidget):
 
         # TODO(bsayre): check whether the config is actually available and valid
         self.ui.help_label.setText(msg_config)
-
-    def _get_config(self):
-        config = self.blueprint_model.blueprint.get_config()
-        return config if config else {}
 
     def setup_prefixes_ui(self, parent, layout):
         """
@@ -141,7 +139,7 @@ class QuickNameWidget(QtWidgets.QWidget):
             cats_layout = QtWidgets.QHBoxLayout(parent)
 
             # create category and btn grid for all keywords
-            cat_names = sorted(keywords.keys())
+            cat_names = keywords.keys()
             for catName in cat_names:
                 cat_keywords = keywords[catName]
                 cat_layout = self.setupKeywordCategoryUi(parent, catName, cat_keywords)
@@ -322,15 +320,5 @@ class QuickNameWidget(QtWidgets.QWidget):
 class QuickNameWindow(PulseWindow):
     OBJECT_NAME = 'pulseQuickNameWindow'
     WINDOW_MODULE = 'pulse.ui.quickname'
-
-    def __init__(self, parent=None):
-        super(QuickNameWindow, self).__init__(parent=parent)
-
-        self.setWindowTitle('Quick Name Editor')
-
-        layout = QtWidgets.QVBoxLayout(self)
-        layout.setMargin(0)
-        self.setLayout(layout)
-
-        widget = QuickNameWidget(self)
-        layout.addWidget(widget)
+    WINDOW_TITLE = 'Quick Name Editor'
+    WIDGET_CLASS = QuickNameEditor

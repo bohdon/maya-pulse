@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>328</width>
-    <height>112</height>
+    <height>113</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -54,7 +54,11 @@
      <item row="0" column="0">
       <widget class="QPushButton" name="name_editor_btn">
        <property name="text">
-        <string>Name Editor</string>
+        <string> Quick Name...</string>
+       </property>
+       <property name="icon">
+        <iconset resource="resources.qrc">
+         <normaloff>:/res/spell_check.svg</normaloff>:/res/spell_check.svg</iconset>
        </property>
       </widget>
      </item>
@@ -71,7 +75,11 @@
      <item row="0" column="1">
       <widget class="QPushButton" name="color_editor_btn">
        <property name="text">
-        <string>Color Editor</string>
+        <string> Quick Color...</string>
+       </property>
+       <property name="icon">
+        <iconset resource="resources.qrc">
+         <normaloff>:/res/palette.svg</normaloff>:/res/palette.svg</iconset>
        </property>
       </widget>
      </item>
@@ -109,6 +117,8 @@
    </item>
   </layout>
  </widget>
- <resources/>
+ <resources>
+  <include location="resources.qrc"/>
+ </resources>
  <connections/>
 </ui>

@@ -211,7 +211,7 @@ class Blueprint(object):
             rename_action
         ])
 
-    def get_config(self) -> Optional[dict]:
+    def get_config(self) -> dict:
         """
         Return the config for this Blueprint.
         Load the config from disk if it hasn't been loaded yet.

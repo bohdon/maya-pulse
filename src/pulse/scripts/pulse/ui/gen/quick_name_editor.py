@@ -12,12 +12,13 @@ from PySide2.QtCore import *
 from PySide2.QtGui import *
 from PySide2.QtWidgets import *
 
+from  . import resources_rc
 
 class Ui_QuickNameEditor(object):
     def setupUi(self, QuickNameEditor):
         if not QuickNameEditor.objectName():
             QuickNameEditor.setObjectName(u"QuickNameEditor")
-        QuickNameEditor.resize(505, 281)
+        QuickNameEditor.resize(542, 370)
         self.verticalLayout_4 = QVBoxLayout(QuickNameEditor)
         self.verticalLayout_4.setSpacing(2)
         self.verticalLayout_4.setObjectName(u"verticalLayout_4")
@@ -40,6 +41,11 @@ class Ui_QuickNameEditor(object):
         self.prefixes_title.setMinimumSize(QSize(60, 0))
 
         self.verticalLayout.addWidget(self.prefixes_title)
+
+        self.spacer_label2 = QLabel(QuickNameEditor)
+        self.spacer_label2.setObjectName(u"spacer_label2")
+
+        self.verticalLayout.addWidget(self.spacer_label2)
 
         self.prefixes_vbox = QVBoxLayout()
         self.prefixes_vbox.setSpacing(2)
@@ -84,6 +90,11 @@ class Ui_QuickNameEditor(object):
 
         self.verticalLayout_3.addWidget(self.suffixes_title)
 
+        self.spacer_label = QLabel(QuickNameEditor)
+        self.spacer_label.setObjectName(u"spacer_label")
+
+        self.verticalLayout_3.addWidget(self.spacer_label)
+
         self.suffixes_vbox = QVBoxLayout()
         self.suffixes_vbox.setSpacing(2)
         self.suffixes_vbox.setObjectName(u"suffixes_vbox")
@@ -101,12 +112,24 @@ class Ui_QuickNameEditor(object):
 
         self.verticalLayout_4.addLayout(self.horizontalLayout)
 
+        self.horizontalLayout_2 = QHBoxLayout()
+        self.horizontalLayout_2.setObjectName(u"horizontalLayout_2")
+        self.edit_config_btn = QToolButton(QuickNameEditor)
+        self.edit_config_btn.setObjectName(u"edit_config_btn")
+        icon = QIcon()
+        icon.addFile(u":/res/action_editor.svg", QSize(), QIcon.Normal, QIcon.Off)
+        self.edit_config_btn.setIcon(icon)
+
+        self.horizontalLayout_2.addWidget(self.edit_config_btn)
+
         self.help_label = QLabel(QuickNameEditor)
         self.help_label.setObjectName(u"help_label")
 
-        self.verticalLayout_4.addWidget(self.help_label)
+        self.horizontalLayout_2.addWidget(self.help_label)
 
-        self.verticalLayout_4.setStretch(2, 1)
+
+        self.verticalLayout_4.addLayout(self.horizontalLayout_2)
+
 
         self.retranslateUi(QuickNameEditor)
 
@@ -122,10 +145,15 @@ class Ui_QuickNameEditor(object):
         self.set_name_btn.setProperty("cssClasses", QCoreApplication.translate("QuickNameEditor", u"large", None))
         self.prefixes_title.setText(QCoreApplication.translate("QuickNameEditor", u"Prefixes", None))
         self.prefixes_title.setProperty("cssClasses", QCoreApplication.translate("QuickNameEditor", u" section-title", None))
+        self.spacer_label2.setText("")
+        self.spacer_label2.setProperty("cssClasses", QCoreApplication.translate("QuickNameEditor", u"section-title", None))
         self.keywords_title.setText(QCoreApplication.translate("QuickNameEditor", u"Keywords", None))
         self.keywords_title.setProperty("cssClasses", QCoreApplication.translate("QuickNameEditor", u" section-title", None))
         self.suffixes_title.setText(QCoreApplication.translate("QuickNameEditor", u"Suffixes", None))
         self.suffixes_title.setProperty("cssClasses", QCoreApplication.translate("QuickNameEditor", u" section-title", None))
+        self.spacer_label.setText("")
+        self.spacer_label.setProperty("cssClasses", QCoreApplication.translate("QuickNameEditor", u"section-title", None))
+        self.edit_config_btn.setText("")
         self.help_label.setText(QCoreApplication.translate("QuickNameEditor", u"Edit the blueprint config to modify naming keywords.", None))
         self.help_label.setProperty("cssClasses", QCoreApplication.translate("QuickNameEditor", u"help", None))
     # retranslateUi

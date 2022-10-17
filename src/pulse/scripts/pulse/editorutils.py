@@ -18,6 +18,7 @@ from . import nodes
 from . import shapes
 from . import skins
 from . import sym
+from . import sourceeditor
 from .colors import LinearColor
 from .vendor.mayacoretools import preservedSelection
 from .ui.core import BlueprintUIModel
@@ -713,3 +714,12 @@ def setOverrideColorForSelected(color):
 def disableColorOverrideForSelected():
     for node in pm.selected():
         nodes.disableColorOverride(node)
+
+
+def openBlueprintConfigInSourceEditor():
+    """
+    Open the current Blueprint's config in a source editor.
+    """
+    blueprint = getEditorBlueprint()
+    if blueprint:
+        sourceeditor.open_file(blueprint.config_file_path)

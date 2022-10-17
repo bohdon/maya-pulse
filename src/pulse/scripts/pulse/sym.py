@@ -596,9 +596,6 @@ class BlueprintMirrorOperation(MirrorOperation):
         if self._config is None:
             if self.blueprint:
                 self._config = self.blueprint.get_config()
-            # if still no config, set to empty dict to prevent repeat check
-            if self._config is None:
-                self._config = {}
         return self._config
 
 

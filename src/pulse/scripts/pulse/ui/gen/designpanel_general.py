@@ -12,12 +12,13 @@ from PySide2.QtCore import *
 from PySide2.QtGui import *
 from PySide2.QtWidgets import *
 
+from  . import resources_rc
 
 class Ui_GeneralDesignPanel(object):
     def setupUi(self, GeneralDesignPanel):
         if not GeneralDesignPanel.objectName():
             GeneralDesignPanel.setObjectName(u"GeneralDesignPanel")
-        GeneralDesignPanel.resize(328, 112)
+        GeneralDesignPanel.resize(328, 113)
         self.verticalLayout = QVBoxLayout(GeneralDesignPanel)
         self.verticalLayout.setSpacing(2)
         self.verticalLayout.setObjectName(u"verticalLayout")
@@ -36,6 +37,9 @@ class Ui_GeneralDesignPanel(object):
 
         self.name_editor_btn = QPushButton(GeneralDesignPanel)
         self.name_editor_btn.setObjectName(u"name_editor_btn")
+        icon = QIcon()
+        icon.addFile(u":/res/spell_check.svg", QSize(), QIcon.Normal, QIcon.Off)
+        self.name_editor_btn.setIcon(icon)
 
         self.gridLayout.addWidget(self.name_editor_btn, 0, 0, 1, 1)
 
@@ -46,6 +50,9 @@ class Ui_GeneralDesignPanel(object):
 
         self.color_editor_btn = QPushButton(GeneralDesignPanel)
         self.color_editor_btn.setObjectName(u"color_editor_btn")
+        icon1 = QIcon()
+        icon1.addFile(u":/res/palette.svg", QSize(), QIcon.Normal, QIcon.Off)
+        self.color_editor_btn.setIcon(icon1)
 
         self.gridLayout.addWidget(self.color_editor_btn, 0, 1, 1, 1)
 
@@ -83,12 +90,12 @@ class Ui_GeneralDesignPanel(object):
         self.freeze_scales_btn.setStatusTip(QCoreApplication.translate("GeneralDesignPanel", u"Freeze the scales of the selected node and its children without affecting their pivots.", None))
 #endif // QT_CONFIG(statustip)
         self.freeze_scales_btn.setText(QCoreApplication.translate("GeneralDesignPanel", u"Freeze Scales", None))
-        self.name_editor_btn.setText(QCoreApplication.translate("GeneralDesignPanel", u"Name Editor", None))
+        self.name_editor_btn.setText(QCoreApplication.translate("GeneralDesignPanel", u" Quick Name...", None))
 #if QT_CONFIG(statustip)
         self.create_offset_btn.setStatusTip(QCoreApplication.translate("GeneralDesignPanel", u"Group the selected transform, creating the group exactly where the transform is.", None))
 #endif // QT_CONFIG(statustip)
         self.create_offset_btn.setText(QCoreApplication.translate("GeneralDesignPanel", u"Create Offset", None))
-        self.color_editor_btn.setText(QCoreApplication.translate("GeneralDesignPanel", u"Color Editor", None))
+        self.color_editor_btn.setText(QCoreApplication.translate("GeneralDesignPanel", u" Quick Color...", None))
 #if QT_CONFIG(statustip)
         self.parent_in_order_btn.setStatusTip(QCoreApplication.translate("GeneralDesignPanel", u"Parent the selection in order, select leaders to followers.", None))
 #endif // QT_CONFIG(statustip)

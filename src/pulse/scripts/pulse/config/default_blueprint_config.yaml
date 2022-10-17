@@ -46,7 +46,7 @@ names:
       - teeth
       - tongue
       - cheek
-  prefixes: { }
+  prefixes: [ ]
   suffixes:
     - name: ik
       sort: 7
