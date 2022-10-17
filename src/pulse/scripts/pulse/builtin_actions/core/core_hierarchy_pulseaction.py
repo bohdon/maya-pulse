@@ -2,16 +2,31 @@ import pymel.core as pm
 
 import pulse.nodes
 from pulse.buildItems import BuildAction
+from pulse.buildItems import BuildActionAttributeType as AttrType
 
 
 class BuildCoreHierarchyAction(BuildAction):
     """
     Builds a core hierarchy of the rig.
 
-    This creates a group for one of the rig's main
-    features (usually ctls, joints, or meshes) and
-    parents the corresponding nodes.
+    This creates a group for one of the rig's main features (usually ctls, joints, or meshes)
+    and parents the corresponding nodes.
     """
+
+    id = 'Pulse.BuildCoreHierarchy'
+    displayName = 'Build Core Hierarchy'
+    description = 'Gathers nodes into a core hierarchy of the rig'
+    category = 'Core'
+    attr_definitions = [
+        dict(name='groupName', type=AttrType.STRING,
+             description="The name of the group. If left empty, will use the root node of the rig."),
+        dict(name='groupVisible', type=AttrType.BOOL, value=True,
+             description="Whether the group should be visible or not in the built rig."),
+        dict(name='allNodes', type=AttrType.BOOL, value=False,
+             description="If true, include all remaining unorganized nodes in this group."),
+        dict(name='nodes', type=AttrType.NODE_LIST, optional=True,
+             description="The nodes to include in this group."),
+    ]
 
     def run(self):
         if self.groupName:

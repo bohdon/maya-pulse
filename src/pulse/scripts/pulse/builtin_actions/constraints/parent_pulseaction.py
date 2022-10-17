@@ -1,4 +1,5 @@
-from pulse.buildItems import BuildAction, BuildActionError, BuildActionAttribute, BuildActionAttributeType
+from pulse.buildItems import BuildAction, BuildActionError
+from pulse.buildItems import BuildActionAttributeType as AttributeType
 
 
 class ParentAction(BuildAction):
@@ -8,10 +9,8 @@ class ParentAction(BuildAction):
     color = [.4, .6, .8]
     category = 'Constraints'
     attr_definitions = [
-        {'name': 'parent',
-         'type': BuildActionAttributeType.NODE},
-        {'name': 'child',
-         'type': BuildActionAttributeType.NODE}
+        dict(name='parent', type=AttributeType.NODE),
+        dict(name='child', type=AttributeType.NODE),
     ]
 
     def validate(self):

@@ -3,6 +3,7 @@ import pymel.core as pm
 import pulse.nodes
 from pulse.vendor import pymetanode as meta
 from pulse.buildItems import BuildAction, BuildActionError
+from pulse.buildItems import BuildActionAttributeType as AttrType
 from pulse.animinterface import ANIM_CTL_METACLASS
 from pulse.ui.contextmenus import PulseNodeContextSubMenu
 
@@ -13,6 +14,22 @@ except ImportError:
 
 
 class AnimControlAction(BuildAction):
+    id = 'Pulse.AnimControl'
+    displayName = 'Anim Control'
+    description = 'Configures a node to be used as an animation control'
+    color = (.85, .65, .4)
+    category = 'Controls'
+    attr_definitions = [
+        dict(name='controlNode', type=AttrType.NODE, description="The control node to mark as an animation control"),
+        dict(name='zeroOutMethod', type=AttrType.OPTION, value=1, options=[
+            'None',
+            'Offset Matrix',
+            'Insert Transform',
+        ], description="Which method to use to ensure the control transform attributes are zeroed by"
+                       "default in the current possition"),
+        dict(name='keyableAttrs', type=AttrType.STRING_LIST, value=['t', 'r', 's'], canMirror=False,
+             description='Defines attributes that can be animated. All others will be locked.'),
+    ]
 
     def get_min_api_version(self):
         if self.zeroOutMethod == 1:
