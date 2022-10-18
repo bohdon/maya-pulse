@@ -50,39 +50,41 @@ if scene_name:
 
 ## Adding Custom Actions
 
-Actions are found by recursively searching a directory and loading individual `*_pulseaction.py` modules that contain
-one or more `BuildAction` subclasses. You can add additional actions directories to search during startup using
-the `BuildActionPackageRegistry`:
+Actions are found by recursively searching a python package for `BuildAction` subclasses. Beyond the default
+`pulse.builtin_actions`, you can add other action packages to search using the `BuildActionPackageRegistry`.
 
 ```py
-# register a custom actions directory
-from pulse.loader import BuildActionPackageRegistry
-
-BuildActionPackageRegistry.get().add_dir('/path/to/my/actions')
-```
-
-You can also use a python package, whose location will be used as the directory to search:
-
-```py
-# register a custom actions package
 from pulse.loader import BuildActionPackageRegistry
 import my_pulse_actions
 
+# register custom actions package
 BuildActionPackageRegistry.get().add_package(my_pulse_actions)
 ```
 
-In the above example, `my_pulse_actions` is a package somewhere on sys.path that may look like this:
+In the above example, `my_pulse_actions` is a package with as many subpackages and submodules as you want.
+As long as all modules are at least imported in the package, they and all `BuildAction` subclasses inside them will be
+found.
 
 ```
 my_pulse_actions/
-  __init__.py
-  my_action_pulseaction.py
-  some_folder/
-    my_other_action_pulseaction.py
+  __init__.py (imports all submodules)
+  my_custom_action.py
+  deformers/
+    __init__.py
+    my_custom_deformer.py
 ```
 
-Note that sub folders don't need to be python packages (there's no `some_folder/__init__.py`). Each `*_pulseaction.py`
-module is found and imported individually, the package is just used to locate the directory.
+You can dynamically import all your actions using `loader.import_all_submodules` to avoid maintaining package imports.
+
+```py
+# my_pulse_actions/__init__.py
+from pulse import loader
+
+# equivalent to:
+#   import my_custom_action
+#   import deformers.my_custom_deformer
+loader.import_all_submodules(__name__)
+```
 
 ## Roadmap
 
