@@ -25,6 +25,7 @@ class Ui_MainEditor(object):
         self.verticalLayout.setContentsMargins(0, 0, 0, 0)
         self.main_layout = QVBoxLayout()
         self.main_layout.setObjectName(u"main_layout")
+        self.main_layout.setContentsMargins(-1, 6, -1, -1)
         self.toolbar_layout = QVBoxLayout()
         self.toolbar_layout.setObjectName(u"toolbar_layout")
 
