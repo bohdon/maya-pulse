@@ -12,6 +12,7 @@ from PySide2.QtCore import *
 from PySide2.QtGui import *
 from PySide2.QtWidgets import *
 
+from  . import icons_rc
 
 class Ui_LayoutLinkEditor(object):
     def setupUi(self, LayoutLinkEditor):
@@ -84,8 +85,11 @@ class Ui_LayoutLinkEditor(object):
 
         self.horizontalLayout_3.addWidget(self.section_title_links)
 
-        self.refresh_btn = QPushButton(LayoutLinkEditor)
+        self.refresh_btn = QToolButton(LayoutLinkEditor)
         self.refresh_btn.setObjectName(u"refresh_btn")
+        icon = QIcon()
+        icon.addFile(u":/icon/rotate_right.svg", QSize(), QIcon.Normal, QIcon.Off)
+        self.refresh_btn.setIcon(icon)
 
         self.horizontalLayout_3.addWidget(self.refresh_btn)
 
@@ -97,7 +101,21 @@ class Ui_LayoutLinkEditor(object):
         self.link_info_scroll_area.setWidgetResizable(True)
         self.link_info_scroll_area_widget = QWidget()
         self.link_info_scroll_area_widget.setObjectName(u"link_info_scroll_area_widget")
-        self.link_info_scroll_area_widget.setGeometry(QRect(0, 0, 384, 248))
+        self.link_info_scroll_area_widget.setGeometry(QRect(0, 0, 384, 249))
+        self.verticalLayout_3 = QVBoxLayout(self.link_info_scroll_area_widget)
+        self.verticalLayout_3.setObjectName(u"verticalLayout_3")
+        self.verticalLayout_3.setContentsMargins(0, 0, 0, 0)
+        self.link_info_vbox = QVBoxLayout()
+        self.link_info_vbox.setSpacing(2)
+        self.link_info_vbox.setObjectName(u"link_info_vbox")
+
+        self.verticalLayout_3.addLayout(self.link_info_vbox)
+
+        self.verticalSpacer_2 = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding)
+
+        self.verticalLayout_3.addItem(self.verticalSpacer_2)
+
+        self.verticalLayout_3.setStretch(1, 1)
         self.link_info_scroll_area.setWidget(self.link_info_scroll_area_widget)
 
         self.verticalLayout.addWidget(self.link_info_scroll_area)
@@ -128,6 +146,6 @@ class Ui_LayoutLinkEditor(object):
 #if QT_CONFIG(tooltip)
         self.refresh_btn.setToolTip(QCoreApplication.translate("LayoutLinkEditor", u"Refresh the link data for the selected nodes.", None))
 #endif // QT_CONFIG(tooltip)
-        self.refresh_btn.setText(QCoreApplication.translate("LayoutLinkEditor", u"Refresh", None))
+        self.refresh_btn.setText("")
     # retranslateUi
 

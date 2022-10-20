@@ -55,7 +55,7 @@ QLabel[cssClasses~="subtitle"] {
 }
 
 /* A highlighted label block */
-QLabel[cssClasses~="block"] {
+QWidget[cssClasses~="block"] {
     background-color: rgba(255, 255, 255, 5%);
     border-radius: 2px;
     padding: 2px;

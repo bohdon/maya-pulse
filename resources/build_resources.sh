@@ -44,6 +44,7 @@ build_ui designpanel_layout
 build_ui designpanel_symmetry
 build_ui designpanel_weights
 build_ui layout_link_editor
+build_ui layout_link_info_widget
 build_ui main_editor
 build_ui main_settings
 build_ui main_toolbar

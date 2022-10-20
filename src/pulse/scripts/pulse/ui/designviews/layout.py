@@ -4,12 +4,13 @@ from maya import OpenMaya as api
 from ...vendor.Qt import QtWidgets, QtGui
 from ... import editorutils
 from ... import links
-from ..utils import undoAndRepeatPartial as cmd
 from ..core import PulseWindow
-from .. import utils as viewutils
+from .. import utils
+from ..utils import undoAndRepeatPartial as cmd
 
 from ..gen.designpanel_layout import Ui_LayoutDesignPanel
 from ..gen.layout_link_editor import Ui_LayoutLinkEditor
+from ..gen.layout_link_info_widget import Ui_LayoutLinkInfoWidget
 
 
 class LayoutDesignPanel(QtWidgets.QWidget):
@@ -36,7 +37,6 @@ class LayoutLinkEditorWidget(QtWidgets.QWidget):
         super(LayoutLinkEditorWidget, self).__init__(parent=parent)
 
         self.selection_changed_cb = None
-        self.link_info_list = None
 
         self.ui = Ui_LayoutLinkEditor()
         self.ui.setupUi(self)
@@ -47,7 +47,7 @@ class LayoutLinkEditorWidget(QtWidgets.QWidget):
         self.ui.recreate_link_btn.clicked.connect(cmd(self.recreate_links_for_selected))
         self.ui.unlink_btn.clicked.connect(cmd(self.unlink_selected))
         self.ui.snap_to_targets_btn.clicked.connect(cmd(editorutils.positionLinkForSelected))
-        self.ui.refresh_btn.clicked.connect(self.update_link_info_list)
+        self.ui.refresh_btn.clicked.connect(self.update_link_info)
 
     def showEvent(self, event):
         super(LayoutLinkEditorWidget, self).showEvent(event)
@@ -55,7 +55,7 @@ class LayoutLinkEditorWidget(QtWidgets.QWidget):
             print('adding selection changed callback')
             self.selection_changed_cb = api.MEventMessage.addEventCallback("SelectionChanged",
                                                                            self.onSceneSelectionChanged)
-        self.update_link_info_list()
+        self.update_link_info()
 
     def hideEvent(self, event):
         super(LayoutLinkEditorWidget, self).hideEvent(event)
@@ -65,67 +65,41 @@ class LayoutLinkEditorWidget(QtWidgets.QWidget):
             self.selection_changed_cb = None
 
     def onSceneSelectionChanged(self, *args, **kwargs):
-        self.update_link_info_list()
+        self.update_link_info()
 
     @property
     def keep_offsets(self):
         return self.ui.keep_offsets_check.isChecked()
 
-    def update_link_info_list(self):
-        if self.link_info_list:
-            self.link_info_list.deleteLater()
-            self.link_info_list = None
+    def update_link_info(self):
+        parent = self.ui.link_info_scroll_area_widget
 
         # get selected nodes and link data
         sel_nodes = pm.selected()
-        self.link_info_list = LinkInfoListWidget(self, sel_nodes)
-        self.ui.link_info_scroll_area.setWidget(self.link_info_list)
+        utils.clearLayout(self.ui.link_info_vbox)
 
-    def link_selected(self, linkType):
-        editorutils.linkSelected(linkType, self.keep_offsets)
-        self.update_link_info_list()
-
-    def link_selected_weighted(self):
-        editorutils.linkSelectedWeighted(self.keep_offsets)
-        self.update_link_info_list()
-
-    def recreate_links_for_selected(self):
-        editorutils.recreateLinksForSelected(self.keep_offsets)
-        self.update_link_info_list()
-
-    def unlink_selected(self):
-        editorutils.unlinkSelected()
-        self.update_link_info_list()
-
-
-class LinkInfoListWidget(QtWidgets.QWidget):
-    """
-    Displays info for a list of linked nodes
-    """
-
-    def __init__(self, parent, nodes):
-        super(LinkInfoListWidget, self).__init__(parent=parent)
-
-        self.nodes = [n for n in nodes if n]
-
-        self.setupUi(self)
-
-    def setupUi(self, parent):
-        layout = QtWidgets.QVBoxLayout(parent)
-        layout.setMargin(4)
-
-        for node in self.nodes:
+        for node in sel_nodes:
             if not links.isLinked(node):
                 continue
             linkData = links.getLinkMetaData(node)
             linkInfo = LinkInfoWidget(parent, node, linkData)
-            layout.addWidget(linkInfo)
+            self.ui.link_info_vbox.addWidget(linkInfo)
 
-        spacer = QtWidgets.QSpacerItem(
-            20, 20, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
-        layout.addItem(spacer)
+    def link_selected(self, linkType):
+        editorutils.linkSelected(linkType, self.keep_offsets)
+        self.update_link_info()
 
-        self.setLayout(layout)
+    def link_selected_weighted(self):
+        editorutils.linkSelectedWeighted(self.keep_offsets)
+        self.update_link_info()
+
+    def recreate_links_for_selected(self):
+        editorutils.recreateLinksForSelected(self.keep_offsets)
+        self.update_link_info()
+
+    def unlink_selected(self):
+        editorutils.unlinkSelected()
+        self.update_link_info()
 
 
 class LinkInfoWidget(QtWidgets.QWidget):
@@ -144,45 +118,31 @@ class LinkInfoWidget(QtWidgets.QWidget):
         self.node = node
         self.linkData = linkData
 
-        self.setupUi(self)
+        self.ui = Ui_LayoutLinkInfoWidget()
+        self.ui.setupUi(self)
 
-    def setupUi(self, parent):
-        layout = QtWidgets.QVBoxLayout(parent)
-        layout.setMargin(0)
+        self.setupMetadataUi(self)
 
-        # add node name label
-        font = QtGui.QFont()
-        font.setWeight(75)
-        font.setBold(True)
-        nodeNameLabel = QtWidgets.QLabel(parent)
-        nodeNameLabel.setFont(font)
-        nodeNameLabel.setText(self.node.name())
-        layout.addWidget(nodeNameLabel)
+        self.ui.name_label.setText(self.node.name())
 
-        gridLayout = QtWidgets.QGridLayout(parent)
-        gridLayout.setContentsMargins(20, 0, 0, 0)
-        gridLayout.setSpacing(2)
-        layout.addLayout(gridLayout)
-        gridItems = []
-
+    def setupMetadataUi(self, parent):
         # get link data keys, sorted with `type` and `targetNodes` first
         keys = ['type', 'targetNodes']
         keys += [k for k in self.linkData.keys() if k not in keys]
 
         # create labels for each piece of data
+        row = 0
         for key in keys:
-            value = self.linkData.get(key)
             nameLabel = QtWidgets.QLabel(parent)
             nameLabel.setText(key)
+
             valueLabel = QtWidgets.QLabel(parent)
-            valueLabel.setText(str(value))
+            valueLabel.setText(str(self.linkData.get(key)))
 
             # add new items to list of pending grid items
-            gridItems.append([nameLabel, valueLabel])
-
-        viewutils.addItemsToGrid(gridLayout, gridItems)
-
-        self.setLayout(layout)
+            self.ui.metadata_form.setWidget(row, QtWidgets.QFormLayout.LabelRole, nameLabel)
+            self.ui.metadata_form.setWidget(row, QtWidgets.QFormLayout.FieldRole, valueLabel)
+            row += 1
 
 
 class LayoutLinkEditorWindow(PulseWindow):
