@@ -3,13 +3,14 @@ Toolbar for running main actions like validate and build.
 """
 
 import logging
+from typing import Optional
 
 import maya.cmds as cmds
 
 from ..vendor.Qt import QtWidgets
 from .. import editorutils
+from .. import rigs
 from ..blueprints import BlueprintBuilder, BlueprintValidator, BlueprintSettings
-from ..rigs import openFirstRigBlueprint
 from .core import BlueprintUIModel
 from .main_settings import MainSettingsWindow
 from .actioneditor import ActionEditorWindow
@@ -27,6 +28,7 @@ class MainToolbar(QtWidgets.QWidget):
 
         # used to cause a latent refresh after builds
         self._isStateDirty = False
+        self.interactiveBuilder: Optional[BlueprintBuilder] = None
 
         self.blueprintModel = BlueprintUIModel.getDefaultModel()
 
@@ -45,10 +47,13 @@ class MainToolbar(QtWidgets.QWidget):
         self.blueprintModel.readOnlyChanged.connect(self._onReadOnlyChanged)
         self.blueprintModel.settingChanged.connect(self._onSettingChanged)
 
+        # TODO (bsayre): use blueprint model to track interactive build
+
         self.ui.new_blueprint_btn.clicked.connect(self.blueprintModel.newFile)
         self.ui.validate_btn.clicked.connect(self.runValidation)
         self.ui.build_btn.clicked.connect(self.runBuild)
-        self.ui.open_blueprint_btn.clicked.connect(openFirstRigBlueprint)
+        self.ui.interactive_build_btn.clicked.connect(self.runOrStepInteractiveBuild)
+        self.ui.open_blueprint_btn.clicked.connect(self.openFirstRigBlueprint)
 
         self.ui.settings_btn.clicked.connect(MainSettingsWindow.toggleWindow)
         self.ui.design_toolkit_btn.clicked.connect(DesignToolkitWindow.toggleWindow)
@@ -144,6 +149,8 @@ class MainToolbar(QtWidgets.QWidget):
             # update mode frame color
             self.ui.mode_frame.setProperty('cssClasses', 'toolbar-blueprint')
 
+        self.ui.interactive_build_btn.setEnabled(self.interactiveBuilder is not None or not self.doesRigExist())
+
         # refresh stylesheet for mode frame
         self.ui.mode_frame.setStyleSheet('')
 
@@ -158,25 +165,79 @@ class MainToolbar(QtWidgets.QWidget):
 
     def runBuild(self):
         blueprint = self.blueprintModel.blueprint
-        if blueprint is not None:
-            if not BlueprintBuilder.pre_build_validate(blueprint):
+        if blueprint is None:
+            return
+
+        if not BlueprintBuilder.pre_build_validate(blueprint):
+            return
+
+        # save maya scene
+        # TODO: expose prompt to save scene as option
+        if not editorutils.saveSceneIfDirty(prompt=False):
+            return
+
+        # save blueprint
+        if self.blueprintModel.isFileModified():
+            if not self.blueprintModel.saveFileWithPrompt():
                 return
 
-            # save maya scene
-            # TODO: expose prompt to save scene as option
-            if not editorutils.saveSceneIfDirty(prompt=False):
-                return
+        builder = BlueprintBuilder.from_current_scene(blueprint)
+        builder.show_progress_ui = True
+        builder.start()
 
-            # save blueprint
-            if self.blueprintModel.isFileModified():
-                if not self.blueprintModel.saveFileWithPrompt():
-                    return
+        cmds.evalDeferred(self._onStateDirty)
 
-            builder = BlueprintBuilder.from_current_scene(blueprint)
-            builder.show_progress_ui = True
-            builder.start()
+        # TODO: add build events for situations like this
+        cmds.evalDeferred(self.blueprintModel.refreshRigExists, low=True)
 
-            cmds.evalDeferred(self._onStateDirty)
+    def runOrStepInteractiveBuild(self):
+        if self.interactiveBuilder:
+            self.interactiveBuilder.next()
+            if self.interactiveBuilder.is_finished:
+                self.interactiveBuilder = None
 
             # TODO: add build events for situations like this
             cmds.evalDeferred(self.blueprintModel.refreshRigExists, low=True)
+        else:
+            self.runInteractiveBuild()
+
+    def runInteractiveBuild(self):
+        blueprint = self.blueprintModel.blueprint
+        if blueprint is None:
+            return
+
+        if not BlueprintBuilder.pre_build_validate(blueprint):
+            return
+
+        # save maya scene
+        # TODO: expose prompt to save scene as option
+        if not editorutils.saveSceneIfDirty(prompt=False):
+            return
+
+        # save blueprint
+        if self.blueprintModel.isFileModified():
+            if not self.blueprintModel.saveFileWithPrompt():
+                return
+
+        self.interactiveBuilder = BlueprintBuilder.from_current_scene(blueprint)
+        self.interactiveBuilder.start(run=False)
+
+        # auto run setup phase
+        while True:
+            self.interactiveBuilder.next()
+            if self.interactiveBuilder.phase == 'actions':
+                break
+
+        cmds.evalDeferred(self._onStateDirty)
+
+        # TODO: add build events for situations like this
+        cmds.evalDeferred(self.blueprintModel.refreshRigExists, low=True)
+
+    def cancelInteractiveBuild(self):
+        if self.interactiveBuilder:
+            self.interactiveBuilder.cancel()
+            self.interactiveBuilder = None
+
+    def openFirstRigBlueprint(self):
+        self.cancelInteractiveBuild()
+        rigs.openFirstRigBlueprint()

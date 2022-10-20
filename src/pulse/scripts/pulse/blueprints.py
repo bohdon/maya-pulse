@@ -419,6 +419,8 @@ class BlueprintBuilder(object):
         self.is_finished = False
         self.is_running = False
         self.is_canceled = False
+        # the current phase of building, 'setup', 'actions', or 'finished'
+        self.phase: Optional[str] = None
         self.start_time = 0.0
         self.end_time = 0.0
         self.elapsed_time = 0.0
@@ -524,20 +526,27 @@ class BlueprintBuilder(object):
         self.is_running = True
 
         while True:
-            iter_result = next(self.generator)
-            # handle the result of the build iteration
-            if iter_result.get('finish'):
-                self.finish()
-            # report progress
-            self.on_progress(iter_result['index'], iter_result['total'], iter_result['status'])
+            self.next()
+
             # check for user cancel
             if self.check_cancel():
                 self.cancel()
+
             # check if we should stop running
             if self.is_finished or self.is_canceled or self.check_pause():
                 break
 
         self.is_running = False
+
+    def next(self):
+        iter_result = next(self.generator)
+        self.log.info(f'iter_result: {iter_result}')
+        self.phase = iter_result['phase']
+        # handle the result of the build iteration
+        if self.phase == 'finished':
+            self.finish()
+        # report progress
+        self.on_progress(iter_result['index'], iter_result['total'], iter_result['status'])
 
     def check_pause(self):
         """
@@ -700,15 +709,16 @@ class BlueprintBuilder(object):
         It runs all BuildSteps and BuildActions in order.
         """
 
-        yield dict(index=0, total=2, status='Create Rig Structure')
+        yield dict(index=0, total=2, phase='setup', status='Create Rig Structure')
 
         self.create_rig_structure()
 
-        yield dict(index=1, total=2, status='Retrieve Actions')
+        yield dict(index=1, total=2, phase='setup', status='Retrieve Actions')
 
         # recursively iterate through all build actions
         all_actions = list(self.action_iterator())
         action_count = len(all_actions)
+        self.log.info(f'Generated {action_count} actions.')
 
         # clear all validate results before running
         for step, action in all_actions:
@@ -719,14 +729,14 @@ class BlueprintBuilder(object):
             # TODO: include more data somehow so we can track variant action indexes
 
             # return progress for the action that is about to run
-            yield dict(index=index, total=action_count, status=step.get_full_path())
+            yield dict(index=index, total=action_count, phase='actions', status=step.get_full_path())
 
             # run the action
             action.builder = self
             action.rig = self.rig
             self.run_build_action(step, action, index, action_count)
 
-        yield dict(index=action_count, total=action_count, status='Finished', finish=True)
+        yield dict(index=action_count, total=action_count, phase='finished', status='Finished')
 
     def create_rig_structure(self):
         """
@@ -741,6 +751,7 @@ class BlueprintBuilder(object):
             version=BLUEPRINT_VERSION,
             blueprintFile=self.scene_file_path,
         ))
+        self.log.info(f'Created rig structure: {self.rig.nodeName()}')
 
     def run_build_action(self, step: BuildStep, action: BuildAction, index: int, action_count: int):
         start_time = time.time()

@@ -118,7 +118,7 @@
   </layout>
  </widget>
  <resources>
-  <include location="icons.qrc"/>
+  <include location="icons/icons.qrc"/>
  </resources>
  <connections/>
 </ui>

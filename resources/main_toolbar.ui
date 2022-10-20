@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>323</width>
-    <height>127</height>
+    <width>448</width>
+    <height>132</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -167,30 +167,69 @@
              </widget>
             </item>
             <item>
-             <widget class="QPushButton" name="build_btn">
-              <property name="minimumSize">
-               <size>
-                <width>80</width>
-                <height>0</height>
-               </size>
+             <layout class="QHBoxLayout" name="horizontalLayout_2">
+              <property name="spacing">
+               <number>4</number>
               </property>
-              <property name="statusTip">
-               <string>Save the blueprint and scene and build the rig.</string>
-              </property>
-              <property name="text">
-               <string> Build</string>
-              </property>
-              <property name="icon">
-               <iconset resource="icons/icons.qrc">
-                <normaloff>:/icon/build.svg</normaloff>:/icon/build.svg</iconset>
-              </property>
-              <property name="iconSize">
-               <size>
-                <width>14</width>
-                <height>14</height>
-               </size>
-              </property>
-             </widget>
+              <item>
+               <widget class="QPushButton" name="interactive_build_btn">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="minimumSize">
+                 <size>
+                  <width>30</width>
+                  <height>0</height>
+                 </size>
+                </property>
+                <property name="statusTip">
+                 <string>Run an interactive build.</string>
+                </property>
+                <property name="text">
+                 <string/>
+                </property>
+                <property name="icon">
+                 <iconset resource="icons/icons.qrc">
+                  <normaloff>:/icon/forward_step.svg</normaloff>:/icon/forward_step.svg</iconset>
+                </property>
+                <property name="iconSize">
+                 <size>
+                  <width>14</width>
+                  <height>14</height>
+                 </size>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="build_btn">
+                <property name="minimumSize">
+                 <size>
+                  <width>80</width>
+                  <height>0</height>
+                 </size>
+                </property>
+                <property name="statusTip">
+                 <string>Save the blueprint and scene and build the rig.</string>
+                </property>
+                <property name="text">
+                 <string> Build</string>
+                </property>
+                <property name="icon">
+                 <iconset resource="icons/icons.qrc">
+                  <normaloff>:/icon/build.svg</normaloff>:/icon/build.svg</iconset>
+                </property>
+                <property name="iconSize">
+                 <size>
+                  <width>14</width>
+                  <height>14</height>
+                 </size>
+                </property>
+               </widget>
+              </item>
+             </layout>
             </item>
             <item>
              <widget class="QPushButton" name="open_blueprint_btn">
@@ -288,7 +327,7 @@
   </layout>
  </widget>
  <resources>
-  <include location="icons.qrc"/>
+  <include location="icons/icons.qrc"/>
  </resources>
  <connections/>
 </ui>

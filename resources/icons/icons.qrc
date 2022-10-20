@@ -1,5 +1,6 @@
 <RCC>
   <qresource prefix="icon">
+    <file>forward_step.svg</file>
     <file>action_editor.svg</file>
     <file>angle_left.svg</file>
     <file>bars_staggered.svg</file>

@@ -18,7 +18,7 @@ class Ui_MainToolbar(object):
     def setupUi(self, MainToolbar):
         if not MainToolbar.objectName():
             MainToolbar.setObjectName(u"MainToolbar")
-        MainToolbar.resize(323, 127)
+        MainToolbar.resize(448, 132)
         self.verticalLayout_5 = QVBoxLayout(MainToolbar)
         self.verticalLayout_5.setObjectName(u"verticalLayout_5")
         self.verticalLayout_5.setContentsMargins(0, 0, 0, 0)
@@ -95,21 +95,42 @@ class Ui_MainToolbar(object):
 
         self.buttons_layout.addWidget(self.validate_btn)
 
+        self.horizontalLayout_2 = QHBoxLayout()
+        self.horizontalLayout_2.setSpacing(4)
+        self.horizontalLayout_2.setObjectName(u"horizontalLayout_2")
+        self.interactive_build_btn = QPushButton(self.mode_frame)
+        self.interactive_build_btn.setObjectName(u"interactive_build_btn")
+        sizePolicy = QSizePolicy(QSizePolicy.Maximum, QSizePolicy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.interactive_build_btn.sizePolicy().hasHeightForWidth())
+        self.interactive_build_btn.setSizePolicy(sizePolicy)
+        self.interactive_build_btn.setMinimumSize(QSize(30, 0))
+        icon1 = QIcon()
+        icon1.addFile(u":/icon/forward_step.svg", QSize(), QIcon.Normal, QIcon.Off)
+        self.interactive_build_btn.setIcon(icon1)
+        self.interactive_build_btn.setIconSize(QSize(14, 14))
+
+        self.horizontalLayout_2.addWidget(self.interactive_build_btn)
+
         self.build_btn = QPushButton(self.mode_frame)
         self.build_btn.setObjectName(u"build_btn")
         self.build_btn.setMinimumSize(QSize(80, 0))
-        icon1 = QIcon()
-        icon1.addFile(u":/icon/build.svg", QSize(), QIcon.Normal, QIcon.Off)
-        self.build_btn.setIcon(icon1)
+        icon2 = QIcon()
+        icon2.addFile(u":/icon/build.svg", QSize(), QIcon.Normal, QIcon.Off)
+        self.build_btn.setIcon(icon2)
         self.build_btn.setIconSize(QSize(14, 14))
 
-        self.buttons_layout.addWidget(self.build_btn)
+        self.horizontalLayout_2.addWidget(self.build_btn)
+
+
+        self.buttons_layout.addLayout(self.horizontalLayout_2)
 
         self.open_blueprint_btn = QPushButton(self.mode_frame)
         self.open_blueprint_btn.setObjectName(u"open_blueprint_btn")
-        icon2 = QIcon()
-        icon2.addFile(u":/icon/angle_left.svg", QSize(), QIcon.Normal, QIcon.Off)
-        self.open_blueprint_btn.setIcon(icon2)
+        icon3 = QIcon()
+        icon3.addFile(u":/icon/angle_left.svg", QSize(), QIcon.Normal, QIcon.Off)
+        self.open_blueprint_btn.setIcon(icon3)
         self.open_blueprint_btn.setIconSize(QSize(14, 14))
 
         self.buttons_layout.addWidget(self.open_blueprint_btn)
@@ -135,25 +156,25 @@ class Ui_MainToolbar(object):
         self.toolbar_layout.setObjectName(u"toolbar_layout")
         self.settings_btn = QPushButton(self.toolbar_frame)
         self.settings_btn.setObjectName(u"settings_btn")
-        icon3 = QIcon()
-        icon3.addFile(u":/icon/gear.svg", QSize(), QIcon.Normal, QIcon.Off)
-        self.settings_btn.setIcon(icon3)
+        icon4 = QIcon()
+        icon4.addFile(u":/icon/gear.svg", QSize(), QIcon.Normal, QIcon.Off)
+        self.settings_btn.setIcon(icon4)
 
         self.toolbar_layout.addWidget(self.settings_btn)
 
         self.design_toolkit_btn = QPushButton(self.toolbar_frame)
         self.design_toolkit_btn.setObjectName(u"design_toolkit_btn")
-        icon4 = QIcon()
-        icon4.addFile(u":/icon/design_toolkit.svg", QSize(), QIcon.Normal, QIcon.Off)
-        self.design_toolkit_btn.setIcon(icon4)
+        icon5 = QIcon()
+        icon5.addFile(u":/icon/design_toolkit.svg", QSize(), QIcon.Normal, QIcon.Off)
+        self.design_toolkit_btn.setIcon(icon5)
 
         self.toolbar_layout.addWidget(self.design_toolkit_btn)
 
         self.action_editor_btn = QPushButton(self.toolbar_frame)
         self.action_editor_btn.setObjectName(u"action_editor_btn")
-        icon5 = QIcon()
-        icon5.addFile(u":/icon/action_editor.svg", QSize(), QIcon.Normal, QIcon.Off)
-        self.action_editor_btn.setIcon(icon5)
+        icon6 = QIcon()
+        icon6.addFile(u":/icon/action_editor.svg", QSize(), QIcon.Normal, QIcon.Off)
+        self.action_editor_btn.setIcon(icon6)
 
         self.toolbar_layout.addWidget(self.action_editor_btn)
 
@@ -189,6 +210,10 @@ class Ui_MainToolbar(object):
         self.validate_btn.setStatusTip(QCoreApplication.translate("MainToolbar", u"Run validation on the blueprint and all actions.", None))
 #endif // QT_CONFIG(statustip)
         self.validate_btn.setText(QCoreApplication.translate("MainToolbar", u" Validate", None))
+#if QT_CONFIG(statustip)
+        self.interactive_build_btn.setStatusTip(QCoreApplication.translate("MainToolbar", u"Run an interactive build.", None))
+#endif // QT_CONFIG(statustip)
+        self.interactive_build_btn.setText("")
 #if QT_CONFIG(statustip)
         self.build_btn.setStatusTip(QCoreApplication.translate("MainToolbar", u"Save the blueprint and scene and build the rig.", None))
 #endif // QT_CONFIG(statustip)
