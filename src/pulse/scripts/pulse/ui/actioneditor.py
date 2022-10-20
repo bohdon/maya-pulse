@@ -371,13 +371,9 @@ class MainBuildActionDataForm(BuildActionDataForm):
         attrForm.toggleVariantBtn.setChecked(isVariant)
 
         if isVariant:
-            variantIcon = QtGui.QIcon()
-            variantIcon.addFile(u":/res/bars_staggered.svg", QtCore.QSize(), QtGui.QIcon.Normal, QtGui.QIcon.Off)
-            attrForm.toggleVariantBtn.setIcon(variantIcon)
+            attrForm.toggleVariantBtn.setIcon(QtGui.QIcon(":/res/bars_staggered.svg"))
         else:
-            normalIcon = QtGui.QIcon()
-            normalIcon.addFile(u":/res/minus.svg", QtCore.QSize(), QtGui.QIcon.Normal, QtGui.QIcon.Off)
-            attrForm.toggleVariantBtn.setIcon(normalIcon)
+            attrForm.toggleVariantBtn.setIcon(QtGui.QIcon(":/res/minus.svg"))
 
         super(MainBuildActionDataForm, self).updateAttrForm(actionData, attr, attrForm)
 
@@ -496,9 +492,7 @@ class BuildActionProxyForm(QtWidgets.QWidget):
         addVariantBtn.setFixedSize(QtCore.QSize(40, 20))
         addVariantBtn.setStyleSheet('padding: 4px')
         addVariantBtn.setStatusTip('Add a variant to this action.')
-        icon = QtGui.QIcon()
-        icon.addFile(u":/res/plus.svg", QtCore.QSize(), QtGui.QIcon.Normal, QtGui.QIcon.Off)
-        addVariantBtn.setIcon(icon)
+        addVariantBtn.setIcon(QtGui.QIcon(":/res/plus.svg"))
         addVariantBtn.clicked.connect(self.addVariant)
         variantHeaderLayout.addWidget(addVariantBtn)
 
@@ -520,9 +514,7 @@ class BuildActionProxyForm(QtWidgets.QWidget):
         removeVariantBtn.setFixedSize(QtCore.QSize(20, 20))
         removeVariantBtn.setStyleSheet('padding: 4px')
         removeVariantBtn.setStatusTip('Remove this variant.')
-        icon = QtGui.QIcon()
-        icon.addFile(u":/res/xmark.svg", QtCore.QSize(), QtGui.QIcon.Normal, QtGui.QIcon.Off)
-        removeVariantBtn.setIcon(icon)
+        removeVariantBtn.setIcon(QtGui.QIcon(":/res/xmark.svg"))
         removeVariantBtn.clicked.connect(partial(self.removeVariantAtIndex, variantIndex))
         dataForm.layout.insertWidget(0, removeVariantBtn)
 

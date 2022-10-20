@@ -203,6 +203,15 @@ def addItemsToGrid(gridLayout, items):
                     gridLayout.addLayout(item, row, col, 1, 1)
 
 
+def setRetainSizeWhenHidden(widget: QtWidgets.QWidget, retainSize: bool):
+    """
+    Sets whether a widgets size should be retained even when it's hidden.
+    """
+    sp = widget.sizePolicy()
+    sp.setRetainSizeWhenHidden(retainSize)
+    widget.setSizePolicy(sp)
+
+
 class CollapsibleFrame(QtWidgets.QFrame):
     """
     A QFrame that can be collapsed when clicked.

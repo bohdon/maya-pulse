@@ -11,11 +11,15 @@ import pymel.core as pm
 from ..buildItems import BuildStep, BuildActionProxy, BuildActionAttribute
 from ..vendor import pymetanode as meta
 from ..serializer import serializeAttrValue
-from ..vendor.Qt import QtCore, QtWidgets
-from . import utils as viewutils
+from ..vendor.Qt import QtCore, QtGui, QtWidgets
 from .. import names
+from . import utils
 
 LOG = logging.getLogger(__name__)
+
+SELECT_ICON_PATH = ':/res/circle_left.svg'
+RESET_ICON_PATH = ':/res/reset.svg'
+TOOL_ICON_SIZE = QtCore.QSize(20, 20)
 
 
 class ActionAttrForm(QtWidgets.QFrame):
@@ -70,11 +74,13 @@ class ActionAttrForm(QtWidgets.QFrame):
         self.variantIndex = variantIndex
 
         # build the ui
+        self.resetValueBtn = None
         self.setupUi(self)
 
         # update valid state, check both type and value here
         # because the current value may be of an invalid type
         self._updateValidState()
+        self._updateResetVisible()
 
         # listen to model change events
         self.index.model().dataChanged.connect(self.onModelDataChanged)
@@ -92,6 +98,10 @@ class ActionAttrForm(QtWidgets.QFrame):
 
         self._setUiValidState(isValueValid, isFormValid)
 
+    def _updateResetVisible(self):
+        if self.resetValueBtn:
+            self.resetValueBtn.setVisible(self.isValueSet())
+
     def onModelDataChanged(self):
         """
         """
@@ -107,6 +117,7 @@ class ActionAttrForm(QtWidgets.QFrame):
 
         # update form
         self._setFormValue(self.getAttrValue())
+        self._updateResetVisible()
         self._updateValidState()
 
     def isVariant(self):
@@ -133,6 +144,15 @@ class ActionAttrForm(QtWidgets.QFrame):
         cmds.pulseSetActionAttr(attrPath, strValue, v=self.variantIndex)
         # refresh form to the new value in case it was cleaned up or processed
         self._setFormValue(self.attr.get_value())
+
+    def isValueSet(self) -> bool:
+        """
+        Return true if the attribute has been set to a non-default value.
+        """
+        return self.attr.is_value_set() or self._getFormValue() != self.getAttrValue()
+
+    def resetValueToDefault(self):
+        self.setAttrValue(self.attr.default_value)
 
     def setupUi(self, parent):
         """
@@ -188,6 +208,7 @@ class ActionAttrForm(QtWidgets.QFrame):
         else:
             # cant set the attribute, but indicate invalid state
             self._updateValidState()
+            self._updateResetVisible()
 
     def _setUiValidState(self, isValid, isFormValid):
         if isValid:
@@ -210,11 +231,12 @@ class ActionAttrForm(QtWidgets.QFrame):
         Includes a form layout and a label with the attributes name.
         Should be called at the start of setupUi if desired.
         """
-        self.formLayout = QtWidgets.QFormLayout(parent)
-
+        self.mainLayout = QtWidgets.QHBoxLayout(parent)
         # margin that will give us some visible area of
         # the frame that can change color based on valid state
-        self.formLayout.setMargin(2)
+        self.mainLayout.setMargin(2)
+
+        self.formLayout = QtWidgets.QFormLayout(parent)
         self.formLayout.setFieldGrowthPolicy(QtWidgets.QFormLayout.ExpandingFieldsGrow)
         self.formLayout.setLabelAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignTop | QtCore.Qt.AlignTrailing)
         self.formLayout.setHorizontalSpacing(10)
@@ -225,7 +247,7 @@ class ActionAttrForm(QtWidgets.QFrame):
         self.label = QtWidgets.QLabel(parent)
         self.label.setMinimumSize(QtCore.QSize(self.LABEL_WIDTH, self.LABEL_HEIGHT))
         self.label.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignTrailing | QtCore.Qt.AlignTop)
-        # add some space above the label so it lines up
+        # add some space above the label, so it lines up
         self.label.setMargin(2)
         self.label.setText(names.toTitle(self.attr.name))
         # set description tooltips
@@ -236,6 +258,18 @@ class ActionAttrForm(QtWidgets.QFrame):
         self.labelLayout.addWidget(self.label)
 
         self.formLayout.setLayout(0, QtWidgets.QFormLayout.LabelRole, self.labelLayout)
+
+        self.mainLayout.addLayout(self.formLayout)
+
+        # add reset value button
+        self.resetValueBtn = QtWidgets.QToolButton(parent)
+        self.resetValueBtn.setIcon(QtGui.QIcon(RESET_ICON_PATH))
+        self.resetValueBtn.setFixedSize(TOOL_ICON_SIZE)
+        utils.setRetainSizeWhenHidden(self.resetValueBtn, True)
+        self.resetValueBtn.setStatusTip('Reset value to default')
+        self.resetValueBtn.clicked.connect(self.resetValueToDefault)
+        self.mainLayout.addWidget(self.resetValueBtn)
+        self.mainLayout.setAlignment(self.resetValueBtn, QtCore.Qt.AlignTop)
 
     def setDefaultFormWidget(self, widget):
         """
@@ -599,10 +633,11 @@ class NodeAttrForm(ActionAttrForm):
         self.listWidget.itemSelectionChanged.connect(self.onItemSelectionChanged)
         hlayout.addWidget(self.listWidget)
 
-        self.pickButton = QtWidgets.QPushButton(parent)
-        # TODO: use resource qrc
-        self.pickButton.setIcon(viewutils.getIcon("select.png"))
-        self.pickButton.setFixedSize(QtCore.QSize(20, 20))
+        self.pickButton = QtWidgets.QToolButton(parent)
+        self.pickButton.setIcon(QtGui.QIcon(SELECT_ICON_PATH))
+        self.pickButton.setStatusTip("Assign the selected node. "
+                                     "Ctrl + click to pop the assigned node from the selection.")
+        self.pickButton.setFixedSize(TOOL_ICON_SIZE)
         self.pickButton.clicked.connect(self.setFromSelection)
         hlayout.addWidget(self.pickButton)
         hlayout.setAlignment(self.pickButton, QtCore.Qt.AlignTop)
@@ -620,12 +655,21 @@ class NodeAttrForm(ActionAttrForm):
             item.setData(QtCore.Qt.UserRole, uuid)
             self.listWidget.addItem(item)
 
+    def _shouldPopSelection(self):
+        """
+        Return true if the first selected node should be popped from the selection
+        when assigning from selection. True when holding the control key.
+        """
+        return QtWidgets.QApplication.instance().keyboardModifiers() & QtCore.Qt.ControlModifier
+
     def setFromSelection(self):
         sel = pm.selected()
         if sel:
             self.setAttrValue(sel[0])
         else:
             self.setAttrValue(None)
+        if self._shouldPopSelection():
+            pm.select(sel[1:])
 
     def onItemSelectionChanged(self):
         items = self.listWidget.selectedItems()
@@ -659,9 +703,10 @@ class NodeListAttrForm(ActionAttrForm):
         self.listWidget.itemSelectionChanged.connect(self.onItemSelectionChanged)
         hlayout.addWidget(self.listWidget)
 
-        self.pickButton = QtWidgets.QPushButton(parent)
-        self.pickButton.setIcon(viewutils.getIcon("select.png"))
-        self.pickButton.setFixedSize(QtCore.QSize(20, 20))
+        self.pickButton = QtWidgets.QToolButton(parent)
+        self.pickButton.setIcon(QtGui.QIcon(SELECT_ICON_PATH))
+        self.pickButton.setStatusTip('Assign the selected nodes.')
+        self.pickButton.setFixedSize(TOOL_ICON_SIZE)
         self.pickButton.clicked.connect(self.setFromSelection)
         hlayout.addWidget(self.pickButton)
         hlayout.setAlignment(self.pickButton, QtCore.Qt.AlignTop)
@@ -722,9 +767,10 @@ class NodeBatchAttrForm(BatchAttrForm):
         hlayout = QtWidgets.QHBoxLayout(parent)
         hlayout.setContentsMargins(0, 0, 0, 0)
 
-        pickButton = QtWidgets.QPushButton(parent)
-        pickButton.setIcon(viewutils.getIcon("select.png"))
-        pickButton.setFixedSize(QtCore.QSize(20, 20))
+        pickButton = QtWidgets.QToolButton(parent)
+        pickButton.setIcon(QtGui.QIcon(SELECT_ICON_PATH))
+        pickButton.setStatusTip('Assign the selected nodes, one per variant.')
+        pickButton.setFixedSize(TOOL_ICON_SIZE)
         pickButton.clicked.connect(self.setFromSelection)
         hlayout.addWidget(pickButton)
         hlayout.setAlignment(pickButton, QtCore.Qt.AlignTop)
