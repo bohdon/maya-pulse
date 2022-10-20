@@ -57,8 +57,8 @@
         <string> Quick Name...</string>
        </property>
        <property name="icon">
-        <iconset resource="resources.qrc">
-         <normaloff>:/res/spell_check.svg</normaloff>:/res/spell_check.svg</iconset>
+        <iconset resource="icons/icons.qrc">
+         <normaloff>:/icon/spell_check.svg</normaloff>:/icon/spell_check.svg</iconset>
        </property>
       </widget>
      </item>
@@ -78,8 +78,8 @@
         <string> Quick Color...</string>
        </property>
        <property name="icon">
-        <iconset resource="resources.qrc">
-         <normaloff>:/res/palette.svg</normaloff>:/res/palette.svg</iconset>
+        <iconset resource="icons/icons.qrc">
+         <normaloff>:/icon/palette.svg</normaloff>:/icon/palette.svg</iconset>
        </property>
       </widget>
      </item>
@@ -118,7 +118,7 @@
   </layout>
  </widget>
  <resources>
-  <include location="resources.qrc"/>
+  <include location="icons.qrc"/>
  </resources>
  <connections/>
 </ui>

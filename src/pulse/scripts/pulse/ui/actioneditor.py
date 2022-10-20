@@ -159,7 +159,7 @@ class BuildStepForm(QtWidgets.QWidget):
 
         if step.is_action():
             editBtn = QtWidgets.QToolButton(parent)
-            editBtn.setIcon(QtGui.QIcon(':/res/file_pen.svg'))
+            editBtn.setIcon(QtGui.QIcon(':/icon/file_pen.svg'))
             editBtn.setStatusTip('Edit this actions python script.')
             editBtn.clicked.connect(self._openActionScriptInSourceEditor)
             layout.addWidget(editBtn)
@@ -371,9 +371,9 @@ class MainBuildActionDataForm(BuildActionDataForm):
         attrForm.toggleVariantBtn.setChecked(isVariant)
 
         if isVariant:
-            attrForm.toggleVariantBtn.setIcon(QtGui.QIcon(":/res/bars_staggered.svg"))
+            attrForm.toggleVariantBtn.setIcon(QtGui.QIcon(":/icon/bars_staggered.svg"))
         else:
-            attrForm.toggleVariantBtn.setIcon(QtGui.QIcon(":/res/minus.svg"))
+            attrForm.toggleVariantBtn.setIcon(QtGui.QIcon(":/icon/minus.svg"))
 
         super(MainBuildActionDataForm, self).updateAttrForm(actionData, attr, attrForm)
 
@@ -492,7 +492,7 @@ class BuildActionProxyForm(QtWidgets.QWidget):
         addVariantBtn.setFixedSize(QtCore.QSize(40, 20))
         addVariantBtn.setStyleSheet('padding: 4px')
         addVariantBtn.setStatusTip('Add a variant to this action.')
-        addVariantBtn.setIcon(QtGui.QIcon(":/res/plus.svg"))
+        addVariantBtn.setIcon(QtGui.QIcon(":/icon/plus.svg"))
         addVariantBtn.clicked.connect(self.addVariant)
         variantHeaderLayout.addWidget(addVariantBtn)
 
@@ -514,7 +514,7 @@ class BuildActionProxyForm(QtWidgets.QWidget):
         removeVariantBtn.setFixedSize(QtCore.QSize(20, 20))
         removeVariantBtn.setStyleSheet('padding: 4px')
         removeVariantBtn.setStatusTip('Remove this variant.')
-        removeVariantBtn.setIcon(QtGui.QIcon(":/res/xmark.svg"))
+        removeVariantBtn.setIcon(QtGui.QIcon(":/icon/xmark.svg"))
         removeVariantBtn.clicked.connect(partial(self.removeVariantAtIndex, variantIndex))
         dataForm.layout.insertWidget(0, removeVariantBtn)
 

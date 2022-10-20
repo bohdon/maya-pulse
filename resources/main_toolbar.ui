@@ -155,8 +155,8 @@
                <string> Validate</string>
               </property>
               <property name="icon">
-               <iconset resource="resources.qrc">
-                <normaloff>:/res/validate.svg</normaloff>:/res/validate.svg</iconset>
+               <iconset resource="icons/icons.qrc">
+                <normaloff>:/icon/validate.svg</normaloff>:/icon/validate.svg</iconset>
               </property>
               <property name="iconSize">
                <size>
@@ -181,8 +181,8 @@
                <string> Build</string>
               </property>
               <property name="icon">
-               <iconset resource="resources.qrc">
-                <normaloff>:/res/build.svg</normaloff>:/res/build.svg</iconset>
+               <iconset resource="icons/icons.qrc">
+                <normaloff>:/icon/build.svg</normaloff>:/icon/build.svg</iconset>
               </property>
               <property name="iconSize">
                <size>
@@ -201,8 +201,8 @@
                <string> Open Blueprint</string>
               </property>
               <property name="icon">
-               <iconset resource="resources.qrc">
-                <normaloff>:/res/angle_left.svg</normaloff>:/res/angle_left.svg</iconset>
+               <iconset resource="icons/icons.qrc">
+                <normaloff>:/icon/angle_left.svg</normaloff>:/icon/angle_left.svg</iconset>
               </property>
               <property name="iconSize">
                <size>
@@ -253,8 +253,8 @@
            <string> Settings</string>
           </property>
           <property name="icon">
-           <iconset resource="resources.qrc">
-            <normaloff>:/res/gear.svg</normaloff>:/res/gear.svg</iconset>
+           <iconset resource="icons/icons.qrc">
+            <normaloff>:/icon/gear.svg</normaloff>:/icon/gear.svg</iconset>
           </property>
          </widget>
         </item>
@@ -264,8 +264,8 @@
            <string> Design Toolkit</string>
           </property>
           <property name="icon">
-           <iconset resource="resources.qrc">
-            <normaloff>:/res/design_toolkit.svg</normaloff>:/res/design_toolkit.svg</iconset>
+           <iconset resource="icons/icons.qrc">
+            <normaloff>:/icon/design_toolkit.svg</normaloff>:/icon/design_toolkit.svg</iconset>
           </property>
          </widget>
         </item>
@@ -275,8 +275,8 @@
            <string> Action Editor</string>
           </property>
           <property name="icon">
-           <iconset resource="resources.qrc">
-            <normaloff>:/res/action_editor.svg</normaloff>:/res/action_editor.svg</iconset>
+           <iconset resource="icons/icons.qrc">
+            <normaloff>:/icon/action_editor.svg</normaloff>:/icon/action_editor.svg</iconset>
           </property>
          </widget>
         </item>
@@ -288,7 +288,7 @@
   </layout>
  </widget>
  <resources>
-  <include location="resources.qrc"/>
+  <include location="icons.qrc"/>
  </resources>
  <connections/>
 </ui>

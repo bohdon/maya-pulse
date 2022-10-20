@@ -1246,7 +1246,7 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
                 else:
                     iconName = 'step_action'
 
-            return QtGui.QIcon(f':/res/{iconName}.svg')
+            return QtGui.QIcon(f':/icon/{iconName}.svg')
 
         elif role == QtCore.Qt.SizeHintRole:
             return QtCore.QSize(0, 20)

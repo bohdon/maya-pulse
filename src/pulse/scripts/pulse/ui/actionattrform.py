@@ -17,8 +17,8 @@ from . import utils
 
 LOG = logging.getLogger(__name__)
 
-SELECT_ICON_PATH = ':/res/circle_left.svg'
-RESET_ICON_PATH = ':/res/reset.svg'
+SELECT_ICON_PATH = ':/icon/circle_left.svg'
+RESET_ICON_PATH = ':/icon/reset.svg'
 TOOL_ICON_SIZE = QtCore.QSize(20, 20)
 
 

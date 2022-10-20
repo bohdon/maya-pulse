@@ -12,7 +12,7 @@ from PySide2.QtCore import *
 from PySide2.QtGui import *
 from PySide2.QtWidgets import *
 
-from  . import icons_rc
+import icons_rc
 
 class Ui_MainToolbar(object):
     def setupUi(self, MainToolbar):

@@ -201,8 +201,8 @@
         <string/>
        </property>
        <property name="icon">
-        <iconset resource="resources.qrc">
-         <normaloff>:/res/action_editor.svg</normaloff>:/res/action_editor.svg</iconset>
+        <iconset resource="icons/icons.qrc">
+         <normaloff>:/icon/action_editor.svg</normaloff>:/icon/action_editor.svg</iconset>
        </property>
       </widget>
      </item>
@@ -221,7 +221,7 @@
   </layout>
  </widget>
  <resources>
-  <include location="resources.qrc"/>
+  <include location="icons.qrc"/>
  </resources>
  <connections/>
 </ui>

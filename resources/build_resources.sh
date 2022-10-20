@@ -28,7 +28,7 @@ build_ui() {
 
 # compile a .qrc to a .py
 build_res() {
-    build_qt "pyside2-rcc" "$1.qrc" "$1_rc"
+    build_qt "pyside2-rcc" $1 $2
 }
 
 # build all UIs
@@ -52,4 +52,4 @@ build_ui quick_name_editor
 
 # build all resources
 echo "Building resource files..."
-build_res resources
+build_res icons/icons.qrc icons_rc
