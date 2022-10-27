@@ -69,7 +69,7 @@ class SourceEditorLauncher(object):
                 A python module to open.
         """
         if not hasattr(module, '__file__'):
-            LOG.error(f'{module} has no __file__ attribute.')
+            LOG.error('%s has no __file__ attribute.', module)
             return
 
         self.open_file(module.__file__)
@@ -86,5 +86,5 @@ class SourceEditorLauncher(object):
         launch_args = [exec_name]
         launch_args.extend(args)
 
-        LOG.info(f"Launching source editor: {' '.join([str(a) for a in launch_args])}")
+        LOG.info("Launching source editor: %s", ' '.join([str(a) for a in launch_args]))
         subprocess.Popen(launch_args)

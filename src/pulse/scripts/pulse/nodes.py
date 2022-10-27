@@ -1,5 +1,4 @@
 import logging
-import os
 from enum import IntEnum
 
 import maya.cmds as cmds

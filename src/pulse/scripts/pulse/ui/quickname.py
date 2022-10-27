@@ -43,7 +43,7 @@ class QuickNameEditor(QtWidgets.QWidget):
         self.setup_suffixes_ui(parent, self.ui.suffixes_vbox)
 
         self.ui.set_name_btn.clicked.connect(self._on_preview_btn_clicked)
-        self.ui.edit_config_btn.clicked.connect(editorutils.openBlueprintConfigInSourceEditor)
+        self.ui.edit_config_btn.clicked.connect(editorutils.open_blueprint_config_in_source_editor)
 
         self.refresh_preview_label()
         self._update_help_text()

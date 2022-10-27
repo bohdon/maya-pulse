@@ -13,4 +13,4 @@ class WeightsDesignPanel(QtWidgets.QWidget):
         self.ui = Ui_WeightsDesignPanel()
         self.ui.setupUi(self)
 
-        self.ui.save_weights_btn.clicked.connect(cmd(editorutils.saveAllSkinWeights))
+        self.ui.save_weights_btn.clicked.connect(cmd(editorutils.save_all_skin_weights))

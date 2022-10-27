@@ -189,15 +189,14 @@ def get_output_attr(input):
 def get_plus_minus_average_output_attr(input):
     """
     Return the output attr of a plusMinusAverage node.
-    Returns the output that matches the dimension of the input
-    (if its an attribute), otherwise returns the 1D output.
+    Returns the output that matches the dimension of the input (if it's an attribute),
+    otherwise returns the 1D output.
 
     Args:
         input: A PyNode or Attribute for which to return an output
 
     Returns:
-        An Attribute of the node, which could be one of
-        output1D, output2D, output3D or any children.
+        An Attribute of the node, which could be one of output1D, output2D, output3D or any children.
         Returns output1D if the given input is the node and not an attribute.
     """
     input_node = input.node()
@@ -295,8 +294,7 @@ def get_input_connections(input_val, dest_attr):
 
     def _child(obj, index):
         """
-        Return the child of an object whether
-        its a list-like object or compound attribute.
+        Return the child of an object whether it's a list-like object or compound attribute.
         If the dimension of obj is 1, returns obj.
         """
         if nodes.get_attr_or_value_dimension(obj) == 1:

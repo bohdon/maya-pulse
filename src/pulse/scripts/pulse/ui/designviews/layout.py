@@ -24,7 +24,7 @@ class LayoutDesignPanel(QtWidgets.QWidget):
         self.ui = Ui_LayoutDesignPanel()
         self.ui.setupUi(self)
 
-        self.ui.snap_to_targets_btn.clicked.connect(cmd(editorutils.positionLinkForSelected))
+        self.ui.snap_to_targets_btn.clicked.connect(cmd(editorutils.position_link_for_selected))
         self.ui.link_editor_btn.clicked.connect(cmd(LayoutLinkEditorWindow.toggleWindow))
 
 
@@ -46,7 +46,7 @@ class LayoutLinkEditorWidget(QtWidgets.QWidget):
         self.ui.link_center_btn.clicked.connect(cmd(self.link_selected_weighted))
         self.ui.recreate_link_btn.clicked.connect(cmd(self.recreate_links_for_selected))
         self.ui.unlink_btn.clicked.connect(cmd(self.unlink_selected))
-        self.ui.snap_to_targets_btn.clicked.connect(cmd(editorutils.positionLinkForSelected))
+        self.ui.snap_to_targets_btn.clicked.connect(cmd(editorutils.position_link_for_selected))
         self.ui.refresh_btn.clicked.connect(self.update_link_info)
 
     def showEvent(self, event):
@@ -86,19 +86,19 @@ class LayoutLinkEditorWidget(QtWidgets.QWidget):
             self.ui.link_info_vbox.addWidget(linkInfo)
 
     def link_selected(self, linkType):
-        editorutils.linkSelected(linkType, self.keep_offsets)
+        editorutils.link_selected(linkType, self.keep_offsets)
         self.update_link_info()
 
     def link_selected_weighted(self):
-        editorutils.linkSelectedWeighted(self.keep_offsets)
+        editorutils.link_selected_weighted(self.keep_offsets)
         self.update_link_info()
 
     def recreate_links_for_selected(self):
-        editorutils.recreateLinksForSelected(self.keep_offsets)
+        editorutils.recreate_links_for_selected(self.keep_offsets)
         self.update_link_info()
 
     def unlink_selected(self):
-        editorutils.unlinkSelected()
+        editorutils.unlink_selected()
         self.update_link_info()
 
 

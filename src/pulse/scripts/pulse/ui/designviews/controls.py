@@ -63,7 +63,7 @@ class ControlsDesignPanel(QtWidgets.QWidget):
                              f"{degrees} degrees around the {_axes[axis]} axis")
             btn.setProperty('cssClasses', cssClasses)
 
-            btn.clicked.connect(cmd(editorutils.rotateSelectedComponentsAroundAxis, axis, degrees))
+            btn.clicked.connect(cmd(editorutils.rotate_selected_components_around_axis, axis, degrees))
             edit_layout.addWidget(btn)
 
         createRotateComponentsButton('- X', 'x-axis', 0, -90)

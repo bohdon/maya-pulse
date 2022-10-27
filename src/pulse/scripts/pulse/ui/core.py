@@ -1130,7 +1130,7 @@ class BlueprintUIModel(QtCore.QObject):
 
         # save maya scene
         # TODO: expose prompt to save scene as option
-        if not editorutils.saveSceneIfDirty(prompt=False):
+        if not editorutils.save_scene_if_dirty(prompt=False):
             return
 
         # save blueprint
@@ -1176,7 +1176,7 @@ class BlueprintUIModel(QtCore.QObject):
 
         # save maya scene
         # TODO: expose prompt to save scene as option
-        if not editorutils.saveSceneIfDirty(prompt=False):
+        if not editorutils.save_scene_if_dirty(prompt=False):
             return
 
         # save blueprint

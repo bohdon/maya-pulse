@@ -71,15 +71,13 @@ def validate_mirror_node(node):
     data = meta.getMetaData(node, MIRROR_METACLASS)
     other_node = data['otherNode']
     if other_node is None:
-        LOG.debug("{0} paired node not found, "
-                  "removing mirroring data".format(node))
+        LOG.debug("%s paired node not found, removing mirroring data", node)
         meta.removeMetaData(node, MIRROR_METACLASS)
         return False
     else:
         others_other = get_paired_node(other_node, False)
         if others_other != node:
-            LOG.debug("{0} pairing is unreciprocated, "
-                      "removing mirror data".format(node))
+            LOG.debug("%s pairing is not reciprocated, removing mirror data", node)
             meta.removeMetaData(node, MIRROR_METACLASS)
             return False
     return True
@@ -136,7 +134,7 @@ def duplicate_and_pair_node(source_node):
         # transforms will be included in the duplicate
         extra = dest_node.listRelatives(typ='transform')
         if extra:
-            LOG.debug("Deleting extra transforms from mirroring: {0}".format(source_node))
+            LOG.debug("Deleting extra transforms from mirroring: %s", source_node)
             pm.delete(extra)
         # associate nodes
         pair_mirror_nodes(source_node, dest_node)
@@ -174,7 +172,7 @@ def get_paired_node(node, validate=True):
                 if get_paired_node(other_node, False) == node:
                     return other_node
                 else:
-                    LOG.debug('{0} pairing not reciprocated'.format(node))
+                    LOG.debug('%s pairing not reciprocated', node)
         else:
             return data['otherNode']
 
@@ -702,12 +700,12 @@ class MirrorColors(BlueprintMirrorOperation):
         source_color = nodes.get_override_color(source_node)
         if source_color:
             # get name of source color
-            source_name = editorutils.getColorName(source_color)
+            source_name = editorutils.get_color_name(source_color)
             if source_name:
                 # mirror the name
                 dest_name = _get_mirrored_name_with_replacements(source_name, self._get_replacements())
                 # get color of mirrored name
-                dest_color = editorutils.getNamedColor(dest_name)
+                dest_color = editorutils.get_named_color(dest_name)
                 if dest_color:
                     nodes.set_override_color(dest_node, tuple(dest_color))
 
@@ -835,8 +833,7 @@ class MirrorUtil(object):
                     result.append(sourceNode)
 
             if self.isRecursive:
-                children = nodes.get_descendants_top_to_bottom(
-                    sourceNode, type=['transform', 'joint'])
+                children = nodes.get_descendants_top_to_bottom(sourceNode, type=['transform', 'joint'])
 
                 for child in children:
                     if child not in result:
@@ -852,22 +849,21 @@ class MirrorUtil(object):
         """
         pairs = []
 
-        for sourceNode in source_nodes:
+        for source_node in source_nodes:
             if self.validateNodes:
-                validate_mirror_node(sourceNode)
+                validate_mirror_node(source_node)
 
             if self.isCreationAllowed:
-                dest_node, is_new_node = self._get_or_create_pair_node(sourceNode)
+                dest_node, is_new_node = self._get_or_create_pair_node(source_node)
                 if dest_node and is_new_node:
                     self._newNodes.append(dest_node)
             else:
-                dest_node = get_paired_node(sourceNode)
+                dest_node = get_paired_node(source_node)
 
             if dest_node:
-                pairs.append((sourceNode, dest_node))
+                pairs.append((source_node, dest_node))
             else:
-                LOG.warning("Could not get pair node for: "
-                            "{0}".format(sourceNode))
+                LOG.warning("Could not get pair node for: %s", source_node)
 
         return pairs
 
@@ -939,7 +935,7 @@ def get_mirror_settings(sourceNode, destNode=None, useNodeSettings=True, exclude
         if custom_settings is not None:
             LOG.debug("Custom Mirror Node")
             # nodeStngs = data['customSettings']
-            LOG.debug("Settings: {0}".format(custom_settings))
+            LOG.debug("Settings: %s", custom_settings)
             kwargs.update(filter_node_settings(custom_settings))
 
     # pull some kwargs used for get_mirrored_matrices
@@ -954,15 +950,15 @@ def get_mirror_settings(sourceNode, destNode=None, useNodeSettings=True, exclude
 
     for attr, exp in kwargs.get('customMirrorAttrExps', {}).items():
         if exp:
-            LOG.debug("Attr: {0}".format(attr))
-            LOG.debug("Exp:\n{0}".format(exp))
+            LOG.debug("Attr: %s", attr)
+            LOG.debug("Exp:\n%s", exp)
             val = eval_custom_mirror_attr_exp(
                 sourceNode, destNode, attr, exp)
-            LOG.debug("Result: {0}".format(val))
+            LOG.debug("Result: %s", val)
             # Eval from the mirror to the dest
             result['mirroredAttrs'][attr] = val
 
-    LOG.debug("Mirrored Attrs: {0}".format(result['mirroredAttrs']))
+    LOG.debug("Mirrored Attrs: %s", result['mirroredAttrs'])
 
     # Save additional variables
     result['sourceNode'] = sourceNode
@@ -975,7 +971,7 @@ def apply_mirror_settings(mirror_settings, translate=True, rotate=True, scale=Tr
     """
     Apply mirror settings created from get_mirror_settings
     """
-    LOG.debug("Applying Mirror Settings: {0}".format(mirror_settings['destNode']))
+    LOG.debug("Applying Mirror Settings: %s", mirror_settings['destNode'])
     settings = mirror_settings
     if any([translate, rotate, scale]):
         set_mirrored_matrices(settings['destNode'], settings['matrices'],
@@ -983,9 +979,9 @@ def apply_mirror_settings(mirror_settings, translate=True, rotate=True, scale=Tr
 
     if attrs:
         LOG.debug("Applying Mirrored Attrs")
-        for attrName, val in mirror_settings.get('mirroredAttrs', {}).items():
-            LOG.debug("{0} -> {1}".format(attrName, val))
-            attr = settings['destNode'].attr(attrName)
+        for attr_name, val in mirror_settings.get('mirroredAttrs', {}).items():
+            LOG.debug("%s -> %s", attr_name, val)
+            attr = settings['destNode'].attr(attr_name)
             attr.set(val)
 
 
@@ -997,7 +993,7 @@ result = exp()
 
 
 def eval_custom_mirror_attr_exp(source_node, dest_node, attr, exp):
-    LOG.debug("Raw Exp: {0}".format(repr(exp)))
+    LOG.debug("Raw Exp: %s", repr(exp))
 
     _globals = {
         'node': source_node,
@@ -1007,18 +1003,16 @@ def eval_custom_mirror_attr_exp(source_node, dest_node, attr, exp):
     if hasattr(source_node, attr):
         _globals['value'] = getattr(source_node, attr).get()
     else:
-        raise KeyError(
-            "{0} missing mirrored attr {1}".format(source_node, attr))
+        raise KeyError(f"{source_node} missing mirrored attr {attr}")
     if hasattr(dest_node, attr):
         _globals['dest_value'] = getattr(dest_node, attr).get()
     else:
-        raise KeyError("{0} missing mirrored attr {1}".format(dest_node, attr))
+        raise KeyError(f"{dest_node} missing mirrored attr {attr}")
 
     # Add a return to the last line of the expression, so we can treat it as a function
-    body = [l for l in exp.strip().split('\n') if l]
+    body = [line for line in exp.strip().split('\n') if line]
     last_line = body.pop(-1)
-    _exp = CUSTOM_EXP_FMT.format(
-        body='\n\t'.join(body + ['']), lastLine=last_line)
+    _exp = CUSTOM_EXP_FMT.format(body='\n\t'.join(body + ['']), lastLine=last_line)
 
     # TODO: do this without exec
     exec(_exp, _globals)
@@ -1050,8 +1044,8 @@ def get_mirrored_matrices(node, axis=0, axisMatrix=None, translate=True, rotate=
     result = {}
     if isinstance(node, pm.nt.Joint):
         result['type'] = 'joint'
-        jmatrices = joints.get_joint_matrices(node)
-        result['matrices'] = get_mirrored_joint_matrices(*jmatrices, **kwargs)
+        jnt_matrices = joints.get_joint_matrices(node)
+        result['matrices'] = get_mirrored_joint_matrices(*jnt_matrices, **kwargs)
     else:
         result['type'] = 'node'
         result['matrices'] = [get_mirrored_transform_matrix(
@@ -1059,17 +1053,17 @@ def get_mirrored_matrices(node, axis=0, axisMatrix=None, translate=True, rotate=
     return result
 
 
-def set_mirrored_matrices(node, mirroredMatrices, translate=True, rotate=True, scale=True):
+def set_mirrored_matrices(node, mirrored_matrices, translate=True, rotate=True, scale=True):
     """
     Set the world matrix for the given node using the given mirrored matrices
     Automatically interprets Transform vs. Joint matrix settings
     """
-    if mirroredMatrices['type'] == 'joint':
+    if mirrored_matrices['type'] == 'joint':
         LOG.debug("Applying Joint Matrices")
-        joints.set_joint_matrices(node, *mirroredMatrices['matrices'], translate=translate, rotate=rotate)
+        joints.set_joint_matrices(node, *mirrored_matrices['matrices'], translate=translate, rotate=rotate)
     else:
         LOG.debug("Applying Transform Matrix")
-        nodes.set_world_matrix(node, *mirroredMatrices['matrices'], translate=translate, rotate=rotate, scale=scale)
+        nodes.set_world_matrix(node, *mirrored_matrices['matrices'], translate=translate, rotate=rotate, scale=scale)
 
 
 def get_mirrored_transform_matrix(matrix, axis=0, axisMatrix=None, translate=True, rotate=True,

@@ -18,7 +18,7 @@ def rotate_components(shape, rotation):
     elif isinstance(shape, pm.nt.NurbsCurve):
         pm.rotate(shape.cv, rotation, objectSpace=True)
     else:
-        LOG.error("{0} is not a valid shape".format(shape))
+        LOG.error("%s is not a valid shape", shape)
 
 
 def combine_shapes(transforms):

@@ -20,12 +20,12 @@ class GeneralDesignPanel(QtWidgets.QWidget):
 
         self.ui.name_editor_btn.clicked.connect(cmd(QuickNameWindow.toggleWindow))
         self.ui.color_editor_btn.clicked.connect(cmd(QuickColorWindow.toggleWindow))
-        self.ui.parent_selected_btn.clicked.connect(cmd(editorutils.parentSelected))
-        self.ui.parent_in_order_btn.clicked.connect(cmd(editorutils.parentSelectedInOrder))
-        self.ui.create_offset_btn.clicked.connect(cmd(editorutils.createOffsetForSelected))
+        self.ui.parent_selected_btn.clicked.connect(cmd(editorutils.parent_selected))
+        self.ui.parent_in_order_btn.clicked.connect(cmd(editorutils.parent_selected_in_order))
+        self.ui.create_offset_btn.clicked.connect(cmd(editorutils.create_offset_for_selected))
         self.ui.select_hierarchy_btn.clicked.connect(cmd(self.select_children))
-        self.ui.freeze_scales_btn.clicked.connect(cmd(editorutils.freezeScalesForSelectedHierarchies))
-        self.ui.freeze_pivots_btn.clicked.connect(cmd(editorutils.freezePivotsForSelectedHierarchies))
+        self.ui.freeze_scales_btn.clicked.connect(cmd(editorutils.freeze_scales_for_selected_hierarchies))
+        self.ui.freeze_pivots_btn.clicked.connect(cmd(editorutils.freeze_pivots_for_selected_hierarchies))
 
     def select_children(self):
         """

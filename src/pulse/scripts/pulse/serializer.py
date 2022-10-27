@@ -55,9 +55,7 @@ class UnsortableOrderedDict(OrderedDict):
         return UnsortableList(OrderedDict.items(self, *args, **kwargs))
 
 
-PulseDumper.add_representer(
-    UnsortableOrderedDict,
-    PulseDumper.represent_dict)
+PulseDumper.add_representer(UnsortableOrderedDict, PulseDumper.represent_dict)
 
 
 class DagNodeTag(yaml.YAMLObject):
