@@ -164,8 +164,7 @@ def get_output_attr(input):
     node = input.node()
     node_type = node.nodeType()
     if node_type not in OUTPUT_ATTR_NAMES and node_type not in output_funcs:
-        LOG.warning(
-            "No output found for utility type '{0}'".format(node_type))
+        LOG.warning("No output found for utility type '%s'", node_type)
         return None
 
     if node_type in output_funcs:

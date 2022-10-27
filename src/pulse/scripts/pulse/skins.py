@@ -23,7 +23,7 @@ def get_skin_from_mesh(mesh):
 
     if skins:
         if len(skins) > 1:
-            LOG.warning("More than one skin cluster found on {0}".format(mesh))
+            LOG.warning("More than one skin cluster found on %s", mesh)
         return skins[0]
 
 
@@ -166,7 +166,7 @@ def set_skin_weights(skin, weights, prune=True):
     for inf in missing_influences:
         meshes = skin.getGeometry()
         mesh = meshes[0] if meshes else None
-        LOG.warning("Mesh {0} is missing influence: {1} ".format(mesh, inf))
+        LOG.warning("Mesh %s is missing influence: %s ", mesh, inf)
 
     return missing_influences
 
@@ -238,7 +238,7 @@ def apply_skin_weights_map(skin_weights, *skins):
     for skin in skins:
         weights = skin_weights.get(skin.nodeName(), None)
         if not weights:
-            LOG.warning("Could not find weights for skin: {0}".format(skin))
+            LOG.warning("Could not find weights for skin: %s", skin)
             continue
         set_skin_weights(skin, weights)
 

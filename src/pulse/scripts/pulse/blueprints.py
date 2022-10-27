@@ -40,7 +40,7 @@ def _load_config(file_path) -> Optional[dict]:
     Load and return the contents of a yaml config file
     """
     if not os.path.isfile(file_path):
-        LOG.warning(f"Config file not found: {file_path}")
+        LOG.warning("Config file not found: %s", file_path)
         return
 
     with open(file_path, 'r') as fp:
@@ -189,7 +189,7 @@ class Blueprint(object):
         else:
             step = self.rootStep.get_child_by_path(path)
             if not step:
-                LOG.warning("could not find BuildStep: %s", path)
+                LOG.warning("Could not find BuildStep: %s", path)
             return step
 
     def add_default_actions(self):
@@ -294,7 +294,7 @@ class BlueprintFile(object):
         if success:
             self.clear_modified()
         else:
-            LOG.error(f"Failed to save Blueprint to file: {self.file_path}")
+            LOG.error("Failed to save Blueprint to file: %s", self.file_path)
 
         return success
 
@@ -314,7 +314,7 @@ class BlueprintFile(object):
             return False
 
         if not os.path.isfile(self.file_path):
-            LOG.warning(f"Blueprint file does not exist: {self.file_path}")
+            LOG.warning("Blueprint file does not exist: %s", self.file_path)
             return False
 
         success = self.blueprint.load_from_file(self.file_path)
@@ -322,7 +322,7 @@ class BlueprintFile(object):
         if success:
             self.clear_modified()
         else:
-            LOG.error(f"Failed to load Blueprint from file: {self.file_path}")
+            LOG.error("Failed to load Blueprint from file: %s", self.file_path)
 
         return success
 
@@ -485,12 +485,10 @@ class BlueprintBuilder(object):
             self.log.warning("Builder has already been started")
             return False
         if self.is_finished:
-            self.log.error(
-                "Cannot re-start a builder that has already finished, make a new builder instead")
+            self.log.error("Cannot re-start a builder that has already finished, make a new builder instead")
             return False
         if self.is_canceled:
-            self.log.warning(
-                "Builder was cancelled, create a new instance to build again")
+            self.log.warning("Builder was cancelled, create a new instance to build again")
             return False
 
         self.is_started = True
@@ -520,8 +518,7 @@ class BlueprintBuilder(object):
             return
 
         if self.is_finished or self.is_canceled:
-            self.log.warning(
-                "Cannot run/continue a finished or cancelled build")
+            self.log.warning("Cannot run/continue a finished or cancelled build")
             return
 
         self.is_running = True
@@ -638,10 +635,7 @@ class BlueprintBuilder(object):
 
         error_count = len(self.errors)
         lvl = logging.WARNING if error_count else logging.INFO
-        self.log.log(lvl, finish_msg, extra=dict(
-            duration=self.elapsed_time,
-            scenePath=self.scene_file_path,
-        ))
+        self.log.log(lvl, finish_msg, extra=dict(duration=self.elapsed_time, scenePath=self.scene_file_path))
 
         self.close_file_logger()
 
@@ -718,7 +712,7 @@ class BlueprintBuilder(object):
         # recursively iterate through all build actions
         all_actions = list(self.action_iterator())
         action_count = len(all_actions)
-        self.log.info(f'Generated {action_count} actions.')
+        self.log.info('Generated %s actions.', action_count)
 
         # clear all validate results before running
         for step, action in all_actions:
@@ -752,7 +746,7 @@ class BlueprintBuilder(object):
             version=BLUEPRINT_VERSION,
             blueprintFile=self.scene_file_path,
         ))
-        self.log.info(f'Created rig structure: {self.rig.nodeName()}')
+        self.log.info('Created rig structure: %s', self.rig.nodeName())
 
     def run_build_action(self, step: BuildStep, action: BuildAction, index: int, action_count: int):
         start_time = time.time()

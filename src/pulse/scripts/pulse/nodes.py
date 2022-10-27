@@ -683,8 +683,7 @@ def freeze_offset_matrix(transform):
     current local matrix values into its offsetParentMatrix. This operation is idempotent.
     """
     if not transform.offsetParentMatrix.isSettable():
-        LOG.warning(
-            'Cannot freeze %s offset matrix, offsetParentMatrix is not settable', transform)
+        LOG.warning('Cannot freeze %s offset matrix, offsetParentMatrix is not settable', transform)
         return
     local_mtx = transform.m.get()
     offset_mtx = transform.offsetParentMatrix.get()
@@ -705,8 +704,7 @@ def unfreeze_offset_matrix(transform):
     offset parent matrix values into its translate, rotate, and scale. This operation is idempotent.
     """
     if not transform.offsetParentMatrix.isSettable():
-        LOG.warning(
-            'Cannot unfreeze %s offset matrix, offsetParentMatrix is not settable', transform)
+        LOG.warning('Cannot unfreeze %s offset matrix, offsetParentMatrix is not settable', transform)
         return
     local_mtx = transform.m.get()
     offset_mtx = transform.offsetParentMatrix.get()

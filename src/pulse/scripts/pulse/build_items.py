@@ -354,7 +354,7 @@ class BuildActionAttribute(object):
             else:
                 self._value = new_value
         else:
-            LOG.error(f"'{new_value}' is not an acceptable value for attribute'{self.name}' ({self.type})")
+            LOG.error("'%s' is not an acceptable value for attribute '%s' (%s)", new_value, self.name, self.type)
 
     def is_acceptable_value(self, new_value):
         """
@@ -653,7 +653,7 @@ class BuildActionData(object):
                 self._is_missing_spec = False
             else:
                 self._is_missing_spec = True
-                LOG.warning(f"Failed to find action spec for '%s'", self._action_id)
+                LOG.warning("Failed to find action spec for '%s'", self._action_id)
 
     def num_attrs(self) -> int:
         """
@@ -1106,7 +1106,7 @@ class BuildAction(BuildActionData):
         """
         action_spec = BuildActionRegistry.get().find_action(action_id)
         if not action_spec:
-            LOG.error(f"BuildAction.from_action_id: Failed to find BuildAction class for id '{action_id}'")
+            LOG.error("BuildAction.from_action_id: Failed to find BuildAction class for id '%s'", action_id)
             return
 
         action = action_spec.action_cls()
@@ -1125,7 +1125,7 @@ class BuildAction(BuildActionData):
         """
         action_id = data.get('id')
         if not action_id:
-            LOG.error(f"BuildAction.from_data: Invalid data, missing 'id' key: %s", data)
+            LOG.error("BuildAction.from_data: Invalid data, missing 'id' key: %s", data)
             return
 
         action = BuildAction.from_action_id(action_id)

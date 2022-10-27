@@ -169,7 +169,7 @@ class BuildActionLoader(object):
         Args:
             package: A python package containing BuildActions
         """
-        LOG.info(f'Loading Pulse actions from package: {package}')
+        LOG.info('Loading Pulse actions from package: %s', package)
 
         return self._load_actions_from_module(package)
 
@@ -177,7 +177,7 @@ class BuildActionLoader(object):
         """
         Perform the actual recursive loading of actions within a package or module.
         """
-        LOG.debug(f'Loading actions from module: {module}')
+        LOG.debug('Loading actions from module: %s', module)
 
         action_specs: List[BuildActionSpec] = []
         for name in dir(module):

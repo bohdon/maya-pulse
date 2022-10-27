@@ -921,7 +921,7 @@ def get_mirror_settings(sourceNode, destNode=None, useNodeSettings=True, exclude
 
     result = {}
 
-    LOG.debug("Getting Mirror Settings: {0}".format(sourceNode))
+    LOG.debug("Getting Mirror Settings: %s", sourceNode)
     if not destNode:
         destNode = get_paired_node(sourceNode)
     if not destNode:
