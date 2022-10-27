@@ -1,12 +1,12 @@
-from pulse.buildItems import BuildAction, BuildActionError
-from pulse.buildItems import BuildActionAttributeType as AttrType
+from pulse.build_items import BuildAction, BuildActionError
+from pulse.build_items import BuildActionAttributeType as AttrType
 
 try:
     import resetter
 except ImportError:
     resetter = None
 
-import pulse.animinterface
+from pulse import anim_interface
 
 
 class SetAttributeDefaultsAction(BuildAction):
@@ -37,7 +37,7 @@ class SetAttributeDefaultsAction(BuildAction):
         all_nodes = set(self.nodes)
 
         if self.useAnimControls:
-            all_nodes.update(pulse.animinterface.get_all_anim_ctls())
+            all_nodes.update(anim_interface.get_all_anim_ctls())
 
         all_nodes = list(all_nodes)
         resetter.setDefaults(all_nodes, self.extraAttrs, nonkey=self.includeNonKeyable)

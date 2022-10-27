@@ -1,9 +1,9 @@
 import pymel.core as pm
 
-from pulse import nodes, utilnodes
+from pulse import nodes, util_nodes
 from pulse.vendor import pymetanode as meta
-from pulse.buildItems import BuildAction, BuildActionError
-from pulse.buildItems import BuildActionAttributeType as AttrType
+from pulse.build_items import BuildAction, BuildActionError
+from pulse.build_items import BuildActionAttributeType as AttrType
 
 MAGIC_FEET_CTL_METACLASSNAME = 'pulse_magicfeet_ctl'
 MAGIC_FEET_LIFT_CTL_METACLASSNAME = 'pulse_magicfeet_lift_ctl'
@@ -149,8 +149,8 @@ class MagicFeetAction(BuildAction):
 
         # connect blended rotation to toe / ball pivots
         # use ballToe attr to drive the blend (0 == ball, 1 == toe)
-        toe_rot_blend_attr = utilnodes.blend2(self.control.r, (0, 0, 0), ball_toe_attr)
-        ball_rot_blend_attr = utilnodes.blend2((0, 0, 0), self.control.r, ball_toe_attr)
+        toe_rot_blend_attr = util_nodes.blend2(self.control.r, (0, 0, 0), ball_toe_attr)
+        ball_rot_blend_attr = util_nodes.blend2((0, 0, 0), self.control.r, ball_toe_attr)
         toe_rot_blend_attr >> self.toePivot.r
         ball_rot_blend_attr >> self.ballPivot.r
 
@@ -163,8 +163,8 @@ class MagicFeetAction(BuildAction):
 
         # create condition to switch between ball/toe and heel pivots
         # TODO(bsayre): use dot-product towards up to determine toe vs heel
-        is_toe_roll_attr = utilnodes.condition(self.control.ry, 0, [1], [0], 2)
-        planted_mtx_attr = utilnodes.choice(is_toe_roll_attr, heel_tgt.wm, ball_toe_tgt.wm)
+        is_toe_roll_attr = util_nodes.condition(self.control.ry, 0, [1], [0], 2)
+        planted_mtx_attr = util_nodes.choice(is_toe_roll_attr, heel_tgt.wm, ball_toe_tgt.wm)
 
         # connect final planted ankle matrix to ankle target transform
         nodes.connect_matrix(planted_mtx_attr, planted_tgt, nodes.ConnectMatrixMethod.SNAP)
@@ -188,13 +188,13 @@ class MagicFeetAction(BuildAction):
         # in order to do this, reverse ballToe attr, then multiply by isToeRoll
         # to ensure toe-down is not active when not using toe pivots
         # reverse ballToeAttr, so that 1 == toe-down/ball
-        ball_toe_reverse_attr = utilnodes.reverse(ball_toe_attr)
+        ball_toe_reverse_attr = util_nodes.reverse(ball_toe_attr)
         # multiply by isToe to ensure ball not active while using heel pivot
-        is_toe_and_ball_attr = utilnodes.multiply(
+        is_toe_and_ball_attr = util_nodes.multiply(
             ball_toe_reverse_attr, is_toe_roll_attr)
         # multiply by 1-liftAttr to ensure ball not active while lifting
-        lift_reverse_attr = utilnodes.reverse(lift_attr)
-        toe_up_down_blend_attr = utilnodes.multiply(is_toe_and_ball_attr, lift_reverse_attr)
+        lift_reverse_attr = util_nodes.reverse(lift_attr)
+        toe_up_down_blend_attr = util_nodes.multiply(is_toe_and_ball_attr, lift_reverse_attr)
         ball_toe_mtx_blend_attr = self.create_matrix_blend(
             toe_up_tgt.wm, toe_down_tgt.wm, toe_up_down_blend_attr,
             '{0}_mf_toeUpDownBlend'.format(self.toeFollower.nodeName()))
@@ -233,7 +233,7 @@ class MagicFeetAction(BuildAction):
         blend_node = pm.createNode('wtAddMatrix', n=name)
 
         mtx_a >> blend_node.wtMatrix[0].matrixIn
-        utilnodes.reverse(blend_attr) >> blend_node.wtMatrix[0].weightIn
+        util_nodes.reverse(blend_attr) >> blend_node.wtMatrix[0].weightIn
 
         mtx_b >> blend_node.wtMatrix[1].matrixIn
         blend_attr >> blend_node.wtMatrix[1].weightIn

@@ -10,7 +10,7 @@ import maya.cmds as cmds
 
 from ..vendor.Qt import QtCore, QtWidgets, QtGui
 from ..serializer import serialize_attr_value
-from ..buildItems import BuildStep, BuildActionRegistry, BuildActionSpec, BuildActionAttribute
+from ..build_items import BuildStep, BuildActionRegistry, BuildActionSpec, BuildActionAttribute
 from .. import sym
 from .core import BlueprintUIModel
 from .core import PulseWindow

@@ -8,7 +8,7 @@ from .vendor import pymetanode as meta
 from .vendor import yaml
 from . import links
 from . import nodes
-from . import utilnodes
+from . import util_nodes
 
 CONTROL_SHAPE_METACLASS = 'pulse_controlshape'
 BUILTIN_CONTROL_SHAPES_LOADED = False
@@ -57,8 +57,8 @@ def connect_node_to_control_point(node, curve_shape, point_index):
         point_index (int): The index of a control point on the curve shape.
     """
     # TODO: name the utility nodes
-    mmtx = utilnodes.mult_matrix(node.wm, curve_shape.pim)
-    decomp = utilnodes.decompose_matrix(mmtx)
+    mmtx = util_nodes.mult_matrix(node.wm, curve_shape.pim)
+    decomp = util_nodes.decompose_matrix(mmtx)
     decomp.outputTranslate >> curve_shape.controlPoints[point_index]
 
 

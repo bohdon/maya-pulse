@@ -2,8 +2,8 @@ import pymel.core as pm
 
 from pulse import names, nodes, spaces
 from pulse.vendor import pymetanode as meta
-from pulse.buildItems import BuildAction, BuildActionError
-from pulse.buildItems import BuildActionAttributeType as AttrType
+from pulse.build_items import BuildAction, BuildActionError
+from pulse.build_items import BuildActionAttributeType as AttrType
 from pulse.ui.contextmenus import PulseNodeContextSubMenu
 
 

@@ -14,9 +14,9 @@ from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
 
 from ..vendor import pymetanode as meta
 from ..vendor.Qt import QtCore, QtWidgets, QtGui
-from .. import loader, rigs, editorutils
+from .. import loader, rigs, editor_utils
 from ..blueprints import Blueprint, BlueprintFile, BlueprintSettings, BlueprintBuilder, BlueprintValidator
-from ..buildItems import BuildStep, BuildAction
+from ..build_items import BuildStep, BuildAction
 from ..prefs import option_var_property
 from ..serializer import serialize_attr_value
 from .utils import CollapsibleFrame
@@ -1130,7 +1130,7 @@ class BlueprintUIModel(QtCore.QObject):
 
         # save maya scene
         # TODO: expose prompt to save scene as option
-        if not editorutils.save_scene_if_dirty(prompt=False):
+        if not editor_utils.save_scene_if_dirty(prompt=False):
             return
 
         # save blueprint
@@ -1176,7 +1176,7 @@ class BlueprintUIModel(QtCore.QObject):
 
         # save maya scene
         # TODO: expose prompt to save scene as option
-        if not editorutils.save_scene_if_dirty(prompt=False):
+        if not editor_utils.save_scene_if_dirty(prompt=False):
             return
 
         # save blueprint

@@ -1,7 +1,7 @@
 import pymel.core as pm
 
 from ...vendor.Qt import QtWidgets
-from ... import editorutils
+from ... import editor_utils
 from ..utils import undoAndRepeatPartial as cmd
 
 from ..gen.designpanel_general import Ui_GeneralDesignPanel
@@ -20,12 +20,12 @@ class GeneralDesignPanel(QtWidgets.QWidget):
 
         self.ui.name_editor_btn.clicked.connect(cmd(QuickNameWindow.toggleWindow))
         self.ui.color_editor_btn.clicked.connect(cmd(QuickColorWindow.toggleWindow))
-        self.ui.parent_selected_btn.clicked.connect(cmd(editorutils.parent_selected))
-        self.ui.parent_in_order_btn.clicked.connect(cmd(editorutils.parent_selected_in_order))
-        self.ui.create_offset_btn.clicked.connect(cmd(editorutils.create_offset_for_selected))
+        self.ui.parent_selected_btn.clicked.connect(cmd(editor_utils.parent_selected))
+        self.ui.parent_in_order_btn.clicked.connect(cmd(editor_utils.parent_selected_in_order))
+        self.ui.create_offset_btn.clicked.connect(cmd(editor_utils.create_offset_for_selected))
         self.ui.select_hierarchy_btn.clicked.connect(cmd(self.select_children))
-        self.ui.freeze_scales_btn.clicked.connect(cmd(editorutils.freeze_scales_for_selected_hierarchies))
-        self.ui.freeze_pivots_btn.clicked.connect(cmd(editorutils.freeze_pivots_for_selected_hierarchies))
+        self.ui.freeze_scales_btn.clicked.connect(cmd(editor_utils.freeze_scales_for_selected_hierarchies))
+        self.ui.freeze_pivots_btn.clicked.connect(cmd(editor_utils.freeze_pivots_for_selected_hierarchies))
 
     def select_children(self):
         """

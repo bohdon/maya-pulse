@@ -11,8 +11,8 @@ from typing import Optional
 
 import maya.cmds as cmds
 
-from .. import sourceeditor
-from ..buildItems import BuildActionProxy, BuildStep, BuildActionData, BuildActionAttribute
+from .. import source_editor
+from ..build_items import BuildActionProxy, BuildStep, BuildActionData, BuildActionAttribute
 from ..vendor.Qt import QtCore, QtWidgets, QtGui
 from ..colors import LinearColor
 from .actionattrform import ActionAttrForm, BatchAttrForm
@@ -184,7 +184,7 @@ class BuildStepForm(QtWidgets.QWidget):
         """
         step = self.getStep()
         if step.is_action() and step.action_proxy.spec:
-            sourceeditor.open_module(step.action_proxy.spec.module)
+            source_editor.open_module(step.action_proxy.spec.module)
 
 
 class BuildActionDataForm(QtWidgets.QWidget):

@@ -18,7 +18,7 @@ from . import nodes
 from . import shapes
 from . import skins
 from . import sym
-from . import sourceeditor
+from . import source_editor
 from .colors import LinearColor
 from .vendor.mayacoretools import preservedSelection
 
@@ -684,4 +684,4 @@ def open_blueprint_config_in_source_editor():
     """
     blueprint = get_editor_blueprint()
     if blueprint:
-        sourceeditor.open_file(blueprint.config_file_path)
+        source_editor.open_file(blueprint.config_file_path)

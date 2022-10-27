@@ -5,17 +5,17 @@ from importlib.machinery import SourceFileLoader
 
 import pymel.core as pm
 
-from pulse.buildItems import BuildAction, BuildActionError
-from pulse.buildItems import BuildActionAttributeType as AttrType
+from pulse.build_items import BuildAction, BuildActionError
+from pulse.build_items import BuildActionAttributeType as AttrType
 from pulse.vendor.Qt import QtWidgets
 from pulse.ui.actioneditor import BuildActionProxyForm
-from pulse import sourceeditor
+from pulse import source_editor
 
 # template for a new script file
 SCRIPT_TEMPLATE = """\"""
 Script file for a python Pulse action.
 \"""
-from pulse.buildItems import BuildAction
+from pulse.build_items import BuildAction
 """
 
 # template for a function added to the script file automatically
@@ -55,7 +55,7 @@ class PythonActionForm(BuildActionProxyForm):
         # add function to the script automatically if it doesn't exist
         self.addFunctionToScriptFile(filePath, functionName)
 
-        sourceeditor.open_file(filePath)
+        source_editor.open_file(filePath)
 
     def createScriptFile(self, filePath: str, functionName: str):
         """

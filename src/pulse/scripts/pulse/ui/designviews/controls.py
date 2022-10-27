@@ -1,7 +1,7 @@
 from ..utils import getIcon
 from ..utils import undoAndRepeatPartial as cmd
-from ... import controlshapes
-from ... import editorutils
+from ... import control_shapes
+from ... import editor_utils
 from ...vendor.Qt import QtCore, QtWidgets
 
 
@@ -21,7 +21,7 @@ class ControlsDesignPanel(QtWidgets.QWidget):
         create_layout.setMargin(0)
         create_layout.setSpacing(2)
 
-        controlshapes.load_builtin_control_shapes()
+        control_shapes.load_builtin_control_shapes()
 
         def createControlShapeButton(text, shapeData):
             btn = QtWidgets.QPushButton(parent)
@@ -31,10 +31,10 @@ class ControlsDesignPanel(QtWidgets.QWidget):
                 btn.setIconSize(QtCore.QSize(32, 32))
             else:
                 btn.setText(text)
-            btn.clicked.connect(cmd(controlshapes.create_controls_for_selected, shapeData))
+            btn.clicked.connect(cmd(control_shapes.create_controls_for_selected, shapeData))
             return btn
 
-        shapes = controlshapes.get_control_shapes()
+        shapes = control_shapes.get_control_shapes()
 
         row = 0
         col = 0
@@ -63,7 +63,7 @@ class ControlsDesignPanel(QtWidgets.QWidget):
                              f"{degrees} degrees around the {_axes[axis]} axis")
             btn.setProperty('cssClasses', cssClasses)
 
-            btn.clicked.connect(cmd(editorutils.rotate_selected_components_around_axis, axis, degrees))
+            btn.clicked.connect(cmd(editor_utils.rotate_selected_components_around_axis, axis, degrees))
             edit_layout.addWidget(btn)
 
         createRotateComponentsButton('- X', 'x-axis', 0, -90)

@@ -1,9 +1,9 @@
 import pymel.core as pm
 
-from pulse import nodes, utilnodes, joints, controlshapes
+from pulse import nodes, util_nodes, joints, control_shapes
 from pulse.vendor import pymetanode as meta
-from pulse.buildItems import BuildAction, BuildActionError
-from pulse.buildItems import BuildActionAttributeType as AttrType
+from pulse.build_items import BuildAction, BuildActionError
+from pulse.build_items import BuildActionAttributeType as AttrType
 from pulse.ui.contextmenus import PulseNodeContextSubMenu
 
 IKFK_CONTROL_METACLASS = 'pulse_ikfk_control'
@@ -93,11 +93,11 @@ class ThreeBoneIKFKAction(BuildAction):
         ik_attr = self.rootCtl.attr("ik")
 
         # create choices for world matrix from ik and fk targets
-        root_choice = utilnodes.choice(ik_attr, self.rootCtl.wm, root_ik_joint.wm)
+        root_choice = util_nodes.choice(ik_attr, self.rootCtl.wm, root_ik_joint.wm)
         root_choice.node().rename(f"{root_joint.nodeName()}_ikfk_choice")
-        mid_choice = utilnodes.choice(ik_attr, self.midCtlFk.wm, mid_ik_joint.wm)
+        mid_choice = util_nodes.choice(ik_attr, self.midCtlFk.wm, mid_ik_joint.wm)
         mid_choice.node().rename(f"{mid_joint.nodeName()}_ikfk_choice")
-        end_choice = utilnodes.choice(ik_attr, self.endCtlFk.wm, end_ik_joint.wm)
+        end_choice = util_nodes.choice(ik_attr, self.endCtlFk.wm, end_ik_joint.wm)
         end_choice.node().rename(f"{self.endJoint.nodeName()}_ikfk_choice")
 
         # connect the target matrices to the joints
@@ -111,7 +111,7 @@ class ThreeBoneIKFKAction(BuildAction):
         ik_attr >> self.midCtlIk.v
         ik_attr >> self.endCtlIk.v
 
-        fk_attr = utilnodes.reverse(ik_attr)
+        fk_attr = util_nodes.reverse(ik_attr)
         self.midCtlFk.v.setLocked(False)
         self.endCtlFk.v.setLocked(False)
         fk_attr >> self.midCtlFk.v
@@ -121,7 +121,7 @@ class ThreeBoneIKFKAction(BuildAction):
         if self.addPoleLine:
             # keep consistent color overrides for the mid ctl
             color = nodes.get_override_color(self.midCtlIk)
-            controlshapes.create_line_shape(mid_ik_joint, self.midCtlIk, self.midCtlIk)
+            control_shapes.create_line_shape(mid_ik_joint, self.midCtlIk, self.midCtlIk)
             if color:
                 nodes.set_override_color(self.midCtlIk, color)
 

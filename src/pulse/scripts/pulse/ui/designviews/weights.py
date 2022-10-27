@@ -1,4 +1,4 @@
-from ... import editorutils
+from ... import editor_utils
 from ...vendor.Qt import QtWidgets
 from ..utils import undoAndRepeatPartial as cmd
 
@@ -13,4 +13,4 @@ class WeightsDesignPanel(QtWidgets.QWidget):
         self.ui = Ui_WeightsDesignPanel()
         self.ui.setupUi(self)
 
-        self.ui.save_weights_btn.clicked.connect(cmd(editorutils.save_all_skin_weights))
+        self.ui.save_weights_btn.clicked.connect(cmd(editor_utils.save_all_skin_weights))

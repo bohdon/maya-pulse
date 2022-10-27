@@ -1,8 +1,8 @@
 import pymel.core as pm
 
 from pulse import nodes
-from pulse.buildItems import BuildAction
-from pulse.buildItems import BuildActionAttributeType as AttrType
+from pulse.build_items import BuildAction
+from pulse.build_items import BuildActionAttributeType as AttrType
 
 
 class BuildCoreHierarchyAction(BuildAction):

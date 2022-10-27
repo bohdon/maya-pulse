@@ -3,7 +3,7 @@ Widget for quickly editing the color of animation controls.
 """
 
 from ..vendor.Qt import QtCore, QtWidgets
-from .. import editorutils
+from .. import editor_utils
 from ..colors import LinearColor
 from .core import PulseWindow, BlueprintUIModel
 from .utils import undoAndRepeatPartial as cmd
@@ -29,8 +29,8 @@ class QuickColorEditor(QtWidgets.QWidget):
         self.ui.setupUi(self)
         self.setupColorButtonsUi(self)
 
-        self.ui.remove_btn.clicked.connect(cmd(editorutils.disable_color_override_for_selected))
-        self.ui.edit_config_btn.clicked.connect(editorutils.open_blueprint_config_in_source_editor)
+        self.ui.remove_btn.clicked.connect(cmd(editor_utils.disable_color_override_for_selected))
+        self.ui.edit_config_btn.clicked.connect(editor_utils.open_blueprint_config_in_source_editor)
 
     def setupColorButtonsUi(self, parent):
         row, col = 0, 0
@@ -51,7 +51,7 @@ class QuickColorEditor(QtWidgets.QWidget):
         btn.setText(name)
         # btn.setStyleSheet(color.as_fg_style())
         btn.setStyleSheet(f'border: 2px solid {color.as_style()}')
-        btn.clicked.connect(cmd(editorutils.set_override_color_for_selected, color))
+        btn.clicked.connect(cmd(editor_utils.set_override_color_for_selected, color))
         return btn
 
 

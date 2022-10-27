@@ -1,7 +1,7 @@
 from pulse import nodes
-from pulse import utilnodes
-from pulse.buildItems import BuildAction, BuildActionError
-from pulse.buildItems import BuildActionAttributeType as AttrType
+from pulse import util_nodes
+from pulse.build_items import BuildAction, BuildActionError
+from pulse.build_items import BuildActionAttributeType as AttrType
 
 
 class MagicHandsAction(BuildAction):
@@ -39,27 +39,27 @@ class MagicHandsAction(BuildAction):
         # convert finger position from 0..1, to 1..-1
         splay_factor = (self.fingerPosition - 0.5) * 2.0
         # get a zeroed scaleY attr for driving splay
-        sy_zeroed = utilnodes.add(self.control.sy, -1)
+        sy_zeroed = util_nodes.add(self.control.sy, -1)
 
         if self.ctl1:
             # {metacarpal}.rz = (sy - 1) * splayFactor * splayScale * 0.5
-            metacarpal_rz = utilnodes.multiply(sy_zeroed, splay_factor * self.splayScale * 0.5)
+            metacarpal_rz = util_nodes.multiply(sy_zeroed, splay_factor * self.splayScale * 0.5)
 
             # create and connect offset
             offset1 = nodes.create_offset_transform(self.ctl1, name=self._offsetName)
             metacarpal_rz >> offset1.rz
 
         # TODO(bsayre): Expose scalar for rotation-splay?
-        splay_attr = utilnodes.multiply(self.control.rx, splay_factor * -1.0)
+        splay_attr = util_nodes.multiply(self.control.rx, splay_factor * -1.0)
 
         # {finger.ry} = ry + (rx * splayFactor)
-        fingers_ry = utilnodes.add(self.control.ry, splay_attr)
+        fingers_ry = util_nodes.add(self.control.ry, splay_attr)
         # for first joint of a finger, add rotate offset driven by translate
         # {finger}.ry = tz * metaRotateScale
-        tz_scaled = utilnodes.multiply(self.control.tz, self.metaRotateScale)
-        base_fingers_ry = utilnodes.add(fingers_ry, tz_scaled)
+        tz_scaled = util_nodes.multiply(self.control.tz, self.metaRotateScale)
+        base_fingers_ry = util_nodes.add(fingers_ry, tz_scaled)
         # {finger.rz} = (sy - 1) * splayFactor * splayScale
-        fingers_rz = utilnodes.multiply(sy_zeroed, splay_factor * self.splayScale)
+        fingers_rz = util_nodes.multiply(sy_zeroed, splay_factor * self.splayScale)
 
         for i, ctl in enumerate(finger_ctls):
             offset = nodes.create_offset_transform(ctl, name=self._offsetName)

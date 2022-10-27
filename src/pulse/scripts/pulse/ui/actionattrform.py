@@ -8,7 +8,7 @@ from typing import Optional
 import maya.cmds as cmds
 import pymel.core as pm
 
-from ..buildItems import BuildStep, BuildActionProxy, BuildActionAttribute
+from ..build_items import BuildStep, BuildActionProxy, BuildActionAttribute
 from ..vendor import pymetanode as meta
 from ..serializer import serialize_attr_value
 from ..vendor.Qt import QtCore, QtGui, QtWidgets

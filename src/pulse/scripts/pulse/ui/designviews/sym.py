@@ -1,6 +1,6 @@
 from ...vendor.Qt import QtWidgets
 from ...prefs import option_var_property
-from ... import editorutils
+from ... import editor_utils
 from ..utils import undoAndRepeatPartial as cmd
 from ..gen.designpanel_symmetry import Ui_SymmetryDesignPanel
 
@@ -57,8 +57,8 @@ class SymmetryDesignPanel(QtWidgets.QWidget):
         self.ui.appearance_check.stateChanged.connect(self.set_mirror_appearance)
         self.ui.curve_shapes_check.stateChanged.connect(self.set_mirror_curve_shapes)
 
-        self.ui.pair_btn.clicked.connect(cmd(editorutils.pair_selected))
-        self.ui.unpair_btn.clicked.connect(cmd(editorutils.unpair_selected))
+        self.ui.pair_btn.clicked.connect(cmd(editor_utils.pair_selected))
+        self.ui.unpair_btn.clicked.connect(cmd(editor_utils.unpair_selected))
         self.ui.mirror_btn.clicked.connect(self.mirror_selected)
 
     def mirror_selected(self):
@@ -71,4 +71,4 @@ class SymmetryDesignPanel(QtWidgets.QWidget):
             transform=self.mirror_transforms,
             appearance=self.mirror_appearance,
         )
-        cmd(editorutils.mirror_selected, **kw)()
+        cmd(editor_utils.mirror_selected, **kw)()

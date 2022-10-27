@@ -6,11 +6,9 @@ import logging
 import os
 from functools import partial
 
-import maya.cmds as cmds
-
 from ..colors import LinearColor
 from ..vendor.Qt import QtCore, QtWidgets
-from ..buildItems import BuildActionRegistry
+from ..build_items import BuildActionRegistry
 from .core import BlueprintUIModel, PulseWindow
 
 from .gen.action_palette import Ui_ActionPalette

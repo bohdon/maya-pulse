@@ -2,8 +2,8 @@ import os
 
 import pymel.core as pm
 
-from pulse.buildItems import BuildAction, BuildActionError
-from pulse.buildItems import BuildActionAttributeType as AttributeType
+from pulse.build_items import BuildAction, BuildActionError
+from pulse.build_items import BuildActionAttributeType as AttributeType
 
 
 class RenameSceneAction(BuildAction):

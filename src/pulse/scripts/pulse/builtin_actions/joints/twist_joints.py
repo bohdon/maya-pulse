@@ -1,8 +1,8 @@
 import pymel.core as pm
 
-from pulse import nodes, utilnodes
-from pulse.buildItems import BuildAction, BuildActionError
-from pulse.buildItems import BuildActionAttributeType as AttrType
+from pulse import nodes, util_nodes
+from pulse.build_items import BuildAction, BuildActionError
+from pulse.build_items import BuildActionAttributeType as AttrType
 
 
 class TwistJointsAction(BuildAction):
@@ -65,21 +65,21 @@ class TwistJointsAction(BuildAction):
                 # get align joint matrix relative to it's parent,
                 # don't trust the local matrix since inheritsTransform may not be used
                 offset_mtx = self.alignJoint.wm.get() * align_parent.wim.get()
-                align_tgt_mtx = utilnodes.mult_matrix(offset_mtx, align_parent.wm)
+                align_tgt_mtx = util_nodes.mult_matrix(offset_mtx, align_parent.wm)
                 pass
             else:
                 # no parent node, just store the current 'resting' matrix in a multMatrix
-                align_tgt_mtx = utilnodes.mult_matrix(self.alignJoint.wm.get())
+                align_tgt_mtx = util_nodes.mult_matrix(self.alignJoint.wm.get())
         else:
             # use to align joint world matrix directly
             align_tgt_mtx = self.alignJoint.wm
 
         # create aligned version of the parent matrix
-        aligned_pm = utilnodes.align_matrix_to_direction(parent_mtx, self.forwardAxis, self.alignAxis,
+        aligned_pm = util_nodes.align_matrix_to_direction(parent_mtx, self.forwardAxis, self.alignAxis,
                                                          self.alignAxis, align_tgt_mtx)
 
         # blend aligned matrix with default parent matrix
-        blend_mtx = utilnodes.blend_matrix(parent_mtx, aligned_pm, twist_blend)
+        blend_mtx = util_nodes.blend_matrix(parent_mtx, aligned_pm, twist_blend)
 
         nodes.connect_matrix(blend_mtx, self.twistJoint, nodes.ConnectMatrixMethod.CREATE_OFFSET)
 

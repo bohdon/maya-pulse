@@ -1,9 +1,9 @@
 import pymel.core as pm
 
 import pulse.nodes
-import pulse.utilnodes
-from pulse.buildItems import BuildAction, BuildActionError
-from pulse.buildItems import BuildActionAttributeType as AttrType
+import pulse.util_nodes
+from pulse.build_items import BuildAction, BuildActionError
+from pulse.build_items import BuildActionAttributeType as AttrType
 
 
 class AimConstrainAction(BuildAction):
@@ -80,7 +80,7 @@ class AimConstrainAction(BuildAction):
                                   defaultValue=1, keyable=1)
             blend_attr = self.follower.attr("aimBlend")
             blend_attr >> wt_add.wtMatrix[0].weightIn
-            pulse.utilnodes.reverse(blend_attr) >> wt_add.wtMatrix[1].weightIn
+            pulse.util_nodes.reverse(blend_attr) >> wt_add.wtMatrix[1].weightIn
 
             # use aimOn node as new follower for the aim constraint
             _follower = aimOnNode

@@ -11,7 +11,7 @@ import pymel.core as pm
 from .vendor import pymetanode as meta
 from .vendor import yaml
 from . import version
-from .buildItems import BuildStep, BuildAction, BuildActionData
+from .build_items import BuildStep, BuildAction, BuildActionData
 from .rigs import RIG_METACLASS, create_rig_node
 from .serializer import PulseDumper, PulseLoader, UnsortableOrderedDict
 

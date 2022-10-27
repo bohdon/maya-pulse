@@ -3,7 +3,7 @@ from functools import partial
 import pymel.core as pm
 
 from ...vendor.Qt import QtWidgets
-from ... import editorutils
+from ... import editor_utils
 from ...prefs import option_var_property
 from ..utils import undoAndRepeatPartial as cmd
 
@@ -21,11 +21,11 @@ class JointsDesignPanel(QtWidgets.QWidget):
 
         self.ui.joint_tool_btn.clicked.connect(cmd(pm.mel.JointTool))
         self.ui.insert_joint_tool_btn.clicked.connect(cmd(pm.mel.InsertJointTool))
-        self.ui.center_btn.clicked.connect(cmd(editorutils.center_selected_joints))
-        self.ui.insert_btn.clicked.connect(cmd(editorutils.insert_joint_for_selected))
-        self.ui.disable_ssc_btn.clicked.connect(cmd(editorutils.disable_segment_scale_compensate_for_selected))
-        self.ui.freeze_btn.clicked.connect(cmd(editorutils.freeze_joints_for_selected_hierarchies))
-        self.ui.mark_end_joints_btn.clicked.connect(cmd(editorutils.mark_end_joints_for_selected))
+        self.ui.center_btn.clicked.connect(cmd(editor_utils.center_selected_joints))
+        self.ui.insert_btn.clicked.connect(cmd(editor_utils.insert_joint_for_selected))
+        self.ui.disable_ssc_btn.clicked.connect(cmd(editor_utils.disable_segment_scale_compensate_for_selected))
+        self.ui.freeze_btn.clicked.connect(cmd(editor_utils.freeze_joints_for_selected_hierarchies))
+        self.ui.mark_end_joints_btn.clicked.connect(cmd(editor_utils.mark_end_joints_for_selected))
 
 
 class DesignPanelJointOrients(QtWidgets.QWidget):
@@ -65,10 +65,10 @@ class DesignPanelJointOrients(QtWidgets.QWidget):
         self._update_settings()
 
         # general utils
-        self.ui.toggle_lras_btn.clicked.connect(cmd(editorutils.toggle_local_rotation_axes_for_selected))
-        self.ui.toggle_cb_attrs_btn.clicked.connect(cmd(editorutils.toggle_detailed_channel_box_for_selected))
-        self.ui.interactive_btn.clicked.connect(cmd(editorutils.interactive_orient_for_selected))
-        self.ui.sync_axes_btn.clicked.connect(cmd(editorutils.match_joint_rotation_to_orient_for_selected))
+        self.ui.toggle_lras_btn.clicked.connect(cmd(editor_utils.toggle_local_rotation_axes_for_selected))
+        self.ui.toggle_cb_attrs_btn.clicked.connect(cmd(editor_utils.toggle_detailed_channel_box_for_selected))
+        self.ui.interactive_btn.clicked.connect(cmd(editor_utils.interactive_orient_for_selected))
+        self.ui.sync_axes_btn.clicked.connect(cmd(editor_utils.match_joint_rotation_to_orient_for_selected))
 
         # incremental rotate buttons
         self.ui.rot_x_neg_btn.clicked.connect(partial(self.rotate_selected_orients_around_axis, 0, -90))
@@ -124,7 +124,7 @@ class DesignPanelJointOrients(QtWidgets.QWidget):
             preserve_shapes=self.preserve_shapes,
             sync_joint_axes=self.keep_axes_synced,
         )
-        cmd(editorutils.rotate_selected_orients_around_axis, axis, degrees, **kw)()
+        cmd(editor_utils.rotate_selected_orients_around_axis, axis, degrees, **kw)()
 
     def orient_to_world_for_selected(self):
         kw = dict(
@@ -133,7 +133,7 @@ class DesignPanelJointOrients(QtWidgets.QWidget):
             preserve_shapes=self.preserve_shapes,
             sync_joint_axes=self.keep_axes_synced,
         )
-        cmd(editorutils.orient_to_world_for_selected, **kw)()
+        cmd(editor_utils.orient_to_world_for_selected, **kw)()
 
     def orient_to_joint_for_selected(self):
         kw = dict(
@@ -144,14 +144,14 @@ class DesignPanelJointOrients(QtWidgets.QWidget):
             preserve_shapes=self.preserve_shapes,
             sync_joint_axes=self.keep_axes_synced,
         )
-        cmd(editorutils.orient_to_joint_for_selected, **kw)()
+        cmd(editor_utils.orient_to_joint_for_selected, **kw)()
 
     def orient_to_parent_for_selected(self):
         kw = dict(
             include_children=self.include_children,
             preserve_children=self.preserve_children,
         )
-        cmd(editorutils.orient_to_parent_for_selected, **kw)()
+        cmd(editor_utils.orient_to_parent_for_selected, **kw)()
 
     def orient_ik_joints_for_selected(self):
         kw = dict(
@@ -159,7 +159,7 @@ class DesignPanelJointOrients(QtWidgets.QWidget):
             pole_axis=self.get_up_axis_str(),
             preserve_children=self.preserve_children,
         )
-        cmd(editorutils.orient_ik_joints_for_selected, **kw)()
+        cmd(editor_utils.orient_ik_joints_for_selected, **kw)()
 
     def fixup_orient_for_selected(self):
         kw = dict(
@@ -167,4 +167,4 @@ class DesignPanelJointOrients(QtWidgets.QWidget):
             keep_axis=self.get_up_axis_str(),
             preserve_children=self.preserve_children,
         )
-        cmd(editorutils.fixup_joint_orient_for_selected, **kw)()
+        cmd(editor_utils.fixup_joint_orient_for_selected, **kw)()

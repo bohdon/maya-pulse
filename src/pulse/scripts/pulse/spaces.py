@@ -32,7 +32,7 @@ import pymel.core as pm
 
 from .vendor import pymetanode as meta
 from . import nodes
-from . import utilnodes
+from . import util_nodes
 
 LOG = logging.getLogger(__name__)
 
@@ -145,7 +145,7 @@ def setup_space_constraint(node, space_names, follower=None, use_offset_matrix=T
     # create utility nodes
     offset_choice = pm.shadingNode('choice', n=offset_choice_name, asUtility=True)
     space_choice = pm.shadingNode('choice', n=space_choice_name, asUtility=True)
-    utilnodes.load_matrix_plugin()
+    util_nodes.load_matrix_plugin()
     mult_matrix = pm.shadingNode('multMatrix', n=mult_matrix_name, asUtility=True)
     if not use_offset_matrix:
         decomp = pm.shadingNode(

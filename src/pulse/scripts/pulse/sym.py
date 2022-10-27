@@ -7,7 +7,7 @@ import pymel.core as pm
 
 from .blueprints import Blueprint
 from .vendor import pymetanode as meta
-from . import editorutils
+from . import editor_utils
 from . import joints
 from . import links
 from . import nodes
@@ -700,12 +700,12 @@ class MirrorColors(BlueprintMirrorOperation):
         source_color = nodes.get_override_color(source_node)
         if source_color:
             # get name of source color
-            source_name = editorutils.get_color_name(source_color)
+            source_name = editor_utils.get_color_name(source_color)
             if source_name:
                 # mirror the name
                 dest_name = _get_mirrored_name_with_replacements(source_name, self._get_replacements())
                 # get color of mirrored name
-                dest_color = editorutils.get_named_color(dest_name)
+                dest_color = editor_utils.get_named_color(dest_name)
                 if dest_color:
                     nodes.set_override_color(dest_node, tuple(dest_color))
 

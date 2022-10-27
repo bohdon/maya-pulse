@@ -537,11 +537,11 @@ def decompose_and_connect_matrix(matrix: pm.Attribute, node: pm.nt.Transform, in
     Returns:
         The `decomposeMatrix` node
     """
-    from pulse import utilnodes
+    from pulse import util_nodes
 
     if inherits_transform:
         # get local space matrix, and ensure inheritsTransform is enabled
-        mtx = utilnodes.mult_matrix(matrix, node.pim)
+        mtx = util_nodes.mult_matrix(matrix, node.pim)
         mtx.node().rename(f"{node.nodeName()}_worldToLocal_multMatrix")
         node.inheritsTransform.set(True)
     else:
@@ -549,7 +549,7 @@ def decompose_and_connect_matrix(matrix: pm.Attribute, node: pm.nt.Transform, in
         mtx = matrix
         node.inheritsTransform.set(False)
 
-    decomp = utilnodes.decompose_matrix(mtx)
+    decomp = util_nodes.decompose_matrix(mtx)
     node.rotateOrder >> decomp.inputRotateOrder
     decomp.outputTranslate >> node.translate
     decomp.outputRotate >> node.rotate

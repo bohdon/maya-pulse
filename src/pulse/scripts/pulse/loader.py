@@ -10,7 +10,7 @@ import types
 from fnmatch import fnmatch
 from typing import List
 
-from .buildItems import BuildAction, BuildActionSpec, BuildActionRegistry
+from .build_items import BuildAction, BuildActionSpec, BuildActionRegistry
 
 LOG = logging.getLogger(__name__)
 
