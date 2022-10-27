@@ -27,7 +27,7 @@ class CreateSpaceAction(BuildAction):
             raise BuildActionError("name cannot be empty")
 
     def run(self):
-        spaces.createSpace(self.node, self.name)
+        spaces.create_space(self.node, self.name)
         self.update_rig_metadata_dict('spaces', {self.name: self.node})
 
 
@@ -64,7 +64,7 @@ class SpaceConstrainAction(BuildAction):
             # create an offset transform to be constrained
             follower = nodes.createOffsetTransform(self.node, '{0}_spaceConstraint')
         # set up the constraint, which will be finalized during the ApplySpaces action
-        spaces.setupSpaceConstraint(self.node, self.spaces, follower=follower, useOffsetMatrix=self.useOffsetMatrix)
+        spaces.setup_space_constraint(self.node, self.spaces, follower=follower, use_offset_matrix=self.useOffsetMatrix)
 
 
 class ApplySpacesAction(BuildAction):
@@ -86,12 +86,12 @@ class ApplySpacesAction(BuildAction):
     def run(self):
         if self.createWorldSpace:
             world_node = pm.group(name='world_space', empty=True, parent=self.rig)
-            spaces.createSpace(world_node, 'world')
+            spaces.create_space(world_node, 'world')
             self.update_rig_metadata_dict('spaces', {'world': world_node})
 
         # TODO: only gather not-yet-created constraints
-        all_constraints = spaces.getAllSpaceConstraints()
-        spaces.connectSpaceConstraints(all_constraints)
+        all_constraints = spaces.get_all_space_constraints()
+        spaces.connect_space_constraints(all_constraints)
 
 
 class SpaceSwitchUtils(object):
@@ -107,7 +107,7 @@ class SpaceSwitchUtils(object):
         Returns:
             True if the space was changed, false otherwise
         """
-        meta_data = meta.getMetaData(ctl, spaces.SPACECONSTRAINT_METACLASS)
+        meta_data = meta.getMetaData(ctl, spaces.SPACE_CONSTRAINT_METACLASS)
         space_data = [s for s in meta_data.get('spaces', []) if s['name'] == space]
         if not space_data:
             return False
@@ -130,11 +130,11 @@ class SpaceSwitchContextSubMenu(PulseNodeContextSubMenu):
     @classmethod
     def shouldBuildSubMenu(cls, menu) -> bool:
         # TODO: support switching multiple nodes if they have overlapping spaces
-        return len(cls.getSelectedNodesWithMetaClass(spaces.SPACECONSTRAINT_METACLASS)) == 1
+        return len(cls.getSelectedNodesWithMetaClass(spaces.SPACE_CONSTRAINT_METACLASS)) == 1
 
     def buildMenuItems(self):
-        ctl = self.getSelectedNodesWithMetaClass(spaces.SPACECONSTRAINT_METACLASS)[0]
-        meta_data = meta.getMetaData(ctl, spaces.SPACECONSTRAINT_METACLASS)
+        ctl = self.getSelectedNodesWithMetaClass(spaces.SPACE_CONSTRAINT_METACLASS)[0]
+        meta_data = meta.getMetaData(ctl, spaces.SPACE_CONSTRAINT_METACLASS)
         all_spaces = meta_data.get('spaces', [])
         if all_spaces:
             pm.menuItem(l="Spaces", enable=False)
