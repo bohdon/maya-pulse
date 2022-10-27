@@ -4,7 +4,7 @@ import pymel.core as pm
 
 from ...vendor.Qt import QtWidgets
 from ... import editorutils
-from ...prefs import optionVarProperty
+from ...prefs import option_var_property
 from ..utils import undoAndRepeatPartial as cmd
 
 from ..gen.designpanel_joints import Ui_JointsDesignPanel
@@ -32,12 +32,12 @@ class DesignPanelJointOrients(QtWidgets.QWidget):
     AXIS_ORDER_OPTIONS = ['XYZ', 'XZY', 'YXZ', 'YZX', 'ZXY', 'ZYX']
     UP_AXIS_OPTIONS = ['X', 'Y', 'Z']
 
-    axis_order = optionVarProperty('pulse.editor.orientAxisOrder', 0)
-    up_axis = optionVarProperty('pulse.editor.orientUpAxis', 1)
-    keep_axes_synced = optionVarProperty('pulse.editor.keepAxesSynced', True)
-    preserve_children = optionVarProperty('pulse.editor.orientPreserveChildren', True)
-    preserve_shapes = optionVarProperty('pulse.editor.orientPreserveShapes', True)
-    include_children = optionVarProperty('pulse.editor.orientIncludeChildren', False)
+    axis_order = option_var_property('pulse.editor.orientAxisOrder', 0)
+    up_axis = option_var_property('pulse.editor.orientUpAxis', 1)
+    keep_axes_synced = option_var_property('pulse.editor.keepAxesSynced', True)
+    preserve_children = option_var_property('pulse.editor.orientPreserveChildren', True)
+    preserve_shapes = option_var_property('pulse.editor.orientPreserveShapes', True)
+    include_children = option_var_property('pulse.editor.orientIncludeChildren', False)
 
     def set_axis_order(self, value):
         self.axis_order = value

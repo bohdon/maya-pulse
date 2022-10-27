@@ -225,7 +225,7 @@ def rotateSelectedComponentsAroundAxis(axis, degrees=90):
     rotation[axis] = degrees
     for node in pm.selected():
         for shape in node.getShapes():
-            shapes.rotateComponents(shape, rotation)
+            shapes.rotate_components(shape, rotation)
 
 
 def orientToWorldForSelected(
@@ -343,7 +343,7 @@ def rotateOrientOrTransform(
         if preserveShapes:
             nodeShapes = node.getShapes()
             for shape in nodeShapes:
-                shapes.rotateComponents(shape, -rotation)
+                shapes.rotate_components(shape, -rotation)
 
 
 def orientJointToRotationForSelected(includeChildren=False, preserveChildren=True):
@@ -564,22 +564,16 @@ def positionLinkForSelected():
 def pairSelected():
     sel = pm.selected()
     if len(sel) == 2:
-        sym.pairMirrorNodes(sel[0], sel[1])
+        sym.pair_mirror_nodes(sel[0], sel[1])
 
 
 def unpairSelected():
     for s in pm.selected():
-        sym.unpairMirrorNode(s)
+        sym.unpair_mirror_node(s)
 
 
-def mirrorSelected(
-        recursive=True,
-        create=True,
-        curveShapes=True,
-        links=True,
-        reparent=True,
-        transform=True,
-        appearance=True):
+def mirrorSelected(recursive=True, create=True, curveShapes=True, links=True,
+                   reparent=True, transform=True, appearance=True):
     """
     Perform a mirroring operation on the selected nodes.
 
@@ -602,26 +596,26 @@ def mirrorSelected(
     util.isCreationAllowed = create
 
     if curveShapes:
-        util.addOperation(sym.MirrorCurveShapes())
+        util.add_operation(sym.MirrorCurveShapes())
     if reparent:
-        util.addOperation(sym.MirrorParenting())
+        util.add_operation(sym.MirrorParenting())
     if transform:
         # TODO: configure the transform util with mirror mode, etc
-        util.addOperation(sym.MirrorTransforms())
+        util.add_operation(sym.MirrorTransforms())
     if appearance:
         blueprint = getEditorBlueprint()
         if blueprint:
             namesOp = sym.MirrorNames()
             namesOp.blueprint = blueprint
-            util.addOperation(namesOp)
+            util.add_operation(namesOp)
             colorsOp = sym.MirrorColors()
             colorsOp.blueprint = blueprint
-            util.addOperation(colorsOp)
+            util.add_operation(colorsOp)
             jointDisplayOp = sym.MirrorJointDisplay()
-            util.addOperation(jointDisplayOp)
+            util.add_operation(jointDisplayOp)
     # run links last so that snapping to link targets has priority
     if links:
-        util.addOperation(sym.MirrorLinks())
+        util.add_operation(sym.MirrorLinks())
 
     util.run(sel_nodes)
 
@@ -641,14 +635,14 @@ def saveSkinWeightsForSelected(filePath=None):
             return
         filePath = os.path.splitext(sceneName)[0] + '.weights'
 
-    sel_skins = [skins.getSkinFromMesh(m) for m in pm.selected()]
+    sel_skins = [skins.get_skin_from_mesh(m) for m in pm.selected()]
     sel_skins = [s for s in sel_skins if s]
 
     if not sel_skins:
         LOG.warning("No skins were found to save")
         return
 
-    skins.saveSkinWeightsToFile(filePath, *sel_skins)
+    skins.save_skin_weights_to_file(filePath, *sel_skins)
 
 
 def saveAllSkinWeights(filePath=None):
@@ -674,7 +668,7 @@ def saveAllSkinWeights(filePath=None):
 
     LOG.info(f"Saving sking weights: {all_skins}")
 
-    skins.saveSkinWeightsToFile(filePath, *all_skins)
+    skins.save_skin_weights_to_file(filePath, *all_skins)
 
 
 def getNamedColor(name: str) -> Optional[LinearColor]:
@@ -684,10 +678,10 @@ def getNamedColor(name: str) -> Optional[LinearColor]:
     blueprint = getEditorBlueprint()
     if blueprint:
         config = blueprint.get_config()
-        for color_config in config.get('colors', {}):
-            hex_color = color_config.get(name)
-            if hex_color:
-                return LinearColor.from_hex(hex_color)
+        color_config = config.get('colors', {})
+        hex_color = color_config.get(name)
+        if hex_color:
+            return LinearColor.from_hex(hex_color)
 
 
 def getColorName(color: LinearColor) -> Optional[str]:

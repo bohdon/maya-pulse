@@ -6,7 +6,7 @@ import os
 import logging
 import subprocess
 
-from pulse.prefs import optionVarProperty
+from pulse.prefs import option_var_property
 
 LOG = logging.getLogger(__name__)
 
@@ -37,7 +37,7 @@ class SourceEditorLauncher(object):
     """
 
     # the name of the editor to use, can be the short name of an editor if in PATH, or the full path to one
-    editor_path = optionVarProperty('pulse.editor.sourceEditorPath', 'pycharm.cmd')
+    editor_path = option_var_property('pulse.editor.sourceEditorPath', 'pycharm.cmd')
 
     def set_editor_path(self, value):
         self.editor_path = value

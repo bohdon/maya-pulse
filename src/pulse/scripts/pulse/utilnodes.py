@@ -35,7 +35,7 @@ OUTPUT_ATTR_NAMES = {
 # Map of node types to functions used to retrieve the output attribute names.
 # If the function is a string, attempts to resolve it from globals().
 OUTPUT_ATTR_NAME_FUNCS = {
-    'plusMinusAverage': 'getPlusMinusAverageOutputAttr'
+    'plusMinusAverage': 'get_plus_minus_average_output_attr'
 }
 
 
@@ -92,7 +92,7 @@ class AlignMatrixSecondaryMode(IntEnum):
     ALIGN = 2
 
 
-def loadMatrixPlugin():
+def load_matrix_plugin():
     global IS_MATRIX_PLUGIN_LOADED
     if not IS_MATRIX_PLUGIN_LOADED:
         try:
@@ -102,7 +102,7 @@ def loadMatrixPlugin():
             pass
 
 
-def loadQuatPlugin():
+def load_quat_plugin():
     global IS_QUAT_PLUGIN_LOADED
     if not IS_QUAT_PLUGIN_LOADED:
         try:
@@ -112,21 +112,21 @@ def loadQuatPlugin():
             pass
 
 
-def getConstraintWeightAttr(leader, constraint):
+def get_constraint_weight_attr(leader, constraint):
     """
     Return the weight attribute from a constraint that
     corresponds to a specific leader node.
 
     Args:
-        leader (PyNode): A node that is one of the leaders of a constraint
-        constraint (PyNode): A constraint node
+        leader (PyNode): A node that is one of the leaders of a constraint.
+        constraint (PyNode): A constraint node.
     """
     for i, target in enumerate(constraint.getTargetList()):
         if leader == target:
             return constraint.getWeightAliasList()[i]
 
 
-def getOutputAttr(input):
+def get_output_attr(input):
     """
     Return the output attr of a utility node.
 
@@ -151,42 +151,42 @@ def getOutputAttr(input):
         An Attribute that matches the input, or None if the input is unhandled
     """
 
-    def resolveOutputFunc(func):
+    def resolve_output_func(func):
         if callable(func):
             return func
         elif func in globals():
             return globals()[func]
         return None
 
-    outputFuncs = {name: resolveOutputFunc(func) for name, func in OUTPUT_ATTR_NAME_FUNCS.items()}
-    outputFuncs = {name: func for name, func in outputFuncs.items() if func}
+    output_funcs = {name: resolve_output_func(func) for name, func in OUTPUT_ATTR_NAME_FUNCS.items()}
+    output_funcs = {name: func for name, func in output_funcs.items() if func}
 
     node = input.node()
-    nodeType = node.nodeType()
-    if nodeType not in OUTPUT_ATTR_NAMES and nodeType not in outputFuncs:
+    node_type = node.nodeType()
+    if node_type not in OUTPUT_ATTR_NAMES and node_type not in output_funcs:
         LOG.warning(
-            "No output found for utility type '{0}'".format(nodeType))
+            "No output found for utility type '{0}'".format(node_type))
         return None
 
-    if nodeType in outputFuncs:
-        fnc = outputFuncs[nodeType]
+    if node_type in output_funcs:
+        fnc = output_funcs[node_type]
         return fnc(input)
 
-    elif nodeType in OUTPUT_ATTR_NAMES:
-        outputAttrName = OUTPUT_ATTR_NAMES[nodeType]
-        outputAttr = nodes.safeGetAttr(node, outputAttrName)
+    elif node_type in OUTPUT_ATTR_NAMES:
+        output_attr_name = OUTPUT_ATTR_NAMES[node_type]
+        output_attr = nodes.safeGetAttr(node, output_attr_name)
 
-        if outputAttr and outputAttr.isCompound():
+        if output_attr and output_attr.isCompound():
             if isinstance(input, pm.Attribute) and input.isChild():
                 # input and output are both compound, return
                 # child of output at the same child index
                 index = nodes.getCompoundAttrIndex(input)
-                return outputAttr.getChildren()[index]
+                return output_attr.getChildren()[index]
 
-        return outputAttr
+        return output_attr
 
 
-def getPlusMinusAverageOutputAttr(input):
+def get_plus_minus_average_output_attr(input):
     """
     Return the output attr of a plusMinusAverage node.
     Returns the output that matches the dimension of the input
@@ -200,50 +200,50 @@ def getPlusMinusAverageOutputAttr(input):
         output1D, output2D, output3D or any children.
         Returns output1D if the given input is the node and not an attribute.
     """
-    inputNode = input.node()
+    input_node = input.node()
 
     if not isinstance(input, pm.Attribute):
-        return inputNode.output1D
+        return input_node.output1D
 
-    numChildren = 0
+    num_children = 0
     if input.isCompound():
-        numChildren = input.numChildren()
+        num_children = input.numChildren()
     elif input.isChild():
-        numChildren = input.getParent().numChildren()
+        num_children = input.getParent().numChildren()
 
-    if numChildren > 0:
+    if num_children > 0:
         # get output of same dimension (1D, 2D, or 3D)
-        outputAttr = inputNode.attr('output{0}D'.format(numChildren))
+        output_attr = input_node.attr('output{0}D'.format(num_children))
 
         if input.isChild():
             # return a matching child attribute
             index = nodes.getCompoundAttrIndex(input)
-            return outputAttr.getChildren()[index]
+            return output_attr.getChildren()[index]
 
-        return outputAttr
+        return output_attr
 
     # if all else fails
-    return inputNode.output1D
+    return input_node.output1D
 
 
-def getLargestDimensionAttr(attrs):
+def get_largest_dimension_attr(attrs):
     """
     Return the attr that has the largest dimension.
 
     Args:
         attrs: A list of Attributes
     """
-    largestDim = 0
-    largestAttr = None
+    largest_dim = 0
+    largest_attr = None
     for attr in attrs:
         dim = nodes.getAttrDimension(attr)
-        if dim > largestDim:
-            largestDim = dim
-            largestAttr = attr
-    return largestAttr
+        if dim > largest_dim:
+            largest_dim = dim
+            largest_attr = attr
+    return largest_attr
 
 
-def _filterForBestInputAttrs(attrs):
+def _filter_for_best_input_attrs(attrs):
     """
     Return a list of attrs that represents
     only the attrs that correspond to specific
@@ -252,19 +252,19 @@ def _filterForBestInputAttrs(attrs):
     If none of the attrs correspond to an output,
     the original attrs list will be returned.
     """
-    nonInputAttrNames = [
+    non_input_attr_names = [
         'firstTerm',
         'secondTerm',
     ]
     # TODO: check node type
-    filteredAttrs = [a for a in attrs if a.longName() not in nonInputAttrNames]
-    if filteredAttrs:
-        return filteredAttrs
+    filtered_attrs = [a for a in attrs if a.longName() not in non_input_attr_names]
+    if filtered_attrs:
+        return filtered_attrs
     else:
         return attrs
 
 
-def _getOutputAttrFromLargest(attrs):
+def _get_output_attr_from_largest(attrs):
     """
     Return the output attr of a utility node using the
     attr with the largest dimension.
@@ -272,25 +272,25 @@ def _getOutputAttrFromLargest(attrs):
     Args:
         attrs: A list of Attributes
     """
-    largest = getLargestDimensionAttr(attrs)
-    return getOutputAttr(largest)
+    largest = get_largest_dimension_attr(attrs)
+    return get_output_attr(largest)
 
 
-def getInputConnections(inputVal, destAttr):
+def get_input_connections(input_val, dest_attr):
     """
-    Return a list of (src, dst) tuples representing connections to be made
-    between an input and destAttr. Input can be an Attribute or just
-    a value, and the results are intended for use with `setOrConnectAttr`.
+    Return a list of (src, dst) tuples representing connections to be made between an
+    input and destination attribute. Input can be a simple value or an Attribute,
+    and the results are intended for use with `set_or_connect_attr`.
 
     More than one connection tuple may be returned in situations where
     the input and destination dimensions don't match.
     e.g. ([1, 2], input) -> (1, inputX), (2, inputY)
 
     Args:
-        inputVal: An Attribute or value to set or connect to destAttr
-        destAttr (Attribute): The attribute that to receive the inputVal
+        input_val: An Attribute or value to set or connect to the destination attribute.
+        dest_attr (Attribute): The attribute that will receive the input value.
     """
-    if inputVal is None:
+    if input_val is None:
         return []
 
     def _child(obj, index):
@@ -307,29 +307,29 @@ def getInputConnections(inputVal, destAttr):
             return obj[index]
 
     # simplify the input if possible
-    if isinstance(inputVal, (list, tuple)):
-        if len(inputVal) == 1:
-            inputVal = inputVal[0]
+    if isinstance(input_val, (list, tuple)):
+        if len(input_val) == 1:
+            input_val = input_val[0]
 
-    inputDim = nodes.getAttrOrValueDimension(inputVal)
-    destAttrDim = nodes.getAttrDimension(destAttr)
+    input_dim = nodes.getAttrOrValueDimension(input_val)
+    dest_attr_dim = nodes.getAttrDimension(dest_attr)
 
     # get the overlapping dimension
-    dim = min(inputDim, destAttrDim)
+    dim = min(input_dim, dest_attr_dim)
 
-    if inputDim == destAttrDim:
+    if input_dim == dest_attr_dim:
         # TODO: only do this if input is an Attribute?
         # direct connection is allowed
-        return [(inputVal, destAttr)]
+        return [(input_val, dest_attr)]
     else:
         # this represents n to m dimension attr/values and
         # all other odd associations
-        ins = [_child(inputVal, i) for i in range(dim)]
-        ats = [_child(destAttr, i) for i in range(dim)]
+        ins = [_child(input_val, i) for i in range(dim)]
+        ats = [_child(dest_attr, i) for i in range(dim)]
         return list(zip(ins, ats))
 
 
-def setOrConnectAttr(attr, val):
+def set_or_connect_attr(attr, val):
     """
     Set or connect the given value into the given attribute.
     Handles finding the correct inputs on the target utility
@@ -343,7 +343,7 @@ def setOrConnectAttr(attr, val):
     Returns:
         A list of Attributes that were set or connected
     """
-    cons = getInputConnections(val, attr)
+    cons = get_input_connections(val, attr)
     for srcVal, dstAttr in cons:
         if isinstance(srcVal, pm.Attribute):
             srcVal >> dstAttr
@@ -354,7 +354,7 @@ def setOrConnectAttr(attr, val):
 
 def add(*inputs):
     """ Return an attribute that represents the given inputs added together. """
-    return plusMinusAverage(inputs, PlusMinusAverageOperation.SUM)
+    return plus_minus_average(inputs, PlusMinusAverageOperation.SUM)
 
 
 def subtract(*inputs):
@@ -364,35 +364,35 @@ def subtract(*inputs):
     Eg. input[0] - input[1] - ... - input[n]
     All inputs can be either attributes or values.
     """
-    return plusMinusAverage(inputs, PlusMinusAverageOperation.SUBTRACT)
+    return plus_minus_average(inputs, PlusMinusAverageOperation.SUBTRACT)
 
 
 def average(*inputs):
     """ Return an attribute that represents the average of the given inputs. """
-    return plusMinusAverage(inputs, PlusMinusAverageOperation.AVERAGE)
+    return plus_minus_average(inputs, PlusMinusAverageOperation.AVERAGE)
 
 
-def plusMinusAverage(inputs, operation):
+def plus_minus_average(inputs, operation):
     node = pm.shadingNode('plusMinusAverage', asUtility=True)
     node.operation.set(operation)
 
     if len(inputs) > 0:
-        inputDim = nodes.getAttrOrValueDimension(inputs[0])
-        if inputDim == 1:
-            multiattr = node.input1D
-        elif inputDim == 2:
-            multiattr = node.input2D
-        elif inputDim == 3:
-            multiattr = node.input3D
+        input_dim = nodes.getAttrOrValueDimension(inputs[0])
+        if input_dim == 1:
+            multi_attr = node.input1D
+        elif input_dim == 2:
+            multi_attr = node.input2D
+        elif input_dim == 3:
+            multi_attr = node.input3D
         else:
             raise ValueError(
                 "Input dimension is not 1D, 2D, or 3D: {0}".format(inputs))
         for i, input in enumerate(inputs):
             # hook up inputs
-            setOrConnectAttr(multiattr[i], input)
-        return getOutputAttr(multiattr)
+            set_or_connect_attr(multi_attr[i], input)
+        return get_output_attr(multi_attr)
     else:
-        return getOutputAttr(node)
+        return get_output_attr(node)
 
 
 # TODO: move internal functions to another module so these functions can shadow builtin names
@@ -402,7 +402,7 @@ def min_float(a, b):
     Return an attribute that represents min(a, b).
     Only supports float values.
     """
-    return _createUtilityAndReturnOutput(
+    return _create_utility_and_return_output(
         'floatMath', floatA=a, floatB=b, operation=FloatMathOperation.MIN)
 
 
@@ -411,37 +411,37 @@ def max_float(a, b):
     Return an attribute that represents max(a, b).
     Only supports float values.
     """
-    return _createUtilityAndReturnOutput(
+    return _create_utility_and_return_output(
         'floatMath', floatA=a, floatB=b, operation=FloatMathOperation.MAX)
 
 
 def multiply(a, b):
     """ Return an attribute that represents a * b. """
-    return multiplyDivide(a, b, MultiplyDivideOperation.MULTIPLY)
+    return multiply_divide(a, b, MultiplyDivideOperation.MULTIPLY)
 
 
 def divide(a, b):
     """ Return an attribute that represents a / b. """
-    return multiplyDivide(a, b, MultiplyDivideOperation.DIVIDE)
+    return multiply_divide(a, b, MultiplyDivideOperation.DIVIDE)
 
 
 def pow(a, b):
     """ Return an attribute that represents a ^ b. """
-    return multiplyDivide(a, b, MultiplyDivideOperation.POWER)
+    return multiply_divide(a, b, MultiplyDivideOperation.POWER)
 
 
 def sqrt(a):
     """ Return an attribute that represents the square root of a. """
-    return multiplyDivide(a, 0.5, MultiplyDivideOperation.POWER)
+    return multiply_divide(a, 0.5, MultiplyDivideOperation.POWER)
 
 
-def multiplyDivide(input1, input2, operation=MultiplyDivideOperation.DIVIDE):
-    return _createUtilityAndReturnOutput(
+def multiply_divide(input1, input2, operation=MultiplyDivideOperation.DIVIDE):
+    return _create_utility_and_return_output(
         'multiplyDivide', input1=input1, input2=input2, operation=operation)
 
 
 def reverse(input):
-    return _createUtilityAndReturnOutput('reverse', input=input)
+    return _create_utility_and_return_output('reverse', input=input)
 
 
 def clamp(input, min, max):
@@ -450,17 +450,17 @@ def clamp(input, min, max):
     [min, max].
     All inputs can be either attributes or values.
     """
-    return _createUtilityAndReturnOutput('clamp', input=input, min=min, max=max)
+    return _create_utility_and_return_output('clamp', input=input, min=min, max=max)
 
 
-def setRange(value, min, max, oldMin, oldMax):
+def set_range(value, min, max, old_min, old_max):
     """
     Return an attribute that represents the given input mapped from the range
-    [oldMin, oldMax] to the range [min, max].
+    [old_min, old_max] to the range [min, max].
     All inputs can be either attributes or values.
     """
-    return _createUtilityAndReturnOutput(
-        'setRange', value=value, min=min, max=max, oldMin=oldMin, oldMax=oldMax)
+    return _create_utility_and_return_output(
+        'setRange', value=value, min=min, max=max, oldMin=old_min, oldMax=old_max)
 
 
 def blend2(a, b, blender):
@@ -471,101 +471,110 @@ def blend2(a, b, blender):
     # clamp blender
     if not isinstance(blender, pm.Attribute):
         blender = max(min(blender, 1), 0)
-    return _createUtilityAndReturnOutput(
-        'blendColors', color1=a, color2=b, blender=blender)
+    return _create_utility_and_return_output('blendColors', color1=a, color2=b, blender=blender)
 
 
-def distance(a, b, ws=True, makeLocal=True):
+def distance(a, b, ws=True, make_local=True):
     """
     Return an attribute on a distance node that represents the distance
     between nodes A and B.
 
-    `a` -- node A
-    `b` -- node B
-    `ws` -- use worldspace matrices
-    `makeLocal` -- if True, makes both matrix inputs to the
-        distance utils be matrices local to node A
+    Args:
+        a: Node A
+        b: Node B
+        ws: Use world space matrices
+        make_local: If True, makes both matrix inputs to the distance utils be matrices local to node A.
     """
-    nodetype = 'distanceBetween'
-    inMatrix1 = a.node().wm if ws and not makeLocal else a.node().m
-    inMatrix2 = b.node().wm if ws or makeLocal else b.node().m
-    if makeLocal:
+    node_type = 'distanceBetween'
+    in_matrix1 = a.node().wm if ws and not make_local else a.node().m
+    in_matrix2 = b.node().wm if ws or make_local else b.node().m
+    if make_local:
         mult = pm.createNode('multMatrix')
-        inMatrix2 >> mult.matrixIn[0]
+        in_matrix2 >> mult.matrixIn[0]
         a.node().pim >> mult.matrixIn[1]
-        inMatrix2 = mult.matrixSum
-    n = createUtilityNode(nodeType=nodetype, inMatrix1=inMatrix1,
-                          inMatrix2=inMatrix2)
+        in_matrix2 = mult.matrixSum
+    n = create_utility_node(node_type=node_type, inMatrix1=in_matrix1, inMatrix2=in_matrix2)
     return n.distance
 
 
-def equal(a, b, trueVal, falseVal):
+def equal(a, b, true_val, false_val):
     """
-    Return an attribute that represents trueVal if a == b else falseVal.
+    Return an attribute that represents true_val if a == b else false_val.
     Inputs can be either attributes or values.
     """
-    return condition(a, b, trueVal, falseVal, ConditionOperation.EQUAL)
+    return condition(a, b, true_val, false_val, ConditionOperation.EQUAL)
 
 
-def notEqual(a, b, trueVal, falseVal):
+def not_equal(a, b, true_val, false_val):
     """
-    Return an attribute that represents trueVal if a != b else falseVal.
+    Return an attribute that represents true_val if a != b else false_val.
     Inputs can be either attributes or values.
     """
-    return condition(a, b, trueVal, falseVal, ConditionOperation.NOT_EQUAL)
+    return condition(a, b, true_val, false_val, ConditionOperation.NOT_EQUAL)
 
 
-def greaterThan(a, b, trueVal, falseVal):
+def greater_than(a, b, true_val, false_val):
     """
-    Return an attribute that represents trueVal if a > b else falseVal.
+    Return an attribute that represents true_val if a > b else false_val.
     Inputs can be either attributes or values.
     """
-    return condition(a, b, trueVal, falseVal, ConditionOperation.GREATER_THAN)
+    return condition(a, b, true_val, false_val, ConditionOperation.GREATER_THAN)
 
 
-def greaterOrEqual(a, b, trueVal, falseVal):
+def greater_or_equal(a, b, true_val, false_val):
     """
-    Return an attribute that represents trueVal if a >= b else falseVal.
+    Return an attribute that represents true_val if a >= b else false_val.
     Inputs can be either attributes or values.
     """
-    return condition(a, b, trueVal, falseVal, ConditionOperation.GREATER_OR_EQUAL)
+    return condition(a, b, true_val, false_val, ConditionOperation.GREATER_OR_EQUAL)
 
 
-def lessThan(a, b, trueVal, falseVal):
+def less_than(a, b, true_val, false_val):
     """
-    Return an attribute that represents trueVal if a < b else falseVal.
+    Return an attribute that represents true_val if a < b else false_val.
     Inputs can be either attributes or values.
     """
-    return condition(a, b, trueVal, falseVal, ConditionOperation.LESS_THAN)
+    return condition(a, b, true_val, false_val, ConditionOperation.LESS_THAN)
 
 
-def lessOrEqual(a, b, trueVal, falseVal):
+def less_or_equal(a, b, true_val, false_val):
     """
-    Return an attribute that represents trueVal if a <= b else falseVal.
+    Return an attribute that represents true_val if a <= b else false_val.
     Inputs can be either attributes or values.
     """
-    return condition(a, b, trueVal, falseVal, ConditionOperation.LESS_OR_EQUAL)
+    return condition(a, b, true_val, false_val, ConditionOperation.LESS_OR_EQUAL)
 
 
-def condition(firstTerm, secondTerm, trueVal, falseVal, operation):
+def condition(first_term, second_term, true_val, false_val, operation):
     """
-    Create a condition that returns either trueVal or falseVal based
-    on the comparison of firstTerm and secondTerm.
+    Create a condition that returns either true_val or false_val based
+    on the comparison of first_term and second_term.
 
     Args:
+        first_term: The first term to compare against.
+        second_term: The second term to compare against.
+        true_val: The value or attribute to use if the condition is true.
+        false_val: The value or attribute to use if the condition is false.
         operation (ConditionOperation): The condition node operation to use
     """
-    return _createUtilityAndReturnOutput(
-        'condition', firstTerm=firstTerm, secondTerm=secondTerm,
-        colorIfTrue=trueVal, colorIfFalse=falseVal, operation=operation)
+    return _create_utility_and_return_output(
+        'condition', firstTerm=first_term, secondTerm=second_term,
+        colorIfTrue=true_val, colorIfFalse=false_val, operation=operation)
 
 
 def choice(selector, *inputs) -> pm.Attribute:
-    choiceNode = pm.shadingNode('choice', asUtility=True)
-    setOrConnectAttr(choiceNode.selector, selector)
+    """
+    Create a choice node that selects an input based on a selector.
+
+    Args:
+        selector: The selector value or attribute.
+        *inputs: The array of input values or attributes to select based on the selector.
+    """
+    choice_node = pm.shadingNode('choice', asUtility=True)
+    set_or_connect_attr(choice_node.selector, selector)
     for i, input in enumerate(inputs):
-        setOrConnectAttr(choiceNode.input[i], input)
-    return choiceNode.output
+        set_or_connect_attr(choice_node.input[i], input)
+    return choice_node.output
 
 
 def dot(a, b) -> pm.Attribute:
@@ -576,8 +585,8 @@ def dot(a, b) -> pm.Attribute:
         a: A vector value or attribute
         b: A vector value or attribute
     """
-    return _createUtilityAndReturnOutput('vectorProduct', input1=a, input2=b,
-                                         operation=VectorProductOperation.DOT_PRODUCT)
+    return _create_utility_and_return_output('vectorProduct', input1=a, input2=b,
+                                             operation=VectorProductOperation.DOT_PRODUCT)
 
 
 def cross(a, b) -> pm.Attribute:
@@ -588,11 +597,11 @@ def cross(a, b) -> pm.Attribute:
         a: A vector value or attribute
         b: A vector value or attribute
     """
-    return _createUtilityAndReturnOutput('vectorProduct', input1=a, input2=b,
-                                         operation=VectorProductOperation.CROSS_PRODUCT)
+    return _create_utility_and_return_output('vectorProduct', input1=a, input2=b,
+                                             operation=VectorProductOperation.CROSS_PRODUCT)
 
 
-def matrixMultiplyVector(matrix, vector) -> pm.Attribute:
+def matrix_multiply_vector(matrix, vector) -> pm.Attribute:
     """
     Multiply a direction vector by a matrix using a `vectorProduct` node
 
@@ -600,11 +609,11 @@ def matrixMultiplyVector(matrix, vector) -> pm.Attribute:
         matrix: A transformation matrix value or attribute
         vector: A vector value or attribute representing a direction
     """
-    return _createUtilityAndReturnOutput('vectorProduct', input1=vector, matrix=matrix,
-                                         operation=VectorProductOperation.VECTOR_MATRIX_PRODUCT)
+    return _create_utility_and_return_output('vectorProduct', input1=vector, matrix=matrix,
+                                             operation=VectorProductOperation.VECTOR_MATRIX_PRODUCT)
 
 
-def matrixMultiplyPoint(matrix, point) -> pm.Attribute:
+def matrix_multiply_point(matrix, point) -> pm.Attribute:
     """
     Multiply a point vector by a matrix using a `vectorProduct` node
 
@@ -612,29 +621,29 @@ def matrixMultiplyPoint(matrix, point) -> pm.Attribute:
         matrix: A transformation matrix value or attribute
         point: A vector value or attribute representing a location
     """
-    return _createUtilityAndReturnOutput('vectorProduct', input1=point, matrix=matrix,
-                                         operation=VectorProductOperation.POINT_MATRIX_PRODUCT)
+    return _create_utility_and_return_output('vectorProduct', input1=point, matrix=matrix,
+                                             operation=VectorProductOperation.POINT_MATRIX_PRODUCT)
 
 
-def multMatrix(*matrices):
-    loadMatrixPlugin()
+def mult_matrix(*matrices):
+    load_matrix_plugin()
     mmtx = pm.shadingNode('multMatrix', asUtility=True)
     for i, matrix in enumerate(matrices):
-        setOrConnectAttr(mmtx.matrixIn[i], matrix)
+        set_or_connect_attr(mmtx.matrixIn[i], matrix)
     return mmtx.matrixSum
 
 
-def inverseMatrix(matrix) -> pm.Attribute:
+def inverse_matrix(matrix) -> pm.Attribute:
     """
     Invert a matrix using a `inverseMatrix` node
 
     Args:
         matrix: A matrix value or attribute
     """
-    return _createUtilityAndReturnOutput('inverseMatrix', inputMatrix=matrix)
+    return _create_utility_and_return_output('inverseMatrix', inputMatrix=matrix)
 
 
-def composeMatrix(translate=None, rotate=None, scale=None) -> pm.Attribute:
+def compose_matrix(translate=None, rotate=None, scale=None) -> pm.Attribute:
     """
     Compose a matrix using separate translate, rotate, and scale values using a `composeMatrix` utility node
 
@@ -650,107 +659,108 @@ def composeMatrix(translate=None, rotate=None, scale=None) -> pm.Attribute:
         kwargs['inputRotate'] = rotate
     if scale is not None:
         kwargs['inputScale'] = scale
-    return _createUtilityAndReturnOutput('composeMatrix', useEulerRotation=True, **kwargs)
+    return _create_utility_and_return_output('composeMatrix', useEulerRotation=True, **kwargs)
 
 
-def decomposeMatrix(matrix):
+def decompose_matrix(matrix):
     """
     Create a `decomposeMatrix` utility node.
 
     Returns:
         The `decomposeMatrix` node (not output attributes).
     """
-    loadMatrixPlugin()
-    return createUtilityNode(
-        'decomposeMatrix', inputMatrix=matrix)
+    load_matrix_plugin()
+    return create_utility_node('decomposeMatrix', inputMatrix=matrix)
 
 
 # TODO: add aimMatrix functions
 
-def alignMatrixToDirection(matrix, keepAxis, alignAxis, alignDirection, alignMatrix) -> pm.Attribute:
+def align_matrix_to_direction(matrix, keep_axis, align_axis, align_direction, align_matrix) -> pm.Attribute:
     """
     Align a matrix by pointing a secondary axis in a direction, while preserving a primary axis.
 
     Args:
         matrix: A transformation matrix value or attribute
-        keepAxis: A vector value or attribute representing the primary aim axis to keep locked
-        alignAxis: A vector value or attribute representing the secondary align axis to try to adjust
-        alignDirection: The direction vector value or attribute that the secondary axis should align to
-        alignMatrix: A matrix applied to the direction vector
+        keep_axis: A vector value or attribute representing the primary aim axis to keep locked
+        align_axis: A vector value or attribute representing the secondary align axis to try to adjust
+        align_direction: The direction vector value or attribute that the secondary axis should align to
+        align_matrix: A matrix applied to the direction vector
     """
-    return _createUtilityAndReturnOutput('aimMatrix', inputMatrix=matrix,
-                                         primaryInputAxis=keepAxis, primaryMode=AlignMatrixPrimaryMode.LOCK_AXIS,
-                                         secondaryInputAxis=alignAxis, secondaryMode=AlignMatrixSecondaryMode.ALIGN,
-                                         secondaryTargetVector=alignDirection, secondaryTargetMatrix=alignMatrix)
+    return _create_utility_and_return_output('aimMatrix', inputMatrix=matrix,
+                                             primaryInputAxis=keep_axis, primaryMode=AlignMatrixPrimaryMode.LOCK_AXIS,
+                                             secondaryInputAxis=align_axis,
+                                             secondaryMode=AlignMatrixSecondaryMode.ALIGN,
+                                             secondaryTargetVector=align_direction, secondaryTargetMatrix=align_matrix)
 
 
-def alignMatrixToPoint(matrix, keepAxis, alignAxis, alignTargetPoint, alignMatrix):
+def align_matrix_to_point(matrix, keep_axis, align_axis, align_target_point, align_matrix):
     """
     Align a matrix by pointing a secondary axis at a location, while preserving a primary axis.
 
     Args:
         matrix: A transformation matrix value or attribute
-        keepAxis: A vector value or attribute representing the primary aim axis to keep locked
-        alignAxis: A vector value or attribute representing the secondary align axis to try to adjust
-        alignTargetPoint: The point value or attribute that the secondary axis should aim at
-        alignMatrix: A matrix applied to the alignTargetPoint
+        keep_axis: A vector value or attribute representing the primary aim axis to keep locked
+        align_axis: A vector value or attribute representing the secondary align axis to try to adjust
+        align_target_point: The point value or attribute that the secondary axis should aim at
+        align_matrix: A matrix applied to the align_target_point
 
     Returns:
     """
-    return _createUtilityAndReturnOutput('aimMatrix', inputMatrix=matrix,
-                                         primaryInputAxis=keepAxis, primaryMode=AlignMatrixPrimaryMode.LOCK_AXIS,
-                                         secondaryInputAxis=alignAxis, secondaryMode=AlignMatrixSecondaryMode.AIM,
-                                         secondaryTargetVector=alignTargetPoint, secondaryTargetMatrix=alignMatrix)
+    return _create_utility_and_return_output('aimMatrix', inputMatrix=matrix,
+                                             primaryInputAxis=keep_axis, primaryMode=AlignMatrixPrimaryMode.LOCK_AXIS,
+                                             secondaryInputAxis=align_axis, secondaryMode=AlignMatrixSecondaryMode.AIM,
+                                             secondaryTargetVector=align_target_point,
+                                             secondaryTargetMatrix=align_matrix)
 
 
-def blendMatrix(inputMatrix, targetMatrix, weight):
+def blend_matrix(input_matrix, target_matrix, weight):
     """
     Args:
-        inputMatrix: A matrix value or attribute
-        targetMatrix: A matrix value or attribute
+        input_matrix: A matrix value or attribute
+        target_matrix: A matrix value or attribute
         weight: A weight value or attribute (0..1)
     """
-    return blendMatrixMulti(inputMatrix, (targetMatrix, weight))
+    return blend_matrix_multi(input_matrix, (target_matrix, weight))
 
 
-def blendMatrixMulti(inputMatrix, *targetsAndWeights):
+def blend_matrix_multi(input_matrix, *targets_and_weights):
     """
     Blend a matrix towards one or more target matrices using a `blendMatrix` node.
     The order matters, since blends are calculated in a stack, i.e. the results of
     the previous blend get blended with next target and so on.
 
     Args:
-        inputMatrix: A transformation matrix value or attribute
-        *targetsAndWeights: A list of tuples containing (targetMatrix, weight) values or attributes
+        input_matrix: A transformation matrix value or attribute
+        *targets_and_weights: A list of tuples containing (target matrix, weight) values or attributes
     """
     blend = pm.shadingNode('blendMatrix', asUtility=True)
-    setOrConnectAttr(blend.inputMatrix, inputMatrix)
-    for i, (matrix, weight) in enumerate(targetsAndWeights):
-        setOrConnectAttr(blend.target[i].targetMatrix, matrix)
-        setOrConnectAttr(blend.target[i].weight, weight)
+    set_or_connect_attr(blend.inputMatrix, input_matrix)
+    for i, (matrix, weight) in enumerate(targets_and_weights):
+        set_or_connect_attr(blend.target[i].targetMatrix, matrix)
+        set_or_connect_attr(blend.target[i].weight, weight)
     return blend.outputMatrix
 
 
-def createUtilityNode(nodeType, **kwargs):
+def create_utility_node(node_type, **kwargs):
     """
     Create and return a utility node.
     Sets or connects any attributes defined by kwargs.
     """
-    node = pm.shadingNode(nodeType, asUtility=True)
+    node = pm.shadingNode(node_type, asUtility=True)
     for key, value in kwargs.items():
-        setOrConnectAttr(node.attr(key), value)
+        set_or_connect_attr(node.attr(key), value)
     return node
 
 
-def _createUtilityAndReturnOutput(nodeType, **kwargs):
+def _create_utility_and_return_output(node_type, **kwargs):
     """
     Create and return a utility node, as well as the attrs
     on the node that were set or connected to based on kwargs.
     """
-    node = pm.shadingNode(nodeType, asUtility=True)
-    allDstAttrs = []
+    node = pm.shadingNode(node_type, asUtility=True)
+    all_dst_attrs = []
     for key, value in kwargs.items():
-        dstAttrs = setOrConnectAttr(node.attr(key), value)
-        allDstAttrs.extend(dstAttrs)
-    inputAttrs = _filterForBestInputAttrs(allDstAttrs)
-    return _getOutputAttrFromLargest(inputAttrs)
+        dst_attrs = set_or_connect_attr(node.attr(key), value)
+        all_dst_attrs.extend(dst_attrs)
+    input_attrs = _filter_for_best_input_attrs(all_dst_attrs)
+    return _get_output_attr_from_largest(input_attrs)

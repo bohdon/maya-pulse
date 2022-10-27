@@ -37,7 +37,7 @@ class SetAttributeDefaultsAction(BuildAction):
         all_nodes = set(self.nodes)
 
         if self.useAnimControls:
-            all_nodes.update(pulse.animinterface.getAllAnimControls())
+            all_nodes.update(pulse.animinterface.get_all_anim_ctls())
 
         all_nodes = list(all_nodes)
         resetter.setDefaults(all_nodes, self.extraAttrs, nonkey=self.includeNonKeyable)

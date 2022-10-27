@@ -280,7 +280,7 @@ class MirrorActionUtil(object):
         Returns:
             The mirrored step name, or None if it cannot be mirrored
         """
-        destName = sym.getMirroredName(stepName, self.getConfig())
+        destName = sym.get_mirrored_name(stepName, self.getConfig())
         if destName != stepName:
             return destName
 
@@ -408,7 +408,7 @@ class MirrorActionUtil(object):
             """
             Return the paired node of a node, if one exists, otherwise return the node.
             """
-            paired_node = sym.getPairedNode(node)
+            paired_node = sym.get_paired_node(node)
             if paired_node:
                 return paired_node
             return node
@@ -425,9 +425,9 @@ class MirrorActionUtil(object):
             return [getPairedNodeOrSelf(node) for node in value]
 
         elif attr.type == 'string':
-            return sym.getMirroredName(value, self.getConfig())
+            return sym.get_mirrored_name(value, self.getConfig())
 
         elif attr.type == 'stringlist':
-            return [sym.getMirroredName(v, self.getConfig()) for v in value]
+            return [sym.get_mirrored_name(v, self.getConfig()) for v in value]
 
         return value

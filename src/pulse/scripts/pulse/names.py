@@ -1,7 +1,7 @@
 import re
 
 
-def toTitle(name):
+def to_title(name):
     """
     Return a string formatted to 'Title Case'
     """
@@ -10,7 +10,7 @@ def toTitle(name):
     return re.sub('([A-Z])', ' \\1', name).title()
 
 
-def toCamel(name):
+def to_camel(name):
     """
     Return a string formatted to 'camelCase'
     """

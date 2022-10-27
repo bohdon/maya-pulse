@@ -116,8 +116,8 @@ class FootControlAction(BuildAction):
         heel_roll >> self.heelPivot.rotateX
 
         # get percentage blend between 0..BendLimit and BendLimit..StraightAngle
-        zero_to_bend_pct = utilnodes.setRange(roll, 0, 1, 0, clamped_bend_limit)
-        bend_to_toe_pct = utilnodes.setRange(roll, 0, 1, clamped_bend_limit, straight_angle)
+        zero_to_bend_pct = utilnodes.set_range(roll, 0, 1, 0, clamped_bend_limit)
+        bend_to_toe_pct = utilnodes.set_range(roll, 0, 1, clamped_bend_limit, straight_angle)
 
         # multiply pcts to get ball rotation curve that goes up towards BendLimit,
         # then back down towards StraightAngle

@@ -132,12 +132,12 @@ class ApplySkinWeightsAction(BuildAction):
     def run(self):
         file_path = self._get_weights_file_path()
         all_skins = self._get_skin_clusters()
-        skins.applySkinWeightsFromFile(file_path, *all_skins)
+        skins.apply_skin_weights_from_file(file_path, *all_skins)
 
     def _get_skin_clusters(self):
         result = []
         for mesh in self.meshes:
-            skin = skins.getSkinFromMesh(mesh)
+            skin = skins.get_skin_from_mesh(mesh)
             if not skin:
                 raise BuildActionError(f"No skin cluster found for mesh: {mesh}")
             result.append(skin)

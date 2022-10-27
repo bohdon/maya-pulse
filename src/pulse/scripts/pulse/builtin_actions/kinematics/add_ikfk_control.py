@@ -40,9 +40,9 @@ class AddIKFKControlAction(BuildAction):
             follower_pm = self.follower.pm.get()
             fk_offset = follower_pm * self.fkLeader.wim.get()
             ik_offset = follower_pm * self.ikLeader.wim.get()
-            fk_mtx = utilnodes.multMatrix(pm.dt.Matrix(fk_offset), self.fkLeader.wm)
+            fk_mtx = utilnodes.mult_matrix(pm.dt.Matrix(fk_offset), self.fkLeader.wm)
             fk_mtx.node().rename(f"{self.follower.nodeName()}_ikfk_fk_offset")
-            ik_mtx = utilnodes.multMatrix(pm.dt.Matrix(ik_offset), self.ikLeader.wm)
+            ik_mtx = utilnodes.mult_matrix(pm.dt.Matrix(ik_offset), self.ikLeader.wm)
             ik_mtx.node().rename(f"{self.follower.nodeName()}_ikfk_ik_offset")
             mtx_choice = utilnodes.choice(ik_attr, fk_mtx, ik_mtx)
         else:

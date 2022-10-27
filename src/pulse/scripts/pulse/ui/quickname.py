@@ -166,7 +166,7 @@ class QuickNameEditor(QtWidgets.QWidget):
         layout.setSpacing(2)
 
         cat_label = QtWidgets.QLabel(parent)
-        cat_label.setText(names.toTitle(name))
+        cat_label.setText(names.to_title(name))
         cat_label.setProperty('cssClasses', 'section-title')
         layout.addWidget(cat_label)
 

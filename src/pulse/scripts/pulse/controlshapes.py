@@ -57,8 +57,8 @@ def connectNodeToControlPoint(node, curveShape, pointIndex):
         pointIndex (int): The index of a control point on the curve shape
     """
     # TODO: name the utility nodes
-    mmtx = utilnodes.multMatrix(node.wm, curveShape.pim)
-    decomp = utilnodes.decomposeMatrix(mmtx)
+    mmtx = utilnodes.mult_matrix(node.wm, curveShape.pim)
+    decomp = utilnodes.decompose_matrix(mmtx)
     decomp.outputTranslate >> curveShape.controlPoints[pointIndex]
 
 

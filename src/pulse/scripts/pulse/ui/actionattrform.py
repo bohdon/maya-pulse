@@ -249,7 +249,7 @@ class ActionAttrForm(QtWidgets.QFrame):
         self.label.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignTrailing | QtCore.Qt.AlignTop)
         # add some space above the label, so it lines up
         self.label.setMargin(2)
-        self.label.setText(names.toTitle(self.attr.name))
+        self.label.setText(names.to_title(self.attr.name))
         # set description tooltips
         description = self.attr.description
         if description:
@@ -359,7 +359,7 @@ class BatchAttrForm(QtWidgets.QFrame):
         # add some space above the label so it lines up
         self.label.setMargin(2)
         self.label.setEnabled(False)
-        self.label.setText(names.toTitle(self.attr.name))
+        self.label.setText(names.to_title(self.attr.name))
         # set description tooltips
         description = self.attr.description
         if description:

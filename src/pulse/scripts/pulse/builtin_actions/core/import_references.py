@@ -15,8 +15,8 @@ class ImportReferencesAction(BuildAction):
     ]
 
     def run(self):
-        references.importAllReferences(
-            loadUnloaded=self.loadUnloaded,
-            depthLimit=self.depthLimit,
-            removeNamespace=self.removeNamespace
+        references.import_all_references(
+            load_unloaded=self.loadUnloaded,
+            depth_limit=self.depthLimit,
+            remove_namespace=self.removeNamespace
         )

@@ -4,7 +4,7 @@ import pymel.core as pm
 from maya import cmds
 
 from .vendor import pymetanode as meta
-from .cameras import saveCameras, restoreCameras
+from .cameras import save_cameras, restore_cameras
 
 LOG = logging.getLogger(__name__)
 
@@ -103,9 +103,9 @@ def openRigBlueprint(rig):
         return
 
     LOG.info('Opening blueprint: ' + blueprintFile)
-    saveCameras()
+    save_cameras()
     pm.openFile(blueprintFile, f=True)
-    restoreCameras()
+    restore_cameras()
 
 
 def openFirstRigBlueprint():

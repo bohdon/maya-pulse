@@ -1,8 +1,11 @@
 import logging
 import re
+from abc import ABC
+from typing import List, Optional, Tuple
 
 import pymel.core as pm
 
+from .blueprints import Blueprint
 from .vendor import pymetanode as meta
 from . import editorutils
 from . import joints
@@ -38,14 +41,14 @@ class MirrorMode(object):
 # Nodes
 # -----
 
-def getAllMirrorNodes():
+def get_all_mirror_nodes():
     """
     Return all nodes that have mirroring data
     """
     return meta.findMetaNodes(MIRROR_METACLASS)
 
 
-def isMirrorNode(node):
+def is_mirror_node(node):
     """
     Return whether a node has mirroring data
 
@@ -55,7 +58,7 @@ def isMirrorNode(node):
     return meta.hasMetaClass(node, MIRROR_METACLASS)
 
 
-def validateMirrorNode(node):
+def validate_mirror_node(node):
     """
     Ensure the node still has a valid mirroring counterpart.
     If it does not, remove the mirror data from the node.
@@ -63,18 +66,18 @@ def validateMirrorNode(node):
     Return:
         True if the node is a valid mirror node
     """
-    if not isMirrorNode(node):
+    if not is_mirror_node(node):
         return False
     data = meta.getMetaData(node, MIRROR_METACLASS)
-    otherNode = data['otherNode']
-    if otherNode is None:
+    other_node = data['otherNode']
+    if other_node is None:
         LOG.debug("{0} paired node not found, "
                   "removing mirroring data".format(node))
         meta.removeMetaData(node, MIRROR_METACLASS)
         return False
     else:
-        othersOther = getPairedNode(otherNode, False)
-        if othersOther != node:
+        others_other = get_paired_node(other_node, False)
+        if others_other != node:
             LOG.debug("{0} pairing is unreciprocated, "
                       "removing mirror data".format(node))
             meta.removeMetaData(node, MIRROR_METACLASS)
@@ -82,29 +85,29 @@ def validateMirrorNode(node):
     return True
 
 
-def cleanupAllMirrorNodes():
+def cleanup_all_mirror_nodes():
     """
-    Remove mirroring meta data from any nodes in the scene
+    Remove mirroring metadata from any nodes in the scene
     that are no longer valid (missing their counterpart node).
     """
-    for node in getAllMirrorNodes():
-        validateMirrorNode(node)
+    for node in get_all_mirror_nodes():
+        validate_mirror_node(node)
 
 
-def pairMirrorNodes(nodeA, nodeB):
+def pair_mirror_nodes(node_a, node_b):
     """
     Make both nodes associated as mirrors by adding
     mirroring data and a reference to each other.
 
     Args:
-        nodeA: A PyNode, MObject, or node name
-        nodeB: A PyNode, MObject, or node name
+        node_a: A PyNode, MObject, or node name
+        node_b: A PyNode, MObject, or node name
     """
-    setMirroringData(nodeA, nodeB)
-    setMirroringData(nodeB, nodeA)
+    set_mirroring_data(node_a, node_b)
+    set_mirroring_data(node_b, node_a)
 
 
-def unpairMirrorNode(node):
+def unpair_mirror_node(node):
     """
     Unpair the node from any associated mirror node.
     This removes mirroring data from both this
@@ -113,14 +116,14 @@ def unpairMirrorNode(node):
     Args:
         node: A PyNode, MObject, or node name
     """
-    if isMirrorNode(node):
-        otherNode = getPairedNode(node)
-        removeMirroringData(node)
-        if otherNode:
-            removeMirroringData(otherNode)
+    if is_mirror_node(node):
+        other_node = get_paired_node(node)
+        remove_mirroring_data(node)
+        if other_node:
+            remove_mirroring_data(other_node)
 
 
-def duplicateAndPairNode(sourceNode):
+def duplicate_and_pair_node(source_node):
     """
     Duplicate a node, and pair it with the node that was duplicated.
 
@@ -128,35 +131,33 @@ def duplicateAndPairNode(sourceNode):
         The newly created node.
     """
     with preservedSelection():
-        destNode = pm.duplicate(
-            [sourceNode] + sourceNode.getChildren(s=True), po=True)[0]
+        dest_node = pm.duplicate([source_node] + source_node.getChildren(s=True), po=True)[0]
         # handle bug in recent maya versions where extra empty
         # transforms will be included in the duplicate
-        extra = destNode.listRelatives(typ='transform')
+        extra = dest_node.listRelatives(typ='transform')
         if extra:
-            LOG.debug("Deleting extra transforms from "
-                      "mirroring: {0}".format(sourceNode))
+            LOG.debug("Deleting extra transforms from mirroring: {0}".format(source_node))
             pm.delete(extra)
         # associate nodes
-        pairMirrorNodes(sourceNode, destNode)
-        return destNode
+        pair_mirror_nodes(source_node, dest_node)
+        return dest_node
 
 
-def setMirroringData(node, otherNode):
+def set_mirroring_data(node, other_node):
     """
     Set the mirroring data for a node
 
     Args:
         node: A node on which to set the mirroring data
-        otherNode: The counterpart node to be stored in the mirroring data
+        other_node: The counterpart node to be stored in the mirroring data
     """
     data = {
-        'otherNode': otherNode,
+        'otherNode': other_node,
     }
     meta.setMetaData(node, MIRROR_METACLASS, data, undoable=True)
 
 
-def getPairedNode(node, validate=True):
+def get_paired_node(node, validate=True):
     """
     For a node with mirroring data, return the other node.
 
@@ -165,24 +166,24 @@ def getPairedNode(node, validate=True):
         validate (bool): When true, ensures that the pairing is
             reciprocated by the other node
     """
-    if isMirrorNode(node):
+    if is_mirror_node(node):
         data = meta.getMetaData(node, MIRROR_METACLASS)
         if validate:
-            otherNode = data['otherNode']
-            if otherNode and validate:
-                if getPairedNode(otherNode, False) == node:
-                    return otherNode
+            other_node = data['otherNode']
+            if other_node and validate:
+                if get_paired_node(other_node, False) == node:
+                    return other_node
                 else:
                     LOG.debug('{0} pairing not reciprocated'.format(node))
         else:
             return data['otherNode']
 
 
-def removeMirroringData(node):
+def remove_mirroring_data(node):
     """
     Remove mirroring data from a node. This does NOT
     remove mirroring data from the other node, if there
-    is one. See `unpairMirrorNode` for removing mirroring
+    is one. See `unpair_mirror_node` for removing mirroring
     data from two nodes at once.
 
     Args:
@@ -194,59 +195,61 @@ def removeMirroringData(node):
 # Transformations
 # ---------------
 
-def isCentered(node, axis=0):
+def is_centered(node, axis=0):
     """
     Return True if the node is centered on a specific world axis.
     """
     axis = nodes.getAxis(axis)
-    absAxisVal = abs(node.getTranslation(space='world')[axis.index])
-    return absAxisVal < MIRROR_THRESHOLD
+    abs_axis_val = abs(node.getTranslation(space='world')[axis.index])
+    return abs_axis_val < MIRROR_THRESHOLD
 
 
-def getCenteredParent(node, axis=0):
+def get_centered_parent(node, axis=0):
     """
     Return the closest parent node that is centered.
     If no parent nodes are centered, return the highest parent.
 
     Args:
         node: A PyNode
+        axis: The axis on which the node is centered.
     """
-    thisParent = node.getParent()
-    if thisParent is None:
+    # TODO: use enum for axis values
+    this_parent = node.getParent()
+    if this_parent is None:
         return
-    while thisParent is not None:
-        if isCentered(thisParent, axis):
-            return thisParent
-        lastParent = thisParent
-        thisParent = lastParent.getParent()
-    return lastParent
+    while this_parent is not None:
+        if is_centered(this_parent, axis):
+            return this_parent
+        last_parent = this_parent
+        this_parent = last_parent.getParent()
+    return last_parent
 
 
-def getMirroredParent(node):
+def get_mirrored_parent(node):
     """
     Return the closest parent node that has mirroring data.
 
     Args:
         node: A PyNode
     """
-    thisParent = node.getParent()
-    if thisParent is None:
+    this_parent = node.getParent()
+    if this_parent is None:
         return
-    while thisParent is not None:
-        if isMirrorNode(thisParent):
-            return thisParent
-        lastParent = thisParent
-        thisParent = lastParent.getParent()
-    return lastParent
+    while this_parent is not None:
+        if is_mirror_node(this_parent):
+            return this_parent
+        last_parent = this_parent
+        this_parent = last_parent.getParent()
+    return last_parent
 
 
-def getMirroredOrCenteredParent(node, axis=0):
+def get_mirrored_or_centered_parent(node, axis=0):
     """
     Return the closest parent node that is either centered,
     or already paired with another mirroring node.
     """
-    center = getCenteredParent(node, axis)
-    mirror = getMirroredParent(node)
+    center = get_centered_parent(node, axis)
+    mirror = get_mirrored_parent(node)
     if center is None:
         return mirror
     if mirror is None:
@@ -258,7 +261,7 @@ def getMirroredOrCenteredParent(node, axis=0):
     return center
 
 
-def getBestMirrorMode(nodeA, nodeB):
+def get_best_mirror_mode(node_a, node_b):
     """
     Given two nodes, return the mirror mode that matches
     their current transform relationship.
@@ -266,11 +269,11 @@ def getBestMirrorMode(nodeA, nodeB):
     Simple performs a loose check to see if the nodes are
     aligned, and if not, returns the Simple mirroring mode.
     """
-    awm = nodes.getWorldMatrix(nodeA)
-    bwm = nodes.getWorldMatrix(nodeB)
-    aaxes = nodes.getClosestAlignedAxes(awm)
-    baxes = nodes.getClosestAlignedAxes(bwm)
-    if aaxes == baxes:
+    awm = nodes.getWorldMatrix(node_a)
+    bwm = nodes.getWorldMatrix(node_b)
+    a_axes = nodes.getClosestAlignedAxes(awm)
+    b_axes = nodes.getClosestAlignedAxes(bwm)
+    if a_axes == b_axes:
         return MirrorMode.Aligned
     return MirrorMode.Simple
 
@@ -278,7 +281,7 @@ def getBestMirrorMode(nodeA, nodeB):
 class MirrorOperation(object):
     """
     An operation that can be performed when mirroring nodes.
-    Receives a call to mirror a sourceNode and targetNode.
+    Receives a call to mirror a source node and target node.
     """
 
     def __init__(self):
@@ -287,7 +290,7 @@ class MirrorOperation(object):
         # if set, the custom matrix to use as the base for mirroring
         self.axisMatrix = None
 
-    def mirrorNode(self, sourceNode, destNode, isNewNode):
+    def mirror_node(self, source_node, dest_node, is_new_node):
         """
         Implement in subclasses to perform the mirroring operation.
         """
@@ -304,9 +307,9 @@ class MirrorParenting(MirrorOperation):
         # when true, will search for centered nodes for joints
         self.findCenteredJoints = True
 
-    def mirrorNode(self, sourceNode, destNode, isNewNode):
+    def mirror_node(self, source_node, dest_node, is_new_node):
         """
-        Change the parent of destNode to match that of sourceNode,
+        Change the parent of a dest node to match that of a source node,
         ensuring the use of paired nodes where possible to preserve
         a mirrored parenting structure.
 
@@ -316,28 +319,29 @@ class MirrorParenting(MirrorOperation):
         """
         with preservedSelection():
             # get parent of source node
-            if self.findCenteredJoints and isinstance(sourceNode, pm.nt.Joint):
-                srcParent = getMirroredOrCenteredParent(sourceNode, self.axis)
+            if self.findCenteredJoints and isinstance(source_node, pm.nt.Joint):
+                src_parent = get_mirrored_or_centered_parent(source_node, self.axis)
             else:
-                srcParent = sourceNode.getParent()
+                src_parent = source_node.getParent()
 
-            if srcParent:
-                dstParent = getPairedNode(srcParent)
-                if dstParent:
-                    self.setParent(destNode, dstParent)
+            if src_parent:
+                dst_parent = get_paired_node(src_parent)
+                if dst_parent:
+                    self._set_parent(dest_node, dst_parent)
                 else:
-                    self.setParent(destNode, srcParent)
+                    self._set_parent(dest_node, src_parent)
             else:
-                self.setParent(destNode, None)
+                self._set_parent(dest_node, None)
 
-            # handle joint reparenting
-            if isinstance(destNode, pm.nt.Joint):
-                p = destNode.getParent()
+            # handle joint re-parenting
+            if isinstance(dest_node, pm.nt.Joint):
+                p = dest_node.getParent()
                 if p and isinstance(p, pm.nt.Joint):
-                    if not pm.isConnected(p.scale, destNode.inverseScale):
-                        p.scale >> destNode.inverseScale
+                    if not pm.isConnected(p.scale, dest_node.inverseScale):
+                        p.scale >> dest_node.inverseScale
 
-    def setParent(self, node, parent):
+    @staticmethod
+    def _set_parent(node, parent):
         """
         Set the parent of a node. PyMel advertises that PyNode.setParent will not error
         if the parent is already the current parent, but it does error (tested Maya 2018).
@@ -375,9 +379,9 @@ class MirrorTransforms(MirrorOperation):
         self.setScale = True
         self.setAttrs = True
 
-    def _kwargsForGet(self):
+    def _kwargs_for_get(self):
         """
-        Return kwargs for getMirrorSettings calls
+        Return kwargs for get_mirror_settings calls
         """
         keys = [
             'axis', 'axisMatrix', 'mirrorMode',
@@ -389,9 +393,9 @@ class MirrorTransforms(MirrorOperation):
         kwargs['rotate'] = self.mirrorRotate
         return kwargs
 
-    def _kwargsForApply(self):
+    def _kwargs_for_apply(self):
         """
-        Return kwargs for applyMirrorSettings calls
+        Return kwargs for apply_mirror_settings calls
         """
         return dict(
             translate=self.setTranslate,
@@ -400,90 +404,86 @@ class MirrorTransforms(MirrorOperation):
             attrs=self.setAttrs,
         )
 
-    def mirrorNode(self, sourceNode, destNode, isNewNode):
+    def mirror_node(self, source_node, dest_node, is_new_node):
         """
         Move a node to the mirrored position of another node.
 
         Args:
-            sourceNode (PyNode): The node whos position will be used
-            destNode (PyNode): The node to modify
-            isNewNode (bool): Is the destination node newly created?
+            source_node (PyNode): The node whos position will be used
+            dest_node (PyNode): The node to modify
+            is_new_node (bool): Is the destination node newly created?
         """
         if self.mirrorRotateOrder:
-            destNode.rotateOrder.set(sourceNode.rotateOrder.get())
+            dest_node.rotateOrder.set(source_node.rotateOrder.get())
 
-        settings = getMirrorSettings(
-            sourceNode, destNode, **self._kwargsForGet())
+        settings = get_mirror_settings(source_node, dest_node, **self._kwargs_for_get())
         if settings:
-            applyMirrorSettings(settings, **self._kwargsForApply())
+            apply_mirror_settings(settings, **self._kwargs_for_apply())
 
-    def _prepareFlip(self, sourceNode, destNode):
+    def _prepare_flip(self, source_node, dest_node):
         """
         Return settings gathered in preparation for flipping two nodes.
         """
-        sourceSettings = getMirrorSettings(
-            sourceNode, destNode, **self._kwargsForGet())
-        destSettings = getMirrorSettings(
-            destNode, sourceNode, **self._kwargsForGet())
-        return (sourceSettings, destSettings)
+        source_settings = get_mirror_settings(source_node, dest_node, **self._kwargs_for_get())
+        dest_settings = get_mirror_settings(dest_node, source_node, **self._kwargs_for_get())
+        return source_settings, dest_settings
 
-    def _applyFlip(self, flipData):
+    def _apply_flip(self, flip_data):
         """
-        Apply the flip data gathered from `_prepareFlip,` which will
+        Apply the flip data gathered from `_prepare_flip,` which will
         move the nodes to their flipped locations.
         """
-        sourceSettings, destSettings = flipData
-        if sourceSettings and destSettings:
-            applyMirrorSettings(sourceSettings, **self._kwargsForApply())
-            applyMirrorSettings(destSettings, **self._kwargsForApply())
+        source_settings, dest_settings = flip_data
+        if source_settings and dest_settings:
+            apply_mirror_settings(source_settings, **self._kwargs_for_apply())
+            apply_mirror_settings(dest_settings, **self._kwargs_for_apply())
 
-    def flip(self, sourceNode, destNode):
+    def flip(self, source_node, dest_node):
         """
         Flip the transforms of two nodes such that each
         node moves to the mirrored transform of the other.
         """
-        flipData = self._prepareFlip(sourceNode, destNode)
-        self._applyFlip(flipData)
+        flip_data = self._prepare_flip(source_node, dest_node)
+        self._apply_flip(flip_data)
 
-    def flipMultiple(self, nodePairs):
+    def flip_multiple(self, node_pairs):
         """
         Perform `flip` on multiple nodes, by gathering first
         and then applying second, in order to avoid parenting
         and dependency issues.
 
         Args:
-            nodePairs (list): A list of 2-tuple PyNodes representing
+            node_pairs (list): A list of 2-tuple PyNodes representing
                 (source, dest) node for each pair.
         """
+        flip_data_list = []
+        for (source, dest) in node_pairs:
+            flip_data = self._prepare_flip(source, dest)
+            flip_data_list.append(flip_data)
 
-        flipDataList = []
-        for (source, dest) in nodePairs:
-            flipData = self._prepareFlip(source, dest)
-            flipDataList.append(flipData)
+        for flip_data in flip_data_list:
+            self._apply_flip(flip_data)
 
-        for flipData in flipDataList:
-            self._applyFlip(flipData)
-
-    def flipCenter(self, nodes):
+    def flip_center(self, nodes):
         """
         Move one or more non-mirrored nodes to the mirrored position
         of its current transform. The node list should be in order of
         dependency, where parents are first, followed by children in
-        hierarchial order.
+        hierarchical order.
         """
         settings = []
 
         for n in nodes:
-            kwargs = self._kwargsForGet()
+            kwargs = self._kwargs_for_get()
             kwargs['mirrorMode'] = MirrorMode.Aligned
             kwargs['excludedNodeSettings'] = ['mirrorMode']
-            s = getMirrorSettings(n, n, **kwargs)
+            s = get_mirror_settings(n, n, **kwargs)
             settings.append(s)
 
         # TODO: attempt to automatically handle parent/child relationships
         #       to lift the requirement of giving nodes in hierarchical order
         for s in settings:
-            applyMirrorSettings(s, **self._kwargsForApply())
+            apply_mirror_settings(s, **self._kwargs_for_apply())
 
 
 class MirrorCurveShapes(MirrorOperation):
@@ -504,66 +504,66 @@ class MirrorCurveShapes(MirrorOperation):
         # the shape types to consider when replacing existing shapes
         self.shapeTypes = ['nurbsCurve']
 
-    def mirrorNode(self, sourceNode, destNode, isNewNode):
+    def mirror_node(self, source_node, dest_node, is_new_node):
         # curve shape mirroring doesn't care about the actual
         # position, its only job is to flip the curve
-        if isNewNode:
-            MirrorCurveShapes.flipAllCurveShapes(destNode, self.axis, self.mirrorMode)
+        if is_new_node:
+            MirrorCurveShapes.flip_all_curve_shapes(dest_node, self.axis, self.mirrorMode)
         elif self.replaceExistingShapes:
-            self.replaceCurveShapes(sourceNode, destNode)
-            MirrorCurveShapes.flipAllCurveShapes(destNode, self.axis, self.mirrorMode)
+            self.replace_curve_shapes(source_node, dest_node)
+            MirrorCurveShapes.flip_all_curve_shapes(dest_node, self.axis, self.mirrorMode)
 
     @staticmethod
-    def flipAllCurveShapes(node, axis=0, mirrorMode=MirrorMode.Simple):
+    def flip_all_curve_shapes(node, axis=0, mirrorMode=MirrorMode.Simple):
         """
         Flip the position of all cvs in all curve shapes of a node
         in a manner that corresponds to the transformation mirror modes.
 
         Args:
-            curveShape (NurbsCurve):    The curve to mirror
+            node (NurbsCurve): The node to mirror
             axis (int): An axis to mirror across
             mirrorMode: The MirrorMode type to use
         """
         shapes = node.getChildren(s=True)
         for shape in shapes:
             if hasattr(shape, "cv"):
-                MirrorCurveShapes.flipCurveShape(shape, axis, mirrorMode)
+                MirrorCurveShapes.flip_curve_shape(shape, axis, mirrorMode)
 
     @staticmethod
-    def flipCurveShape(curveShape, axis=0, mirrorMode=MirrorMode.Simple):
+    def flip_curve_shape(curve_shape, axis=0, mirrorMode=MirrorMode.Simple):
         """
         Flip the position of all cvs in a curve shape in a manner that
         corresponds to the transformation mirror modes.
 
         Args:
-            curveShape (NurbsCurve):    The curve to mirror
+            curve_shape (NurbsCurve): The curve to mirror
             axis (int): An axis to mirror across
             mirrorMode: The MirrorMode type to use
         """
         if mirrorMode == MirrorMode.Simple:
-            pm.scale(curveShape.cv, [-1, -1, -1])
+            pm.scale(curve_shape.cv, [-1, -1, -1])
         elif mirrorMode == MirrorMode.Aligned:
             s = [1, 1, 1]
             s[axis] = -1
-            pm.scale(curveShape.cv, s)
+            pm.scale(curve_shape.cv, s)
 
-    def replaceCurveShapes(self, sourceNode, destNode):
+    def replace_curve_shapes(self, source_node, dest_node):
         """
         Copy the curve shapes from one node to another, clearing out any curve shapes
         in the destination node first.
 
         Args:
-            sourceNode (pm.PyNode): The source node to copy shapes from
-            destNode (pm.PyNode): The destination node to copy shapes to
+            source_node (pm.PyNode): The source node to copy shapes from
+            dest_node (pm.PyNode): The destination node to copy shapes to
         """
-        dstShapes = destNode.getShapes(type=self.shapeTypes)
-        if dstShapes:
-            pm.delete(dstShapes)
+        dst_shapes = dest_node.getShapes(type=self.shapeTypes)
+        if dst_shapes:
+            pm.delete(dst_shapes)
 
-        srcShapes = sourceNode.getShapes(type=self.shapeTypes)
-        for shape in srcShapes:
+        src_shapes = source_node.getShapes(type=self.shapeTypes)
+        for shape in src_shapes:
             dupe = pm.duplicate(shape, addShape=True)
-            pm.parent(dupe, destNode, shape=True, relative=True)
+            pm.parent(dupe, dest_node, shape=True, relative=True)
 
 
 class MirrorJointDisplay(MirrorOperation):
@@ -571,12 +571,12 @@ class MirrorJointDisplay(MirrorOperation):
     Mirrors the display settings of joints
     """
 
-    def mirrorNode(self, sourceNode, destNode, isNewNode):
-        if sourceNode.type() == 'joint' and destNode.type() == 'joint':
-            destNode.radius.set(sourceNode.radius.get())
+    def mirror_node(self, source_node, dest_node, is_new_node):
+        if source_node.type() == 'joint' and dest_node.type() == 'joint':
+            dest_node.radius.set(source_node.radius.get())
 
 
-class BlueprintMirrorOperation(MirrorOperation):
+class BlueprintMirrorOperation(MirrorOperation, ABC):
     """
     A MirrorOperation that makes use of a Blueprint config
     """
@@ -584,11 +584,11 @@ class BlueprintMirrorOperation(MirrorOperation):
     def __init__(self):
         super(BlueprintMirrorOperation, self).__init__()
         # the Blueprint owner of the mirror operation
-        self.blueprint = None
+        self.blueprint: Optional[Blueprint] = None
         # the Blueprint's config data
-        self._config = None
+        self._config: Optional[dict] = None
 
-    def getConfig(self):
+    def get_config(self):
         """
         Return the Blueprint's config. Caches the config
         on the first request.
@@ -599,17 +599,17 @@ class BlueprintMirrorOperation(MirrorOperation):
         return self._config
 
 
-def _createNameReplacement(search, replace):
+def _create_name_replacement(search, replace):
     """
     Return a tuple containing a regex and replacement string.
     Regexes replace prefixes, suffixes, or middles, as long as
     the search is separated with '_' from adjacent characters.
     """
-    regex = re.compile('(?<![^_]){0}(?=(_|$))'.format(search))
-    return (regex, replace)
+    regex = re.compile(f'(?<![^_]){search}(?=(_|$))')
+    return regex, replace
 
 
-def _generateMirrorNameReplacements(config):
+def _generate_mirror_name_replacements(config):
     """
     Generate and return the full list of replacement pairs.
 
@@ -617,15 +617,15 @@ def _generateMirrorNameReplacements(config):
         A list of (regex, replacement) tuples.
     """
     replacements = []
-    symConfig = config.get('symmetry', {})
-    pairs = symConfig.get('pairs', [])
+    sym_config = config.get('symmetry', {})
+    pairs = sym_config.get('pairs', [])
 
     for pair in pairs:
         if 'left' in pair and 'right' in pair:
             left = pair['left']
             right = pair['right']
-            l2r = _createNameReplacement(left, right)
-            r2l = _createNameReplacement(right, left)
+            l2r = _create_name_replacement(left, right)
+            r2l = _create_name_replacement(right, left)
             replacements.append(l2r)
             replacements.append(r2l)
         else:
@@ -634,22 +634,22 @@ def _generateMirrorNameReplacements(config):
     return replacements
 
 
-def _getMirroredNameWithReplacements(name, replacements):
-    mirroredName = name
+def _get_mirrored_name_with_replacements(name, replacements):
+    mirrored_name = name
     for regex, repl in replacements:
-        if regex.search(mirroredName):
-            mirroredName = regex.sub(repl, mirroredName)
+        if regex.search(mirrored_name):
+            mirrored_name = regex.sub(repl, mirrored_name)
             break
-    return mirroredName
+    return mirrored_name
 
 
-def getMirroredName(name, config):
+def get_mirrored_name(name, config):
     """
     Given a string name, return the mirrored version considering
     all symmetry names defined in the Blueprint config.
     """
-    replacements = _generateMirrorNameReplacements(config)
-    return _getMirroredNameWithReplacements(name, replacements)
+    replacements = _generate_mirror_name_replacements(config)
+    return _get_mirrored_name_with_replacements(name, replacements)
 
 
 class MirrorNames(BlueprintMirrorOperation):
@@ -662,22 +662,20 @@ class MirrorNames(BlueprintMirrorOperation):
         # cached set of (regex, replacement) pairs
         self._replacements = None
 
-    def getReplacements(self):
+    def _get_replacements(self):
         """
         Return the list of regex and replacement pairs.
         Caches the list the first time it is requested so that
         subsequent calls are faster.
         """
         if self._replacements is None:
-            self._replacements = _generateMirrorNameReplacements(
-                self.getConfig())
+            self._replacements = _generate_mirror_name_replacements(self.get_config())
         return self._replacements
 
-    def mirrorNode(self, sourceNode, destNode, isNewNode):
-        name = sourceNode.nodeName()
-        destName = _getMirroredNameWithReplacements(
-            name, self.getReplacements())
-        destNode.rename(destName)
+    def mirror_node(self, source_node, dest_node, is_new_node):
+        name = source_node.nodeName()
+        dest_name = _get_mirrored_name_with_replacements(name, self._get_replacements())
+        dest_node.rename(dest_name)
 
 
 class MirrorColors(BlueprintMirrorOperation):
@@ -690,29 +688,28 @@ class MirrorColors(BlueprintMirrorOperation):
         # cached set of (regex, replacement) pairs
         self._replacements = None
 
-    def getReplacements(self):
+    def _get_replacements(self):
         """
         Return the list of regex and replacement pairs.
         Caches the list the first time it is requested so that
         subsequent calls are faster.
         """
         if self._replacements is None:
-            self._replacements = _generateMirrorNameReplacements(
-                self.getConfig())
+            self._replacements = _generate_mirror_name_replacements(self.get_config())
         return self._replacements
 
-    def mirrorNode(self, sourceNode, destNode, isNewNode):
-        sourceColor = nodes.getOverrideColor(sourceNode)
-        if sourceColor:
+    def mirror_node(self, source_node, dest_node, is_new_node):
+        source_color = nodes.getOverrideColor(source_node)
+        if source_color:
             # get name of source color
-            sourceName = editorutils.getColorName(sourceColor)
-            if sourceName:
+            source_name = editorutils.getColorName(source_color)
+            if source_name:
                 # mirror the name
-                destName = _getMirroredNameWithReplacements(sourceName, self.getReplacements())
+                dest_name = _get_mirrored_name_with_replacements(source_name, self._get_replacements())
                 # get color of mirrored name
-                destColor = editorutils.getNamedColor(destName)
-                if destColor:
-                    nodes.setOverrideColor(destNode, tuple(destColor))
+                dest_color = editorutils.getNamedColor(dest_name)
+                if dest_color:
+                    nodes.setOverrideColor(dest_node, tuple(dest_color))
 
 
 class MirrorLinks(BlueprintMirrorOperation):
@@ -720,32 +717,32 @@ class MirrorLinks(BlueprintMirrorOperation):
     Mirrors Blueprint links. See links.py
     """
 
-    def mirrorNode(self, sourceNode, destNode, isNewNode):
+    def mirror_node(self, source_node, dest_node, is_new_node):
         # get link meta data
-        sourceLinkData = links.getLinkMetaData(sourceNode)
-        destLinkData = links.getLinkMetaData(destNode)
+        source_link_data = links.getLinkMetaData(source_node)
+        dest_link_data = links.getLinkMetaData(dest_node)
 
-        if sourceLinkData:
+        if source_link_data:
             # if no destination link data already exists, create
             # a copy of the source link data, otherwise only affect the target node
-            if not destLinkData:
-                destLinkData = sourceLinkData
+            if not dest_link_data:
+                dest_link_data = source_link_data
 
             # TODO: provide a layer of abstraction, mirroring shouldn't have to know the details
 
-            sourceTargetNodes = sourceLinkData.get('targetNodes')
-            if sourceTargetNodes:
-                destTargetNodes = [getPairedNode(n) for n in sourceTargetNodes]
-                if destTargetNodes:
-                    destLinkData['targetNodes'] = destTargetNodes
-                    links.setLinkMetaData(destNode, destLinkData)
+            source_target_nodes = source_link_data.get('targetNodes')
+            if source_target_nodes:
+                dest_target_nodes = [get_paired_node(n) for n in source_target_nodes]
+                if dest_target_nodes:
+                    dest_link_data['targetNodes'] = dest_target_nodes
+                    links.setLinkMetaData(dest_node, dest_link_data)
 
             # position the dest node using the link
-            links.applyLinkPosition(destNode)
+            links.applyLinkPosition(dest_node)
 
-        elif destLinkData:
+        elif dest_link_data:
             # remove link data from dest node
-            links.unlink(destNode)
+            links.unlink(dest_node)
 
 
 class MirrorUtil(object):
@@ -758,14 +755,14 @@ class MirrorUtil(object):
 
     def __init__(self):
         # the list of mirror operations to run, use add_operation
-        self._operations = []
+        self._operations: List[MirrorOperation] = []
 
         # the axis to mirror across
         self.axis = 0
         # if set, the custom matrix to use as the base for mirroring
         self.axisMatrix = None
 
-        # don't mirrored nodes that are centered along the mirror axis
+        # don't mirror nodes that are centered along the mirror axis
         self.skipCentered = True
 
         # valid all source nodes before mirroring, potentially
@@ -782,24 +779,24 @@ class MirrorUtil(object):
         # after creating node pairs, but before run() has finished
         self._newNodes = []
 
-    def addOperation(self, operation):
+    def add_operation(self, operation):
         self._operations.append(operation)
 
-    def run(self, sourceNodes):
+    def run(self, source_nodes):
         """
         Run all mirror operations on the given source nodes.
         """
-        filteredNodes = self.gatherNodes(sourceNodes)
-        pairs = self.createNodePairs(filteredNodes)
+        filtered_nodes = self.gather_nodes(source_nodes)
+        pairs = self.create_node_pairs(filtered_nodes)
         for operation in self._operations:
             # ensure consistent mirroring settings for all operations
-            self.configureOperation(operation)
+            self.configure_operation(operation)
             for pair in pairs:
-                isNewNode = pair[1] in self._newNodes
-                operation.mirrorNode(pair[0], pair[1], isNewNode)
+                is_new_node = pair[1] in self._newNodes
+                operation.mirror_node(pair[0], pair[1], is_new_node)
         self._newNodes = []
 
-    def shouldMirrorNode(self, sourceNode) -> bool:
+    def should_mirror_node(self, source_node) -> bool:
         """
         Return whether the node sould be mirrored, or skipped.
 
@@ -808,33 +805,33 @@ class MirrorUtil(object):
         wanted when mirroring.
         """
         if self.skipCentered:
-            if isCentered(sourceNode, self.axis):
+            if is_centered(source_node, self.axis):
                 return False
 
         return True
 
-    def configureOperation(self, operation):
+    def configure_operation(self, operation):
         """
         Configure a MirrorOperation instance.
         """
         operation.axis = self.axis
         operation.axisMatrix = self.axisMatrix
 
-    def gatherNodes(self, sourceNodes):
+    def gather_nodes(self, source_nodes):
         """
-        Return a filtered and expanded list of sourceNodes to be mirrored,
+        Return a filtered and expanded list of source nodes to be mirrored,
         including children if isRecursive is True, and filtering nodes that
         should not be mirrored.
         """
         result = []
 
         if self.isRecursive:
-            sourceNodes = nodes.getParentNodes(sourceNodes)
+            source_nodes = nodes.getParentNodes(source_nodes)
 
         # expand to children
-        for sourceNode in sourceNodes:
+        for sourceNode in source_nodes:
             if sourceNode not in result:
-                if self.shouldMirrorNode(sourceNode):
+                if self.should_mirror_node(sourceNode):
                     result.append(sourceNode)
 
             if self.isRecursive:
@@ -843,67 +840,63 @@ class MirrorUtil(object):
 
                 for child in children:
                     if child not in result:
-                        if self.shouldMirrorNode(child):
+                        if self.should_mirror_node(child):
                             result.append(child)
 
         return result
 
-    def createNodePairs(self, sourceNodes):
+    def create_node_pairs(self, source_nodes):
         """
         Iterate over a list of source nodes and retrieve or create
         destination nodes using pairing.
         """
         pairs = []
 
-        for sourceNode in sourceNodes:
+        for sourceNode in source_nodes:
             if self.validateNodes:
-                validateMirrorNode(sourceNode)
+                validate_mirror_node(sourceNode)
 
             if self.isCreationAllowed:
-                destNode, isNewNode = self._getOrCreatePairNode(sourceNode)
-                if destNode and isNewNode:
-                    self._newNodes.append(destNode)
+                dest_node, is_new_node = self._get_or_create_pair_node(sourceNode)
+                if dest_node and is_new_node:
+                    self._newNodes.append(dest_node)
             else:
-                destNode = getPairedNode(sourceNode)
+                dest_node = get_paired_node(sourceNode)
 
-            if destNode:
-                pairs.append((sourceNode, destNode))
+            if dest_node:
+                pairs.append((sourceNode, dest_node))
             else:
                 LOG.warning("Could not get pair node for: "
                             "{0}".format(sourceNode))
 
         return pairs
 
-    def _getOrCreatePairNode(self, sourceNode) -> pm.nt.Transform:
+    def _get_or_create_pair_node(self, source_node) -> Tuple[pm.nt.Transform, bool]:
         """
-        Return the pair node of a node, and if none exists,
-        create a new pair node. Does not check isCreationAllowed.
+        Return the pair node of a node, and if none exists, create a new pair node.
+        Does not check isCreationAllowed.
 
         Returns:
-            The pair node (PyNode), and a bool that is True if the
-            node was just created, False otherwise.
+            The pair node (PyNode), and a bool that is True if the node was just created, False otherwise.
         """
-        destNode = getPairedNode(sourceNode)
-        if destNode:
-            return destNode, False
+        dest_node = get_paired_node(source_node)
+        if dest_node:
+            return dest_node, False
         else:
-            destNode = duplicateAndPairNode(sourceNode)
-            return destNode, True
+            dest_node = duplicate_and_pair_node(source_node)
+            return dest_node, True
 
-    def getOrCreatePairNode(self, sourceNode) -> pm.nt.Transform:
+    def get_or_create_pair_node(self, source_node) -> pm.nt.Transform:
         """
         Return the pair node of a node, and if none exists,
         create a new pair node. Does not check isCreationAllowed.
         """
-        return self._getOrCreatePairNode(sourceNode)[0]
+        return self._get_or_create_pair_node(source_node)[0]
 
 
-def getMirrorSettings(sourceNode, destNode=None,
-                      useNodeSettings=True, excludedNodeSettings=None,
-                      **kwargs):
+def get_mirror_settings(sourceNode, destNode=None, useNodeSettings=True, excludedNodeSettings=None, **kwargs):
     """
-    Get mirror settings that represent mirroring from a source
-    node to a target node.
+    Get mirror settings that represent mirroring from a source node to a target node.
 
     Args:
         sourceNode: A node to get matrix and other settings from
@@ -916,15 +909,15 @@ def getMirrorSettings(sourceNode, destNode=None,
             from node
 
     kwargs are divided up and used as necessary between 3 mirroring stages:
-        See 'getMirroredMatrices' for a list of kwargs that can be given
-        `mirroredAttrs` -- a list list of custom attribute names that will
+        See 'get_mirrored_matrices' for a list of kwargs that can be given
+        `mirroredAttrs` -- A list of custom attribute names that will
             be included when mirroring
         `customMirrorAttrExps` -- a dictionary of {attr: expression} that
-            are evaluated using the given sourceNode, destNode to determine
+            are evaluated using the given source node and dest node to determine
             custom mirroring behaviour for any attributes
     """
 
-    def filterNodeSettings(settings):
+    def filter_node_settings(settings):
         if excludedNodeSettings:
             return {k: v for k, v in settings.items()
                     if k not in excludedNodeSettings}
@@ -934,7 +927,7 @@ def getMirrorSettings(sourceNode, destNode=None,
 
     LOG.debug("Getting Mirror Settings: {0}".format(sourceNode))
     if not destNode:
-        destNode = getPairedNode(sourceNode)
+        destNode = get_paired_node(sourceNode)
     if not destNode:
         return
 
@@ -942,28 +935,28 @@ def getMirrorSettings(sourceNode, destNode=None,
     # these are stored in a string attr as a python dict
     if useNodeSettings:
         data = meta.getMetaData(sourceNode, MIRROR_METACLASS)
-        customSettings = data.get('customSettings')
-        if customSettings is not None:
+        custom_settings = data.get('customSettings')
+        if custom_settings is not None:
             LOG.debug("Custom Mirror Node")
             # nodeStngs = data['customSettings']
-            LOG.debug("Settings: {0}".format(customSettings))
-            kwargs.update(filterNodeSettings(customSettings))
+            LOG.debug("Settings: {0}".format(custom_settings))
+            kwargs.update(filter_node_settings(custom_settings))
 
-    # pull some kwargs used for getMirroredMatrices
-    matrixKwargs = dict([(k, v) for k, v in kwargs.items() if k in (
+    # pull some kwargs used for get_mirrored_matrices
+    matrix_kwargs = dict([(k, v) for k, v in kwargs.items() if k in (
         'axis', 'axisMatrix', 'translate', 'rotate', 'mirrorMode')])
-    result['matrices'] = getMirroredMatrices(sourceNode, **matrixKwargs)
+    result['matrices'] = get_mirrored_matrices(sourceNode, **matrix_kwargs)
 
     # add list of mirrored attributes as designated by kwargs
-    mirAttrKwargs = dict([(a, getattr(sourceNode, a).get())
-                          for a in kwargs.get('mirroredAttrs', [])])
-    result.setdefault('mirroredAttrs', {}).update(mirAttrKwargs)
+    mir_attr_kwargs = dict([(a, getattr(sourceNode, a).get())
+                            for a in kwargs.get('mirroredAttrs', [])])
+    result.setdefault('mirroredAttrs', {}).update(mir_attr_kwargs)
 
     for attr, exp in kwargs.get('customMirrorAttrExps', {}).items():
         if exp:
             LOG.debug("Attr: {0}".format(attr))
             LOG.debug("Exp:\n{0}".format(exp))
-            val = evalCustomMirrorAttrExp(
+            val = eval_custom_mirror_attr_exp(
                 sourceNode, destNode, attr, exp)
             LOG.debug("Result: {0}".format(val))
             # Eval from the mirror to the dest
@@ -978,22 +971,19 @@ def getMirrorSettings(sourceNode, destNode=None,
     return result
 
 
-def applyMirrorSettings(mirrorSettings,
-                        translate=True, rotate=True, scale=True,
-                        attrs=True):
+def apply_mirror_settings(mirror_settings, translate=True, rotate=True, scale=True, attrs=True):
     """
-    Apply mirror settings created from getMirrorSettings
+    Apply mirror settings created from get_mirror_settings
     """
-    LOG.debug("Applying Mirror Settings: {0}".format(
-        mirrorSettings['destNode']))
-    settings = mirrorSettings
+    LOG.debug("Applying Mirror Settings: {0}".format(mirror_settings['destNode']))
+    settings = mirror_settings
     if any([translate, rotate, scale]):
-        setMirroredMatrices(settings['destNode'], settings['matrices'],
-                            translate=translate, rotate=rotate, scale=scale)
+        set_mirrored_matrices(settings['destNode'], settings['matrices'],
+                              translate=translate, rotate=rotate, scale=scale)
 
     if attrs:
         LOG.debug("Applying Mirrored Attrs")
-        for attrName, val in mirrorSettings.get('mirroredAttrs', {}).items():
+        for attrName, val in mirror_settings.get('mirroredAttrs', {}).items():
             LOG.debug("{0} -> {1}".format(attrName, val))
             attr = settings['destNode'].attr(attrName)
             attr.set(val)
@@ -1006,29 +996,29 @@ result = exp()
 """
 
 
-def evalCustomMirrorAttrExp(sourceNode, destNode, attr, exp):
-    result = {}
-
+def eval_custom_mirror_attr_exp(source_node, dest_node, attr, exp):
     LOG.debug("Raw Exp: {0}".format(repr(exp)))
-    _globals = {}
-    _globals['node'] = sourceNode
-    _globals['dest_node'] = destNode
-    if hasattr(sourceNode, attr):
-        _globals['value'] = getattr(sourceNode, attr).get()
+
+    _globals = {
+        'node': source_node,
+        'dest_node': dest_node
+    }
+
+    if hasattr(source_node, attr):
+        _globals['value'] = getattr(source_node, attr).get()
     else:
         raise KeyError(
-            "{0} missing mirrored attr {1}".format(sourceNode, attr))
-    if hasattr(destNode, attr):
-        _globals['dest_value'] = getattr(destNode, attr).get()
+            "{0} missing mirrored attr {1}".format(source_node, attr))
+    if hasattr(dest_node, attr):
+        _globals['dest_value'] = getattr(dest_node, attr).get()
     else:
-        raise KeyError("{0} missing mirrored attr {1}".format(destNode, attr))
+        raise KeyError("{0} missing mirrored attr {1}".format(dest_node, attr))
 
-    # Add a return to the last line of the expression
-    # so we can treat it as a function
+    # Add a return to the last line of the expression, so we can treat it as a function
     body = [l for l in exp.strip().split('\n') if l]
-    lastLine = body.pop(-1)
+    last_line = body.pop(-1)
     _exp = CUSTOM_EXP_FMT.format(
-        body='\n\t'.join(body + ['']), lastLine=lastLine)
+        body='\n\t'.join(body + ['']), lastLine=last_line)
 
     # TODO: do this without exec
     exec(_exp, _globals)
@@ -1037,10 +1027,7 @@ def evalCustomMirrorAttrExp(sourceNode, destNode, attr, exp):
     return result
 
 
-def getMirroredMatrices(node,
-                        axis=0, axisMatrix=None,
-                        translate=True, rotate=True,
-                        mirrorMode=MirrorMode.Simple):
+def get_mirrored_matrices(node, axis=0, axisMatrix=None, translate=True, rotate=True, mirrorMode=MirrorMode.Simple):
     """
     Return the mirrored matrix or matrices for the given node
     Automatically handles Transform vs. Joint differences
@@ -1064,16 +1051,15 @@ def getMirroredMatrices(node,
     if isinstance(node, pm.nt.Joint):
         result['type'] = 'joint'
         jmatrices = joints.getJointMatrices(node)
-        result['matrices'] = getMirroredJointMatrices(*jmatrices, **kwargs)
+        result['matrices'] = get_mirrored_joint_matrices(*jmatrices, **kwargs)
     else:
         result['type'] = 'node'
-        result['matrices'] = [getMirroredTransformMatrix(
+        result['matrices'] = [get_mirrored_transform_matrix(
             nodes.getWorldMatrix(node), **kwargs)]
     return result
 
 
-def setMirroredMatrices(node, mirroredMatrices,
-                        translate=True, rotate=True, scale=True):
+def set_mirrored_matrices(node, mirroredMatrices, translate=True, rotate=True, scale=True):
     """
     Set the world matrix for the given node using the given mirrored matrices
     Automatically interprets Transform vs. Joint matrix settings
@@ -1086,10 +1072,8 @@ def setMirroredMatrices(node, mirroredMatrices,
         nodes.setWorldMatrix(node, *mirroredMatrices['matrices'], translate=translate, rotate=rotate, scale=scale)
 
 
-def getMirroredTransformMatrix(matrix,
-                               axis=0, axisMatrix=None,
-                               translate=True, rotate=True,
-                               mirrorMode=MirrorMode.Simple):
+def get_mirrored_transform_matrix(matrix, axis=0, axisMatrix=None, translate=True, rotate=True,
+                                  mirrorMode=MirrorMode.Simple):
     """
     Return the mirrored version of the given matrix.
 
@@ -1114,10 +1098,10 @@ def getMirroredTransformMatrix(matrix,
         # negate translate vector
         t[axis.index] = -t[axis.index]
     if rotate:
-        r = invertOtherAxes(r, axis)
+        r = invert_other_axes(r, axis)
         if mirrorMode == MirrorMode.Aligned:
             LOG.debug("Counter Rotating because mirror mode is Aligned")
-            r = counterRotateForNonMirrored(r, axis)
+            r = counter_rotate_for_non_mirrored(r, axis)
     mirror = s * r
     mirror[3] = t
     if axisMatrix is not None:
@@ -1125,10 +1109,8 @@ def getMirroredTransformMatrix(matrix,
     return mirror
 
 
-def getMirroredJointMatrices(matrix, r, ra, jo,
-                             axis=0, axisMatrix=None,
-                             translate=True, rotate=True,
-                             mirrorMode=MirrorMode.Simple):
+def get_mirrored_joint_matrices(matrix, r, ra, jo, axis=0, axisMatrix=None,
+                                translate=True, rotate=True, mirrorMode=MirrorMode.Simple):
     """
     Return the given joint matrices mirrored across the given axis.
     Returns the full transformation matrix, rotation, rotation axis,
@@ -1144,27 +1126,27 @@ def getMirroredJointMatrices(matrix, r, ra, jo,
     """
     LOG.debug("Getting Mirrored Joint Matrices")
     # matches transform orientation
-    mirror = getMirroredTransformMatrix(
+    mirror = get_mirrored_transform_matrix(
         matrix, axis, axisMatrix, translate, rotate)
     if rotate:
         if axisMatrix is not None:
             # matches orientation with jo
-            invScaleMtx = nodes.getScaleMatrix(axisMatrix).inverse()
-            axisMatrix = invScaleMtx * axisMatrix
+            inv_scale_mtx = nodes.getScaleMatrix(axisMatrix).inverse()
+            axisMatrix = inv_scale_mtx * axisMatrix
             jo = jo * axisMatrix.inverse()
         # flips orientation
-        jo = invertOtherAxes(jo, axis)
+        jo = invert_other_axes(jo, axis)
         if mirrorMode == MirrorMode.Aligned:
             LOG.debug("Counter Rotating because mirror mode is Aligned")
             # changes orientation to inverted world
-            jo = counterRotateForMirroredJoint(jo)
+            jo = counter_rotate_for_mirrored_joint(jo)
         if axisMatrix is not None:
-            # doesnt seem to do anything
+            # doesn't seem to do anything
             jo = jo * axisMatrix
     return mirror, r, ra, jo
 
 
-def invertOtherAxes(matrix, axis=0):
+def invert_other_axes(matrix, axis=0):
     """
     Invert the other axes of the given rotation
     matrix based on rows of the matrix.
@@ -1178,11 +1160,11 @@ def invertOtherAxes(matrix, axis=0):
     return pm.dt.Matrix(x, y, z)
 
 
-def counterRotateForNonMirrored(matrix, axis=0):
+def counter_rotate_for_non_mirrored(matrix, axis=0):
     """
     Essentially rotates 180 on the given axis,
     this is used to create mirroring when ctls
-    are setup to not be mirrored at rest pose.
+    are set up to not be mirrored at rest pose.
     """
     axis = nodes.getAxis(axis)
     others = [o.index for o in nodes.getOtherAxes(axis)]
@@ -1194,11 +1176,11 @@ def counterRotateForNonMirrored(matrix, axis=0):
     return pm.dt.Matrix(x, y, z)
 
 
-def counterRotateForMirroredJoint(matrix):
+def counter_rotate_for_mirrored_joint(matrix):
     """
     Essentially rotates 180 on the given axis,
     this is used to create mirroring when ctls
-    are setup to not be mirrored at rest pose.
+    are set up to not be mirrored at rest pose.
     """
     x, y, z = matrix[:3]
     for row in (x, y, z):

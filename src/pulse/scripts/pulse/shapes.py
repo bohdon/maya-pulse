@@ -8,7 +8,7 @@ LOG = logging.getLogger(__name__)
 # Component Editing
 # -----------------
 
-def rotateComponents(shape, rotation):
+def rotate_components(shape, rotation):
     """
     Rotate the components of a shape.
 
@@ -24,7 +24,7 @@ def rotateComponents(shape, rotation):
         LOG.error("{0} is not a valid shape".format(shape))
 
 
-def combineShapes(transforms):
+def combine_shapes(transforms):
     """
     Combine multiple shape nodes into one transform with all the shapes.
 
@@ -40,15 +40,15 @@ def combineShapes(transforms):
     for t in transforms:
         shapes.extend(t.getShapes())
 
-    # reparent shapes to first transform
+    # re-parent shapes to first transform
     for shape in shapes:
         pm.parent(shape, target, shape=True, relative=True)
 
     # delete empty remaining transforms
-    nodesToDelete = []
+    nodes_to_delete = []
     for t in transforms:
         if not t.getChildren():
-            nodesToDelete.append(t)
-    pm.delete(nodesToDelete)
+            nodes_to_delete.append(t)
+    pm.delete(nodes_to_delete)
 
     return target

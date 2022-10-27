@@ -6,10 +6,11 @@ CAM_NAMES = [
     'frontShape',
     'sideShape',
 ]
+
 CAM_SETTINGS = {}
 
 
-def saveCameras():
+def save_cameras():
     """
     Save default camera positions in the current scene
     so that they can be maintained when travelling between
@@ -18,33 +19,36 @@ def saveCameras():
     for camName in CAM_NAMES:
         if not pm.objExists(camName):
             continue
-        cam = pm.PyNode(camName)
-        CAM_SETTINGS[camName] = _getCameraSettings(cam)
+        cam: pm.nt.Camera = pm.PyNode(camName)
+        CAM_SETTINGS[camName] = _get_camera_settings(cam)
 
-def restoreCameras():
+
+def restore_cameras():
     """
     Restore the default cameras to the last saved position
     """
     for camName in CAM_NAMES:
         if not pm.objExists(camName) or not camName in CAM_SETTINGS:
             continue
-        cam = pm.PyNode(camName)
-        _setCameraSettings(cam, CAM_SETTINGS[camName])
+        cam: pm.nt.Camera = pm.PyNode(camName)
+        _set_camera_settings(cam, CAM_SETTINGS[camName])
 
-def _getCameraSettings(cam):
+
+def _get_camera_settings(cam):
     transform = cam.getParent()
     t = transform.t.get()
     r = transform.r.get()
     s = transform.s.get()
-    focalLength = cam.focalLength.get()
+    focal_length = cam.focalLength.get()
     coi = cam.coi.get()
-    return [t, r, s, focalLength, coi]
+    return [t, r, s, focal_length, coi]
 
-def _setCameraSettings(cam, settings):
-    t, r, s, focalLength, coi = settings
+
+def _set_camera_settings(cam, settings):
+    t, r, s, focal_length, coi = settings
     transform = cam.getParent()
     transform.t.set(t)
     transform.r.set(r)
     transform.s.set(s)
-    cam.focalLength.set(focalLength)
+    cam.focalLength.set(focal_length)
     cam.coi.set(coi)

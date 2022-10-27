@@ -1,5 +1,5 @@
 from ...vendor.Qt import QtWidgets
-from ...prefs import optionVarProperty
+from ...prefs import option_var_property
 from ... import editorutils
 from ..utils import undoAndRepeatPartial as cmd
 
@@ -7,13 +7,13 @@ from ..gen.designpanel_symmetry import Ui_SymmetryDesignPanel
 
 
 class SymmetryDesignPanel(QtWidgets.QWidget):
-    include_children = optionVarProperty('pulse.editor.mirrorIncludeChildren', True)
-    mirror_transforms = optionVarProperty('pulse.editor.mirrorTransforms', True)
-    mirror_parenting = optionVarProperty('pulse.editor.mirrorParenting', True)
-    mirror_links = optionVarProperty('pulse.editor.mirrorLinks', True)
-    mirror_appearance = optionVarProperty('pulse.editor.mirrorAppearance', True)
-    mirror_curve_shapes = optionVarProperty('pulse.editor.mirrorCurveShapes', True)
-    allow_create = optionVarProperty('pulse.editor.mirrorAllowCreate', True)
+    include_children = option_var_property('pulse.editor.mirrorIncludeChildren', True)
+    mirror_transforms = option_var_property('pulse.editor.mirrorTransforms', True)
+    mirror_parenting = option_var_property('pulse.editor.mirrorParenting', True)
+    mirror_links = option_var_property('pulse.editor.mirrorLinks', True)
+    mirror_appearance = option_var_property('pulse.editor.mirrorAppearance', True)
+    mirror_curve_shapes = option_var_property('pulse.editor.mirrorCurveShapes', True)
+    allow_create = option_var_property('pulse.editor.mirrorAllowCreate', True)
 
     def set_include_children(self, value):
         self.include_children = True if value > 0 else False

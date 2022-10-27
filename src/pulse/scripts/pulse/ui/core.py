@@ -17,7 +17,7 @@ from ..vendor.Qt import QtCore, QtWidgets, QtGui
 from .. import loader, rigs, editorutils
 from ..blueprints import Blueprint, BlueprintFile, BlueprintSettings, BlueprintBuilder, BlueprintValidator
 from ..buildItems import BuildStep, BuildAction
-from ..prefs import optionVarProperty
+from ..prefs import option_var_property
 from ..serializer import serializeAttrValue
 from .utils import CollapsibleFrame
 from .utils import dpiScale
@@ -292,13 +292,13 @@ class BlueprintUIModel(QtCore.QObject):
     INSTANCES = {}
 
     # automatically save the blueprint file when the maya scene is saved
-    autoSave = optionVarProperty('pulse.editor.auto_save', True)
+    autoSave = option_var_property('pulse.editor.auto_save', True)
 
     # automatically load the blueprint file when a maya scene is opened
-    autoLoad = optionVarProperty('pulse.editor.auto_load', True)
+    autoLoad = option_var_property('pulse.editor.auto_load', True)
 
     # automatically show the action editor when selecting an action in the tree
-    autoShowActionEditor = optionVarProperty('pulse.editor.auto_show_action_editor', True)
+    autoShowActionEditor = option_var_property('pulse.editor.auto_show_action_editor', True)
 
     def setAutoSave(self, value):
         self.autoSave = value

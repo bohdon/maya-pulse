@@ -65,21 +65,21 @@ class TwistJointsAction(BuildAction):
                 # get align joint matrix relative to it's parent,
                 # don't trust the local matrix since inheritsTransform may not be used
                 offset_mtx = self.alignJoint.wm.get() * align_parent.wim.get()
-                align_tgt_mtx = utilnodes.multMatrix(offset_mtx, align_parent.wm)
+                align_tgt_mtx = utilnodes.mult_matrix(offset_mtx, align_parent.wm)
                 pass
             else:
                 # no parent node, just store the current 'resting' matrix in a multMatrix
-                align_tgt_mtx = utilnodes.multMatrix(self.alignJoint.wm.get())
+                align_tgt_mtx = utilnodes.mult_matrix(self.alignJoint.wm.get())
         else:
             # use to align joint world matrix directly
             align_tgt_mtx = self.alignJoint.wm
 
         # create aligned version of the parent matrix
-        aligned_pm = utilnodes.alignMatrixToDirection(parent_mtx, self.forwardAxis, self.alignAxis,
-                                                      self.alignAxis, align_tgt_mtx)
+        aligned_pm = utilnodes.align_matrix_to_direction(parent_mtx, self.forwardAxis, self.alignAxis,
+                                                         self.alignAxis, align_tgt_mtx)
 
         # blend aligned matrix with default parent matrix
-        blend_mtx = utilnodes.blendMatrix(parent_mtx, aligned_pm, twist_blend)
+        blend_mtx = utilnodes.blend_matrix(parent_mtx, aligned_pm, twist_blend)
 
         nodes.connectMatrix(blend_mtx, self.twistJoint, nodes.ConnectMatrixMethod.CREATE_OFFSET)
 

@@ -144,7 +144,7 @@ def setupSpaceConstraint(node, spaceNames, follower=None, useOffsetMatrix=True):
     # create utility nodes
     offsetChoice = pm.shadingNode('choice', n=offsetChoiceName, asUtility=True)
     spaceChoice = pm.shadingNode('choice', n=spaceChoiceName, asUtility=True)
-    utilnodes.loadMatrixPlugin()
+    utilnodes.load_matrix_plugin()
     multMatrix = pm.shadingNode('multMatrix', n=multMatrixName, asUtility=True)
     if not useOffsetMatrix:
         decomp = pm.shadingNode(

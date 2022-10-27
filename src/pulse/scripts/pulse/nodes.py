@@ -5,6 +5,8 @@ from enum import IntEnum
 import maya.cmds as cmds
 import pymel.core as pm
 
+from pulse.colors import LinearColor
+
 LOG = logging.getLogger(__name__)
 LOG_LEVEL_KEY = 'PYLOG_%s' % LOG.name.split('.')[0].upper()
 LOG.setLevel(os.environ.get(LOG_LEVEL_KEY, 'INFO').upper())
@@ -545,7 +547,7 @@ def decomposeAndConnectMatrix(matrix: pm.Attribute, node: pm.nt.Transform, inher
 
     if inheritsTransform:
         # get local space matrix, and ensure inheritsTransform is enabled
-        mtx = utilnodes.multMatrix(matrix, node.pim)
+        mtx = utilnodes.mult_matrix(matrix, node.pim)
         mtx.node().rename(f"{node.nodeName()}_worldToLocal_multMatrix")
         node.inheritsTransform.set(True)
     else:
@@ -553,7 +555,7 @@ def decomposeAndConnectMatrix(matrix: pm.Attribute, node: pm.nt.Transform, inher
         mtx = matrix
         node.inheritsTransform.set(False)
 
-    decomp = utilnodes.decomposeMatrix(mtx)
+    decomp = utilnodes.decompose_matrix(mtx)
     node.rotateOrder >> decomp.inputRotateOrder
     decomp.outputTranslate >> node.translate
     decomp.outputRotate >> node.rotate
@@ -950,8 +952,7 @@ def getClosestAlignedAxes(matrix):
 
 def getClosestAlignedRelativeAxis(nodeA, nodeB, axis=0):
     """
-    Return the signed axis of nodeA that is most aligned
-    with an axis of nodeB
+    Return the signed axis of node A that is most aligned with an axis of node B.
 
     Returns (axis, sign)
     """
@@ -960,7 +961,7 @@ def getClosestAlignedRelativeAxis(nodeA, nodeB, axis=0):
 
 def areNodesAligned(nodeA, nodeB):
     """
-    Return True if nodeA and nodeB are roughly aligned, meaning
+    Return True if two nodes are roughly aligned, meaning
     their axes point mostly in the same directions.
     """
     signedAxes = getClosestAlignedAxes(nodeA.wm.get() * nodeB.wim.get())
@@ -973,7 +974,7 @@ def areNodesAligned(nodeA, nodeB):
 # Node Coloring
 # -------------
 
-def getOverrideColor(node):
+def getOverrideColor(node) -> LinearColor:
     """
     Return the override color of a node.
 
@@ -987,7 +988,7 @@ def getOverrideColor(node):
     shapes = node.getChildren(s=True)
     for shape in shapes:
         if shape.overrideEnabled.get() and shape.overrideRGBColors.get():
-            return shape.overrideColorRGB.get()
+            return LinearColor.from_seq(shape.overrideColorRGB.get())
 
 
 def setOverrideColor(node, color, skipEnableOverrides=False):

@@ -1,7 +1,7 @@
 import pymel.core as pm
 
 
-def optionVarProperty(key, default):
+def option_var_property(key, default):
     """
     Create a property that is saved in the user's preferences
     by using Maya optionVars.

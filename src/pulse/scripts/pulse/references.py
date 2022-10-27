@@ -5,59 +5,58 @@ import pymel.core as pm
 LOG = logging.getLogger(__name__)
 
 
-def importAllReferences(loadUnloaded=True, depthLimit=10, removeNamespace=False, prompt=False):
+def import_all_references(load_unloaded=True, depth_limit=10, remove_namespace=False, prompt=False):
     """
     Recursively import all references in the scene
 
     Args:
-        loadUnloaded: A bool, whether to load currently unloaded references before importing
-        depthLimit: An int, recursion depth limit when handling recursive references
-        removeNamespace: A bool, whether to remove reference namespaces when importing
+        load_unloaded: A bool, whether to load currently unloaded references before importing
+        depth_limit: An int, recursion depth limit when handling recursive references
+        remove_namespace: A bool, whether to remove reference namespaces when importing
         prompt: A bool, whether to prompt the user to confirm the operation before running
     """
-    if prompt and not importAllReferencesConfirm():
+    if prompt and not import_all_references_confirm():
         return False
 
-
-    def importReferences(refs, depth):
-        if depth > depthLimit:
+    def import_references(refs, depth):
+        if depth > depth_limit:
             return
-        
+
         for ref in refs:
 
             if not ref.isLoaded():
-                if loadUnloaded:
+                if load_unloaded:
                     LOG.debug("Loading {0}".format(ref))
                     ref.load(loadReferenceDepth='all')
                 else:
                     continue
 
             # Store the list of sub-references
-            subRefs = ref.subReferences()
+            sub_refs = ref.subReferences()
 
             path = ref.path
             try:
                 LOG.debug("Importing {0}".format(ref))
-                ref.importContents(removeNamespace=removeNamespace)
+                ref.importContents(removeNamespace=remove_namespace)
             except RuntimeError as e:
                 LOG.warning('Could not import reference: {0}\n{1}'.format(path, e))
 
             # Import any subrefs
-            if len(subRefs):
-                LOG.debug("Loading {0} Sub-Reference(s)".format(len(subRefs)))
-                importReferences(subRefs.values(), depth+1)
+            if len(sub_refs):
+                LOG.debug("Loading %d Sub-Reference(s)", len(sub_refs))
+                import_references(sub_refs.values(), depth + 1)
 
     i = 0
-    refs = getTopLevelReferences()
+    refs = get_top_level_references()
     if not refs:
         LOG.debug("No References to import")
         return True
 
     LOG.debug("Importing {0} Top-Level Reference(s)".format(len(refs)))
-    importReferences(refs, 1)
+    import_references(refs, 1)
 
     # cleanup
-    bad = getBadReferences()
+    bad = get_bad_references()
     if len(bad):
         try:
             badlist = [str(b) for b in bad]
@@ -65,40 +64,45 @@ def importAllReferences(loadUnloaded=True, depthLimit=10, removeNamespace=False,
             LOG.debug('Deleted bad references: {0}'.format(badlist))
         except Exception as e:
             LOG.error('Could not delete bad references: {0}'.format(bad))
-    
+
     return True
 
-def importAllReferencesConfirm():
-    confirmKw = {
-        't':'Import All References',
-        'm':'This action is not undoable.\nContinue?',
-        'b':['OK', 'Cancel'],
-        'cb':'Cancel',
-        'ds':'dismiss',
-        'icn':'warning',
+
+def import_all_references_confirm():
+    confirm_kw = {
+        't': 'Import All References',
+        'm': 'This action is not undoable.\nContinue?',
+        'b': ['OK', 'Cancel'],
+        'cb': 'Cancel',
+        'ds': 'dismiss',
+        'icn': 'warning',
     }
-    result = pm.confirmDialog(**confirmKw)
+    result = pm.confirmDialog(**confirm_kw)
     if result != 'OK':
         return False
     return True
 
-def getBadReferences():
+
+def get_bad_references():
     refs = pm.ls(rf=True)
     return [r for r in refs if r.referenceFile() is None]
 
-def getFileReferences():
+
+def get_file_references():
     """
     Return a list of the referenced files in the current scene
     """
-    refNodes = pm.ls(rf=True)
-    fileRefs = [r.referenceFile() for r in refNodes]
-    return fileRefs
+    ref_nodes = pm.ls(rf=True)
+    file_refs = [r.referenceFile() for r in ref_nodes]
+    return file_refs
 
-def getTopLevelReferences():
-    refs = getFileReferences()
-    return [r for r in refs if isTopLevelReference(r)]
 
-def isTopLevelReference(ref):
+def get_top_level_references():
+    refs = get_file_references()
+    return [r for r in refs if is_top_level_reference(r)]
+
+
+def is_top_level_reference(ref):
     """
     Return True if the given file reference's parent is the scene
 
@@ -108,4 +112,3 @@ def isTopLevelReference(ref):
     if ref is None:
         return False
     return pm.referenceQuery(ref, rfn=True, tr=True) == ref.refNode
-

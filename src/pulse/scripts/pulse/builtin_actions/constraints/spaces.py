@@ -142,7 +142,7 @@ class SpaceSwitchContextSubMenu(PulseNodeContextSubMenu):
                 index = space['index']
                 is_current = ctl.attr('space').get() == index
 
-                title = names.toTitle(space['name'])
+                title = names.to_title(space['name'])
                 suffix = ' (Default)' if index == 0 else ''
                 prefix = '> ' if is_current else '    '
                 display_name = f"{prefix}{title}{suffix}"
