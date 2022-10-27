@@ -62,8 +62,8 @@ class MagicFeetAction(BuildAction):
         _follower = self.follower
         _toeFollower = self.toeFollower
         if should_create_offset:
-            _follower = nodes.createOffsetTransform(self.follower)
-            _toeFollower = nodes.createOffsetTransform(self.toeFollower)
+            _follower = nodes.create_offset_transform(self.follower)
+            _toeFollower = nodes.create_offset_transform(self.toeFollower)
 
         # TODO(bsayre): expose as option
         use_custom_attrs = False
@@ -120,28 +120,28 @@ class MagicFeetAction(BuildAction):
             em=True, p=self.heelPivot,
             n='{0}_mf_heel_tgt'.format(self.follower.nodeName()))
 
-        follower_mtx = nodes.getWorldMatrix(self.follower)
-        toe_follower_mtx = nodes.getWorldMatrix(self.toeFollower)
+        follower_mtx = nodes.get_world_matrix(self.follower)
+        toe_follower_mtx = nodes.get_world_matrix(self.toeFollower)
 
         # update pivots to match world rotation of control and create
         # offset so that direct connect rotations will match up
         for node in (self.toePivot, self.ballPivot, self.heelPivot):
             follower_mtx.translate = (0, 0, 0)
             follower_mtx.scale = (1, 1, 1)
-            nodes.setWorldMatrix(node, follower_mtx)
-            nodes.createOffsetTransform(node)
+            nodes.set_world_matrix(node, follower_mtx)
+            nodes.create_offset_transform(node)
             if node == self.toePivot:
                 # after orienting toe pivot, re-parent ballPivot
                 self.ballPivot.setParent(self.toePivot)
 
         # update toe target transforms to match toe follower transform
         for node in (toe_down_tgt, toe_up_tgt):
-            nodes.setWorldMatrix(node, toe_follower_mtx)
+            nodes.set_world_matrix(node, toe_follower_mtx)
 
         # update target transforms to match follower transform
         # (basically preserves offsets on the follower)
         for node in (ball_toe_tgt, heel_tgt):  # , ankle_tgt):
-            nodes.setWorldMatrix(node, follower_mtx)
+            nodes.set_world_matrix(node, follower_mtx)
 
         # connect direct rotations to heel pivot done after creating targets so that
         # the targets WILL move to reflect magic control non-zero rotations (if any)
@@ -167,7 +167,7 @@ class MagicFeetAction(BuildAction):
         planted_mtx_attr = utilnodes.choice(is_toe_roll_attr, heel_tgt.wm, ball_toe_tgt.wm)
 
         # connect final planted ankle matrix to ankle target transform
-        nodes.connectMatrix(planted_mtx_attr, planted_tgt, nodes.ConnectMatrixMethod.SNAP)
+        nodes.connect_matrix(planted_mtx_attr, planted_tgt, nodes.ConnectMatrixMethod.SNAP)
         planted_tgt.t.lock()
         planted_tgt.r.lock()
         planted_tgt.s.lock()
@@ -182,7 +182,7 @@ class MagicFeetAction(BuildAction):
         # TODO(bsayre): this connect eliminates all transform inheritance, is
         #   world space control what we want? or do we need to inject offsets and
         #   allow parent transforms to come through
-        nodes.connectMatrix(planted_lifted_blend_attr, _follower, nodes.ConnectMatrixMethod.SNAP)
+        nodes.connect_matrix(planted_lifted_blend_attr, _follower, nodes.ConnectMatrixMethod.SNAP)
 
         # create toe up/down matrix blend, (0 == toe-up, 1 == toe-down/ball pivot)
         # in order to do this, reverse ballToe attr, then multiply by isToeRoll
@@ -201,7 +201,7 @@ class MagicFeetAction(BuildAction):
 
         # connect final toe rotations to toeFollower
         # TODO(bsayre): parent both tgts to ankle somehow to prevent locking
-        nodes.connectMatrix(ball_toe_mtx_blend_attr, _toeFollower, nodes.ConnectMatrixMethod.SNAP)
+        nodes.connect_matrix(ball_toe_mtx_blend_attr, _toeFollower, nodes.ConnectMatrixMethod.SNAP)
 
         # add meta data to controls
         ctl_data = {

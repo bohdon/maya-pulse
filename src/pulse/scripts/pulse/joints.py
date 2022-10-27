@@ -135,7 +135,7 @@ def centerJoint(jnt, child=None):
         child = children[0]
     elif not isinstance(child, pm.nt.Joint):
         raise TypeError('child must be a joint')
-    mid = nodes.getTranslationMidpoint(parent, child)
+    mid = nodes.get_translation_midpoint(parent, child)
     pm.move(jnt, mid, ws=True, pcp=True)
 
 
@@ -149,7 +149,7 @@ def freezeJoints(joint, rotate=True, scale=True):
         joint (pm.PyNode): A Transform node
     """
     joints = [joint]
-    joints.extend(nodes.getDescendantsTopToBottom(joint))
+    joints.extend(nodes.get_descendants_top_to_bottom(joint))
 
     if rotate:
         # freeze rotates

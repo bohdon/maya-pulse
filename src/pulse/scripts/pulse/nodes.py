@@ -31,14 +31,13 @@ class ConnectMatrixMethod(IntEnum):
 # Node Retrieval
 # --------------
 
-def getAllParents(node, includeNode=False):
+def get_all_parents(node, include_node=False):
     """
     Return all parents of a node
 
     Args:
-        node: A node to find parents for
-        includeNode: A bool, whether to include the
-            given node in the result
+        node: A node to find parents for.
+        include_node: A bool, whether to include the given node in the result.
 
     Returns:
         A list of nodes
@@ -50,13 +49,13 @@ def getAllParents(node, includeNode=False):
     parent = node.getParent()
     if parent is not None:
         parents.append(parent)
-        parents.extend(getAllParents(parent))
-    if includeNode:
+        parents.extend(get_all_parents(parent))
+    if include_node:
         parents.insert(0, node)
     return parents
 
 
-def getParentNodes(nodes):
+def get_parent_nodes(nodes):
     """
     Returns the top-most parent nodes of all nodes
     in a list.
@@ -67,13 +66,13 @@ def getParentNodes(nodes):
     # TODO: optimize using long names and string matching
     result = []
     for n in nodes:
-        if any([p in nodes for p in getAllParents(n)]):
+        if any([p in nodes for p in get_all_parents(n)]):
             continue
         result.append(n)
     return result
 
 
-def getNodeBranch(root, end):
+def get_node_branch(root, end):
     """
     Return all nodes in a transform hierarchy branch starting
     from root and descending to end.
@@ -86,42 +85,41 @@ def getNodeBranch(root, end):
     """
     if not end.isChildOf(root):
         return
-    nodes = getAllParents(end)
+    nodes = get_all_parents(end)
     nodes.reverse()
     nodes.append(end)
     index = nodes.index(root)
     return nodes[index:]
 
 
-def duplicateBranch(root, end, parent=None, nameFmt='{0}'):
+def duplicate_branch(root, end, parent=None, name_fmt='{0}'):
     """
     Duplicate a node branch from root to end (inclusive).
 
     Args:
-        root (PyNode): The root node of the branch
-        end (PyNode): The end node of the branch
-        parent (PyNode): The parent parent node of the new node branch
-        nameFmt (str): The naming format to use for the new nodes.
+        root (PyNode): The root node of the branch.
+        end (PyNode): The end node of the branch.
+        parent (PyNode): The parent node of the new node branch.
+        name_fmt (str): The naming format to use for the new nodes.
             Will be formatted with the name of the original nodes.
     """
     result = []
-    allNodes = getNodeBranch(root, end)
-    if allNodes is None:
-        raise ValueError(
-            'Invalid root and end nodes: {0} {1}'.format(root, end))
-    nextParent = parent
-    for node in allNodes:
+    all_nodes = get_node_branch(root, end)
+    if all_nodes is None:
+        raise ValueError(f'Invalid root and end nodes: {root} {end}')
+    next_parent = parent
+    for node in all_nodes:
         # duplicate only this node
-        newNode = pm.duplicate(node, parentOnly=True)[0]
-        newNode.rename(nameFmt.format(node.nodeName()))
-        newNode.setParent(nextParent)
+        new_node = pm.duplicate(node, parentOnly=True)[0]
+        new_node.rename(name_fmt.format(node.nodeName()))
+        new_node.setParent(next_parent)
         # use this node as parent for the next
-        nextParent = newNode
-        result.append(newNode)
+        next_parent = new_node
+        result.append(new_node)
     return result
 
 
-def getAssemblies(nodes):
+def get_assemblies(nodes):
     """
     Return any top-level nodes (assemblies) that
     contain a list of nodes
@@ -138,7 +136,7 @@ def getAssemblies(nodes):
 # Transform Parenting
 # -------------------
 
-def getDescendantsTopToBottom(node, **kwargs):
+def get_descendants_top_to_bottom(node, **kwargs):
     """
     Return a list of all the descendants of a node,
     in hierarchical order, from top to bottom.
@@ -150,18 +148,18 @@ def getDescendantsTopToBottom(node, **kwargs):
     return reversed(node.listRelatives(ad=True, **kwargs))
 
 
-def getTransformHierarchy(transform, includeParent=True):
+def get_transform_hierarchy(transform, include_parent=True):
     """
     Return a list of (parent, [children]) tuples for a transform
     and all of its descendants.
 
     Args:
-        transform: A Transform node
-        includeParent: A bool, when True, the relationship between
-            the transform and its parent is included
+        transform: A Transform node.
+        include_parent: A bool, when True, the relationship between
+            the transform and its parent is included.
     """
     result = []
-    if includeParent:
+    if include_parent:
         result.append((transform.getParent(), [transform]))
 
     descendants = transform.listRelatives(ad=True, type='transform')
@@ -174,19 +172,19 @@ def getTransformHierarchy(transform, includeParent=True):
     return result
 
 
-def setTransformHierarchy(hierarchy):
+def set_transform_hierarchy(hierarchy):
     """
-    Reparent one or more transform nodes.
+    Re-parent one or more transform nodes.
 
     Args:
         hierarchy: A list of (parent, [children]) tuples
     """
 
     for (parent, children) in hierarchy:
-        setParent(children, parent)
+        set_parent(children, parent)
 
 
-def setParent(children, parent):
+def set_parent(children, parent):
     """
     Parent one or more nodes to a new parent node.
     Resolves situations where a node is currently a
@@ -212,16 +210,16 @@ def setParent(children, parent):
         if conflicts:
             # move the parent node so that it
             # becomes a sibling of a top-most child node
-            tops = getParentNodes(conflicts)
+            tops = get_parent_nodes(conflicts)
             pm.parent(parent, tops[0].getParent())
     args = children[:] + [parent]
     pm.parent(*args)
 
 
-def parentInOrder(nodes):
+def parent_in_order(nodes):
     """
     Parent the given nodes to each other in order.
-    Leaders then folowers, eg. [A, B, C] -> A|B|C
+    Leaders then followers, eg. [A, B, C] -> A|B|C
 
     Args:
         nodes: A list of nodes to parent to each other in order
@@ -233,30 +231,30 @@ def parentInOrder(nodes):
     # going to be a child in the new hierarchy, this prevents
     # nodes from being improperly pushed out of the hierarchy
     # when setParent resolves child->parent issues
-    safeParent = nodes[0].getParent()
-    while safeParent in nodes:
-        safeParent = safeParent.getParent()
-        if safeParent is None:
+    safe_parent = nodes[0].getParent()
+    while safe_parent in nodes:
+        safe_parent = safe_parent.getParent()
+        if safe_parent is None:
             # None should never be in the given list of nodes,
             # but this is a failsafe to prevent infinite loop if it is
             break
-    setParent(nodes, safeParent)
+    set_parent(nodes, safe_parent)
     # parent all nodes in order
     for i in range(len(nodes) - 1):
         parent, child = nodes[i:i + 2]
-        setParent(child, parent)
+        set_parent(child, parent)
 
 
 # Node Creation
 # -------------
 
-def createOffsetTransform(node, name='{0}_offset'):
+def create_offset_transform(node, name='{0}_offset'):
     """
     Create a transform that is inserted as the new parent of a node,
     at the same world location as the node. This effectively transfers
     the local matrix of a node into the new transform, zeroing out
     the attributes of the node (usually for animation). This includes
-    absorbing the rotate axis of the node.
+    absorbing the rotate-axis of the node.
 
     Args:
         node (PyNode): A node to create an offset for
@@ -301,7 +299,7 @@ def createOffsetTransform(node, name='{0}_offset'):
 # Attribute Retrieval
 # -------------------
 
-def getExpandedAttrNames(attrs):
+def get_expanded_attr_names(attrs):
     """
     Given a list of compound attribute names, return a
     list of all leaf attributes that they represent.
@@ -326,33 +324,32 @@ def getExpandedAttrNames(attrs):
     return _attrs
 
 
-def safeGetAttr(node, attrName):
+def safe_get_attr(node, attr_name):
     """
     Return an attribute from a node by name.
     Returns None if the attribute does not exist.
 
     Args:
-        node (PyNode): The node with the attribute
-        attrName (str): The attribute name
+        node (PyNode): The node with the attribute.
+        attr_name (str): The attribute name.
     """
-    if node.hasAttr(attrName):
-        return node.attr(attrName)
+    if node.hasAttr(attr_name):
+        return node.attr(attr_name)
 
 
-def getCompoundAttrIndex(childAttr):
+def get_compound_attr_index(child_attr):
     """
     Return the index of the given compound child attribute.
 
     Args:
-        childAttr (Attribute): An attribute that is the child of a compount attr
+        child_attr (Attribute): An attribute that is the child of a compound attr.
     """
-    if not childAttr.isChild():
-        raise ValueError("Attribute is not a child of a "
-                         "compound attribute: {0}".format(childAttr))
-    return childAttr.getParent().getChildren().index(childAttr)
+    if not child_attr.isChild():
+        raise ValueError(f"Attribute is not a child of a compound attribute: {child_attr}")
+    return child_attr.getParent().getChildren().index(child_attr)
 
 
-def getAttrDimension(attr):
+def get_attr_dimension(attr):
     """
     Return the dimension of an Attribute
 
@@ -365,25 +362,25 @@ def getAttrDimension(attr):
         return 1
 
 
-def getAttrOrValueDimension(attrOrValue):
+def get_attr_or_value_dimension(attr_or_value):
     """
     Return the dimension of an attribute or
     attribute value (such as a list or tuple)
 
     Args:
-        attrOrValue: An Attribute or value that can be set on an attribute
+        attr_or_value: An Attribute or value that can be set on an attribute
     """
-    if isinstance(attrOrValue, pm.Attribute):
-        return getAttrDimension(attrOrValue)
-    elif isinstance(attrOrValue, pm.dt.Matrix):
+    if isinstance(attr_or_value, pm.Attribute):
+        return get_attr_dimension(attr_or_value)
+    elif isinstance(attr_or_value, pm.dt.Matrix):
         # matrices need to be treated as single dimension, since
         # matrix attributes are singular
         return 1
     else:
         # support duck-typed lists
-        if not isinstance(attrOrValue, str):
+        if not isinstance(attr_or_value, str):
             try:
-                return len(attrOrValue)
+                return len(attr_or_value)
             except:
                 pass
     return 1
@@ -392,7 +389,7 @@ def getAttrOrValueDimension(attrOrValue):
 # Constraints
 # -----------
 
-def setConstraintLocked(constraint, locked):
+def set_constraint_locked(constraint, locked):
     """
     Lock all important attributes on a constraint node
 
@@ -414,28 +411,28 @@ def setConstraintLocked(constraint, locked):
         constraint.attr(a).setLocked(locked)
 
 
-def convertScaleConstraintToWorldSpace(scaleConstraint):
+def convert_scale_constraint_to_world_space(scale_constraint):
     """
     Modify a scale constraint to make it operate better with
     misaligned axes between the leader and follower by plugging
     the worldMatrix of the leader node into the scale constraint.
 
     Args:
-        scaleConstraint: A ScaleConstraint node
+        scale_constraint: A ScaleConstraint node
     """
-    for i in range(scaleConstraint.target.numElements()):
-        inputs = scaleConstraint.target[i].targetParentMatrix.inputs(p=True)
+    for i in range(scale_constraint.target.numElements()):
+        inputs = scale_constraint.target[i].targetParentMatrix.inputs(p=True)
         for input in inputs:
             if input.longName().startswith('parentMatrix'):
                 # disconnect and replace with world matrix
-                input // scaleConstraint.target[i].targetParentMatrix
-                input.node().wm >> scaleConstraint.target[i].targetParentMatrix
+                input // scale_constraint.target[i].targetParentMatrix
+                input.node().wm >> scale_constraint.target[i].targetParentMatrix
                 # also disconnect target scale
-                scaleConstraint.target[i].targetScale.disconnect()
+                scale_constraint.target[i].targetScale.disconnect()
                 break
 
 
-def fullConstraint(leader, follower):
+def full_constraint(leader, follower):
     """
     Fully constrain a follower node to a leader node.
     Does this by creating a parent and scale constraint.
@@ -456,8 +453,8 @@ def fullConstraint(leader, follower):
     return pc, sc
 
 
-def connectMatrix(matrix: pm.Attribute, node: pm.nt.Transform,
-                  method: ConnectMatrixMethod = ConnectMatrixMethod.KEEP_WORLD, keepJointHierarchy=True):
+def connect_matrix(matrix: pm.Attribute, node: pm.nt.Transform,
+                   method: ConnectMatrixMethod = ConnectMatrixMethod.KEEP_WORLD, keep_joint_hierarchy=True):
     """
     Connect a world matrix to a node, optionally preserving or changing transform
     attributes to adjust accordingly (see `ConnectMatrixMethod`).
@@ -471,7 +468,7 @@ def connectMatrix(matrix: pm.Attribute, node: pm.nt.Transform,
         matrix: A matrix attribute
         node: A transform node
         method: The method to use for adjusting the node's transform after connecting
-        keepJointHierarchy: When true, joints are handled specially, and instead of connecting to the
+        keep_joint_hierarchy: When true, joints are handled specially, and instead of connecting to the
             offsetParentMatrix and disabling inheritsTransform, a joint matrix constrain is used.
             This is necessary if joint animation baking and export will be used.
     """
@@ -481,11 +478,11 @@ def connectMatrix(matrix: pm.Attribute, node: pm.nt.Transform,
 
     if method == ConnectMatrixMethod.CONNECT_ONLY:
         # make the connection
-        _makeMatrixConnection(matrix, node, keepJointHierarchy)
+        _make_matrix_connection(matrix, node, keep_joint_hierarchy)
 
     elif method == ConnectMatrixMethod.SNAP:
         # make the connection
-        _makeMatrixConnection(matrix, node, keepJointHierarchy)
+        _make_matrix_connection(matrix, node, keep_joint_hierarchy)
         # TODO: also zero out rotate axis?
         # TODO: unlock/re-lock ra and jo when doing this
         # zero out joint orients
@@ -495,9 +492,9 @@ def connectMatrix(matrix: pm.Attribute, node: pm.nt.Transform,
         cmds.xform(node.longName(), matrix=IDENTITY_MATRIX_FLAT, worldSpace=False)
 
     elif method == ConnectMatrixMethod.KEEP_WORLD:
-        if keepJointHierarchy and node.nodeType() == 'joint':
+        if keep_joint_hierarchy and node.nodeType() == 'joint':
             raise ValueError(
-                "ConnectMatrixMethod.KEEP_WORLD is not supported with joints and keepJointHierarchy=True, "
+                "ConnectMatrixMethod.KEEP_WORLD is not supported with joints and keep_joint_hierarchy=True, "
                 "use CREATE_OFFSET instead")
 
         # remember the node's world matrix
@@ -506,7 +503,7 @@ def connectMatrix(matrix: pm.Attribute, node: pm.nt.Transform,
         matrix >> node.offsetParentMatrix
         node.inheritsTransform.set(False)
         # restore the world matrix
-        setWorldMatrix(node, world_mtx)
+        set_world_matrix(node, world_mtx)
 
     elif method == ConnectMatrixMethod.CREATE_OFFSET:
         # calculate and store offset using a multMatrix node
@@ -515,29 +512,29 @@ def connectMatrix(matrix: pm.Attribute, node: pm.nt.Transform,
         mult_mtx.matrixIn[0].set(offset_mtx)
         matrix >> mult_mtx.matrixIn[1]
         # make the connection
-        _makeMatrixConnection(mult_mtx.matrixSum, node, keepJointHierarchy)
+        _make_matrix_connection(mult_mtx.matrixSum, node, keep_joint_hierarchy)
 
 
-def _makeMatrixConnection(matrix: pm.Attribute, node: pm.nt.Transform, keepJointHierarchy=True):
+def _make_matrix_connection(matrix: pm.Attribute, node: pm.nt.Transform, keep_joint_hierarchy=True):
     """
     Perform the actual matrix connection of a node, either connecting offsetParentMatrix or decomposing
-    if the node is a joint and `keepJointHierarchy` is True. See `connectMatrix`
+    if the node is a joint and `keep_joint_hierarchy` is True. See `connect_matrix`
     """
-    if keepJointHierarchy and node.nodeType() == 'joint':
-        decomposeAndConnectMatrix(matrix, node, inheritsTransform=True)
+    if keep_joint_hierarchy and node.nodeType() == 'joint':
+        decompose_and_connect_matrix(matrix, node, inherits_transform=True)
     else:
         matrix >> node.offsetParentMatrix
         node.inheritsTransform.set(False)
 
 
-def decomposeAndConnectMatrix(matrix: pm.Attribute, node: pm.nt.Transform, inheritsTransform: bool = False):
+def decompose_and_connect_matrix(matrix: pm.Attribute, node: pm.nt.Transform, inherits_transform: bool = False):
     """
     Decompose a matrix and connect it to the translate, rotate, scale, and shear of a transform node.
 
     Args:
         matrix: A world space matrix attribute
         node: A transform node
-        inheritsTransform: If true, add a `multMatrix` node to compute the local matrix before decomposing,
+        inherits_transform: If true, add a `multMatrix` node to compute the local matrix before decomposing,
             If false, disable inheritsTransform on the node and connect the world space matrix directly.
 
     Returns:
@@ -545,7 +542,7 @@ def decomposeAndConnectMatrix(matrix: pm.Attribute, node: pm.nt.Transform, inher
     """
     from pulse import utilnodes
 
-    if inheritsTransform:
+    if inherits_transform:
         # get local space matrix, and ensure inheritsTransform is enabled
         mtx = utilnodes.mult_matrix(matrix, node.pim)
         mtx.node().rename(f"{node.nodeName()}_worldToLocal_multMatrix")
@@ -578,54 +575,51 @@ def decomposeAndConnectMatrix(matrix: pm.Attribute, node: pm.nt.Transform, inher
     return decomp
 
 
-def disconnectOffsetMatrix(follower, preservePosition=True,
-                           preserveTransformValues=True, keepInheritTransform=False):
+def disconnect_offset_matrix(follower, preserve_position=True, preserve_transform_values=True,
+                             keep_inherit_transform=False):
     """
-    Disconnect any inputs to the offsetParentMatrix of a node,
-    and re-enable inheritsTransform.
-    (Maya 2020 and higher)
+    Disconnect any inputs to the offsetParentMatrix of a node, and re-enable inheritsTransform.
 
     Args:
         follower (PyNode): A node with input connections to offsetParentMatrix
-        preservePosition (bool): If true, preserve the followers world space position
-        preserveTransformValues (bool): If true, preservePosition will not affect the
+        preserve_position (bool): If true, preserve the followers world space position
+        preserve_transform_values (bool): If true, preserve_position will not affect the
             current translate, rotate, and scale values of the follower by absorbing
             any offset into the follower's offsetParentMatrix.
-        keepInheritTransform (bool): If true, inheritsTransform will not be changed
+        keep_inherit_transform (bool): If true, inheritsTransform will not be changed
     """
-    if not preservePosition:
+    if not preserve_position:
         follower.opm.disconnect()
-        if not keepInheritTransform:
+        if not keep_inherit_transform:
             follower.inheritsTransform.set(True)
     else:
         # remember world matrix
-        wm = getWorldMatrix(follower)
+        wm = get_world_matrix(follower)
 
         # enable inherit transform so that its as if previously
         # replaced parent matrix contributors are restored
-        if not keepInheritTransform:
+        if not keep_inherit_transform:
             follower.inheritsTransform.set(True)
 
         follower.opm.disconnect()
 
-        if preserveTransformValues:
-            # m needs to stay the same, opm will be set to the delta
-            # between the new parent matrix (parent node's world matrix,
-            # without this nodes opm) and the old follower world matrix.
-            pmWithoutOpm = follower.opm.get().inverse() * follower.pm.get()
-            deltaToOldOM = follower.im.get() * wm * pmWithoutOpm.inverse()
-            follower.opm.set(deltaToOldOM)
+        if preserve_transform_values:
+            # m needs to stay the same, opm will be set to the delta between the new parent matrix
+            # (parent node's world matrix, without this node's opm) and the old follower world matrix.
+            pm_without_opm = follower.opm.get().inverse() * follower.pm.get()
+            delta_to_old_om = follower.im.get() * wm * pm_without_opm.inverse()
+            follower.opm.set(delta_to_old_om)
         else:
             # zero out opm and restore world matrix
             follower.opm.set(pm.dt.Matrix())
-            setWorldMatrix(follower, wm)
+            set_world_matrix(follower, wm)
 
 
 # Transform Modification
 # ----------------------
 
 
-def freezeScalesForHierarchy(node):
+def freeze_scales_for_hierarchy(node: pm.nt.DagNode):
     """
     Freeze scales on a transform and all its descendants without affecting pivots.
     Does this by parenting all children to the world, freezing, then restoring the hierarchy.
@@ -633,16 +627,16 @@ def freezeScalesForHierarchy(node):
     Args:
         node (pm.PyNode): A Transform node
     """
-    hierarchy = getTransformHierarchy(node)
+    hierarchy = get_transform_hierarchy(node)
     children = node.listRelatives(ad=True, type='transform')
     for c in children:
         c.setParent(None)
     for n in [node] + children:
         pm.makeIdentity(n, t=False, r=False, s=True, n=False, apply=True)
-    setTransformHierarchy(hierarchy)
+    set_transform_hierarchy(hierarchy)
 
 
-def freezePivot(transform):
+def freeze_pivot(transform):
     """
     Freeze the given transform such that its local pivot becomes zero,
     but its world space pivot remains unchanged.
@@ -651,117 +645,110 @@ def freezePivot(transform):
         transform: A Transform node
     """
     pivot = pm.dt.Vector(pm.xform(transform, q=True, rp=True, worldSpace=True))
-    # asking for worldspace translate gives different result than world space matrix
+    # asking for world space translate gives different result than world space matrix
     # translate. we want the former in this situation because we will be setting
     # with the same world space translate method
-    translate = pm.dt.Vector(
-        pm.xform(transform, q=True, t=True, worldSpace=True))
-    parentTranslate = pm.dt.Vector()
+    translate = pm.dt.Vector(pm.xform(transform, q=True, t=True, worldSpace=True))
+    parent_translate = pm.dt.Vector()
     parent = transform.getParent()
     if parent:
         # we want the world space matrix translate of the parent
-        # because thats the real location that zeroed out child transforms would exist.
+        # because that's the real location that zeroed out child transforms would exist.
         # note that the world space translate (not retrieving matrix) can be a different value
-        parentTranslate = pm.dt.Matrix(
-            pm.xform(parent, q=True, m=True, worldSpace=True)).translate
+        parent_translate = pm.dt.Matrix(pm.xform(parent, q=True, m=True, worldSpace=True)).translate
     # move current pivot to the parents world space location
-    pm.xform(transform, t=(translate - pivot + parentTranslate), ws=True)
+    pm.xform(transform, t=(translate - pivot + parent_translate), ws=True)
     # now that the transform is at the same world space position as its parent, freeze it
     pm.makeIdentity(transform, t=True, apply=True)
     # restore world pivot position with translation
     pm.xform(transform, t=pivot, ws=True)
 
 
-def freezePivotsForHierarchy(transform):
+def freeze_pivots_for_hierarchy(transform):
     """
     Freeze pivots on a transform and all its descendants.
 
     Args:
         transform: A Transform node
     """
-    hierarchy = getTransformHierarchy(transform)
+    hierarchy = get_transform_hierarchy(transform)
     children = transform.listRelatives(ad=True, type='transform')
     for c in children:
         c.setParent(None)
     for n in [transform] + children:
-        freezePivot(n)
-    setTransformHierarchy(hierarchy)
+        freeze_pivot(n)
+    set_transform_hierarchy(hierarchy)
 
 
-def freezeOffsetMatrix(transform):
+def freeze_offset_matrix(transform):
     """
-    Freeze the translate, rotate, and scale of a transform
-    by moving its current local matrix values into its
-    offsetParentMatrix. This operation is idempotent.
-    (Maya 2020 and higher)
+    Freeze the translate, rotate, and scale of a transform by moving its
+    current local matrix values into its offsetParentMatrix. This operation is idempotent.
     """
     if not transform.offsetParentMatrix.isSettable():
         LOG.warning(
             'Cannot freeze %s offset matrix, offsetParentMatrix is not settable', transform)
         return
-    localMtx = transform.m.get()
-    offsetMtx = transform.offsetParentMatrix.get()
-    newOffsetMtx = localMtx * offsetMtx
-    transform.offsetParentMatrix.set(newOffsetMtx)
+    local_mtx = transform.m.get()
+    offset_mtx = transform.offsetParentMatrix.get()
+    new_offset_mtx = local_mtx * offset_mtx
+    transform.offsetParentMatrix.set(new_offset_mtx)
     transform.setMatrix(pm.dt.Matrix())
 
 
-def freezeOffsetMatrixForHierarchy(transform):
+def freeze_offset_matrix_for_hierarchy(transform):
     children = transform.listRelatives(ad=True, type='transform')
     for node in [transform] + children:
-        freezeOffsetMatrix(node)
+        freeze_offset_matrix(node)
 
 
-def unfreezeOffsetMatrix(transform):
+def unfreeze_offset_matrix(transform):
     """
-    Unfreeze the translate, rotate, and scale of a transform
-    by moving its current offset parent matrix values into its
-    translate, rotate, and scale. This operation is idempotent.
-    (Maya 2020 and higher)
+    Unfreeze the translate, rotate, and scale of a transform by moving its current
+    offset parent matrix values into its translate, rotate, and scale. This operation is idempotent.
     """
     if not transform.offsetParentMatrix.isSettable():
         LOG.warning(
             'Cannot unfreeze %s offset matrix, offsetParentMatrix is not settable', transform)
         return
-    localMtx = transform.m.get()
-    offsetMtx = transform.offsetParentMatrix.get()
-    newLocalMtx = localMtx * offsetMtx
-    transform.setMatrix(newLocalMtx)
+    local_mtx = transform.m.get()
+    offset_mtx = transform.offsetParentMatrix.get()
+    new_local_mtx = local_mtx * offset_mtx
+    transform.setMatrix(new_local_mtx)
     transform.offsetParentMatrix.set(pm.dt.Matrix())
 
 
-def unfreezeOffsetMatrixForHierarchy(transform):
+def unfreeze_offset_matrix_for_hierarchy(transform):
     children = transform.listRelatives(ad=True, type='transform')
     for node in [transform] + children:
-        unfreezeOffsetMatrix(node)
+        unfreeze_offset_matrix(node)
 
 
-def getEulerRotationFromMatrix(matrix):
+def get_euler_rotation_from_matrix(matrix):
     """
     Return the euler rotation in degrees of a matrix
     """
     if not isinstance(matrix, pm.dt.TransformationMatrix):
         matrix = pm.dt.TransformationMatrix(matrix)
-    rEuler = matrix.getRotation()
-    rEuler.setDisplayUnit('degrees')
-    return rEuler
+    r_euler = matrix.getRotation()
+    r_euler.setDisplayUnit('degrees')
+    return r_euler
 
 
-def getWorldMatrix(node, negateRotateAxis=True):
+def get_world_matrix(node, negate_rotate_axis=True):
     if not isinstance(node, pm.PyNode):
         node = pm.PyNode(node)
     if isinstance(node, pm.nt.Transform):
         wm = pm.dt.TransformationMatrix(node.wm.get())
-        if negateRotateAxis:
-            r = pm.dt.EulerRotation(cmds.xform(
-                node.longName(), q=True, ws=True, ro=True))
+        if negate_rotate_axis:
+            r = pm.dt.EulerRotation(cmds.xform(node.longName(), q=True, ws=True, ro=True))
             wm.setRotation(r, node.getRotationOrder())
         return wm
     else:
         return pm.dt.TransformationMatrix()
 
 
-def setWorldMatrix(node, matrix, translate=True, rotate=True, scale=True):
+def set_world_matrix(node, matrix, translate=True, rotate=True, scale=True):
     """
     Set the world matrix of a node.
     """
@@ -783,14 +770,14 @@ def setWorldMatrix(node, matrix, translate=True, rotate=True, scale=True):
                 matrix.reorderRotation(rotate_order)
             # note that this method does not handle matching the global rotation with non-zero rotate axis,
             # if that is needed, set the full matrix instead
-            rotation = getEulerRotationFromMatrix(matrix)
+            rotation = get_euler_rotation_from_matrix(matrix)
             cmds.xform(node.longName(), rotation=rotation, worldSpace=True)
         if scale:
-            localScaleMatrix = matrix * node.pim.get()
-            cmds.xform(node.longName(), scale=localScaleMatrix.getScale('world'))
+            local_scale_matrix = matrix * node.pim.get()
+            cmds.xform(node.longName(), scale=local_scale_matrix.getScale('world'))
 
 
-def matchWorldMatrix(leader: pm.nt.Transform, *followers: pm.nt.Transform):
+def match_world_matrix(leader: pm.nt.Transform, *followers: pm.nt.Transform):
     """
     Set the world matrix of one or more nodes to match a leader's world matrix.
 
@@ -800,34 +787,34 @@ def matchWorldMatrix(leader: pm.nt.Transform, *followers: pm.nt.Transform):
     """
     world_mtx = leader.wm.get()
     for follower in followers:
-        setWorldMatrix(follower, world_mtx)
+        set_world_matrix(follower, world_mtx)
 
 
-def getRelativeMatrix(node, baseNode):
+def get_relative_matrix(node, base_node):
     """
     Return the matrix of a node relative to a base node.
 
     Args:
         node (PyNode): The node to retrieve the matrix from
-        baseNode (PyNode): The node to which the matrix will be relative
+        base_node (PyNode): The node to which the matrix will be relative
     """
-    return node.wm.get() * baseNode.wm.get().inverse()
+    return node.wm.get() * base_node.wm.get().inverse()
 
 
-def setRelativeMatrix(node, matrix, baseNode):
+def set_relative_matrix(node, matrix, base_node):
     """
     Set the world matrix of a node, given a matrix that
     is relative to a different base node.
 
     Args:
         node (PyNode): The node to modify
-        matrix (Matrix): A matrix relative to baseNode
-        baseNode (PyNode): The node that the matrix is relative to
+        matrix (Matrix): A matrix relative to the base node.
+        base_node (PyNode): The node that the matrix is relative to.
     """
-    setWorldMatrix(node, matrix * baseNode.wm.get())
+    set_world_matrix(node, matrix * base_node.wm.get())
 
 
-def getTranslationMidpoint(a, b):
+def get_translation_midpoint(a, b):
     """
     Return a vector representing the middle point between the
     world translation of two nodes.
@@ -841,7 +828,7 @@ def getTranslationMidpoint(a, b):
     return (ta + tb) * 0.5
 
 
-def getScaleMatrix(matrix):
+def get_scale_matrix(matrix):
     """
     Return a matrix representing only the scale of a TransformationMatrix
     """
@@ -849,14 +836,14 @@ def getScaleMatrix(matrix):
     return pm.dt.Matrix((s[0], 0, 0), (0, s[1], 0), (0, 0, s[2]))
 
 
-def getRotationMatrix(matrix):
+def get_rotation_matrix(matrix):
     """
     Return a matrix representing only the rotation of a TransformationMatrix
     """
     return pm.dt.TransformationMatrix(matrix).euler.asMatrix()
 
 
-def normalizeEulerRotations(node):
+def normalize_euler_rotations(node):
     """
     Modify the rotation of a transform node such that its euler
     rotations are in the range of 0..360
@@ -872,7 +859,7 @@ def normalizeEulerRotations(node):
 # ----------
 
 
-def getAxis(value):
+def get_axis(value):
     """
     Returns a pm.dt.Vector.Axis for the given value
 
@@ -890,7 +877,7 @@ def getAxis(value):
                 return getattr(pm.dt.Vector.Axis, k)
 
 
-def getAxisVector(axis, sign=1):
+def get_axis_vector(axis, sign=1):
     """
     Return a vector for a signed axis
     """
@@ -900,20 +887,22 @@ def getAxisVector(axis, sign=1):
     return tuple(v)
 
 
-def getOtherAxes(value, includeW=False):
+def get_other_axes(value, include_w=False):
     """
     Return a list of all other axes other than the given axis.
 
     Args:
-        includeW: A bool, when True, include the W axis
+        value: Any value representing an axis, accepts 0, 1, 2, 3, x, y, z, w
+            as well as pm.dt.Vector.Axis objects.
+        include_w: If True, include the W axis.
     """
-    axis = getAxis(value)
+    axis = get_axis(value)
     if axis is not None:
-        skip = [axis.index] + ([] if includeW else [3])
+        skip = [axis.index] + ([] if include_w else [3])
         return [a for a in pm.dt.Vector.Axis.values() if a.index not in skip]
 
 
-def getClosestAlignedAxis(matrix, axis=0):
+def get_closest_aligned_axis(matrix, axis=0):
     """
     Given a matrix, find and return the signed axis
     that is most aligned with a specific axis.
@@ -924,17 +913,17 @@ def getClosestAlignedAxis(matrix, axis=0):
 
     Returns (axis, sign)
     """
-    bestVal = None
-    bestAxis = None
+    best_val = None
+    best_axis = None
     for a in range(3):
         val = matrix[a][axis]
-        if bestVal is None or abs(val) > abs(bestVal):
-            bestVal = val
-            bestAxis = a
-    return getAxis(bestAxis), 1 if bestVal >= 0 else -1
+        if best_val is None or abs(val) > abs(best_val):
+            best_val = val
+            best_axis = a
+    return get_axis(best_axis), 1 if best_val >= 0 else -1
 
 
-def getClosestAlignedAxes(matrix):
+def get_closest_aligned_axes(matrix):
     """
     Given a matrix, find and return signed axes closest to
     the x, y, and z world axes.
@@ -944,28 +933,28 @@ def getClosestAlignedAxes(matrix):
 
     Returns ((axisX, signX), (axisY, signY), (axisZ, signZ))
     """
-    x, signX = getClosestAlignedAxis(matrix, 0)
-    y, signY = getClosestAlignedAxis(matrix, 1)
-    z, signZ = getClosestAlignedAxis(matrix, 2)
-    return (x, signX), (y, signY), (z, signZ)
+    x, sign_x = get_closest_aligned_axis(matrix, 0)
+    y, sign_y = get_closest_aligned_axis(matrix, 1)
+    z, sign_z = get_closest_aligned_axis(matrix, 2)
+    return (x, sign_x), (y, sign_y), (z, sign_z)
 
 
-def getClosestAlignedRelativeAxis(nodeA, nodeB, axis=0):
+def get_closest_aligned_relative_axis(node_a, node_b, axis=0):
     """
     Return the signed axis of node A that is most aligned with an axis of node B.
 
     Returns (axis, sign)
     """
-    return getClosestAlignedAxis(nodeA.wm.get() * nodeB.wim.get(), axis)
+    return get_closest_aligned_axis(node_a.wm.get() * node_b.wim.get(), axis)
 
 
-def areNodesAligned(nodeA, nodeB):
+def are_nodes_aligned(node_a, node_b):
     """
     Return True if two nodes are roughly aligned, meaning
     their axes point mostly in the same directions.
     """
-    signedAxes = getClosestAlignedAxes(nodeA.wm.get() * nodeB.wim.get())
-    for i, (axis, sign) in enumerate(signedAxes):
+    signed_axes = get_closest_aligned_axes(node_a.wm.get() * node_b.wim.get())
+    for i, (axis, sign) in enumerate(signed_axes):
         if i != axis or sign != 1:
             return False
     return True
@@ -974,7 +963,7 @@ def areNodesAligned(nodeA, nodeB):
 # Node Coloring
 # -------------
 
-def getOverrideColor(node) -> LinearColor:
+def get_override_color(node) -> LinearColor:
     """
     Return the override color of a node.
 
@@ -991,27 +980,27 @@ def getOverrideColor(node) -> LinearColor:
             return LinearColor.from_seq(shape.overrideColorRGB.get())
 
 
-def setOverrideColor(node, color, skipEnableOverrides=False):
+def set_override_color(node, color, skip_enable_overrides=False):
     """
     Set the override color of a node
 
     Args:
         node (PyNode): A transform node
         color (tuple of float): An RGB color, 0..1
-        skipEnableOverrides (bool): If True, skip enabling the overrides,
+        skip_enable_overrides (bool): If True, skip enabling the overrides,
             just set the color. Faster if overrides are already enabled.
     """
     shapes = node.getChildren(s=True)
 
     for shape in shapes:
-        if not skipEnableOverrides:
+        if not skip_enable_overrides:
             shape.overrideEnabled.set(True)
             shape.overrideRGBColors.set(True)
 
         shape.overrideColorRGB.set(color)
 
 
-def disableColorOverride(node):
+def disable_color_override(node):
     """
     Disable drawing overrides for a node and all its shapes.
 

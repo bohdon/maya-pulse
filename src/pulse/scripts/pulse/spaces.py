@@ -267,7 +267,7 @@ def _connect_space_constraint(node, space_nodes_by_name):
 
         if use_offset_matrix:
             mult_matrix = data['multMatrix']
-            nodes.connectMatrix(mult_matrix.matrixSum, follower, nodes.ConnectMatrixMethod.CONNECT_ONLY)
+            nodes.connect_matrix(mult_matrix.matrixSum, follower, nodes.ConnectMatrixMethod.CONNECT_ONLY)
         else:
             # TODO: support joint matrix constraints that don't disable inheritsTransform,
             #       or just remove this path altogether

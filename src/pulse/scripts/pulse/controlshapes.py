@@ -200,7 +200,7 @@ def createControl(shapeData, name=None, targetNode=None,
     if targetNode:
         # match target node transform settings
         ctl.setAttr('rotateOrder', targetNode.getAttr('rotateOrder'))
-        nodes.matchWorldMatrix(targetNode, ctl)
+        nodes.match_world_matrix(targetNode, ctl)
         if link:
             links.createDefaultLink(ctl, targetNode)
     # group to main ctls group
@@ -277,11 +277,11 @@ def replaceShapes(node, shapeData):
         raise TypeError(
             'Expected a Transform node, got {0}'.format(type(node).__name__))
 
-    color = nodes.getOverrideColor(node)
+    color = nodes.get_override_color(node)
     removeShapes(node)
     addShapes(node, shapeData)
     if color:
-        nodes.setOverrideColor(node, color)
+        nodes.set_override_color(node, color)
 
 
 def getShapeData(node):

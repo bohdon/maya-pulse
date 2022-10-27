@@ -2,7 +2,7 @@ import os
 
 import maya.api.OpenMaya as om
 
-from pulse.serializer import serializeAttrValue, deserializeAttrValue
+from pulse.serializer import serialize_attr_value, deserialize_attr_value
 from pulse.ui.core import BlueprintUIModel
 
 # the list of all cmd classes in this plugin
@@ -106,7 +106,7 @@ class PulseCreateStepCmd(PulseCmdBase):
     def redoIt(self):
         blueprintModel = getBlueprintModel()
         if blueprintModel:
-            stepData = deserializeAttrValue(self.stepStrData)
+            stepData = deserialize_attr_value(self.stepStrData)
             newStep = blueprintModel.createStep(self.stepPath, self.stepChildIndex, stepData)
             if not newStep:
                 raise RuntimeError("Failed to create BuildStep")
@@ -159,7 +159,7 @@ class PulseDeleteStepCmd(PulseCmdBase):
             if not step:
                 raise RuntimeError(
                     "BuildStep not found: {0}".format(self.stepPath))
-            self.deletedStrData = serializeAttrValue(step.serialize())
+            self.deletedStrData = serialize_attr_value(step.serialize())
             self.deletedChildIndex = step.index_in_parent()
             if not blueprintModel.deleteStep(self.stepPath):
                 raise RuntimeError("Failed to delete BuildStep")
@@ -167,7 +167,7 @@ class PulseDeleteStepCmd(PulseCmdBase):
     def undoIt(self):
         blueprintModel = getBlueprintModel()
         if blueprintModel and self.deletedStrData:
-            deletedData = deserializeAttrValue(self.deletedStrData)
+            deletedData = deserialize_attr_value(self.deletedStrData)
             parentPath = os.path.dirname(self.stepPath)
             blueprintModel.createStep(
                 parentPath, self.deletedChildIndex, deletedData)
@@ -322,12 +322,12 @@ class PulseSetActionAttrCmd(PulseCmdBase):
         blueprintModel = getBlueprintModel()
         if blueprintModel:
             # store old value as str
-            self.oldStrValue = serializeAttrValue(
+            self.oldStrValue = serialize_attr_value(
                 blueprintModel.getActionAttr(
                     self.attrPath, self.variantIndex))
 
             # deserialize str value into objects
-            value = deserializeAttrValue(self.newStrValue)
+            value = deserialize_attr_value(self.newStrValue)
             blueprintModel.setActionAttr(
                 self.attrPath, value, self.variantIndex)
 
@@ -335,7 +335,7 @@ class PulseSetActionAttrCmd(PulseCmdBase):
         blueprintModel = getBlueprintModel()
         if blueprintModel:
             # deserialize str value into objects
-            value = deserializeAttrValue(self.oldStrValue)
+            value = deserialize_attr_value(self.oldStrValue)
             blueprintModel.setActionAttr(
                 self.attrPath, value, self.variantIndex)
 
@@ -385,7 +385,7 @@ class PulseSetIsVariantAttrCmd(PulseCmdBase):
 
             # snapshot the whole action proxy, since it may change
             # significantly when modifying variant attrs
-            self.oldStrData = serializeAttrValue(
+            self.oldStrData = serialize_attr_value(
                 blueprintModel.getActionData(
                     self.stepPath))
             blueprintModel.setIsActionAttrVariant(
@@ -394,7 +394,7 @@ class PulseSetIsVariantAttrCmd(PulseCmdBase):
     def undoIt(self):
         blueprintModel = getBlueprintModel()
         if blueprintModel:
-            oldData = deserializeAttrValue(self.oldStrData)
+            oldData = deserialize_attr_value(self.oldStrData)
             blueprintModel.setActionData(
                 self.stepPath, oldData)
 

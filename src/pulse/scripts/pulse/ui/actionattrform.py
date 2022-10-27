@@ -10,7 +10,7 @@ import pymel.core as pm
 
 from ..buildItems import BuildStep, BuildActionProxy, BuildActionAttribute
 from ..vendor import pymetanode as meta
-from ..serializer import serializeAttrValue
+from ..serializer import serialize_attr_value
 from ..vendor.Qt import QtCore, QtGui, QtWidgets
 from .. import names
 from . import utils
@@ -140,7 +140,7 @@ class ActionAttrForm(QtWidgets.QFrame):
         if not attrPath:
             return
 
-        strValue = serializeAttrValue(newValue)
+        strValue = serialize_attr_value(newValue)
         cmds.pulseSetActionAttr(attrPath, strValue, v=self.variantIndex)
         # refresh form to the new value in case it was cleaned up or processed
         self._setFormValue(self.attr.get_value())
@@ -405,7 +405,7 @@ class BatchAttrForm(QtWidgets.QFrame):
             return
 
         for i, value in enumerate(values):
-            strValue = serializeAttrValue(value)
+            strValue = serialize_attr_value(value)
             cmds.pulseSetActionAttr(attrPath, strValue, v=i)
 
 

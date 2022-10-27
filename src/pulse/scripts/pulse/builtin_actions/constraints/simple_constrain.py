@@ -41,7 +41,7 @@ class SimpleConstrainAction(BuildAction):
 
         _follower = self.follower
         if should_create_offset:
-            _follower = pulse.nodes.createOffsetTransform(self.follower)
+            _follower = pulse.nodes.create_offset_transform(self.follower)
 
         # parent constrain (translate and rotate)
         pc = pm.parentConstraint(self.leader, _follower, mo=True)
@@ -51,8 +51,8 @@ class SimpleConstrainAction(BuildAction):
         # scale constrain
         sc = pm.scaleConstraint(self.leader, _follower, mo=True)
         if self.worldSpaceScaling:
-            pulse.nodes.convertScaleConstraintToWorldSpace(sc)
+            pulse.nodes.convert_scale_constraint_to_world_space(sc)
 
         # lockup the constraints
-        pulse.nodes.setConstraintLocked(pc, True)
-        pulse.nodes.setConstraintLocked(sc, True)
+        pulse.nodes.set_constraint_locked(pc, True)
+        pulse.nodes.set_constraint_locked(sc, True)

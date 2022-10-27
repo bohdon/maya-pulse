@@ -81,7 +81,7 @@ class TwistJointsAction(BuildAction):
         # blend aligned matrix with default parent matrix
         blend_mtx = utilnodes.blend_matrix(parent_mtx, aligned_pm, twist_blend)
 
-        nodes.connectMatrix(blend_mtx, self.twistJoint, nodes.ConnectMatrixMethod.CREATE_OFFSET)
+        nodes.connect_matrix(blend_mtx, self.twistJoint, nodes.ConnectMatrixMethod.CREATE_OFFSET)
 
     def _get_parent_matrix(self, node):
         """

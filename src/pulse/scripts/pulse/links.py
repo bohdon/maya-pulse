@@ -235,7 +235,7 @@ class LinkPositioner(object):
         """
         Calculate the target matrix to use for applying a linked position to the follower node.
         """
-        return nodes.getWorldMatrix(targetNodes[0])
+        return nodes.get_world_matrix(targetNodes[0])
 
     def setFollowerMatrixWithOffset(self, follower, targetMtx, linkData):
         """
@@ -244,7 +244,7 @@ class LinkPositioner(object):
         """
         offsetMtx = self.getOffsetMatrix(linkData)
         newMtx = offsetMtx * targetMtx
-        nodes.setWorldMatrix(follower, newMtx)
+        nodes.set_world_matrix(follower, newMtx)
 
     def getTargetNode(self, linkData):
         """
@@ -269,7 +269,7 @@ class DefaultLinkPositioner(LinkPositioner):
         """
         Calculate the target matrix to use for a linked node.
         """
-        return nodes.getWorldMatrix(targetNodes[0])
+        return nodes.get_world_matrix(targetNodes[0])
 
 
 POSITIONER_CLASS_MAP[DefaultLinkPositioner.linkType] = DefaultLinkPositioner

@@ -199,7 +199,7 @@ def is_centered(node, axis=0):
     """
     Return True if the node is centered on a specific world axis.
     """
-    axis = nodes.getAxis(axis)
+    axis = nodes.get_axis(axis)
     abs_axis_val = abs(node.getTranslation(space='world')[axis.index])
     return abs_axis_val < MIRROR_THRESHOLD
 
@@ -269,10 +269,10 @@ def get_best_mirror_mode(node_a, node_b):
     Simple performs a loose check to see if the nodes are
     aligned, and if not, returns the Simple mirroring mode.
     """
-    awm = nodes.getWorldMatrix(node_a)
-    bwm = nodes.getWorldMatrix(node_b)
-    a_axes = nodes.getClosestAlignedAxes(awm)
-    b_axes = nodes.getClosestAlignedAxes(bwm)
+    awm = nodes.get_world_matrix(node_a)
+    bwm = nodes.get_world_matrix(node_b)
+    a_axes = nodes.get_closest_aligned_axes(awm)
+    b_axes = nodes.get_closest_aligned_axes(bwm)
     if a_axes == b_axes:
         return MirrorMode.Aligned
     return MirrorMode.Simple
@@ -699,7 +699,7 @@ class MirrorColors(BlueprintMirrorOperation):
         return self._replacements
 
     def mirror_node(self, source_node, dest_node, is_new_node):
-        source_color = nodes.getOverrideColor(source_node)
+        source_color = nodes.get_override_color(source_node)
         if source_color:
             # get name of source color
             source_name = editorutils.getColorName(source_color)
@@ -709,7 +709,7 @@ class MirrorColors(BlueprintMirrorOperation):
                 # get color of mirrored name
                 dest_color = editorutils.getNamedColor(dest_name)
                 if dest_color:
-                    nodes.setOverrideColor(dest_node, tuple(dest_color))
+                    nodes.set_override_color(dest_node, tuple(dest_color))
 
 
 class MirrorLinks(BlueprintMirrorOperation):
@@ -826,7 +826,7 @@ class MirrorUtil(object):
         result = []
 
         if self.isRecursive:
-            source_nodes = nodes.getParentNodes(source_nodes)
+            source_nodes = nodes.get_parent_nodes(source_nodes)
 
         # expand to children
         for sourceNode in source_nodes:
@@ -835,7 +835,7 @@ class MirrorUtil(object):
                     result.append(sourceNode)
 
             if self.isRecursive:
-                children = nodes.getDescendantsTopToBottom(
+                children = nodes.get_descendants_top_to_bottom(
                     sourceNode, type=['transform', 'joint'])
 
                 for child in children:
@@ -1055,7 +1055,7 @@ def get_mirrored_matrices(node, axis=0, axisMatrix=None, translate=True, rotate=
     else:
         result['type'] = 'node'
         result['matrices'] = [get_mirrored_transform_matrix(
-            nodes.getWorldMatrix(node), **kwargs)]
+            nodes.get_world_matrix(node), **kwargs)]
     return result
 
 
@@ -1069,7 +1069,7 @@ def set_mirrored_matrices(node, mirroredMatrices, translate=True, rotate=True, s
         joints.setJointMatrices(node, *mirroredMatrices['matrices'], translate=translate, rotate=rotate)
     else:
         LOG.debug("Applying Transform Matrix")
-        nodes.setWorldMatrix(node, *mirroredMatrices['matrices'], translate=translate, rotate=rotate, scale=scale)
+        nodes.set_world_matrix(node, *mirroredMatrices['matrices'], translate=translate, rotate=rotate, scale=scale)
 
 
 def get_mirrored_transform_matrix(matrix, axis=0, axisMatrix=None, translate=True, rotate=True,
@@ -1085,14 +1085,14 @@ def get_mirrored_transform_matrix(matrix, axis=0, axisMatrix=None, translate=Tru
         mirrorMode: what type of mirroring should be performed,
             default is MirrorMode.Simple
     """
-    axis = nodes.getAxis(axis)
+    axis = nodes.get_axis(axis)
     if axisMatrix is not None:
         # remove scale from the axisMatrix
-        axisMatrix = nodes.getScaleMatrix(
+        axisMatrix = nodes.get_scale_matrix(
             axisMatrix).inverse() * axisMatrix
         matrix = matrix * axisMatrix.inverse()
-    s = nodes.getScaleMatrix(matrix)
-    r = nodes.getRotationMatrix(matrix)
+    s = nodes.get_scale_matrix(matrix)
+    r = nodes.get_rotation_matrix(matrix)
     t = matrix[3]
     if translate:
         # negate translate vector
@@ -1131,7 +1131,7 @@ def get_mirrored_joint_matrices(matrix, r, ra, jo, axis=0, axisMatrix=None,
     if rotate:
         if axisMatrix is not None:
             # matches orientation with jo
-            inv_scale_mtx = nodes.getScaleMatrix(axisMatrix).inverse()
+            inv_scale_mtx = nodes.get_scale_matrix(axisMatrix).inverse()
             axisMatrix = inv_scale_mtx * axisMatrix
             jo = jo * axisMatrix.inverse()
         # flips orientation
@@ -1151,8 +1151,8 @@ def invert_other_axes(matrix, axis=0):
     Invert the other axes of the given rotation
     matrix based on rows of the matrix.
     """
-    axis = nodes.getAxis(axis)
-    others = nodes.getOtherAxes(axis)
+    axis = nodes.get_axis(axis)
+    others = nodes.get_other_axes(axis)
     x, y, z = matrix[:3]
     for v in (x, y, z):
         for a in others:
@@ -1166,8 +1166,8 @@ def counter_rotate_for_non_mirrored(matrix, axis=0):
     this is used to create mirroring when ctls
     are set up to not be mirrored at rest pose.
     """
-    axis = nodes.getAxis(axis)
-    others = [o.index for o in nodes.getOtherAxes(axis)]
+    axis = nodes.get_axis(axis)
+    others = [o.index for o in nodes.get_other_axes(axis)]
     x, y, z = matrix[:3]
     for i, row in enumerate((x, y, z)):
         if i in others:

@@ -49,7 +49,7 @@ class BuildCoreHierarchyAction(BuildAction):
             all_nodes = self.get_unorganized_nodes()
 
         if all_nodes:
-            tops = nodes.getParentNodes(all_nodes)
+            tops = nodes.get_parent_nodes(all_nodes)
             if len(tops) > 0:
                 pm.parent(tops, grp_node)
 

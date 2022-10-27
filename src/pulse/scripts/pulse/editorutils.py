@@ -139,42 +139,42 @@ def createOffsetForSelected():
     """
     Create an offset group for the selected nodes
     """
-    pm.select([nodes.createOffsetTransform(s)
+    pm.select([nodes.create_offset_transform(s)
                for s in pm.selected(type='transform')])
 
 
 def freezeScalesForSelectedHierarchies(skipJoints=True):
     """
     Freeze scales on the selected transforms and all their descendants.
-    See `freezeScalesForHierarchy` for more details.
+    See `freeze_scales_for_hierarchy` for more details.
 
     Args:
         skipJoints (bool): If true, don't attempt to freeze joint hierarchies. Does not prevent
             freezing joints if they are a child of one of the selected transforms.
     """
     with preservedSelection() as sel:
-        topNodes = nodes.getParentNodes(sel[:])
+        topNodes = nodes.get_parent_nodes(sel[:])
         for topNode in topNodes:
             if not skipJoints or topNode.nodeType() != 'joint':
-                nodes.freezeScalesForHierarchy(topNode)
+                nodes.freeze_scales_for_hierarchy(topNode)
 
 
 def freezePivotsForSelectedHierarchies():
     with preservedSelection() as sel:
         for s in sel:
-            nodes.freezePivotsForHierarchy(s)
+            nodes.freeze_pivots_for_hierarchy(s)
 
 
 def freezeOffsetMatricesForSelectedHierarchies():
     with preservedSelection() as sel:
         for s in sel:
-            nodes.freezeOffsetMatrixForHierarchy(s)
+            nodes.freeze_offset_matrix_for_hierarchy(s)
 
 
 def unfreezeOffsetMatricesForSelectedHierarchies():
     with preservedSelection() as sel:
         for s in sel:
-            nodes.unfreezeOffsetMatrixForHierarchy(s)
+            nodes.unfreeze_offset_matrix_for_hierarchy(s)
 
 
 def freezeJointsForSelectedHierarchies():
@@ -182,7 +182,7 @@ def freezeJointsForSelectedHierarchies():
     Freeze rotates and scales on the selected joint hierarchies.
     """
     with preservedSelection() as sel:
-        topNodes = nodes.getParentNodes(sel[:])
+        topNodes = nodes.get_parent_nodes(sel[:])
         for topNode in topNodes:
             if topNode.nodeType() == 'joint':
                 joints.freezeJoints(topNode)
@@ -198,7 +198,7 @@ def parentSelected():
     if len(sel) < 2:
         pm.warning('More that one node must be selected')
         return
-    nodes.setParent(sel[1:], sel[0])
+    nodes.set_parent(sel[1:], sel[0])
     pm.select(sel)
 
 
@@ -208,7 +208,7 @@ def parentSelectedInOrder():
     Select from top of hierarchy downward, eg. [A, B, C] -> A|B|C
     """
     with preservedSelection() as sel:
-        nodes.parentInOrder(sel[:])
+        nodes.parent_in_order(sel[:])
 
 
 def rotateSelectedComponentsAroundAxis(axis, degrees=90):
@@ -338,7 +338,7 @@ def rotateOrientOrTransform(
         pm.rotate(node, rotation, os=True, r=True, pcp=preserveChildren)
 
         # normalize eulers to 0..360, assumed as part of orienting
-        nodes.normalizeEulerRotations(node)
+        nodes.normalize_euler_rotations(node)
 
         if preserveShapes:
             nodeShapes = node.getShapes()
@@ -702,12 +702,12 @@ def setOverrideColorForSelected(color):
     Set the display override color for the selected nodes
     """
     for node in pm.selected():
-        nodes.setOverrideColor(node, color)
+        nodes.set_override_color(node, color)
 
 
 def disableColorOverrideForSelected():
     for node in pm.selected():
-        nodes.disableColorOverride(node)
+        nodes.disable_color_override(node)
 
 
 def openBlueprintConfigInSourceEditor():

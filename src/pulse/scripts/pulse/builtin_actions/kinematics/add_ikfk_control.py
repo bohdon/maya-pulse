@@ -51,4 +51,4 @@ class AddIKFKControlAction(BuildAction):
         mtx_choice.node().rename(f"{self.follower.nodeName()}_ikfk_choice")
 
         # don't preserve position here, because offsets have already been calculated above
-        nodes.connectMatrix(mtx_choice, self.follower, nodes.ConnectMatrixMethod.SNAP)
+        nodes.connect_matrix(mtx_choice, self.follower, nodes.ConnectMatrixMethod.SNAP)

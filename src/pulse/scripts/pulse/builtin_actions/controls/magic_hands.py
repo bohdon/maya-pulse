@@ -46,7 +46,7 @@ class MagicHandsAction(BuildAction):
             metacarpal_rz = utilnodes.multiply(sy_zeroed, splay_factor * self.splayScale * 0.5)
 
             # create and connect offset
-            offset1 = nodes.createOffsetTransform(self.ctl1, name=self._offsetName)
+            offset1 = nodes.create_offset_transform(self.ctl1, name=self._offsetName)
             metacarpal_rz >> offset1.rz
 
         # TODO(bsayre): Expose scalar for rotation-splay?
@@ -62,7 +62,7 @@ class MagicHandsAction(BuildAction):
         fingers_rz = utilnodes.multiply(sy_zeroed, splay_factor * self.splayScale)
 
         for i, ctl in enumerate(finger_ctls):
-            offset = nodes.createOffsetTransform(ctl, name=self._offsetName)
+            offset = nodes.create_offset_transform(ctl, name=self._offsetName)
             if i == 0:
                 # create and connect offsets
                 base_fingers_ry >> offset.ry

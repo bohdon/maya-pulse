@@ -11,7 +11,7 @@ LOG = logging.getLogger(__name__)
 RIG_METACLASS = 'pulse_rig'
 
 
-def isRig(node):
+def is_rig(node):
     """
     Return whether a node represents a pulse rig
 
@@ -21,14 +21,14 @@ def isRig(node):
     return meta.hasMetaClass(node, RIG_METACLASS)
 
 
-def getAllRigs():
+def get_all_rigs():
     """
     Return a list of all rigs in the scene
     """
     return meta.findMetaNodes(RIG_METACLASS)
 
 
-def getAllRigsByName(names):
+def get_all_rigs_by_name(names):
     """
     Return a list of all rigs in the scene that
     have a specific rig name
@@ -36,7 +36,7 @@ def getAllRigsByName(names):
     Args:
         names: A list of string rig names
     """
-    rigs = getAllRigs()
+    rigs = get_all_rigs()
     matches = []
     for r in rigs:
         data = meta.getMetaData(r, RIG_METACLASS)
@@ -45,31 +45,31 @@ def getAllRigsByName(names):
     return matches
 
 
-def getRigFromNode(node):
+def get_rig_from_node(node):
     """
     Return the rig that owns this node, if any
 
     Args:
         node: A PyNode rig or node that is part of a rig
     """
-    if isRig(node):
+    if is_rig(node):
         return node
     else:
         parent = node.getParent()
         if parent:
-            return getRigFromNode(parent)
+            return get_rig_from_node(parent)
 
 
-def getSelectedRigs():
+def get_selected_rigs():
     """
     Return the selected rigs
     """
-    rigs = list(set([getRigFromNode(s) for s in pm.selected()]))
+    rigs = list(set([get_rig_from_node(s) for s in pm.selected()]))
     rigs = [r for r in rigs if r is not None]
     return rigs
 
 
-def createRigNode(name: str) -> pm.nt.Transform:
+def create_rig_node(name: str) -> pm.nt.Transform:
     """
     Create and return a new Rig node
 
@@ -87,7 +87,7 @@ def createRigNode(name: str) -> pm.nt.Transform:
     return node
 
 
-def openRigBlueprint(rig):
+def open_rig_blueprint(rig):
     """
     Open the Blueprint source file that was used
     to build a rig.
@@ -96,50 +96,50 @@ def openRigBlueprint(rig):
         rig: A rig node
     """
 
-    rigdata = meta.getMetaData(rig, RIG_METACLASS)
-    blueprintFile = rigdata.get('blueprintFile')
-    if not blueprintFile:
+    rig_data = meta.getMetaData(rig, RIG_METACLASS)
+    blueprint_file = rig_data.get('blueprintFile')
+    if not blueprint_file:
         LOG.warning('No blueprintFile set on the rig')
         return
 
-    LOG.info('Opening blueprint: ' + blueprintFile)
+    LOG.info('Opening blueprint: ' + blueprint_file)
     save_cameras()
-    pm.openFile(blueprintFile, f=True)
+    pm.openFile(blueprint_file, f=True)
     restore_cameras()
 
 
-def openFirstRigBlueprint():
-    rigs = getAllRigs()
+def open_first_rig_blueprint():
+    rigs = get_all_rigs()
     if not rigs:
         LOG.warning('No rig in the scene')
         return
-    openRigBlueprint(rigs[0])
+    open_rig_blueprint(rigs[0])
 
 
 class Rig(object):
     """
-    A wrapper for rig transform nodes that allows easy access to rig meta data.
+    A wrapper for rig transform nodes that allows easy access to rig metadata.
     """
 
     def __init__(self, node):
-        if not isRig(node):
+        if not is_rig(node):
             raise ValueError("%s is not a valid pulse rig node" % node)
         self.node = node
         self._metaData = None
 
     @property
-    def metaData(self):
+    def meta_data(self):
         if self._metaData is None:
             self._metaData = meta.getMetaData(self.node, RIG_METACLASS)
         return self._metaData if self._metaData else {}
 
-    def getMetaDataValue(self, key, default=None):
-        metaData = self.metaData
-        return metaData.get(key, default)
+    def get_meta_data_value(self, key, default=None):
+        meta_data = self.meta_data
+        return meta_data.get(key, default)
 
-    def getCoreHierarchyNode(self, name):
+    def get_core_hierarchy_node(self, name):
         """
-        Return a core hierarchy transform node in the rig by name
+        Return a core hierarchy transform node in the rig by name.
 
         Args:
             name (str): The name of the core hierarchy node as defined in the Build Core Hierarchy action
@@ -149,32 +149,32 @@ class Rig(object):
             if child.nodeName() == name:
                 return child
 
-    def getCoreHierarchyNodes(self):
+    def get_core_hierarchy_nodes(self):
         """
         Return all core hierarchy transform nodes in the rig.
         """
         return self.node.getChildren(type='transform')
 
-    def getAnimControls(self):
+    def get_anim_controls(self):
         """
-        Return all animation controls in the rig
+        Return all animation controls in the rig.
         """
-        return self.getMetaDataValue('animControls', [])
+        return self.get_meta_data_value('animControls', [])
 
-    def getRenderGeo(self):
+    def get_render_geo(self):
         """
-        Return all geometry that has been added to the rigs 'renderGeo' meta data
+        Return all geometry that has been added to the rigs 'renderGeo' metadata.
         """
-        return self.getMetaDataValue('renderGeo', [])
+        return self.get_meta_data_value('renderGeo', [])
 
-    def getBakeNodes(self):
+    def get_bake_nodes(self):
         """
-        Return all nodes that have been added to the 'bakeNodes' meta data
+        Return all nodes that have been added to the 'bakeNodes' metadata.
         """
-        return self.getMetaDataValue('bakeNodes', [])
+        return self.get_meta_data_value('bakeNodes', [])
 
-    def getSpaces(self):
+    def get_spaces(self):
         """
-        Return a dict of all spaces and corresponding space nodes
+        Return a dict of all spaces and corresponding space nodes.
         """
-        return self.getMetaDataValue('spaces', {})
+        return self.get_meta_data_value('spaces', {})

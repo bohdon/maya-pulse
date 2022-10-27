@@ -59,9 +59,9 @@ def import_all_references(load_unloaded=True, depth_limit=10, remove_namespace=F
     bad = get_bad_references()
     if len(bad):
         try:
-            badlist = [str(b) for b in bad]
+            bad_list = [str(b) for b in bad]
             pm.delete(bad)
-            LOG.debug('Deleted bad references: {0}'.format(badlist))
+            LOG.debug('Deleted bad references: {0}'.format(bad_list))
         except Exception as e:
             LOG.error('Could not delete bad references: {0}'.format(bad))
 

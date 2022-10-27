@@ -6,7 +6,7 @@ import maya.cmds as cmds
 import pymel.core as pm
 
 from .vendor import pymetanode as meta
-from .rigs import isRig
+from .rigs import is_rig
 
 LOG = logging.getLogger(__name__)
 
@@ -170,7 +170,7 @@ class RigLifecycleEvents(MayaCallbackEvents):
         """
         node = meta.getMObject(fullName)
         if node:
-            if isRig(node):
+            if is_rig(node):
                 LOG.debug("onRigCreated('{0}')".format(node))
                 self.onRigCreated(pm.PyNode(node))
 
@@ -179,7 +179,7 @@ class RigLifecycleEvents(MayaCallbackEvents):
         Args:
             node: A MObject node that is being removed
         """
-        if isRig(node):
+        if is_rig(node):
             LOG.debug("onRigDeleted('{0}')".format(node))
             self.onRigDeleted(pm.PyNode(node))
 

@@ -62,7 +62,7 @@ class SpaceConstrainAction(BuildAction):
         follower = None
         if not self.useOffsetMatrix:
             # create an offset transform to be constrained
-            follower = nodes.createOffsetTransform(self.node, '{0}_spaceConstraint')
+            follower = nodes.create_offset_transform(self.node, '{0}_spaceConstraint')
         # set up the constraint, which will be finalized during the ApplySpaces action
         spaces.setup_space_constraint(self.node, self.spaces, follower=follower, use_offset_matrix=self.useOffsetMatrix)
 
@@ -120,7 +120,7 @@ class SpaceSwitchUtils(object):
         # change space
         ctl.attr('space').set(index)
         # restore world matrix
-        nodes.setWorldMatrix(ctl, wm)
+        nodes.set_world_matrix(ctl, wm)
 
         return True
 

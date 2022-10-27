@@ -47,14 +47,14 @@ class AnimControlAction(BuildAction):
 
         if self.zeroOutMethod == 1:
             # freeze offset matrix
-            nodes.freezeOffsetMatrix(self.controlNode)
+            nodes.freeze_offset_matrix(self.controlNode)
         elif self.zeroOutMethod == 2:
             # create an offset transform
-            nodes.createOffsetTransform(self.controlNode)
+            nodes.create_offset_transform(self.controlNode)
 
         # lockup attributes
-        keyable_attrs = nodes.getExpandedAttrNames(self.keyableAttrs)
-        locked_attrs = nodes.getExpandedAttrNames(['t', 'r', 'rp', 's', 'sp', 'ra', 'sh', 'v'])
+        keyable_attrs = nodes.get_expanded_attr_names(self.keyableAttrs)
+        locked_attrs = nodes.get_expanded_attr_names(['t', 'r', 'rp', 's', 'sp', 'ra', 'sh', 'v'])
         locked_attrs = list(set(locked_attrs) - set(keyable_attrs))
 
         for attrName in keyable_attrs:

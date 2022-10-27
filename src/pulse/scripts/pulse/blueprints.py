@@ -12,7 +12,7 @@ from .vendor import pymetanode as meta
 from .vendor import yaml
 from . import version
 from .buildItems import BuildStep, BuildAction, BuildActionData
-from .rigs import RIG_METACLASS, createRigNode
+from .rigs import RIG_METACLASS, create_rig_node
 from .serializer import PulseDumper, PulseLoader, UnsortableOrderedDict
 
 LOG = logging.getLogger(__name__)
@@ -746,7 +746,7 @@ class BlueprintBuilder(object):
         """
         node_name_format = self.blueprint.get_setting(BlueprintSettings.RIG_NODE_NAME_FORMAT)
         rig_node_name = node_name_format.format(**self.blueprint.settings)
-        self.rig = createRigNode(rig_node_name)
+        self.rig = create_rig_node(rig_node_name)
 
         # add some additional meta data
         meta.updateMetaData(self.rig, RIG_METACLASS, dict(

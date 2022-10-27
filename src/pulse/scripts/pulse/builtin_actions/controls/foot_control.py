@@ -96,17 +96,17 @@ class FootControlAction(BuildAction):
 
         # control > heel > outerTilt > innerTilt > toe > ball
         offset_connect_method = nodes.ConnectMatrixMethod.CREATE_OFFSET
-        nodes.connectMatrix(self.control.wm, self.heelPivot, offset_connect_method)
-        nodes.connectMatrix(self.heelPivot.wm, self.outerTiltPivot, offset_connect_method)
-        nodes.connectMatrix(self.outerTiltPivot.wm, self.innerTiltPivot, offset_connect_method)
-        nodes.connectMatrix(self.innerTiltPivot.wm, self.toePivot, offset_connect_method)
-        nodes.connectMatrix(self.toePivot.wm, self.ballPivot, offset_connect_method)
+        nodes.connect_matrix(self.control.wm, self.heelPivot, offset_connect_method)
+        nodes.connect_matrix(self.heelPivot.wm, self.outerTiltPivot, offset_connect_method)
+        nodes.connect_matrix(self.outerTiltPivot.wm, self.innerTiltPivot, offset_connect_method)
+        nodes.connect_matrix(self.innerTiltPivot.wm, self.toePivot, offset_connect_method)
+        nodes.connect_matrix(self.toePivot.wm, self.ballPivot, offset_connect_method)
 
         # ballPivot > ankleFollower
-        nodes.connectMatrix(self.ballPivot.wm, self.ankleFollower, offset_connect_method)
+        nodes.connect_matrix(self.ballPivot.wm, self.ankleFollower, offset_connect_method)
 
         # toePivot > toeFollower
-        nodes.connectMatrix(self.toePivot.wm, self.toeFollower, offset_connect_method)
+        nodes.connect_matrix(self.toePivot.wm, self.toeFollower, offset_connect_method)
 
         # calculate custom foot attrs
         # ---------------------------
@@ -220,7 +220,7 @@ class FootControlUtils(object):
         # move foot control to current ankle position
         ankle_mtx = ankle_follower.wm.get()
         ankle_mtx.scale = (1, 1, 1)
-        nodes.setWorldMatrix(foot_ctl, ankle_mtx)
+        nodes.set_world_matrix(foot_ctl, ankle_mtx)
 
         # clear foot control values to ensure no extra transformations are in effect
         foot_ctl.attr('roll').set(0)
@@ -230,7 +230,7 @@ class FootControlUtils(object):
 
         if ball_ctl and toe_follower:
             # update ball ctl rotation to match last known rotation
-            nodes.setWorldMatrix(ball_ctl, toe_mtx, translate=False, rotate=True, scale=False)
+            nodes.set_world_matrix(ball_ctl, toe_mtx, translate=False, rotate=True, scale=False)
 
 
 class FootControlContextSubMenu(PulseNodeContextSubMenu):

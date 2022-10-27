@@ -90,18 +90,18 @@ class CopyPasteMatrixWidget(QtWidgets.QWidget):
             LOG.warning('nothing selected')
             return
 
-        baseNode = self.clipboard.get('baseNode', None)
+        base_node = self.clipboard.get('baseNode', None)
 
         if len(sel) > self.numCopied():
             # use first object in selection as the new base node
-            baseNode = sel[0]
+            base_node = sel[0]
             sel = sel[1:]
 
-        if not baseNode:
+        if not base_node:
             LOG.warning("No base node could be found for relative paste")
             return
 
-        self.pasteOverTime(sel, baseNode)
+        self.pasteOverTime(sel, base_node)
 
     def numCopied(self):
         """
@@ -121,14 +121,14 @@ class CopyPasteMatrixWidget(QtWidgets.QWidget):
         self.clipboard = {}
         if baseNode is not None:
             self.clipboard['baseNode'] = baseNode
-            self.clipboard['matrices'] = [nodes.getRelativeMatrix(
+            self.clipboard['matrices'] = [nodes.get_relative_matrix(
                 n, baseNode) for n in transforms]
             LOG.debug('copied relative to {0}'.format(baseNode))
         else:
             self.clipboard['matrices'] = [
-                nodes.getWorldMatrix(n) for n in transforms]
+                nodes.get_world_matrix(n) for n in transforms]
 
-    def pasteOverTime(self, transforms, baseNode=None):
+    def pasteOverTime(self, transforms, base_node=None):
         """
         Paste the copied matrices onto the given nodes,
         If a time range is selected, pastes the matrices on every frame.
@@ -140,10 +140,10 @@ class CopyPasteMatrixWidget(QtWidgets.QWidget):
             pass
             # for f in timeRange.times:
             #     pm.currentTime(f)
-            #     self.paste(sel, relative=relative, baseNode=relObj)
+            #     self.paste(sel, relative=relative, base_node=relObj)
             #     pm.setKeyframe(sel, at=['t', 'r', 's'])
         else:
-            self.paste(transforms, baseNode=baseNode)
+            self.paste(transforms, baseNode=base_node)
 
     def paste(self, transforms, baseNode=None):
         """
@@ -177,11 +177,11 @@ class CopyPasteMatrixWidget(QtWidgets.QWidget):
                                 "relative to itself: {0}".format(node))
                     continue
                 LOG.debug("pasting relative to {0}".format(baseNode))
-                nodes.setRelativeMatrix(node, matrix, baseNode)
+                nodes.set_relative_matrix(node, matrix, baseNode)
         else:
             # normal paste
             for matrix, node in zip(matrices, transforms):
-                nodes.setWorldMatrix(node, matrix)
+                nodes.set_world_matrix(node, matrix)
 
 
 class CopyPasteMatrixWindow(PulseWindow):

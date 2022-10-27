@@ -18,7 +18,7 @@ from .. import loader, rigs, editorutils
 from ..blueprints import Blueprint, BlueprintFile, BlueprintSettings, BlueprintBuilder, BlueprintValidator
 from ..buildItems import BuildStep, BuildAction
 from ..prefs import option_var_property
-from ..serializer import serializeAttrValue
+from ..serializer import serialize_attr_value
 from .utils import CollapsibleFrame
 from .utils import dpiScale
 
@@ -693,7 +693,7 @@ class BlueprintUIModel(QtCore.QObject):
 
     def refreshRigExists(self):
         oldReadOnly = self.isReadOnly()
-        self.doesRigExist = len(rigs.getAllRigs()) > 0
+        self.doesRigExist = len(rigs.get_all_rigs()) > 0
         self.rigExistsChanged.emit()
 
         if oldReadOnly != self.isReadOnly():
@@ -1207,7 +1207,7 @@ class BlueprintUIModel(QtCore.QObject):
         """
         # TODO: don't need this stub, just listen for pre-close maya scene callback to clear interactive build
         self.cancel_interactive_build()
-        rigs.openFirstRigBlueprint()
+        rigs.open_first_rig_blueprint()
 
 
 class BuildStepTreeModel(QtCore.QAbstractItemModel):
@@ -1507,7 +1507,7 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
 
         count = len(step_data)
         for i in range(count):
-            step_data_str = serializeAttrValue(step_data[i])
+            step_data_str = serialize_attr_value(step_data[i])
             newStepPath = cmds.pulseCreateStep(parentPath, beginRow + i, step_data_str)
             if newStepPath:
                 newStepPath = newStepPath[0]

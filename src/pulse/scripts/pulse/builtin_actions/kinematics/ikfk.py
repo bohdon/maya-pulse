@@ -52,7 +52,7 @@ class ThreeBoneIKFKAction(BuildAction):
 
         # duplicate joints for ik chain
         ik_joint_name_fmt = '{0}_ik'
-        ik_jnts = nodes.duplicateBranch(root_joint, self.endJoint, nameFmt=ik_joint_name_fmt)
+        ik_jnts = nodes.duplicate_branch(root_joint, self.endJoint, name_fmt=ik_joint_name_fmt)
 
         for j in ik_jnts:
             # TODO: debug settings for build actions
@@ -101,9 +101,9 @@ class ThreeBoneIKFKAction(BuildAction):
         end_choice.node().rename(f"{self.endJoint.nodeName()}_ikfk_choice")
 
         # connect the target matrices to the joints
-        nodes.connectMatrix(root_choice, root_joint, nodes.ConnectMatrixMethod.SNAP)
-        nodes.connectMatrix(mid_choice, mid_joint, nodes.ConnectMatrixMethod.SNAP)
-        nodes.connectMatrix(end_choice, self.endJoint, nodes.ConnectMatrixMethod.SNAP)
+        nodes.connect_matrix(root_choice, root_joint, nodes.ConnectMatrixMethod.SNAP)
+        nodes.connect_matrix(mid_choice, mid_joint, nodes.ConnectMatrixMethod.SNAP)
+        nodes.connect_matrix(end_choice, self.endJoint, nodes.ConnectMatrixMethod.SNAP)
 
         # connect visibility
         self.midCtlIk.v.setLocked(False)
@@ -120,10 +120,10 @@ class ThreeBoneIKFKAction(BuildAction):
         # add connecting line shape
         if self.addPoleLine:
             # keep consistent color overrides for the mid ctl
-            color = nodes.getOverrideColor(self.midCtlIk)
+            color = nodes.get_override_color(self.midCtlIk)
             controlshapes.createLineShape(mid_ik_joint, self.midCtlIk, self.midCtlIk)
             if color:
-                nodes.setOverrideColor(self.midCtlIk, color)
+                nodes.set_override_color(self.midCtlIk, color)
 
         # cleanup
         handle.v.set(False)
@@ -196,9 +196,9 @@ class IKFKControlUtils(object):
 
         # TODO: add support for joint-to-ctl offsets
         # snap to joints pretty much exactly
-        nodes.setWorldMatrix(root_fk_ctl, root_mtx)
-        nodes.setWorldMatrix(mid_fk_ctl, mid_mtx)
-        nodes.setWorldMatrix(end_fk_ctl, end_mtx)
+        nodes.set_world_matrix(root_fk_ctl, root_mtx)
+        nodes.set_world_matrix(mid_fk_ctl, mid_mtx)
+        nodes.set_world_matrix(end_fk_ctl, end_mtx)
 
         root_fk_ctl.attr('ik').set(0)
 
@@ -227,7 +227,7 @@ class IKFKControlUtils(object):
         # TODO: incorporate delegate ctls into all 'move anim ctl here' functionality
         # move foot, and calculate new pole vector
         end_ik_move_ctl = IKFKControlUtils.get_delegate_control(end_ik_ctl)
-        nodes.setWorldMatrix(end_ik_move_ctl, end_mtx)
+        nodes.set_world_matrix(end_ik_move_ctl, end_mtx)
 
         # move ik pole ctl
         new_pole_pos = IKFKControlUtils.calculate_ik_pole_ctl_location(

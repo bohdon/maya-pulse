@@ -54,7 +54,7 @@ class AimConstrainAction(BuildAction):
 
         _follower = self.follower
         if should_create_offset:
-            _follower = pulse.nodes.createOffsetTransform(self.follower)
+            _follower = pulse.nodes.create_offset_transform(self.follower)
 
         # create blend
         if self.createBlend:
@@ -73,7 +73,7 @@ class AimConstrainAction(BuildAction):
             wt_add = pm.createNode('wtAddMatrix')
             aimOnNode.worldMatrix >> wt_add.wtMatrix[0].matrixIn
             aimOffNode.worldMatrix >> wt_add.wtMatrix[1].matrixIn
-            pulse.nodes.connectMatrix(wt_add.matrixSum, _follower, pulse.nodes.ConnectMatrixMethod.SNAP)
+            pulse.nodes.connect_matrix(wt_add.matrixSum, _follower, pulse.nodes.ConnectMatrixMethod.SNAP)
 
             # create blend attr and connect to matrix blend
             self.follower.addAttr("aimBlend", min=0, max=1, at='double',
@@ -95,4 +95,4 @@ class AimConstrainAction(BuildAction):
             worldUpVector=self.worldUpVector)
 
         # lockup the constraints
-        pulse.nodes.setConstraintLocked(ac, True)
+        pulse.nodes.set_constraint_locked(ac, True)

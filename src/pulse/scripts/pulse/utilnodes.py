@@ -174,13 +174,13 @@ def get_output_attr(input):
 
     elif node_type in OUTPUT_ATTR_NAMES:
         output_attr_name = OUTPUT_ATTR_NAMES[node_type]
-        output_attr = nodes.safeGetAttr(node, output_attr_name)
+        output_attr = nodes.safe_get_attr(node, output_attr_name)
 
         if output_attr and output_attr.isCompound():
             if isinstance(input, pm.Attribute) and input.isChild():
                 # input and output are both compound, return
                 # child of output at the same child index
-                index = nodes.getCompoundAttrIndex(input)
+                index = nodes.get_compound_attr_index(input)
                 return output_attr.getChildren()[index]
 
         return output_attr
@@ -217,7 +217,7 @@ def get_plus_minus_average_output_attr(input):
 
         if input.isChild():
             # return a matching child attribute
-            index = nodes.getCompoundAttrIndex(input)
+            index = nodes.get_compound_attr_index(input)
             return output_attr.getChildren()[index]
 
         return output_attr
@@ -236,7 +236,7 @@ def get_largest_dimension_attr(attrs):
     largest_dim = 0
     largest_attr = None
     for attr in attrs:
-        dim = nodes.getAttrDimension(attr)
+        dim = nodes.get_attr_dimension(attr)
         if dim > largest_dim:
             largest_dim = dim
             largest_attr = attr
@@ -299,7 +299,7 @@ def get_input_connections(input_val, dest_attr):
         its a list-like object or compound attribute.
         If the dimension of obj is 1, returns obj.
         """
-        if nodes.getAttrOrValueDimension(obj) == 1:
+        if nodes.get_attr_or_value_dimension(obj) == 1:
             return obj
         if isinstance(obj, pm.Attribute):
             return obj.getChildren()[index]
@@ -311,8 +311,8 @@ def get_input_connections(input_val, dest_attr):
         if len(input_val) == 1:
             input_val = input_val[0]
 
-    input_dim = nodes.getAttrOrValueDimension(input_val)
-    dest_attr_dim = nodes.getAttrDimension(dest_attr)
+    input_dim = nodes.get_attr_or_value_dimension(input_val)
+    dest_attr_dim = nodes.get_attr_dimension(dest_attr)
 
     # get the overlapping dimension
     dim = min(input_dim, dest_attr_dim)
@@ -377,7 +377,7 @@ def plus_minus_average(inputs, operation):
     node.operation.set(operation)
 
     if len(inputs) > 0:
-        input_dim = nodes.getAttrOrValueDimension(inputs[0])
+        input_dim = nodes.get_attr_or_value_dimension(inputs[0])
         if input_dim == 1:
             multi_attr = node.input1D
         elif input_dim == 2:

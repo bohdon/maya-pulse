@@ -9,7 +9,7 @@ from typing import Optional, Dict, List
 import maya.cmds as cmds
 
 from ..vendor.Qt import QtCore, QtWidgets, QtGui
-from ..serializer import serializeAttrValue
+from ..serializer import serialize_attr_value
 from ..buildItems import BuildStep, BuildActionRegistry, BuildActionSpec, BuildActionAttribute
 from .. import sym
 from .core import BlueprintUIModel
@@ -321,7 +321,7 @@ class MirrorActionUtil(object):
                 childIndex = sourceStep.index_in_parent() + 1
                 newStepData = sourceStep.serialize()
                 newStepData['name'] = self.getMirroredStepName(sourceStep.name)
-                dataStr = serializeAttrValue(newStepData)
+                dataStr = serialize_attr_value(newStepData)
                 cmds.pulseCreateStep(sourceStep.get_parent_path(), childIndex, dataStr)
                 return self.blueprintModel.getStep(destStepPath)
             else:
@@ -372,7 +372,7 @@ class MirrorActionUtil(object):
                 value = attr.get_value()
                 mirroredValue = self.mirrorActionValue(attr, value)
                 destAttrPath = f'{destStepPath}.{attr.name}'
-                mirroredValueStr = serializeAttrValue(mirroredValue)
+                mirroredValueStr = serialize_attr_value(mirroredValue)
                 LOG.debug('%s -> %s', value, mirroredValue)
                 cmds.pulseSetActionAttr(destAttrPath, mirroredValueStr)
 
@@ -382,7 +382,7 @@ class MirrorActionUtil(object):
                 value = attr.get_value()
                 mirroredValue = self.mirrorActionValue(attr, value)
                 destAttrPath = f'{destStepPath}.{attr.name}'
-                mirroredValueStr = serializeAttrValue(mirroredValue)
+                mirroredValueStr = serialize_attr_value(mirroredValue)
                 LOG.debug('%s -> %s', value, mirroredValue)
                 cmds.pulseSetActionAttr(destAttrPath, mirroredValueStr, v=i)
 

@@ -34,4 +34,4 @@ class MatrixConstrainAction(BuildAction):
             raise BuildActionError("follower must be set")
 
     def run(self):
-        pulse.nodes.connectMatrix(self.leader.wm, self.follower, self.method)
+        pulse.nodes.connect_matrix(self.leader.wm, self.follower, self.method)

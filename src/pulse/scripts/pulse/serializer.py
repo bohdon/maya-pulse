@@ -82,15 +82,13 @@ class DagNodeTag(yaml.YAMLObject):
             return dumper.represent_scalar(cls.yaml_tag, 'null')
 
 
-PulseLoader.add_constructor(
-    DagNodeTag.yaml_tag, DagNodeTag.from_yaml)
-PulseDumper.add_multi_representer(
-    pm.nt.DagNode, DagNodeTag.to_yaml)
+PulseLoader.add_constructor(DagNodeTag.yaml_tag, DagNodeTag.from_yaml)
+PulseDumper.add_multi_representer(pm.nt.DagNode, DagNodeTag.to_yaml)
 
 
-def serializeAttrValue(value):
+def serialize_attr_value(value):
     return meta.encodeMetaData(value)
 
 
-def deserializeAttrValue(value):
+def deserialize_attr_value(value):
     return meta.decodeMetaData(value)
