@@ -719,8 +719,8 @@ class MirrorLinks(BlueprintMirrorOperation):
 
     def mirror_node(self, source_node, dest_node, is_new_node):
         # get link meta data
-        source_link_data = links.getLinkMetaData(source_node)
-        dest_link_data = links.getLinkMetaData(dest_node)
+        source_link_data = links.get_link_meta_data(source_node)
+        dest_link_data = links.get_link_meta_data(dest_node)
 
         if source_link_data:
             # if no destination link data already exists, create
@@ -735,10 +735,10 @@ class MirrorLinks(BlueprintMirrorOperation):
                 dest_target_nodes = [get_paired_node(n) for n in source_target_nodes]
                 if dest_target_nodes:
                     dest_link_data['targetNodes'] = dest_target_nodes
-                    links.setLinkMetaData(dest_node, dest_link_data)
+                    links.set_link_meta_data(dest_node, dest_link_data)
 
             # position the dest node using the link
-            links.applyLinkPosition(dest_node)
+            links.apply_link_position(dest_node)
 
         elif dest_link_data:
             # remove link data from dest node
@@ -1050,7 +1050,7 @@ def get_mirrored_matrices(node, axis=0, axisMatrix=None, translate=True, rotate=
     result = {}
     if isinstance(node, pm.nt.Joint):
         result['type'] = 'joint'
-        jmatrices = joints.getJointMatrices(node)
+        jmatrices = joints.get_joint_matrices(node)
         result['matrices'] = get_mirrored_joint_matrices(*jmatrices, **kwargs)
     else:
         result['type'] = 'node'
@@ -1066,7 +1066,7 @@ def set_mirrored_matrices(node, mirroredMatrices, translate=True, rotate=True, s
     """
     if mirroredMatrices['type'] == 'joint':
         LOG.debug("Applying Joint Matrices")
-        joints.setJointMatrices(node, *mirroredMatrices['matrices'], translate=translate, rotate=rotate)
+        joints.set_joint_matrices(node, *mirroredMatrices['matrices'], translate=translate, rotate=rotate)
     else:
         LOG.debug("Applying Transform Matrix")
         nodes.set_world_matrix(node, *mirroredMatrices['matrices'], translate=translate, rotate=rotate, scale=scale)

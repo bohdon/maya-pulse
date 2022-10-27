@@ -113,7 +113,7 @@ def centerSelectedJoints():
     Center the selected joint
     """
     for s in pm.selected():
-        joints.centerJoint(s)
+        joints.center_joint(s)
 
 
 def disableSegmentScaleCompensateForSelected():
@@ -131,7 +131,7 @@ def insertJointForSelected(count=1):
     """
     result = []
     for s in pm.selected():
-        result.extend(joints.insertJoints(s, count))
+        result.extend(joints.insert_joints(s, count))
     pm.select(result)
 
 
@@ -185,7 +185,7 @@ def freezeJointsForSelectedHierarchies():
         topNodes = nodes.get_parent_nodes(sel[:])
         for topNode in topNodes:
             if topNode.nodeType() == 'joint':
-                joints.freezeJoints(topNode)
+                joints.freeze_joints(topNode)
 
 
 def parentSelected():
@@ -241,44 +241,33 @@ def orientToWorldForSelected(
     sel = getSelectedTransforms(includeChildren)
     for node in sel:
         if node.nodeType() == 'joint':
-            joints.orientJointToWorld(node)
+            joints.orient_joint_to_world(node)
             if syncJointAxes:
-                joints.matchJointRotationToOrient(node, preserveChildren)
+                joints.match_joint_rotation_to_orient(node, preserveChildren)
         else:
             pm.rotate(node, (0, 0, 0), a=True, ws=True, pcp=preserveChildren)
 
 
-def orientToJointForSelected(
-        axisOrder,
-        upAxisStr,
-        includeChildren=False,
-        preserveChildren=True,
-        preserveShapes=True,
-        syncJointAxes=True):
-    """
-    """
+def orientToJointForSelected(axisOrder, upAxisStr, includeChildren=False,
+                             preserveChildren=True, preserveShapes=True, syncJointAxes=True):
     sel = getSelectedTransforms(includeChildren)
     for node in sel:
         if node.nodeType() == 'joint':
-            joints.orientJoint(node, axisOrder, upAxisStr)
-            # if syncJointAxes:
-            #     matchJointRotationToOrient(node, preserveChildren)
+            joints.orient_joint(node, axisOrder, upAxisStr)
 
 
 def orientToParentForSelected(includeChildren=False, preserveChildren=True):
-    """
-    """
     sel = getSelectedTransforms(includeChildren)
     for node in sel:
         if node.nodeType() == 'joint':
-            joints.orientJointToParent(node, preserveChildren)
+            joints.orient_joint_to_parent(node, preserveChildren)
 
 
 def orientIKJointsForSelected(aimAxis="x", poleAxis="y", preserveChildren=True):
     sel = pm.selected(type='joint')
     for node in sel:
-        joints.orientIKJoints(node, aimAxis=aimAxis, poleAxis=poleAxis,
-                              preserveChildren=preserveChildren)
+        joints.orient_ik_joints(node, aim_axis=aimAxis, pole_axis=poleAxis,
+                                preserve_children=preserveChildren)
 
 
 def rotateSelectedOrientsAroundAxis(
@@ -331,9 +320,9 @@ def rotateOrientOrTransform(
             translate and scale axes updated to match the new orientation
     """
     if node.nodeType() == 'joint':
-        joints.rotateJointOrient(node, rotation)
+        joints.rotate_joint_orient(node, rotation)
         if syncJointAxes:
-            joints.matchJointRotationToOrient(node, preserveChildren)
+            joints.match_joint_rotation_to_orient(node, preserveChildren)
     else:
         pm.rotate(node, rotation, os=True, r=True, pcp=preserveChildren)
 
@@ -351,7 +340,7 @@ def orientJointToRotationForSelected(includeChildren=False, preserveChildren=Tru
     for node in sel_nodes:
         if node.nodeType() == 'joint':
             joint = node.node()
-            joints.orientJointToRotation(joint, preserveChildren)
+            joints.orient_joint_to_rotation(joint, preserveChildren)
 
 
 def interactiveOrientForSelected():
@@ -363,8 +352,8 @@ def interactiveOrientForSelected():
 def fixupJointOrientForSelected(aimAxis="x", keepAxis="y", preserveChildren=True):
     sel = pm.selected(type='joint')
     for node in sel:
-        joints.fixupJointOrient(node, aimAxis=aimAxis, keepAxis=keepAxis,
-                                preserveChildren=preserveChildren)
+        joints.fixup_joint_orient(node, aim_axis=aimAxis, keep_axis=keepAxis,
+                                  preserve_children=preserveChildren)
 
 
 def matchJointRotationToOrientForSelected(preserveChildren=True):
@@ -373,7 +362,7 @@ def matchJointRotationToOrientForSelected(preserveChildren=True):
     for s in sel:
         if s.nodeType() == 'joint':
             joint = s.node()
-            joints.matchJointRotationToOrient(joint, preserveChildren)
+            joints.match_joint_rotation_to_orient(joint, preserveChildren)
 
 
 def markEndJointsForSelected():
@@ -384,7 +373,7 @@ def markEndJointsForSelected():
     """
     sel = pm.selected()
     for s in sel:
-        end_joints = joints.getEndJoints(s)
+        end_joints = joints.get_end_joints(s)
         for end_joint in end_joints:
             end_joint.rename('END_jnt')
             end_joint.overrideEnabled.set(True)
@@ -475,11 +464,11 @@ def linkSelected(linkType=links.LinkType.DEFAULT, keepOffset=False):
         LOG.warning("Select at least one leader, then a follower last")
         return
 
-    positioner = links.getPositioner(linkType)
+    positioner = links.get_positioner(linkType)
     positioner.keepOffset = keepOffset
     follower = sel[-1]
     leaders = sel[:-1]
-    positioner.createLink(follower, leaders)
+    positioner.create_link(follower, leaders)
 
 
 def linkSelectedWeighted(keepOffset=False):
@@ -488,12 +477,12 @@ def linkSelectedWeighted(keepOffset=False):
         LOG.warning("Select at least one leader, then a follower last")
         return
 
-    positioner = links.getPositioner(links.LinkType.WEIGHTED)
+    positioner = links.get_positioner(links.LinkType.WEIGHTED)
     positioner.keepOffset = keepOffset
     follower = sel[-1]
     leaders = sel[:-1]
     positioner.weights = [1] * len(leaders)
-    positioner.createLink(follower, leaders)
+    positioner.create_link(follower, leaders)
 
 
 def unlinkSelected():
@@ -503,7 +492,7 @@ def unlinkSelected():
 
 def recreateLinksForSelected(keepOffset=False):
     for s in pm.selected():
-        links.recreateLink(s, keepOffset=keepOffset)
+        links.recreate_link(s, keep_offset=keepOffset)
 
 
 def upgradeAllLinks():
@@ -511,7 +500,7 @@ def upgradeAllLinks():
     Update all links in the scene, fixing up old data as necessary.
     """
     for n in pm.ls():
-        linkData = links.getLinkMetaData(n)
+        linkData = links.get_link_meta_data(n)
         if linkData:
             changed = False
 
@@ -534,18 +523,18 @@ def upgradeAllLinks():
 
             if changed:
                 LOG.info('Updated link data for %s', n)
-                links.setLinkMetaData(n, linkData)
+                links.set_link_meta_data(n, linkData)
 
 
 def positionLinkForSelected():
     sel = pm.selected()
     if not sel:
-        sel = links.getAllLinkedNodes()
+        sel = links.get_all_linked_nodes()
         # TODO: sort by parenting hierarchy
     else:
         oldLen = len(sel)
         # filter for only linked nodes
-        sel = [s for s in sel if links.isLinked(s)]
+        sel = [s for s in sel if links.is_linked(s)]
         if oldLen > 0 and len(sel) == 0:
             # something was selected, but no linked nodes
             LOG.warning("No linked nodes were selected")
@@ -554,7 +543,7 @@ def positionLinkForSelected():
     if showProgress:
         pm.progressWindow(t='Positioning Links', min=0, max=len(sel))
     for node in sel:
-        links.applyLinkPosition(node)
+        links.apply_link_position(node)
         if showProgress:
             pm.progressWindow(e=True, step=1)
     if showProgress:

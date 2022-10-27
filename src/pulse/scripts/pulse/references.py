@@ -26,7 +26,7 @@ def import_all_references(load_unloaded=True, depth_limit=10, remove_namespace=F
 
             if not ref.isLoaded():
                 if load_unloaded:
-                    LOG.debug("Loading {0}".format(ref))
+                    LOG.debug("Loading %s", ref)
                     ref.load(loadReferenceDepth='all')
                 else:
                     continue
@@ -36,23 +36,22 @@ def import_all_references(load_unloaded=True, depth_limit=10, remove_namespace=F
 
             path = ref.path
             try:
-                LOG.debug("Importing {0}".format(ref))
+                LOG.debug("Importing %s", ref)
                 ref.importContents(removeNamespace=remove_namespace)
             except RuntimeError as e:
-                LOG.warning('Could not import reference: {0}\n{1}'.format(path, e))
+                LOG.warning('Could not import reference: %s\n%s', path, e)
 
             # Import any subrefs
             if len(sub_refs):
                 LOG.debug("Loading %d Sub-Reference(s)", len(sub_refs))
                 import_references(sub_refs.values(), depth + 1)
 
-    i = 0
     refs = get_top_level_references()
     if not refs:
         LOG.debug("No References to import")
         return True
 
-    LOG.debug("Importing {0} Top-Level Reference(s)".format(len(refs)))
+    LOG.debug("Importing %s Top-Level Reference(s)", len(refs))
     import_references(refs, 1)
 
     # cleanup
@@ -61,9 +60,9 @@ def import_all_references(load_unloaded=True, depth_limit=10, remove_namespace=F
         try:
             bad_list = [str(b) for b in bad]
             pm.delete(bad)
-            LOG.debug('Deleted bad references: {0}'.format(bad_list))
+            LOG.debug('Deleted bad references: %s', bad_list)
         except Exception as e:
-            LOG.error('Could not delete bad references: {0}'.format(bad))
+            LOG.error('Could not delete bad references: %s', bad)
 
     return True
 

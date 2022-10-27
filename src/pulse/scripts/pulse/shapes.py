@@ -5,9 +5,6 @@ import pymel.core as pm
 LOG = logging.getLogger(__name__)
 
 
-# Component Editing
-# -----------------
-
 def rotate_components(shape, rotation):
     """
     Rotate the components of a shape.

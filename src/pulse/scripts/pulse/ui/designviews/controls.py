@@ -21,7 +21,7 @@ class ControlsDesignPanel(QtWidgets.QWidget):
         create_layout.setMargin(0)
         create_layout.setSpacing(2)
 
-        controlshapes.loadBuiltinControlShapes()
+        controlshapes.load_builtin_control_shapes()
 
         def createControlShapeButton(text, shapeData):
             btn = QtWidgets.QPushButton(parent)
@@ -31,10 +31,10 @@ class ControlsDesignPanel(QtWidgets.QWidget):
                 btn.setIconSize(QtCore.QSize(32, 32))
             else:
                 btn.setText(text)
-            btn.clicked.connect(cmd(controlshapes.createControlsForSelected, shapeData))
+            btn.clicked.connect(cmd(controlshapes.create_controls_for_selected, shapeData))
             return btn
 
-        shapes = controlshapes.getControlShapes()
+        shapes = controlshapes.get_control_shapes()
 
         row = 0
         col = 0

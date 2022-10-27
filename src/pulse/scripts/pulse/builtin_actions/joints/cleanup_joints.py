@@ -26,7 +26,7 @@ class CleanupJointsAction(BuildAction):
 
     def run(self):
         if self.removeEndJoints:
-            end_joints = joints.getEndJoints(self.rootJoint)
+            end_joints = joints.get_end_joints(self.rootJoint)
             pm.delete(end_joints)
 
         if self.disableScaleCompensate:

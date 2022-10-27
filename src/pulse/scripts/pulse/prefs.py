@@ -21,4 +21,4 @@ def option_var_property(key, default):
         if key in pm.optionVar:
             del pm.optionVar[key]
 
-    return property(fget, fset, fdel, 'Get or set the optionVar: {0}'.format(key))
+    return property(fget, fset, fdel, f'Get or set the optionVar: {key}')

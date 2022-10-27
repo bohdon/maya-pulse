@@ -24,11 +24,11 @@ class Event(list):
     def __repr__(self):
         return "Event(%s)" % list.__repr__(self)
 
-    def appendUnique(self, item):
+    def append_unique(self, item):
         if item not in self:
             self.append(item)
 
-    def removeAll(self, item):
+    def remove_all(self, item):
         while item in self:
             self.remove(item)
 
@@ -53,31 +53,29 @@ class MayaCallbackEvents(object):
         self._subscribers = []
 
     def __del__(self):
-        self._unregisterMayaCallbacks()
+        self._unregister_maya_callbacks()
 
-    def _registerMayaCallbacks(self):
+    def _register_maya_callbacks(self):
         """
         Register all Maya callbacks for this dispatcher.
         Does nothing if callbacks are already registered.
         """
         if not self._areMayaCallbacksRegistered:
             self._areMayaCallbacksRegistered = True
-            self._callbackIDs = list(self._addMayaCallbacks())
-            LOG.debug('{0}._registerMayaCallbacks'.format(
-                self.__class__.__name__))
+            self._callbackIDs = list(self._add_maya_callbacks())
+            LOG.debug('%s._register_maya_callbacks', self.__class__.__name__)
 
-    def _addMayaCallbacks(self):
+    def _add_maya_callbacks(self):
         """
-        Should be overridden in subclasses to register any Maya
-        message callbacks. This will only be called if callbacks
-        are not already registered.
+        Should be overridden in subclasses to register any Maya message callbacks.
+        This will only be called if callbacks are not already registered.
 
         Returns:
             A list of callback IDs for all newly added callbacks.
         """
         return []
 
-    def _unregisterMayaCallbacks(self):
+    def _unregister_maya_callbacks(self):
         """
         Unregister all Maya callbacks, if currently registered.
         """
@@ -86,26 +84,25 @@ class MayaCallbackEvents(object):
             for cbId in self._callbackIDs:
                 api.MMessage.removeCallback(cbId)
             self._callbackIDs = []
-            LOG.debug('{0}._unregisterMayaCallbacks'.format(
-                self.__class__.__name__))
+            LOG.debug('%s._unregister_maya_callbacks', self.__class__.__name__)
 
-    def addSubscriber(self, subscriber):
+    def add_subscriber(self, subscriber):
         """
         Add a subscriber to this event dispatcher
         """
         if subscriber not in self._subscribers:
             self._subscribers.append(subscriber)
         if self._subscribers:
-            self._registerMayaCallbacks()
+            self._register_maya_callbacks()
 
-    def removeSubscriber(self, subscriber):
+    def remove_subscriber(self, subscriber):
         """
         Remove a subscriber from this event dispatcher
         """
         if subscriber in self._subscribers:
             self._subscribers.remove(subscriber)
         if not self._subscribers:
-            self._unregisterMayaCallbacks()
+            self._unregister_maya_callbacks()
 
 
 class RigLifecycleEvents(MayaCallbackEvents):
@@ -126,7 +123,7 @@ class RigLifecycleEvents(MayaCallbackEvents):
     INSTANCE = None
 
     @classmethod
-    def getShared(cls):
+    def get_shared(cls):
         if not cls.INSTANCE:
             cls.INSTANCE = cls()
         return cls.INSTANCE
@@ -137,21 +134,18 @@ class RigLifecycleEvents(MayaCallbackEvents):
         self.onRigDeleted = Event()
 
     # override
-    def _addMayaCallbacks(self):
+    def _add_maya_callbacks(self):
         # rig nodes are always of type 'transform'
-        addId = api.MDGMessage.addNodeAddedCallback(
-            self._onNodeAdded, 'transform')
-        removeId = api.MDGMessage.addNodeRemovedCallback(
-            self._onNodeRemoved, 'transform')
-        return (addId, removeId)
+        add_id = api.MDGMessage.addNodeAddedCallback(self._on_node_added, 'transform')
+        remove_id = api.MDGMessage.addNodeRemovedCallback(self._on_node_removed, 'transform')
+        return add_id, remove_id
 
-    def _onNodeAdded(self, node, *args):
+    def _on_node_added(self, node, *args):
         """
         Args:
             node: A MObject node that was just added
         """
-        # no way to know if it's a Rig yet,
-        # defer until later and check the node again
+        # no way to know if it's a Rig yet, defer until later and check the node again
         # TODO: do this more precisely, don't use deferred
 
         mfn = api.MFnDependencyNode(node)
@@ -159,57 +153,23 @@ class RigLifecycleEvents(MayaCallbackEvents):
             # rig nodes must be transforms
             return
 
-        fullName = api.MFnDagNode(node).fullPathName()
-        cmds.evalDeferred(
-            partial(self._onNodeAddedDeferred, fullName), evaluateNext=True)
+        full_name = api.MFnDagNode(node).fullPathName()
+        cmds.evalDeferred(partial(self._on_node_added_deferred, full_name), evaluateNext=True)
 
-    def _onNodeAddedDeferred(self, fullName, *args):
+    def _on_node_added_deferred(self, full_name, *args):
         """
         Args:
-            fullName: A string full name of a node that was added
+            full_name: A string full name of a node that was added
         """
-        node = meta.getMObject(fullName)
+        node = meta.getMObject(full_name)
         if node:
             if is_rig(node):
-                LOG.debug("onRigCreated('{0}')".format(node))
                 self.onRigCreated(pm.PyNode(node))
 
-    def _onNodeRemoved(self, node, *args):
+    def _on_node_removed(self, node, *args):
         """
         Args:
             node: A MObject node that is being removed
         """
         if is_rig(node):
-            LOG.debug("onRigDeleted('{0}')".format(node))
             self.onRigDeleted(pm.PyNode(node))
-
-
-class RigEventsMixin(object):
-    """
-    A mixin for listening to shared events related
-    to Rig events, such as creation and deletion
-    """
-
-    def enableRigEvents(self):
-        """
-        Enable Rig lifecycle events on this object.
-        """
-        lifeEvents = RigLifecycleEvents.getShared()
-        lifeEvents.onRigCreated.appendUnique(self.onRigCreated)
-        lifeEvents.onRigDeleted.appendUnique(self.onRigDeleted)
-        lifeEvents.addSubscriber(self)
-
-    def disableRigEvents(self):
-        """
-        Disable Rig events on this object
-        """
-        lifeEvents = RigLifecycleEvents.getShared()
-        lifeEvents.onRigCreated.removeAll(self.onRigCreated)
-        lifeEvents.onRigDeleted.removeAll(self.onRigDeleted)
-        lifeEvents.removeSubscriber(self)
-
-    def onRigCreated(self, node):
-        pass
-
-    def onRigDeleted(self, node):
-        pass

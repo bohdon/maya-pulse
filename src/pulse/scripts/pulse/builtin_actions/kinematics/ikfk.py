@@ -121,7 +121,7 @@ class ThreeBoneIKFKAction(BuildAction):
         if self.addPoleLine:
             # keep consistent color overrides for the mid ctl
             color = nodes.get_override_color(self.midCtlIk)
-            controlshapes.createLineShape(mid_ik_joint, self.midCtlIk, self.midCtlIk)
+            controlshapes.create_line_shape(mid_ik_joint, self.midCtlIk, self.midCtlIk)
             if color:
                 nodes.set_override_color(self.midCtlIk, color)
 
@@ -250,7 +250,7 @@ class IKFKControlUtils(object):
         """
         # TODO: use IKPoleLinkPositioner functionality already in pulse
 
-        pole_vector, pole_mid = joints.getIKPoleVectorAndMidPoint(root, mid, end)
+        pole_vector, pole_mid = joints.get_ik_pole_vector_and_mid_point(root, mid, end)
 
         # calculate distance based on followers current location
         current_dist = pole_vector.dot(ctl.getTranslation(space='world') - pole_mid)

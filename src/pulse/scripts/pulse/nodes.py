@@ -8,8 +8,6 @@ import pymel.core as pm
 from pulse.colors import LinearColor
 
 LOG = logging.getLogger(__name__)
-LOG_LEVEL_KEY = 'PYLOG_%s' % LOG.name.split('.')[0].upper()
-LOG.setLevel(os.environ.get(LOG_LEVEL_KEY, 'INFO').upper())
 
 IDENTITY_MATRIX_FLAT = [1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0]
 
@@ -980,7 +978,7 @@ def get_override_color(node) -> LinearColor:
             return LinearColor.from_seq(shape.overrideColorRGB.get())
 
 
-def set_override_color(node, color, skip_enable_overrides=False):
+def set_override_color(node, color: LinearColor, skip_enable_overrides=False):
     """
     Set the override color of a node
 

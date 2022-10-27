@@ -15,5 +15,5 @@ def to_camel(name):
     Return a string formatted to 'camelCase'
     """
     split = name.split()
-    split[0] = '{0}{1}'.format(split[0][0].lower(), split[0][1:])
+    split[0] = f'{split[0][0].lower()}{split[0][1:]}'
     return ''.join(split)

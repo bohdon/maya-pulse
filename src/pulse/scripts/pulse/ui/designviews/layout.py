@@ -42,7 +42,7 @@ class LayoutLinkEditorWidget(QtWidgets.QWidget):
         self.ui.setupUi(self)
 
         self.ui.link_btn.clicked.connect(cmd(self.link_selected, linkType=links.LinkType.DEFAULT))
-        self.ui.link_ikpole_btn.clicked.connect(cmd(self.link_selected, linkType=links.LinkType.IKPOLE))
+        self.ui.link_ikpole_btn.clicked.connect(cmd(self.link_selected, linkType=links.LinkType.IK_POLE))
         self.ui.link_center_btn.clicked.connect(cmd(self.link_selected_weighted))
         self.ui.recreate_link_btn.clicked.connect(cmd(self.recreate_links_for_selected))
         self.ui.unlink_btn.clicked.connect(cmd(self.unlink_selected))
@@ -79,9 +79,9 @@ class LayoutLinkEditorWidget(QtWidgets.QWidget):
         utils.clearLayout(self.ui.link_info_vbox)
 
         for node in sel_nodes:
-            if not links.isLinked(node):
+            if not links.is_linked(node):
                 continue
-            linkData = links.getLinkMetaData(node)
+            linkData = links.get_link_meta_data(node)
             linkInfo = LinkInfoWidget(parent, node, linkData)
             self.ui.link_info_vbox.addWidget(linkInfo)
 

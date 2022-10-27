@@ -134,7 +134,7 @@ def get_approx_attr_value(attr):
 def get_approx_value(value):
     """
     Return an approximate representation of any numerical value.
-    Handles lists of values, and does not modify the value if it is not numerical.
+    Can handle lists of values, and does not modify the value if it is not numerical.
 
     Args:
         value: Any object or value

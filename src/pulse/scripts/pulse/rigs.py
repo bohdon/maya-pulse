@@ -102,7 +102,7 @@ def open_rig_blueprint(rig):
         LOG.warning('No blueprintFile set on the rig')
         return
 
-    LOG.info('Opening blueprint: ' + blueprint_file)
+    LOG.info('Opening blueprint: %s', blueprint_file)
     save_cameras()
     pm.openFile(blueprint_file, f=True)
     restore_cameras()

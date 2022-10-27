@@ -16,7 +16,6 @@ from .rigs import RIG_METACLASS, create_rig_node
 from .serializer import PulseDumper, PulseLoader, UnsortableOrderedDict
 
 LOG = logging.getLogger(__name__)
-LOG.level = logging.DEBUG
 
 BLUEPRINT_VERSION = version.__version__
 

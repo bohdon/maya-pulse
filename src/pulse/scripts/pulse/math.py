@@ -1,59 +1,59 @@
 import pymel.core as pm
 
 
-def makeMatrixFromXY(xAxis, yAxis):
+def make_matrix_from_xy(x_axis, y_axis):
     """
     Return a matrix with given X and Y axes.
     X will remain fixed, Y may be changed minimally to enforce orthogonality.
     Z will be computed. Inputs need not be normalized.
     """
     # if almost the same, pick a new normal vector
-    newX = pm.dt.Vector(xAxis).normal()
-    normal = pm.dt.Vector(yAxis).normal()
+    new_x = pm.dt.Vector(x_axis).normal()
+    normal = pm.dt.Vector(y_axis).normal()
 
-    if newX.dot(normal) >= 0.9999:
+    if new_x.dot(normal) >= 0.9999:
         # don't pick the same vector as newX
-        if newX.z < 0.9999:
+        if new_x.z < 0.9999:
             normal = pm.dt.Vector(0, 0, 1)
         else:
             normal = pm.dt.Vector(1, 0, 0)
 
-    newZ = newX.cross(normal).normal()
-    newY = newZ.cross(newZ)
-    return pm.dt.Matrix(newX, newY, newZ)
+    new_z = new_x.cross(normal).normal()
+    new_y = new_z.cross(new_z)
+    return pm.dt.Matrix(new_x, new_y, new_z)
 
 
-def makeMatrixFromXZ(xAxis, zAxis):
+def make_matrix_from_xz(x_axis, z_axis):
     """
     Return a matrix with given X and Z axes.
     X will remain fixed, Z may be changed minimally to enforce orthogonality.
     Y will be computed. Inputs need not be normalized.
     """
     # if almost the same, pick a new normal vector
-    newX = pm.dt.Vector(xAxis).normal()
-    normal = pm.dt.Vector(zAxis).normal()
+    new_x = pm.dt.Vector(x_axis).normal()
+    normal = pm.dt.Vector(z_axis).normal()
 
-    if newX.dot(normal) >= 0.9999:
+    if new_x.dot(normal) >= 0.9999:
         # don't pick the same vector as newX
-        if newX.z < 0.9999:
+        if new_x.z < 0.9999:
             normal = pm.dt.Vector(0, 0, 1)
         else:
             normal = pm.dt.Vector(1, 0, 0)
 
-    newY = normal.cross(newX).normal()
-    newZ = newX.cross(newY)
-    return pm.dt.Matrix(newX, newY, newZ)
+    new_y = normal.cross(new_x).normal()
+    new_z = new_x.cross(new_y)
+    return pm.dt.Matrix(new_x, new_y, new_z)
 
 
-def lerpVector(a, b, alpha):
+def lerp_vector(a, b, alpha):
     return a + (b - a) * alpha
 
 
-def lerpRotation(a, b, alpha):
+def lerp_rotation(a, b, alpha):
     return a + (b - a) * alpha
 
 
-def lerpMatrix(a: pm.dt.Matrix, b: pm.dt.Matrix, alpha: float) -> pm.dt.Matrix:
+def lerp_matrix(a: pm.dt.Matrix, b: pm.dt.Matrix, alpha: float) -> pm.dt.Matrix:
     """
     Return a linear interpolation between two matrices.
 
@@ -75,8 +75,8 @@ def lerpMatrix(a: pm.dt.Matrix, b: pm.dt.Matrix, alpha: float) -> pm.dt.Matrix:
     b_s = pm.dt.Vector(b_trans.getScale(space='world'))
 
     mtx = pm.dt.TransformationMatrix()
-    mtx.setTranslation(lerpVector(a_t, b_t, alpha), space='world')
+    mtx.setTranslation(lerp_vector(a_t, b_t, alpha), space='world')
     # TODO: troubleshoot rotation interpolation, doesn't seem to work correctly
-    mtx.setRotation(lerpRotation(a_r, b_r, alpha))
-    mtx.setScale(lerpVector(a_s, b_s, alpha), space='world')
+    mtx.setRotation(lerp_rotation(a_r, b_r, alpha))
+    mtx.setScale(lerp_vector(a_s, b_s, alpha), space='world')
     return mtx
