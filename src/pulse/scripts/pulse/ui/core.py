@@ -14,8 +14,8 @@ from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
 
 from ..vendor import pymetanode as meta
 from ..vendor.Qt import QtCore, QtWidgets, QtGui
-from .. import loader, rigs
-from ..blueprints import Blueprint, BlueprintFile, BlueprintSettings
+from .. import loader, rigs, editorutils
+from ..blueprints import Blueprint, BlueprintFile, BlueprintSettings, BlueprintBuilder, BlueprintValidator
 from ..buildItems import BuildStep, BuildAction
 from ..prefs import optionVarProperty
 from ..serializer import serializeAttrValue
@@ -374,6 +374,9 @@ class BlueprintUIModel(QtCore.QObject):
         # the tree item model and selection model for BuildSteps
         self.buildStepTreeModel = BuildStepTreeModel(self.blueprint, self)
         self.buildStepSelectionModel = BuildStepSelectionModel(self.buildStepTreeModel, self)
+
+        # the interactive builder that is currently running, if any
+        self.interactiveBuilder: Optional[BlueprintBuilder] = None
 
         # register maya scene callbacks that can be used for auto save and load
         self.isChangingScenes = False
@@ -1101,6 +1104,110 @@ class BlueprintUIModel(QtCore.QObject):
         index = self.buildStepTreeModel.indexByStepPath(stepPath)
         self.buildStepTreeModel.dataChanged.emit(index, index, [])
         self.modify()
+
+    def run_validation(self):
+        """
+        Run a Blueprint Validator for the current blueprint.
+        """
+        blueprint = self.blueprint
+        if blueprint is not None:
+            if not BlueprintBuilder.pre_build_validate(blueprint):
+                return
+
+            validator = BlueprintValidator(blueprint)
+            validator.start()
+
+    def run_build(self):
+        """
+        Build the current blueprint.
+        """
+        blueprint = self.blueprint
+        if blueprint is None:
+            return
+
+        if not BlueprintBuilder.pre_build_validate(blueprint):
+            return
+
+        # save maya scene
+        # TODO: expose prompt to save scene as option
+        if not editorutils.saveSceneIfDirty(prompt=False):
+            return
+
+        # save blueprint
+        if self.isFileModified():
+            if not self.saveFileWithPrompt():
+                return
+
+        builder = BlueprintBuilder.from_current_scene(blueprint)
+        builder.show_progress_ui = True
+        builder.start()
+
+        # TODO: add build events so this can be done by observer pattern
+        cmds.evalDeferred(self.refreshRigExists, low=True)
+
+    def is_interactive_building(self) -> bool:
+        """
+        Return true if an interactive build is currently active.
+        """
+        return self.interactiveBuilder is not None
+
+    def run_or_step_interactive_build(self):
+        """
+        Start an interactive build, or perform the next build step if an
+        interactive build is already active.
+        """
+        if self.interactiveBuilder:
+            self.interactiveBuilder.next()
+            if self.interactiveBuilder.is_finished:
+                self.interactiveBuilder = None
+
+            # TODO: add build events for situations like this
+            cmds.evalDeferred(self.refreshRigExists, low=True)
+        else:
+            self.run_interactive_build()
+
+    def run_interactive_build(self):
+        blueprint = self.blueprint
+        if blueprint is None:
+            return
+
+        if not BlueprintBuilder.pre_build_validate(blueprint):
+            return
+
+        # save maya scene
+        # TODO: expose prompt to save scene as option
+        if not editorutils.saveSceneIfDirty(prompt=False):
+            return
+
+        # save blueprint
+        if self.isFileModified():
+            if not self.saveFileWithPrompt():
+                return
+
+        self.interactiveBuilder = BlueprintBuilder.from_current_scene(blueprint)
+        self.interactiveBuilder.start(run=False)
+
+        # auto run setup phase
+        while True:
+            self.interactiveBuilder.next()
+            if self.interactiveBuilder.phase == 'actions':
+                break
+
+        # TODO: add build events for situations like this
+        cmds.evalDeferred(self.refreshRigExists, low=True)
+
+    def cancel_interactive_build(self):
+        if self.interactiveBuilder:
+            self.interactiveBuilder.cancel()
+            self.interactiveBuilder = None
+
+    def open_rig_blueprint(self):
+        """
+        Open the blueprint maya scene for the first rig in the scene.
+        """
+        # TODO: don't need this stub, just listen for pre-close maya scene callback to clear interactive build
+        self.cancel_interactive_build()
+        rigs.openFirstRigBlueprint()
 
 
 class BuildStepTreeModel(QtCore.QAbstractItemModel):

@@ -3,14 +3,11 @@ Toolbar for running main actions like validate and build.
 """
 
 import logging
-from typing import Optional
 
 import maya.cmds as cmds
 
 from ..vendor.Qt import QtWidgets
-from .. import editorutils
-from .. import rigs
-from ..blueprints import BlueprintBuilder, BlueprintValidator, BlueprintSettings
+from ..blueprints import BlueprintSettings
 from .core import BlueprintUIModel
 from .main_settings import MainSettingsWindow
 from .actioneditor import ActionEditorWindow
@@ -28,9 +25,8 @@ class MainToolbar(QtWidgets.QWidget):
 
         # used to cause a latent refresh after builds
         self._isStateDirty = False
-        self.interactiveBuilder: Optional[BlueprintBuilder] = None
 
-        self.blueprintModel = BlueprintUIModel.getDefaultModel()
+        self.blueprint_model = BlueprintUIModel.getDefaultModel()
 
         self.ui = Ui_MainToolbar()
         self.ui.setupUi(self)
@@ -40,27 +36,27 @@ class MainToolbar(QtWidgets.QWidget):
         self._updateRigName()
 
         # connect signals
-        self.blueprintModel.changeSceneFinished.connect(self._onChangeSceneFinished)
-        self.blueprintModel.fileChanged.connect(self._onFileChanged)
-        self.blueprintModel.isFileModifiedChanged.connect(self._onFileModifiedChanged)
-        self.blueprintModel.rigExistsChanged.connect(self._onRigExistsChanged)
-        self.blueprintModel.readOnlyChanged.connect(self._onReadOnlyChanged)
-        self.blueprintModel.settingChanged.connect(self._onSettingChanged)
+        self.blueprint_model.changeSceneFinished.connect(self._onChangeSceneFinished)
+        self.blueprint_model.fileChanged.connect(self._onFileChanged)
+        self.blueprint_model.isFileModifiedChanged.connect(self._onFileModifiedChanged)
+        self.blueprint_model.rigExistsChanged.connect(self._onRigExistsChanged)
+        self.blueprint_model.readOnlyChanged.connect(self._onReadOnlyChanged)
+        self.blueprint_model.settingChanged.connect(self._onSettingChanged)
 
         # TODO (bsayre): use blueprint model to track interactive build
 
-        self.ui.new_blueprint_btn.clicked.connect(self.blueprintModel.newFile)
-        self.ui.validate_btn.clicked.connect(self.runValidation)
-        self.ui.build_btn.clicked.connect(self.runBuild)
-        self.ui.interactive_build_btn.clicked.connect(self.runOrStepInteractiveBuild)
-        self.ui.open_blueprint_btn.clicked.connect(self.openFirstRigBlueprint)
+        self.ui.new_blueprint_btn.clicked.connect(self.blueprint_model.newFile)
+        self.ui.validate_btn.clicked.connect(self.blueprint_model.run_validation)
+        self.ui.build_btn.clicked.connect(self.blueprint_model.run_build)
+        self.ui.interactive_build_btn.clicked.connect(self.blueprint_model.run_or_step_interactive_build)
+        self.ui.open_blueprint_btn.clicked.connect(self.blueprint_model.open_rig_blueprint)
 
         self.ui.settings_btn.clicked.connect(MainSettingsWindow.toggleWindow)
         self.ui.design_toolkit_btn.clicked.connect(DesignToolkitWindow.toggleWindow)
         self.ui.action_editor_btn.clicked.connect(ActionEditorWindow.toggleWindow)
 
     def doesRigExist(self):
-        return self.blueprintModel.doesRigExist
+        return self.blueprint_model.doesRigExist
 
     def showEvent(self, event):
         super(MainToolbar, self).showEvent(event)
@@ -83,18 +79,18 @@ class MainToolbar(QtWidgets.QWidget):
 
     def _updateRigName(self):
         # prevent updating rig and file name while changing scenes
-        if self.blueprintModel.isChangingScenes:
+        if self.blueprint_model.isChangingScenes:
             return
 
-        fileName = self.blueprintModel.getBlueprintFileName()
+        fileName = self.blueprint_model.getBlueprintFileName()
         if fileName is None:
             fileName = 'untitled'
-        if self.blueprintModel.isFileModified():
+        if self.blueprint_model.isFileModified():
             fileName += '*'
 
-        self.ui.rig_name_label.setText(self.blueprintModel.getSetting(BlueprintSettings.RIG_NAME))
+        self.ui.rig_name_label.setText(self.blueprint_model.getSetting(BlueprintSettings.RIG_NAME))
         self.ui.blueprint_file_name_label.setText(fileName)
-        self.ui.blueprint_file_name_label.setToolTip(self.blueprintModel.getBlueprintFilePath())
+        self.ui.blueprint_file_name_label.setToolTip(self.blueprint_model.getBlueprintFilePath())
 
     def _onRigExistsChanged(self):
         self._cleanState()
@@ -120,10 +116,10 @@ class MainToolbar(QtWidgets.QWidget):
         """
         # prevent mode changes while changing scenes to avoid flickering
         # since a file may be briefly closed before a new one is opened
-        if self.blueprintModel.isChangingScenes:
+        if self.blueprint_model.isChangingScenes:
             return
 
-        if self.blueprintModel.isFileOpen():
+        if self.blueprint_model.isFileOpen():
             self.ui.main_stack.setCurrentWidget(self.ui.opened_page)
         else:
             self.ui.main_stack.setCurrentWidget(self.ui.new_page)
@@ -149,95 +145,8 @@ class MainToolbar(QtWidgets.QWidget):
             # update mode frame color
             self.ui.mode_frame.setProperty('cssClasses', 'toolbar-blueprint')
 
-        self.ui.interactive_build_btn.setEnabled(self.interactiveBuilder is not None or not self.doesRigExist())
+        can_interactive_build = self.blueprint_model.is_interactive_building() or not self.doesRigExist()
+        self.ui.interactive_build_btn.setEnabled(can_interactive_build)
 
         # refresh stylesheet for mode frame
         self.ui.mode_frame.setStyleSheet('')
-
-    def runValidation(self):
-        blueprint = self.blueprintModel.blueprint
-        if blueprint is not None:
-            if not BlueprintBuilder.pre_build_validate(blueprint):
-                return
-
-            validator = BlueprintValidator(blueprint)
-            validator.start()
-
-    def runBuild(self):
-        blueprint = self.blueprintModel.blueprint
-        if blueprint is None:
-            return
-
-        if not BlueprintBuilder.pre_build_validate(blueprint):
-            return
-
-        # save maya scene
-        # TODO: expose prompt to save scene as option
-        if not editorutils.saveSceneIfDirty(prompt=False):
-            return
-
-        # save blueprint
-        if self.blueprintModel.isFileModified():
-            if not self.blueprintModel.saveFileWithPrompt():
-                return
-
-        builder = BlueprintBuilder.from_current_scene(blueprint)
-        builder.show_progress_ui = True
-        builder.start()
-
-        cmds.evalDeferred(self._onStateDirty)
-
-        # TODO: add build events for situations like this
-        cmds.evalDeferred(self.blueprintModel.refreshRigExists, low=True)
-
-    def runOrStepInteractiveBuild(self):
-        if self.interactiveBuilder:
-            self.interactiveBuilder.next()
-            if self.interactiveBuilder.is_finished:
-                self.interactiveBuilder = None
-
-            # TODO: add build events for situations like this
-            cmds.evalDeferred(self.blueprintModel.refreshRigExists, low=True)
-        else:
-            self.runInteractiveBuild()
-
-    def runInteractiveBuild(self):
-        blueprint = self.blueprintModel.blueprint
-        if blueprint is None:
-            return
-
-        if not BlueprintBuilder.pre_build_validate(blueprint):
-            return
-
-        # save maya scene
-        # TODO: expose prompt to save scene as option
-        if not editorutils.saveSceneIfDirty(prompt=False):
-            return
-
-        # save blueprint
-        if self.blueprintModel.isFileModified():
-            if not self.blueprintModel.saveFileWithPrompt():
-                return
-
-        self.interactiveBuilder = BlueprintBuilder.from_current_scene(blueprint)
-        self.interactiveBuilder.start(run=False)
-
-        # auto run setup phase
-        while True:
-            self.interactiveBuilder.next()
-            if self.interactiveBuilder.phase == 'actions':
-                break
-
-        cmds.evalDeferred(self._onStateDirty)
-
-        # TODO: add build events for situations like this
-        cmds.evalDeferred(self.blueprintModel.refreshRigExists, low=True)
-
-    def cancelInteractiveBuild(self):
-        if self.interactiveBuilder:
-            self.interactiveBuilder.cancel()
-            self.interactiveBuilder = None
-
-    def openFirstRigBlueprint(self):
-        self.cancelInteractiveBuild()
-        rigs.openFirstRigBlueprint()

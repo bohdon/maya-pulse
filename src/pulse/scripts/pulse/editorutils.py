@@ -21,7 +21,6 @@ from . import sym
 from . import sourceeditor
 from .colors import LinearColor
 from .vendor.mayacoretools import preservedSelection
-from .ui.core import BlueprintUIModel
 
 LOG = logging.getLogger(__name__)
 
@@ -83,6 +82,7 @@ def getEditorBlueprint():
     """
     Return the shared Blueprint instance from the default UI model
     """
+    from .ui.core import BlueprintUIModel
     return BlueprintUIModel.getDefaultModel().blueprint
 
 
