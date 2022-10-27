@@ -372,7 +372,7 @@ class BlueprintUIModel(QtCore.QObject):
         self._nullBlueprint = Blueprint()
 
         # the tree item model and selection model for BuildSteps
-        self.buildStepTreeModel = BuildStepTreeModel(self.blueprint, self)
+        self.buildStepTreeModel = BuildStepTreeModel(self.blueprint, self, self)
         self.buildStepSelectionModel = BuildStepSelectionModel(self.buildStepTreeModel, self)
 
         # the interactive builder that is currently running, if any
@@ -1216,10 +1216,12 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
     hierarchy of a Blueprint.
     """
 
-    def __init__(self, blueprint: Blueprint = None, parent=None):
+    def __init__(self, blueprint: Blueprint = None, blueprint_model: BlueprintUIModel = None, parent=None):
         super(BuildStepTreeModel, self).__init__(parent=parent)
 
         self._blueprint = blueprint
+
+        self.blueprint_model = blueprint_model
 
         # used to keep track of drag move actions since
         # we don't have enough data within one function
@@ -1236,9 +1238,8 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
         self._blueprint = blueprint
 
     def isReadOnly(self):
-        parent = QtCore.QObject.parent(self)
-        if parent and hasattr(parent, 'isReadOnly'):
-            return parent.isReadOnly()
+        if self.blueprint_model:
+            return self.blueprint_model.isReadOnly()
         return False
 
     def stepForIndex(self, index: QtCore.QModelIndex) -> Optional[BuildStep]:
@@ -1367,6 +1368,12 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
             return QtGui.QColor(*color.as_8bit())
 
         elif role == QtCore.Qt.BackgroundRole:
+            # highlight active step during interactive build
+            if self.blueprint_model.is_interactive_building():
+                if self.blueprint_model.interactiveBuilder.current_build_step_path == step.get_full_path():
+                    return QtGui.QColor(60, 120, 94, 128)
+
+            # highlight steps with warnings
             if step.is_action() and step.has_warnings():
                 return QtGui.QColor(255, 205, 110, 25)
 

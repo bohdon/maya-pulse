@@ -421,6 +421,8 @@ class BlueprintBuilder(object):
         self.is_canceled = False
         # the current phase of building, 'setup', 'actions', or 'finished'
         self.phase: Optional[str] = None
+        # the current build step path
+        self.current_build_step_path: Optional[str] = None
         self.start_time = 0.0
         self.end_time = 0.0
         self.elapsed_time = 0.0
@@ -540,7 +542,6 @@ class BlueprintBuilder(object):
 
     def next(self):
         iter_result = next(self.generator)
-        self.log.info(f'iter_result: {iter_result}')
         self.phase = iter_result['phase']
         # handle the result of the build iteration
         if self.phase == 'finished':
@@ -729,7 +730,8 @@ class BlueprintBuilder(object):
             # TODO: include more data somehow so we can track variant action indexes
 
             # return progress for the action that is about to run
-            yield dict(index=index, total=action_count, phase='actions', status=step.get_full_path())
+            self.current_build_step_path = step.get_full_path()
+            yield dict(index=index, total=action_count, phase='actions', status=self.current_build_step_path)
 
             # run the action
             action.builder = self
