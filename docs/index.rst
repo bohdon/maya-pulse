@@ -9,6 +9,12 @@ A rigging framework and toolkit built for Maya.
 
 .. toctree::
    :maxdepth: 1
+
+   overview
+   custom_actions
+
+.. toctree::
+   :maxdepth: 1
    :caption: Builtin Actions
    :glob:
 
