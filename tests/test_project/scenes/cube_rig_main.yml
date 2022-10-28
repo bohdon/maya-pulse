@@ -1,4 +1,5 @@
 settings:
+  debugBuild: false
   rigName: cube
   rigNodeNameFormat: '{rigName}_rig'
 steps:
@@ -21,6 +22,11 @@ steps:
     name: Build Core Hierarchy
   - children:
     - action:
+        child: !node '4E662F1B-474F-B612-FE07-72BCB543D23E'
+        id: Pulse.ParentAction
+        parent: !node '6D08720C-41B0-ED2E-C6F1-90873E18F7FD'
+      name: Parent
+    - action:
         id: Pulse.AnimControl
         variantAttrs:
         - controlNode
@@ -42,7 +48,6 @@ steps:
       - !node '6506B2DD-486F-185B-BFB8-E38F2984AD20'
     name: Display Layer
   - action:
-      filename: '{rig[name]}_built'
       id: Pulse.RenameScene
     name: Rename Scene
   name: Root
