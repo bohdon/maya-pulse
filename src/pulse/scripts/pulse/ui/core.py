@@ -508,14 +508,19 @@ class BlueprintUIModel(QtCore.QObject):
             if not self.closeFile():
                 return
 
+        new_blueprint_file = BlueprintFile(file_path=filePath)
+
+        if not new_blueprint_file.file_path:
+            # resolve file path automatically from maya scene
+            new_blueprint_file.resolve_file_path(allow_existing=True)
+
+        # don't open a file unless it exists
+        if not os.path.isfile(new_blueprint_file.file_path):
+            return
+
         self.buildStepTreeModel.beginResetModel()
 
-        self._blueprintFile = BlueprintFile(file_path=filePath)
-
-        if not filePath:
-            # resolve file path automatically from maya scene
-            self._blueprintFile.resolve_file_path(allow_existing=True)
-
+        self._blueprintFile = new_blueprint_file
         self._blueprintFile.load()
 
         self.buildStepTreeModel.setBlueprint(self.blueprint)
