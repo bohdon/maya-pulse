@@ -38,11 +38,18 @@ def tear_down_ui():
     from .gen import icons_rc
     from .contextmenus import unregisterContextMenu
 
+    close_all_editors()
+    unregisterContextMenu()
+    icons_rc.qCleanupResources()
+
+
+def close_all_editors():
+    """
+    Close all editor windows and destroy the main UI model.
+    """
     hide_editor_ui()
     destroy_all_pulse_windows()
     destroy_ui_model_instances()
-    unregisterContextMenu()
-    icons_rc.qCleanupResources()
 
 
 def destroy_all_pulse_windows():

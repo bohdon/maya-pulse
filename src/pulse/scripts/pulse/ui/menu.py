@@ -9,6 +9,7 @@ MAIN_MENU_LABEL = 'Pulse'
 MAIN_MENU_ID = 'pulse_main_menu'
 DOCUMENTATION_URL = 'https://maya-pulse.readthedocs.io/'
 ISSUES_URL = 'https://github.com/bohdon/maya-pulse/issues'
+WORKFLOW_TOOLS_URL = 'https://github.com/bohdon/maya-workflowtools'
 
 
 def _cmd(command):
@@ -34,12 +35,14 @@ def install_main_menu():
     Install the top-level Pulse menu.
     """
     from .. import reload
-    from . import toggle_editor_ui
+    from . import toggle_editor_ui, close_all_editors
     from .actioneditor import ActionEditorWindow
     from .actionpalette import ActionPaletteWindow
     from .actiontree import ActionTreeWindow
     from .designtoolkit import DesignToolkitWindow
     from .main_settings import MainSettingsWindow
+    from .utilviews import CopyPasteMatrixWindow
+    from . import contextmenus
 
     _create_menu(MAIN_MENU_LABEL, MAIN_MENU_ID)
 
@@ -50,15 +53,27 @@ def install_main_menu():
     pm.menuItem(parent=MAIN_MENU_ID, label="Action Palette", command=_cmd(ActionPaletteWindow.toggleWindow))
     pm.menuItem(parent=MAIN_MENU_ID, label="Action Tree", command=_cmd(ActionTreeWindow.toggleWindow))
 
-    pm.menuItem(parent=MAIN_MENU_ID, label="Settings", divider=True)
+    pm.menuItem(parent=MAIN_MENU_ID, divider=True)
+    anim_menu_id = pm.menuItem(parent=MAIN_MENU_ID, label="Animation", subMenu=True, tearOff=True)
+    pm.menuItem(parent=anim_menu_id, label="Copy Paste Matrix Util", command=_cmd(CopyPasteMatrixWindow.toggleWindow))
+    pm.menuItem(parent=anim_menu_id, divider=True)
+    pm.menuItem(parent=anim_menu_id, label="Register Context Menus", command=_cmd(contextmenus.registerContextMenu),
+                enable=contextmenus.canRegisterContextMenus())
+    pm.menuItem(parent=anim_menu_id, label="Unregister Context Menus", command=_cmd(contextmenus.unregisterContextMenu),
+                enable=contextmenus.canRegisterContextMenus())
+    pm.menuItem(parent=anim_menu_id, divider=True)
+    pm.menuItem(parent=anim_menu_id, label="Download Workflow Tools...", command=_url_cmd(WORKFLOW_TOOLS_URL))
+
+    pm.menuItem(parent=MAIN_MENU_ID, divider=True)
     pm.menuItem(parent=MAIN_MENU_ID, label="Settings", command=_cmd(MainSettingsWindow.toggleWindow))
 
     pm.menuItem(parent=MAIN_MENU_ID, label="Utils", divider=True)
+    pm.menuItem(parent=MAIN_MENU_ID, label="Close All Editors", command=_cmd(close_all_editors))
     pm.menuItem(parent=MAIN_MENU_ID, label="Reload", command=_cmd(reload))
 
     pm.menuItem(parent=MAIN_MENU_ID, label="Help", divider=True)
     pm.menuItem(parent=MAIN_MENU_ID, label="Documentation", command=_url_cmd(DOCUMENTATION_URL))
-    pm.menuItem(parent=MAIN_MENU_ID, label="Report an Issue...", command=_url_cmd(ISSUES_URL))
+    pm.menuItem(parent=MAIN_MENU_ID, label="Send Feedback...", command=_url_cmd(ISSUES_URL))
 
 
 def _create_menu(label: str, menu_id: str):

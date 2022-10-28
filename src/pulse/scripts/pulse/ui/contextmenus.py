@@ -31,6 +31,10 @@ def registerContextMenu(priority: int = 0):
     """
     Register pulse context menus with the right click menu.
     """
+    # ensure actions are loaded, since they provide the context menu functionality
+    from .. import loader
+    loader.load_actions()
+
     if has_rmbmenuhook:
         rmbmenuhook.registerMenu(RMB_MENU_NAME, PulseNodeContextMenu, priority)
 
@@ -41,6 +45,10 @@ def unregisterContextMenu():
     """
     if has_rmbmenuhook:
         rmbmenuhook.unregisterMenu(RMB_MENU_NAME)
+
+
+def canRegisterContextMenus() -> bool:
+    return has_rmbmenuhook
 
 
 class PulseNodeContextMenu(rmbmenuhook.Menu):
