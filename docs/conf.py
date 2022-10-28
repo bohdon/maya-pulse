@@ -32,6 +32,6 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 html_theme = 'sphinx_rtd_theme'
 html_static_path = ['_static']
 
-autodoc_mock_imports = ["maya", "pymel", "Qt", "PySide", "PySide2", "pulse.vendor.overrides"]
+autodoc_mock_imports = ["maya", "pymel", "Qt", "PySide", "PySide2", "pulse.vendor.Qt", "pulse.vendor.overrides"]
 
 add_module_names = False
