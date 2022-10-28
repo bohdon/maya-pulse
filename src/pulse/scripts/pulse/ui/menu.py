@@ -61,8 +61,8 @@ def install_main_menu():
                 enable=contextmenus.canRegisterContextMenus())
     pm.menuItem(parent=anim_menu_id, label="Unregister Context Menus", command=_cmd(contextmenus.unregisterContextMenu),
                 enable=contextmenus.canRegisterContextMenus())
-    pm.menuItem(parent=anim_menu_id, divider=True)
-    pm.menuItem(parent=anim_menu_id, label="Download Workflow Tools...", command=_url_cmd(WORKFLOW_TOOLS_URL))
+    pm.menuItem(parent=anim_menu_id, label="Extras", divider=True)
+    pm.menuItem(parent=anim_menu_id, label="Get Workflow Tools...", command=_url_cmd(WORKFLOW_TOOLS_URL))
 
     pm.menuItem(parent=MAIN_MENU_ID, divider=True)
     pm.menuItem(parent=MAIN_MENU_ID, label="Settings", command=_cmd(MainSettingsWindow.toggleWindow))
