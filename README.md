@@ -1,3 +1,5 @@
+[![Documentation Status](https://readthedocs.org/projects/maya-pulse/badge/?version=latest)](https://maya-pulse.readthedocs.io/en/latest/?badge=latest)
+
 # Pulse
 
 A rigging framework and toolkit built for Maya.
