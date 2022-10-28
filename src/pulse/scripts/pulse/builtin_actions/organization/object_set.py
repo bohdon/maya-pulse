@@ -5,9 +5,12 @@ from pulse.build_items import BuildActionAttributeType as AttrType
 
 
 class ObjectSetAction(BuildAction):
+    """
+    Create an object set.
+    """
+
     id = 'Pulse.ObjectSet'
     display_name = 'Object Set'
-    description = 'Creates an object set'
     color = (1.0, 1.0, 1.0)
     category = 'Organization'
 

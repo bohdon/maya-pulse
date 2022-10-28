@@ -6,9 +6,12 @@ from pulse.build_items import BuildActionAttributeType as AttrType
 
 
 class TwistJointsAction(BuildAction):
+    """
+    Set up twist joints to solve deformation problems in areas like the arms and legs.
+    """
+
     id = 'Pulse.TwistJoints'
     display_name = 'Twist Joints'
-    description = 'Sets up twist joints to solve deformation problems in areas like the arms and legs'
     category = 'Joints'
 
     attr_definitions = [
@@ -76,7 +79,7 @@ class TwistJointsAction(BuildAction):
 
         # create aligned version of the parent matrix
         aligned_pm = util_nodes.align_matrix_to_direction(parent_mtx, self.forwardAxis, self.alignAxis,
-                                                         self.alignAxis, align_tgt_mtx)
+                                                          self.alignAxis, align_tgt_mtx)
 
         # blend aligned matrix with default parent matrix
         blend_mtx = util_nodes.blend_matrix(parent_mtx, aligned_pm, twist_blend)

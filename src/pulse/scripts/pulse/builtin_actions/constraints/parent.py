@@ -3,9 +3,12 @@ from pulse.build_items import BuildActionAttributeType as AttrType
 
 
 class ParentAction(BuildAction):
+    """
+    Parent a node to another node.
+    """
+
     id = 'Pulse.ParentAction'
     display_name = 'Parent'
-    description = 'Parent a node to another node.'
     color = [.4, .6, .8]
     category = 'Constraints'
     attr_definitions = [

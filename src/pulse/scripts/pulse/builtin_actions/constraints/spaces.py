@@ -8,9 +8,12 @@ from pulse.ui.contextmenus import PulseNodeContextSubMenu
 
 
 class CreateSpaceAction(BuildAction):
+    """
+    Create a Space that can be used for dynamic constraints.
+    """
+
     id = 'Pulse.CreateSpace'
     display_name = 'Create Space'
-    description = 'Create a Space that can be used for dynamic constraints'
     color = (.4, .42, .8)
     category = 'Spaces'
     sort_order = 0
@@ -34,7 +37,7 @@ class CreateSpaceAction(BuildAction):
 class SpaceConstrainAction(BuildAction):
     id = 'Pulse.SpaceConstrain'
     display_name = 'Space Constrain'
-    description = 'Creates a dynamic constraint to one or more defined spaces'
+    """Creates a dynamic constraint to one or more defined spaces"""
     color = (.4, .42, .8)
     category = 'Spaces'
     sort_order = 1
@@ -70,7 +73,7 @@ class SpaceConstrainAction(BuildAction):
 class ApplySpacesAction(BuildAction):
     id = 'Pulse.ApplySpaces'
     display_name = 'Apply Spaces'
-    description = 'Resolves and connects all Space Constraints in the rig'
+    """Resolves and connects all Space Constraints in the rig"""
     color = (.4, .42, .8)
     category = 'Spaces'
     sort_order = 2

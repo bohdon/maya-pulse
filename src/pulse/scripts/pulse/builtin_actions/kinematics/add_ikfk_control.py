@@ -6,9 +6,12 @@ from pulse.build_items import BuildActionAttributeType as AttrType
 
 
 class AddIKFKControlAction(BuildAction):
+    """
+    Add a control to an existing IKFK switch, allowing it to have different parent spaces for IK and FK.
+    """
+
     id = 'Pulse.AddIKFKControl'
     display_name = 'Add IKFK Control'
-    description = 'Adds a control to an existing IKFK switch, allowing it to have different parent spaces for IK and FK'
     color = (.4, .6, .8)
     category = 'Kinematics'
 

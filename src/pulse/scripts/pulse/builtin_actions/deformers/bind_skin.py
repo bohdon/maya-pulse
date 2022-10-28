@@ -11,7 +11,7 @@ from pulse.build_items import BuildActionAttributeType as AttrType
 class BindSkinAction(BuildAction):
     id = 'Pulse.BindSkin'
     display_name = 'Bind Skin'
-    description = 'Binds a mesh to a joint hierarchy'
+    """Binds a mesh to a joint hierarchy"""
     color = (1.0, .85, 0.5)
     category = 'Deformers'
 
@@ -109,9 +109,12 @@ class BindSkinAction(BuildAction):
 
 
 class ApplySkinWeightsAction(BuildAction):
+    """
+    Apply data from a .weights file to a skinned mesh.
+    """
+
     id = 'Pulse.ApplySkinWeights'
     display_name = 'Apply Skin Weights'
-    description = 'Applies data from a .weights file to a skinned mesh'
     color = (1.0, .85, 0.5)
     category = 'Deformers'
 

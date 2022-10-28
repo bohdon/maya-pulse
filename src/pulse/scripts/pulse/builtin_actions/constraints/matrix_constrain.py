@@ -4,9 +4,15 @@ from pulse.build_items import BuildActionAttributeType as AttrType
 
 
 class MatrixConstrainAction(BuildAction):
+    """
+    Constrain nodes using `offsetParentMatrix` connections.
+
+    This provides a simple and more versatile constraint than using
+    a combination parent and scale constraint.
+    """
+
     id = 'Pulse.MatrixConstrain'
     display_name = 'Matrix Constrain'
-    description = 'Constrain nodes using offsetParentMatrix connections'
     category = 'Constraints'
     color = (.4, .6, .8)
     attr_definitions = [

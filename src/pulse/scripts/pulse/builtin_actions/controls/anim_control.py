@@ -14,9 +14,12 @@ except ImportError:
 
 
 class AnimControlAction(BuildAction):
+    """
+    Configure a node to be used as an animation control.
+    """
+
     id = 'Pulse.AnimControl'
     display_name = 'Anim Control'
-    description = 'Configures a node to be used as an animation control'
     color = (.85, .65, .4)
     category = 'Controls'
     attr_definitions = [

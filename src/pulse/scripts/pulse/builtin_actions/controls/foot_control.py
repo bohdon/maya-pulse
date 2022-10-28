@@ -10,9 +10,12 @@ FOOT_CTL_METACLASSNAME = 'pulse_foot_ctl'
 
 
 class FootControlAction(BuildAction):
+    """
+    Create a classic attribute-driven foot roll and tilt control.
+    """
+
     id = 'Pulse.FootControl'
     display_name = 'Foot Control'
-    description = 'Creates a classic attribute-driven foot roll and tilt control'
     color = (.85, .65, .4)
     category = 'Controls'
 

@@ -10,9 +10,12 @@ MAGIC_FEET_LIFT_CTL_METACLASSNAME = 'pulse_magicfeet_lift_ctl'
 
 
 class MagicFeetAction(BuildAction):
+    """
+    Allows controlling foot rotation, blending pivots between toe, heel and ankle.
+    """
+
     id = 'Pulse.MagicFeet'
     display_name = 'Magic Feet'
-    description = 'Allows controlling foot rotation, blending pivots between toe, heel and ankle'
     color = (.85, .65, .4)
     category = 'Controls'
 

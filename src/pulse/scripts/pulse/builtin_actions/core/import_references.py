@@ -4,9 +4,12 @@ from pulse.build_items import BuildActionAttributeType as AttrType
 
 
 class ImportReferencesAction(BuildAction):
+    """
+    Import all file references into the scene.
+    """
+
     id = 'Pulse.ImportReferences'
     display_name = 'Import References'
-    description = 'Import all file references into the scene.'
     category = 'Core'
     attr_definitions = [
         dict(name='loadUnloaded', type=AttrType.BOOL, value=True),

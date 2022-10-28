@@ -5,9 +5,12 @@ from pulse.build_items import BuildActionAttributeType as AttrType
 
 
 class MagicHandsAction(BuildAction):
+    """
+    Controls all fingers of a hand using individual rotate axes for quick posing.
+    """
+
     id = 'Pulse.MagicHands'
     display_name = 'Magic Hands'
-    description = 'Controls all fingers of a hand using individual rotate axes for quick posing'
     color = (.85, .65, .4)
     category = 'Controls'
 

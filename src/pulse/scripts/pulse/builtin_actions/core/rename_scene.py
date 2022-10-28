@@ -7,9 +7,12 @@ from pulse.build_items import BuildActionAttributeType as AttributeType
 
 
 class RenameSceneAction(BuildAction):
+    """
+    Rename the current scene, so it can be saved to a different file.
+    """
+
     id = 'Pulse.RenameScene'
     display_name = 'Rename Scene'
-    description = 'Renames the current scene so it can be saved to a different file.'
     category = 'Core'
     attr_definitions = [
         dict(name='filename', type=AttributeType.STRING, value='{rig[name]}_built',

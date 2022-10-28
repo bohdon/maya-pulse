@@ -10,9 +10,12 @@ from pulse import anim_interface
 
 
 class SetAttributeDefaultsAction(BuildAction):
+    """
+    Set the default attribute values for use with Resetter.
+    """
+
     id = 'Pulse.SetAttributeDefaults'
     display_name = 'Set Attribute Defaults'
-    description = 'Sets the default attribute values for use with Resetter'
     color = (.85, .65, .4)
     category = 'Controls'
 

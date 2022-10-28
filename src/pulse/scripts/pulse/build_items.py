@@ -56,7 +56,10 @@ class BuildActionSpec(object):
         """
         The description of the action.
         """
-        return self.action_cls.description
+        doc = self.action_cls.__doc__
+        if doc:
+            doc = doc.strip().split('\n')[0]
+        return doc
 
     @property
     def color(self):
@@ -1082,9 +1085,6 @@ class BuildAction(BuildActionData):
 
     # the display name of the action as seen in the UI
     display_name = 'Unknown'
-
-    # the description of the action
-    description = ''
 
     # the color of the action for highlighting
     color = (1, 1, 1)

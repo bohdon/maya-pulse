@@ -6,9 +6,12 @@ from pulse.build_items import BuildActionAttributeType as AttrType
 
 
 class SimpleConstrainAction(BuildAction):
+    """
+    Create a simple full constraint between nodes.
+    """
+
     id = 'Pulse.SimpleConstrain'
     display_name = 'Simple Constrain'
-    description = 'Create a simple full constraint between nodes'
     color = [.4, .6, .8]
     category = 'Constraints'
 

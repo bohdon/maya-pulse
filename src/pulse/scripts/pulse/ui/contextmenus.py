@@ -9,10 +9,20 @@ import pymel.core as pm
 
 from ..vendor import pymetanode as meta
 
+
+class Object(object):
+    pass
+
+
 try:
     import rmbmenuhook
 except ImportError:
-    rmbmenuhook = None
+    # create mock class so context menu classes don't error on import
+    rmbmenuhook = Object()
+    rmbmenuhook.Menu = object
+    has_rmbmenuhook = False
+else:
+    has_rmbmenuhook = True
 
 RMB_MENU_NAME = 'pulseActionNodeContextMenu'
 
@@ -21,14 +31,16 @@ def registerContextMenu(priority: int = 0):
     """
     Register pulse context menus with the right click menu.
     """
-    rmbmenuhook.registerMenu(RMB_MENU_NAME, PulseNodeContextMenu, priority)
+    if has_rmbmenuhook:
+        rmbmenuhook.registerMenu(RMB_MENU_NAME, PulseNodeContextMenu, priority)
 
 
 def unregisterContextMenu():
     """
     Unregister the pulse context menu
     """
-    rmbmenuhook.unregisterMenu(RMB_MENU_NAME)
+    if has_rmbmenuhook:
+        rmbmenuhook.unregisterMenu(RMB_MENU_NAME)
 
 
 class PulseNodeContextMenu(rmbmenuhook.Menu):

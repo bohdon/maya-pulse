@@ -6,9 +6,12 @@ from pulse.build_items import BuildActionAttributeType as AttrType
 
 
 class CleanupJointsAction(BuildAction):
+    """
+    Clean up a joint hierarchy, removing end joints or modifying segment scale compensate.
+    """
+
     id = 'Pulse.CleanupJoints'
     display_name = 'Cleanup Joints'
-    description = 'Cleans up a joint hierarchy, removing end joints or modifying segment scale compensate'
     category = 'Joints'
 
     attr_definitions = [

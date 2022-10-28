@@ -28,6 +28,12 @@ def {functionName}(action: BuildAction):
 
 
 class PythonActionForm(BuildActionProxyForm):
+    """
+    Custom build action form that displays a button for quickly opening the python script
+    in a source editor.
+
+    See :class:`~pulse.source_editor.SourceEditorLauncher` for more info on launching an editor.
+    """
 
     def setupLayoutHeader(self, parent, layout):
         edit_btn = QtWidgets.QPushButton(parent)
@@ -85,9 +91,25 @@ class PythonActionForm(BuildActionProxyForm):
 
 
 class PythonAction(BuildAction):
+    """
+    Run a python script.
+
+    Looks for a script file in the same directory as the blueprint, and executes
+    a specific function by name.
+
+    **Example script file:**
+
+    .. code-block:: python
+
+        from pulse.build_items import BuildAction
+
+        def my_function(action: BuildAction):
+            print(action.rig)
+            print(action.nodes)
+    """
+
     id = 'Pulse.Python'
     display_name = 'Python'
-    description = 'Run a python script'
     category = 'Scripts'
     editorFormClass = PythonActionForm
     attr_definitions = [

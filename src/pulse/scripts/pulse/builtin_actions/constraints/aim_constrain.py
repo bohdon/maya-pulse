@@ -7,9 +7,12 @@ from pulse.build_items import BuildActionAttributeType as AttrType
 
 
 class AimConstrainAction(BuildAction):
+    """
+    Create an aim constraint, optionally allowing for blending between aim and non-aim.
+    """
+
     id = 'Pulse.AimConstrain'
     display_name = 'Aim Constrain'
-    description = 'Creates an aim constraint, optionally allowing for blending between aim and non-aim'
     color = (.4, .6, .8)
     category = 'Constraints'
 

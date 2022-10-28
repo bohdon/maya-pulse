@@ -5,9 +5,12 @@ from pulse.build_items import BuildActionAttributeType as AttrType
 
 
 class DisplayLayerAction(BuildAction):
+    """
+    Create a display layer.
+    """
+
     id = 'Pulse.DisplayLayer'
     display_name = 'Display Layer'
-    description = 'Create a display layer'
     category = 'Organization'
 
     attr_definitions = [

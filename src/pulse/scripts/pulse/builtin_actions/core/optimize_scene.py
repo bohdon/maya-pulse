@@ -5,9 +5,14 @@ from pulse.build_items import BuildActionAttributeType as AttrType
 
 
 class OptimizeSceneAction(BuildAction):
+    """
+    Run scene optimization, deleting unused nodes.
+
+    There is currently no way to control which optimizations are run.
+    """
+
     id = 'Pulse.OptimizeScene'
     display_name = 'Optimize Scene'
-    description = 'Runs scene optimization, deleting unused nodes'
     category = 'Core'
 
     def run(self):

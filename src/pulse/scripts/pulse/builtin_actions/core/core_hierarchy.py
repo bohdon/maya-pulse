@@ -7,15 +7,14 @@ from pulse.build_items import BuildActionAttributeType as AttrType
 
 class BuildCoreHierarchyAction(BuildAction):
     """
-    Builds a core hierarchy of the rig.
+    Build the core hierarchy of the rig.
 
     This creates a group for one of the rig's main features (usually ctls, joints, or meshes)
-    and parents the corresponding nodes.
+    and parents the corresponding nodes to it.
     """
 
     id = 'Pulse.BuildCoreHierarchy'
     display_name = 'Build Core Hierarchy'
-    description = 'Gathers nodes into a core hierarchy of the rig'
     category = 'Core'
     attr_definitions = [
         dict(name='groupName', type=AttrType.STRING,

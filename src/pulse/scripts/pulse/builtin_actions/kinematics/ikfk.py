@@ -10,9 +10,12 @@ IKFK_CONTROL_METACLASS = 'pulse_ikfk_control'
 
 
 class ThreeBoneIKFKAction(BuildAction):
+    """
+    Create a 3-bone IK chain that can switch to FK.
+    """
+
     id = 'Pulse.ThreeBoneIKFK'
     display_name = '3-Bone IK FK'
-    description = 'Creates a 3-bone IK chain that can switch to FK'
     color = (.4, .6, .8)
     category = 'Kinematics'
 
