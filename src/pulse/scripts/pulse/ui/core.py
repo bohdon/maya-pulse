@@ -388,7 +388,7 @@ class BlueprintUIModel(QtCore.QObject):
         self.refreshRigExists()
 
         if self.autoLoad:
-            self.reloadFile()
+            self.openFile()
 
     def onDelete(self):
         self._removeSceneCallbacks()
@@ -515,7 +515,7 @@ class BlueprintUIModel(QtCore.QObject):
             new_blueprint_file.resolve_file_path(allow_existing=True)
 
         # don't open a file unless it exists
-        if not os.path.isfile(new_blueprint_file.file_path):
+        if not new_blueprint_file.file_path or not os.path.isfile(new_blueprint_file.file_path):
             return
 
         self.buildStepTreeModel.beginResetModel()
