@@ -50,6 +50,8 @@ build_ui main_settings
 build_ui main_toolbar
 build_ui quick_color_editor
 build_ui quick_name_editor
+# build anim UIs
+build_ui anim_picker
 
 # build all resources
 echo "Building resource files..."
