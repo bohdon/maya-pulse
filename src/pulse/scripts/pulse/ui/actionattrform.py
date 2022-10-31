@@ -49,7 +49,7 @@ class ActionAttrForm(QtWidgets.QFrame):
                 The attribute being edited.
         """
         if attr.type is None:
-            LOG.error(f"Attribute is has no type: {attr}")
+            LOG.error(f"Attribute has no type: {attr}")
             # TODO: create a generic attribute form that just displays the error
 
         if attr.type in ActionAttrForm.TYPE_MAP:

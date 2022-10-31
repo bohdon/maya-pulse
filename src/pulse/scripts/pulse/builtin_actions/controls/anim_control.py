@@ -1,10 +1,10 @@
 import pymel.core as pm
 
-from pulse import nodes
+from pulse import nodes, util_nodes
 from pulse.vendor import pymetanode as meta
 from pulse.build_items import BuildAction, BuildActionError
 from pulse.build_items import BuildActionAttributeType as AttrType
-from pulse.anim_interface import ANIM_CTL_METACLASS
+from pulse.anim_interface import ANIM_CTL_METACLASS, get_all_anim_ctls
 from pulse.ui.contextmenus import PulseNodeContextSubMenu
 
 try:
@@ -95,3 +95,38 @@ class AnimControlContextSubMenu(PulseNodeContextSubMenu):
             sel_ctls = self.getSelectedNodesWithMetaClass(ANIM_CTL_METACLASS)
             if sel_ctls:
                 resetter.reset(sel_ctls)
+
+
+class ShowAllControlsAction(BuildAction):
+    """
+    Adds an attribute to a node that allows overriding the visibility of all anim controls to be showing.
+    Should be added after all Anim Control actions, and usually on the root control.
+    """
+
+    id = 'Pulse.ShowAllControls'
+    display_name = 'Show All Controls'
+    category = 'Controls'
+    attr_definitions = [
+        dict(name='node', type=AttrType.NODE,
+             description="The node to add the attribute to, usually the root control."),
+        dict(name='attrName', type=AttrType.STRING, value='showAllControls',
+             description="The name of the attribute"),
+    ]
+
+    def run(self):
+        self.node.addAttr(self.attrName, at='bool')
+        attr = self.node.attr(self.attrName)
+        attr.setKeyable(False)
+        attr.showInChannelBox(True)
+        self.log.debug(f"Added attr '{self.attrName}' to {self.node}")
+
+        all_ctls = get_all_anim_ctls()
+        for ctl in all_ctls:
+            inputs = ctl.visibility.inputs(plugs=True)
+            if inputs:
+                # attribute has input to visibility, override it with an 'or' condition
+                input_attr = inputs[0]
+                vis_choice = util_nodes.choice(attr, input_attr, True)
+                vis_choice.node().rename(f"{ctl}_vis_override_choice")
+                vis_choice >> ctl.visibility
+                self.log.debug(f"Connected '{self.node}.{attr}' visibility override to '{ctl}.visibility'")
