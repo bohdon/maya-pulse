@@ -30,7 +30,7 @@ class ThreeBoneIKFKAction(BuildAction):
         dict(name='endCtlFk', type=AttrType.NODE, description="The end joint control during FK"),
         dict(name='addPoleLine', type=AttrType.BOOL, value=True,
              description="Add a curve shape to the mid FK control that draws a line to the bone"),
-        dict(name='extraControls', type=AttrType.NODE, optional=True,
+        dict(name='extraControls', type=AttrType.NODE_LIST, optional=True,
              description="Additional controls to add ikfk metadata to, so they can be used with ikfk switching utils"),
     ]
 
