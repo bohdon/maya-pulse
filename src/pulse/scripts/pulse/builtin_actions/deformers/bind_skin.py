@@ -1,4 +1,5 @@
 import os
+from typing import Optional
 
 import pymel.core as pm
 from maya import cmds
@@ -44,43 +45,65 @@ class BindSkinAction(BuildAction):
         dict(name='dropoffRate', type=AttrType.FLOAT, value=4.0, min=0.1, max=10.0),
         dict(name='heatmapFalloff', type=AttrType.FLOAT, value=0.68, min=0.0, max=1.0),
         dict(name='removeUnusedInfluences', type=AttrType.BOOL, value=False),
+        dict(name='weightsFile', type=AttrType.FILE, fileFilter="Weights (*.weights)", optional=True,
+             description="A file containing skin weights to apply when available. "
+                         "If no weights file exists, the skin method will be used."),
 
     ]
 
     def validate(self):
         if not len(self.meshes):
-            raise BuildActionError('meshes must have at least one value')
+            raise BuildActionError("meshes must have at least one value")
         bind_jnts = self._get_bind_joints()
         if not len(bind_jnts):
-            raise BuildActionError('no bind joints were set')
+            raise BuildActionError("no bind joints were set")
+        # if weights file is set, ensure it exists
+        if self.weightsFile:
+            weights_file_path = self._resolve_file_path(self.weightsFile)
+            if not os.path.isfile(weights_file_path):
+                raise BuildActionError(f"File not found: {weights_file_path}")
 
     def run(self):
         bind_jnts = self._get_bind_joints()
+        weights_file_path = self._resolve_file_path(self.weightsFile)
 
-        bindkwargs = dict(
-            toSelectedBones=True,
-            toSkeletonAndTransforms=False,
-            bindMethod=self.bindMethod,
-            dropoffRate=self.dropoffRate,
-            heatmapFalloff=self.heatmapFalloff,
+        bind_kwargs = dict(
             maximumInfluences=self.maxInfluences,
             normalizeWeights=self.normalizeWeights,
             obeyMaxInfluences=self.maintainMaxInfuence,
             removeUnusedInfluence=self.removeUnusedInfluences,
             skinMethod=self.skinMethod,
+            toSelectedBones=True,
+            toSkeletonAndTransforms=False,
             weightDistribution=self.weightDistribution,
         )
 
+        # if weights will be applied afterwards, don't use a bind method
+        if not weights_file_path:
+            bind_kwargs.update(dict(
+                bindMethod=self.bindMethod,
+                dropoffRate=self.dropoffRate,
+                heatmapFalloff=self.heatmapFalloff,
+            ))
+
+        # create skin clusters
+        all_skin_names = []
         for mesh in self.meshes:
             pm.select(bind_jnts + [mesh])
-            skin = cmds.skinCluster(**bindkwargs)
-            pm.rename(skin, '{0}_skcl'.format(mesh))
+            results = cmds.skinCluster(name=f"{mesh}_skcl", **bind_kwargs)
+            all_skin_names.append(results[0])
 
         # TODO: support geomBind when using geodesic voxel binding
 
+        # mark render and bake geo
         if self.isRenderGeo:
             self.extend_rig_metadata_list('renderGeo', self.meshes)
             self.extend_rig_metadata_list('bakeNodes', bind_jnts)
+
+        # apply skin weights
+        if weights_file_path and all_skin_names:
+            all_skins = [pm.PyNode(name) for name in all_skin_names]
+            skins.apply_skin_weights_from_file(weights_file_path, *all_skins)
 
     def _get_bind_joints(self):
         """
@@ -107,50 +130,22 @@ class BindSkinAction(BuildAction):
 
         return list(result)
 
-
-class ApplySkinWeightsAction(BuildAction):
-    """
-    Apply data from a .weights file to a skinned mesh.
-    """
-
-    id = 'Pulse.ApplySkinWeights'
-    display_name = 'Apply Skin Weights'
-    color = (1.0, .85, 0.5)
-    category = 'Deformers'
-
-    attr_definitions = [
-        dict(name='meshes', type=AttrType.NODE_LIST,
-             description="The meshes to apply weights to."),
-        dict(name='fileName', type=AttrType.STRING,
-             description="The name of the .weights file, relative to the blueprint."),
-    ]
-
-    def validate(self):
-        if not len(self.meshes):
-            raise BuildActionError('meshes must have at least one value')
-        file_path = self._get_weights_file_path()
-        if not os.path.isfile(file_path):
-            raise BuildActionError('file not found: %s' % file_path)
-
-    def run(self):
-        file_path = self._get_weights_file_path()
-        all_skins = self._get_skin_clusters()
-        skins.apply_skin_weights_from_file(file_path, *all_skins)
-
-    def _get_skin_clusters(self):
-        result = []
-        for mesh in self.meshes:
-            skin = skins.get_skin_from_mesh(mesh)
-            if not skin:
-                raise BuildActionError(f"No skin cluster found for mesh: {mesh}")
-            result.append(skin)
-        return result
-
-    def _get_weights_file_path(self):
-        scene_path = str(pm.sceneName())
-        if self.fileName:
-            return os.path.join(
-                os.path.dirname(scene_path), self.fileName).replace('\\', '/')
+    def _resolve_file_path(self, file_path) -> Optional[str]:
+        """
+        Return the full path to the weights file, or None if the file could not be found.
+        """
+        # TODO: make a util that resolves a relative or absolute path for this common behavior
+        if not file_path:
+            return file_path
+        if os.path.isfile(file_path):
+            # path is already absolute
+            return file_path
         else:
-            # default to blueprint file name
-            return os.path.splitext(scene_path)[0] + '.weights'
+            # get path relative to the current scene
+            scene_path = str(pm.sceneName())
+            if scene_path:
+                rel_file_path = os.path.join(os.path.dirname(scene_path), file_path).replace('\\', '/')
+                if os.path.isfile(rel_file_path):
+                    return rel_file_path
+        # couldn't find the file
+        return file_path

@@ -1,4 +1,5 @@
 import logging
+from typing import List
 
 import maya.OpenMaya as api
 import maya.OpenMayaAnim as apianim
@@ -226,7 +227,7 @@ def get_skin_weights_map(*skins):
     return skin_weights
 
 
-def apply_skin_weights_map(skin_weights, *skins):
+def apply_skin_weights_map(skin_weights, *skins: List[pm.nt.SkinCluster]):
     """
     Set the skin weights for multiple skin clusters.
 
@@ -267,7 +268,7 @@ def save_skin_weights_to_file(file_path, *skins):
     LOG.info(file_path)
 
 
-def apply_skin_weights_from_file(file_path, *skins):
+def apply_skin_weights_from_file(file_path, *skins: List[pm.nt.SkinCluster]):
     """
     Load skin weights from a .weights file, and apply it to
     one or more skin clusters.
