@@ -5,6 +5,9 @@ settings:
 steps:
   children:
   - action:
+      id: Pulse.RenameScene
+    name: Rename Scene
+  - action:
       id: Pulse.ImportReferences
     name: Import References
   - action:
@@ -47,8 +50,5 @@ steps:
       objects:
       - !node '6506B2DD-486F-185B-BFB8-E38F2984AD20'
     name: Display Layer
-  - action:
-      id: Pulse.RenameScene
-    name: Rename Scene
   name: Root
 version: 0.2.0
