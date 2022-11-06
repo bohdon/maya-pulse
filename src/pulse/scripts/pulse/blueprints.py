@@ -196,18 +196,18 @@ class Blueprint(object):
         """
         Add a set of core BuildActions to the blueprint.
         """
+        rename_action = BuildStep(action_id='Pulse.RenameScene')
         import_action = BuildStep(action_id='Pulse.ImportReferences')
         hierarchy_action = BuildStep(action_id='Pulse.BuildCoreHierarchy')
         hierarchy_attr = hierarchy_action.action_proxy.get_attr('allNodes')
         if hierarchy_attr:
             hierarchy_attr.set_value(True)
         main_group = BuildStep('Main')
-        rename_action = BuildStep(action_id='Pulse.RenameScene')
         self.rootStep.add_children([
+            rename_action,
             import_action,
             hierarchy_action,
             main_group,
-            rename_action
         ])
 
     def get_config(self) -> dict:
