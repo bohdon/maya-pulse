@@ -3,12 +3,13 @@ Form ui classes for any type of action attribute, e.g.
 float forms, node and node list forms, combo box forms, etc.
 """
 import logging
+import os.path
 from typing import Optional
 
 import maya.cmds as cmds
 import pymel.core as pm
 
-from ..build_items import BuildStep, BuildActionProxy, BuildActionAttribute
+from ..build_items import BuildStep, BuildActionProxy, BuildActionAttribute, BuildActionAttributeType
 from ..vendor import pymetanode as meta
 from ..serializer import serialize_attr_value
 from ..vendor.Qt import QtCore, QtGui, QtWidgets
@@ -477,7 +478,7 @@ class DefaultAttrForm(ActionAttrForm):
         super(DefaultAttrForm, self)._onValueEdited()
 
 
-ActionAttrForm.addFormType(None, DefaultAttrForm)
+ActionAttrForm.addFormType(BuildActionAttributeType.UNKNOWN, DefaultAttrForm)
 
 
 class BoolAttrForm(ActionAttrForm):
@@ -503,7 +504,7 @@ class BoolAttrForm(ActionAttrForm):
 
 
 # TODO: put attribute type names in an enum class
-ActionAttrForm.addFormType('bool', BoolAttrForm)
+ActionAttrForm.addFormType(BuildActionAttributeType.BOOL, BoolAttrForm)
 
 
 class IntAttrForm(ActionAttrForm):
@@ -530,7 +531,7 @@ class IntAttrForm(ActionAttrForm):
         return self.spinBox.value()
 
 
-ActionAttrForm.addFormType('int', IntAttrForm)
+ActionAttrForm.addFormType(BuildActionAttributeType.INT, IntAttrForm)
 
 
 class FloatAttrForm(ActionAttrForm):
@@ -559,7 +560,7 @@ class FloatAttrForm(ActionAttrForm):
         return self.spinBox.value()
 
 
-ActionAttrForm.addFormType('float', FloatAttrForm)
+ActionAttrForm.addFormType(BuildActionAttributeType.FLOAT, FloatAttrForm)
 
 
 class StringAttrForm(ActionAttrForm):
@@ -584,7 +585,7 @@ class StringAttrForm(ActionAttrForm):
         return self.lineEdit.text().strip(' ')
 
 
-ActionAttrForm.addFormType('string', StringAttrForm)
+ActionAttrForm.addFormType(BuildActionAttributeType.STRING, StringAttrForm)
 
 
 class OptionAttrForm(ActionAttrForm):
@@ -611,7 +612,7 @@ class OptionAttrForm(ActionAttrForm):
         return self.combo.currentIndex()
 
 
-ActionAttrForm.addFormType('option', OptionAttrForm)
+ActionAttrForm.addFormType(BuildActionAttributeType.OPTION, OptionAttrForm)
 
 
 class NodeAttrForm(ActionAttrForm):
@@ -682,7 +683,7 @@ class NodeAttrForm(ActionAttrForm):
             pm.select(nodes)
 
 
-ActionAttrForm.addFormType('node', NodeAttrForm)
+ActionAttrForm.addFormType(BuildActionAttributeType.NODE, NodeAttrForm)
 
 
 class NodeListAttrForm(ActionAttrForm):
@@ -744,7 +745,82 @@ class NodeListAttrForm(ActionAttrForm):
             pm.select(nodes)
 
 
-ActionAttrForm.addFormType('nodelist', NodeListAttrForm)
+ActionAttrForm.addFormType(BuildActionAttributeType.NODE_LIST, NodeListAttrForm)
+
+
+class FileAttrForm(ActionAttrForm):
+    """
+    Attribute form for a file path.
+
+    Supports some custom attribute settings:
+        startDir: The directory to start browsing from, defaults to the scene dir.
+        fileFilter: The file type filter to apply, e.g. "FBX (*.fbx)"
+    """
+
+    def setupUi(self, parent):
+        self.setupDefaultFormUi(parent)
+
+        layout = QtWidgets.QHBoxLayout(parent)
+        layout.setSpacing(4)
+
+        self.line_edit = QtWidgets.QLineEdit(parent)
+        self.line_edit.setMinimumHeight(self.LABEL_HEIGHT)
+        self._setFormValue(self.getAttrValue())
+        self.line_edit.editingFinished.connect(self._onValueEdited)
+        layout.addWidget(self.line_edit)
+
+        btn = QtWidgets.QPushButton(parent)
+        btn.setText("...")
+        btn.clicked.connect(self._browse_for_file)
+        btn.setFixedHeight(self.LABEL_HEIGHT - 2)
+        layout.addWidget(btn)
+        # layout.setAlignment(btn, QtCore.Qt.AlignCenter)
+
+        self.setDefaultFormLayout(layout)
+
+    def _setFormValue(self, attrValue):
+        self.line_edit.setText(attrValue)
+
+    def _getFormValue(self):
+        return self.line_edit.text().strip(' ')
+
+    def _browse_for_file(self):
+        kwargs = {}
+
+        start_dir = self._get_starting_dir()
+        if start_dir:
+            kwargs["startingDirectory"] = start_dir
+
+        file_filter = self.attr.config.get("fileFilter")
+        if file_filter:
+            kwargs["fileFilter"] = file_filter
+
+        file_path_results = pm.fileDialog2(fileMode=1, **kwargs)
+        if file_path_results:
+            file_path = file_path_results[0]
+            if start_dir:
+                # convert to relative path
+                rel_path = os.path.relpath(file_path, start_dir)
+                self.setAttrValue(rel_path)
+            else:
+                # set as absolute path
+                self.setAttrValue(file_path)
+
+    def _get_starting_dir(self) -> str:
+        """
+        Return the effective starting directory to use for the path.
+        This path is also used to convert absolute paths to relative paths when browsing.
+        """
+        start_dir = self.attr.config.get("startDir")
+        if not start_dir:
+            # use scene directory
+            scene_name = pm.sceneName()
+            if scene_name:
+                start_dir = str(scene_name.parent)
+        return start_dir
+
+
+ActionAttrForm.addFormType(BuildActionAttributeType.FILE, FileAttrForm)
 
 
 class NodeBatchAttrForm(BatchAttrForm):
@@ -793,7 +869,7 @@ class NodeBatchAttrForm(BatchAttrForm):
         self.setVariantValues(pm.selected())
 
 
-BatchAttrForm.addFormType('node', NodeBatchAttrForm)
+BatchAttrForm.addFormType(BuildActionAttributeType.NODE, NodeBatchAttrForm)
 
 
 class DefaultBatchAttrForm(BatchAttrForm):
@@ -802,4 +878,4 @@ class DefaultBatchAttrForm(BatchAttrForm):
         self.setupDefaultFormUi(parent)
 
 
-BatchAttrForm.addFormType(None, DefaultBatchAttrForm)
+BatchAttrForm.addFormType(BuildActionAttributeType.UNKNOWN, DefaultBatchAttrForm)

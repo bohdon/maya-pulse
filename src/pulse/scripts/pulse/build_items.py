@@ -216,6 +216,7 @@ class BuildActionAttributeType(object):
     OPTION = 'option'
     NODE = 'node'
     NODE_LIST = 'nodelist'
+    FILE = 'file'
 
 
 class BuildActionAttribute(object):
@@ -568,6 +569,24 @@ class BuildActionNodeListAttribute(BuildActionAttribute):
             self._is_valid = False
             return
 
+        self._invalid_reason = None
+        self._is_valid = True
+
+
+class BuildActionFileAttribute(BuildActionAttribute):
+    """
+    An attribute that points to a single file.
+    """
+    class_attr_type = BuildActionAttributeType.FILE
+
+    def get_type_default_value(self):
+        return ""
+
+    def is_acceptable_value(self, new_value):
+        return isinstance(new_value, str)
+
+    def valid(self):
+        # don't validate file existence here, let build actions validate themselves
         self._invalid_reason = None
         self._is_valid = True
 
