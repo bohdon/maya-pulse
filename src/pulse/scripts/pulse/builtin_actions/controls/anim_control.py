@@ -128,5 +128,13 @@ class ShowAllControlsAction(BuildAction):
                 input_attr = inputs[0]
                 vis_choice = util_nodes.choice(attr, input_attr, True)
                 vis_choice.node().rename(f"{ctl}_vis_override_choice")
+
+                # connect attribute, preserving locked state
+                is_locked = ctl.visibility.isLocked()
+                if is_locked:
+                    ctl.visibility.setLocked(False)
                 vis_choice >> ctl.visibility
+                if is_locked:
+                    ctl.visibility.setLocked(True)
+
                 self.log.debug(f"Connected '{self.node}.{attr}' visibility override to '{ctl}.visibility'")
