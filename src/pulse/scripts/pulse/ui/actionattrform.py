@@ -774,7 +774,6 @@ class FileAttrForm(ActionAttrForm):
         btn.clicked.connect(self._browse_for_file)
         btn.setFixedHeight(self.LABEL_HEIGHT - 2)
         layout.addWidget(btn)
-        # layout.setAlignment(btn, QtCore.Qt.AlignCenter)
 
         self.setDefaultFormLayout(layout)
 

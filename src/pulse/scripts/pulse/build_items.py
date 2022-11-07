@@ -84,7 +84,7 @@ class BuildActionSpec(object):
 
     @property
     def editor_form_cls(self):
-        return self.action_cls.editorFormClass
+        return self.action_cls.editor_form_class
 
 
 def _increment_name(name: str) -> str:
@@ -1116,7 +1116,7 @@ class BuildAction(BuildActionData):
     attr_definitions: list[dict] = []
 
     # the custom form widget class to display in the action editor for this action
-    editorFormClass: Optional[type] = None
+    editor_form_class: Optional[type] = None
 
     @staticmethod
     def from_action_id(action_id: str) -> Optional['BuildAction']:

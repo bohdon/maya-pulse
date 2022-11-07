@@ -111,7 +111,7 @@ class PythonAction(BuildAction):
     id = 'Pulse.Python'
     display_name = 'Python'
     category = 'Scripts'
-    editorFormClass = PythonActionForm
+    editor_form_class = PythonActionForm
     attr_definitions = [
         dict(name='function', type=AttrType.STRING, value='my_function',
              description="The name of the function to run. Should accept a single argument for the"

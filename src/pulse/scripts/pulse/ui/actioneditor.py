@@ -117,36 +117,33 @@ class BuildStepForm(QtWidgets.QWidget):
             return
 
         # main layout containing header and body
-        layout = QtWidgets.QVBoxLayout(parent)
-        layout.setSpacing(2)
-        layout.setMargin(0)
+        self.main_layout = QtWidgets.QVBoxLayout(parent)
+        self.main_layout.setSpacing(2)
+        self.main_layout.setMargin(0)
 
-        # header frame
-        headerFrame = QtWidgets.QFrame(parent)
-        self.setupHeaderUi(headerFrame)
-        layout.addWidget(headerFrame)
+        # title / header
+        self.setupHeaderUi(self)
 
         # notifications
         notifications = BuildStepNotificationsList(step, parent)
-        layout.addWidget(notifications)
+        self.main_layout.addWidget(notifications)
 
-        # body layout
-        bodyFrame = QtWidgets.QFrame(parent)
-        bodyFrame.setObjectName("bodyFrame")
-        bodyColorStr = LinearColor(1, 1, 1, 0.02).as_style()
-        bodyFrame.setStyleSheet(f".QFrame#bodyFrame{{ background-color: {bodyColorStr}; }}")
-        layout.addWidget(bodyFrame)
-
-        self.setupBodyUi(bodyFrame)
+        # body
+        self.setupBodyUi(self)
+        self.setLayout(self.main_layout)
 
     def setupHeaderUi(self, parent):
+        """
+        Build the header UI for this build step. Includes the step name and
+        a button for quick-editing the action's python script if this step is an action.
+        """
         step = self.getStep()
         color = step.get_color()
-        colorStr = color.as_style()
+        color_str = color.as_style()
 
-        bgColor = color * 0.15
-        bgColor.a = 0.5
-        bgColorStr = bgColor.as_style()
+        bg_color = color * 0.15
+        bg_color.a = 0.5
+        bg_color_str = bg_color.as_style()
 
         layout = QtWidgets.QHBoxLayout(parent)
         layout.setMargin(0)
@@ -154,29 +151,33 @@ class BuildStepForm(QtWidgets.QWidget):
         self.displayNameLabel = QtWidgets.QLabel(parent)
         self.displayNameLabel.setText(self.getStepDisplayName(step))
         self.displayNameLabel.setProperty('cssClasses', 'section-title')
-        self.displayNameLabel.setStyleSheet(f"color: {colorStr}; background-color: {bgColorStr}")
+        self.displayNameLabel.setStyleSheet(f"color: {color_str}; background-color: {bg_color_str}")
         layout.addWidget(self.displayNameLabel)
 
         if step.is_action():
-            editBtn = QtWidgets.QToolButton(parent)
-            editBtn.setIcon(QtGui.QIcon(':/icon/file_pen.svg'))
-            editBtn.setStatusTip('Edit this actions python script.')
-            editBtn.clicked.connect(self._openActionScriptInSourceEditor)
-            layout.addWidget(editBtn)
+            edit_btn = QtWidgets.QToolButton(parent)
+            edit_btn.setIcon(QtGui.QIcon(':/icon/file_pen.svg'))
+            edit_btn.setStatusTip("Edit this action's python script.")
+            edit_btn.clicked.connect(self._openActionScriptInSourceEditor)
+            layout.addWidget(edit_btn)
+
+        self.main_layout.addLayout(layout)
 
     def setupBodyUi(self, parent):
+        """
+        Build the body UI for this build step.
+
+        If this step is an action, create a BuildActionProxyForm widget, possibly using the custom
+        `editor_form_cls` defined on the action.
+        """
         step = self.getStep()
-
-        layout = QtWidgets.QVBoxLayout(parent)
-        layout.setMargin(6)
-        layout.setSpacing(0)
-
         if step.is_action() and step.action_proxy.is_valid():
-            formCls = step.action_proxy.spec.editor_form_cls
-            if not formCls:
-                formCls = BuildActionProxyForm
-            self.actionForm = formCls(self.index, parent)
-            layout.addWidget(self.actionForm)
+            custom_form_cls = step.action_proxy.spec.editor_form_cls
+            if not custom_form_cls:
+                # use default form
+                custom_form_cls = BuildActionProxyForm
+            self.actionForm = custom_form_cls(self.index, parent)
+            self.main_layout.addWidget(self.actionForm)
 
     def _openActionScriptInSourceEditor(self):
         """
@@ -187,23 +188,72 @@ class BuildStepForm(QtWidgets.QWidget):
             source_editor.open_module(step.action_proxy.spec.module)
 
 
+class Ui_BuildActionDataForm(object):
+    def setupUi(self, parent):
+        self.main_layout = QtWidgets.QHBoxLayout(parent)
+        self.main_layout.setMargin(0)
+
+        self.frame = QtWidgets.QFrame(parent)
+        self.frame.setProperty("cssClasses", "block")
+
+        self.h_layout = QtWidgets.QHBoxLayout(self.frame)
+        self.h_layout.setMargin(0)
+
+        self.attr_list_layout = QtWidgets.QVBoxLayout(self.frame)
+        self.attr_list_layout.setMargin(0)
+        self.attr_list_layout.setSpacing(0)
+        self.h_layout.addLayout(self.attr_list_layout)
+
+        self.main_layout.addWidget(self.frame)
+
+    def setupRemoveVariantUi(self, parent):
+        """
+        Add an X button for removing this variant.
+        """
+        self.remove_btn = QtWidgets.QToolButton(parent)
+        # button uses its own margin to get correct spacing on the left and right,
+        # so the real size is 20x20 after the margin of 4px
+        self.remove_btn.setFixedSize(QtCore.QSize(26, 26))
+        self.remove_btn.setStyleSheet("margin: 3px; padding: 3px")
+        self.remove_btn.setStatusTip("Remove this variant.")
+        self.remove_btn.setIcon(QtGui.QIcon(":/icon/xmark.svg"))
+
+        self.h_layout.insertWidget(0, self.remove_btn)
+        self.h_layout.setAlignment(self.remove_btn, QtCore.Qt.AlignTop)
+
+
 class BuildActionDataForm(QtWidgets.QWidget):
     """
     Form for editing all attributes of a BuildActionData instance.
+
+    This form is used for both invariant and variant attribute editing, and handles
+    building the list of ActionAttrForms for each attribute.
     """
+
+    # called when the remove-variant button is clicked
+    onRemoved = QtCore.Signal()
 
     def __init__(self, index, variantIndex=-1, parent=None):
         super(BuildActionDataForm, self).__init__(parent=parent)
 
         self.index = QtCore.QPersistentModelIndex(index)
         self.variantIndex = variantIndex
-        self.setupUi(self)
+        self.ui = Ui_BuildActionDataForm()
+        self.ui.setupUi(self)
+
+        # if variant, add a button to delete this variant
+        if variantIndex >= 0:
+            self.ui.setupRemoveVariantUi(self)
+            self.ui.remove_btn.clicked.connect(self._on_remove_clicked)
 
         # the map of all attr forms, indexed by attr name
         self._attrForms = {}
         self.updateAttrFormList()
 
         self.index.model().dataChanged.connect(self.onModelDataChanged)
+
+    def _on_remove_clicked(self):
+        self.onRemoved.emit()
 
     def onModelDataChanged(self):
         if not self.index.isValid():
@@ -222,22 +272,12 @@ class BuildActionDataForm(QtWidgets.QWidget):
         """
         step = self.getStep()
         if step and step.is_action():
-            actionProxy = step.action_proxy
+            action_proxy = step.action_proxy
             if self.variantIndex >= 0:
-                if actionProxy.num_variants() > self.variantIndex:
-                    return actionProxy.get_variant(self.variantIndex)
+                if action_proxy.num_variants() > self.variantIndex:
+                    return action_proxy.get_variant(self.variantIndex)
             else:
-                return actionProxy
-
-    def setupUi(self, parent):
-        self.layout = QtWidgets.QHBoxLayout(parent)
-        self.layout.setMargin(0)
-        self.setLayout(self.layout)
-
-        self.attrListLayout = QtWidgets.QVBoxLayout(parent)
-        self.attrListLayout.setMargin(0)
-        self.attrListLayout.setSpacing(0)
-        self.layout.addLayout(self.attrListLayout)
+                return action_proxy
 
     def updateAttrFormList(self):
         """
@@ -257,12 +297,12 @@ class BuildActionDataForm(QtWidgets.QWidget):
             if not self.missingLabel:
                 self.missingLabel = QtWidgets.QLabel(self)
                 self.missingLabel.setText(f"Unknown action: '{actionData.action_id}'")
-                self.attrListLayout.addWidget(self.missingLabel)
+                self.ui.attr_list_layout.addWidget(self.missingLabel)
             return
         else:
             # remove missing label if it existed previously
             if self.missingLabel:
-                self.attrListLayout.removeWidget(self.missingLabel)
+                self.ui.attr_list_layout.removeWidget(self.missingLabel)
                 self.missingLabel = None
 
         parent = self
@@ -270,7 +310,7 @@ class BuildActionDataForm(QtWidgets.QWidget):
         # remove forms for non-existent attrs
         for attrName, attrForm in list(self._attrForms.items()):
             if not actionData.has_attr(attrName):
-                self.attrListLayout.removeWidget(attrForm)
+                self.ui.attr_list_layout.removeWidget(attrForm)
                 attrForm.setParent(None)
                 del self._attrForms[attrName]
 
@@ -291,10 +331,10 @@ class BuildActionDataForm(QtWidgets.QWidget):
                 attrForm = self.createAttrForm(actionData, attr, parent)
 
                 if oldForm:
-                    self.attrListLayout.replaceWidget(oldForm, attrForm)
+                    self.ui.attr_list_layout.replaceWidget(oldForm, attrForm)
                     oldForm.setParent(None)
                 else:
-                    self.attrListLayout.insertWidget(i, attrForm)
+                    self.ui.attr_list_layout.insertWidget(i, attrForm)
 
                 self._attrForms[attr.name] = attrForm
 
@@ -319,10 +359,9 @@ class BuildActionDataForm(QtWidgets.QWidget):
 
 class MainBuildActionDataForm(BuildActionDataForm):
     """
-    The form for the main set of BuildActionData of a
-    BuildActionProxy. Contains additional buttons for
-    toggling the variant state of attributes, and uses
-    BatchAttrForms for variant attributes.
+    The form for the main set of BuildActionData of a BuildActionProxy.
+    Contains additional buttons for toggling the variant state of attributes,
+    and uses BatchAttrForms for variant attributes.
     """
 
     def createAttrForm(self, actionData: BuildActionData, attr: BuildActionAttribute, parent):
@@ -441,31 +480,28 @@ class BuildActionProxyForm(QtWidgets.QWidget):
 
     def setupUi(self, parent):
         """
-        Build the content ui for this BatchBuildAction.
-        Creates ui to manage the array of variant attributes.
+        Build the ui for this form, includes both the variant and invariant attributes.
         """
-        self.layout = QtWidgets.QVBoxLayout(parent)
-        self.layout.setSpacing(4)
-        self.layout.setMargin(0)
+        self.main_layout = QtWidgets.QVBoxLayout(parent)
+        self.main_layout.setSpacing(2)
+        self.main_layout.setMargin(0)
 
-        self.setupLayoutHeader(parent, self.layout)
+        self.setupLayoutHeader(parent, self.main_layout)
 
-        # form for all main / invariant attributes
+        # invariant attributes
         mainAttrForm = MainBuildActionDataForm(self.index, parent=parent)
-        self.layout.addWidget(mainAttrForm)
+        self.main_layout.addWidget(mainAttrForm)
 
-        spacer = QtWidgets.QSpacerItem(20, 4, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
-        self.layout.addItem(spacer)
-
-        # variant form list
+        # variant attributes
         if self.shouldSetupVariantsUi():
-            self.setupVariantsUi(parent, self.layout)
+            self.setupVariantsUi(parent, self.main_layout)
             self.hasVariantsUi = True
 
     def setupLayoutHeader(self, parent, layout):
         """
         Called after the main layout has been created, before the
         main action data form or variants forms have been added to the layout.
+        Intended for use in BuildActionProxyForm subclasses to add custom ui before the main form.
         """
         pass
 
@@ -476,30 +512,27 @@ class BuildActionProxyForm(QtWidgets.QWidget):
         layout.addWidget(self.variantHeader)
 
         variantHeaderLayout = QtWidgets.QHBoxLayout(self.variantHeader)
-        variantHeaderLayout.setContentsMargins(10, 4, 4, 4)
+        variantHeaderLayout.setMargin(5)
         variantHeaderLayout.setSpacing(4)
-
-        self.variantsLabel = QtWidgets.QLabel(self.variantHeader)
-        self.variantsLabel.setText("Variants: ")
-        self.variantsLabel.setProperty('cssClasses', 'help')
-        variantHeaderLayout.addWidget(self.variantsLabel)
-
-        spacer = QtWidgets.QSpacerItem(20, 4, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
-        layout.addItem(spacer)
 
         # add variant button
         addVariantBtn = QtWidgets.QToolButton(self.variantHeader)
-        addVariantBtn.setFixedSize(QtCore.QSize(40, 20))
+        addVariantBtn.setFixedSize(QtCore.QSize(20, 20))
         addVariantBtn.setStyleSheet('padding: 4px')
         addVariantBtn.setStatusTip('Add a variant to this action.')
         addVariantBtn.setIcon(QtGui.QIcon(":/icon/plus.svg"))
         addVariantBtn.clicked.connect(self.addVariant)
         variantHeaderLayout.addWidget(addVariantBtn)
 
+        self.variantsLabel = QtWidgets.QLabel(self.variantHeader)
+        self.variantsLabel.setText("Variants: ")
+        self.variantsLabel.setProperty('cssClasses', 'help')
+        variantHeaderLayout.addWidget(self.variantsLabel)
+
         # variant list layout
         self.variantListLayout = QtWidgets.QVBoxLayout(parent)
         self.variantListLayout.setContentsMargins(0, 0, 0, 0)
-        self.variantListLayout.setSpacing(4)
+        self.variantListLayout.setSpacing(2)
         layout.addLayout(self.variantListLayout)
 
     def createVariantActionDataForm(self, variantIndex, parent):
@@ -508,16 +541,7 @@ class BuildActionProxyForm(QtWidgets.QWidget):
         for use in the variants list. Adds a button to remove the variant.
         """
         dataForm = BuildActionDataForm(self.index, variantIndex, parent=parent)
-
-        # add remove variant button
-        removeVariantBtn = QtWidgets.QToolButton(parent)
-        removeVariantBtn.setFixedSize(QtCore.QSize(20, 20))
-        removeVariantBtn.setStyleSheet('padding: 4px')
-        removeVariantBtn.setStatusTip('Remove this variant.')
-        removeVariantBtn.setIcon(QtGui.QIcon(":/icon/xmark.svg"))
-        removeVariantBtn.clicked.connect(partial(self.removeVariantAtIndex, variantIndex))
-        dataForm.layout.insertWidget(0, removeVariantBtn)
-
+        dataForm.onRemoved.connect(partial(self.removeVariantAtIndex, variantIndex))
         return dataForm
 
     def updateVariantFormList(self):
