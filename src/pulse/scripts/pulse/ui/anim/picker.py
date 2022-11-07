@@ -2,7 +2,7 @@
 An anim picker for easily selecting controls while animating.
 """
 import logging
-from typing import List, Optional
+from typing import List, Optional, Any, Union
 from maya import OpenMaya
 import pymel.core as pm
 
@@ -25,17 +25,29 @@ def scale_rect(rect: QRect, scale: float) -> QRect:
 
 
 class AnimPickerButton(QtWidgets.QPushButton):
-    def __init__(self, base_rect: QRect, parent=None):
+    def __init__(self, location: Union[QPointF, QPoint], size: QSize, parent=None):
+        """
+        Args:
+            location: The center location of the button.
+            size: The size of the button.
+            parent: The parent object.
+        """
         super(AnimPickerButton, self).__init__(parent=parent)
 
         # the geometry of this button at 1x zoom
-        self.base_rect = base_rect
+        self.location = QPointF(location)
+        self.size = size
         self._is_selected = False
         # the node this button selects
         self.node: Optional[str] = None
         self.color: Optional[LinearColor] = None
 
         self.clicked.connect(self.select)
+
+    def set_location(self, pos: Union[QPointF, QPoint]):
+        """Set the center location of the button."""
+        # ensure its a floating point
+        self.location = QPointF(pos)
 
     def is_selected(self):
         return self._is_selected
@@ -101,6 +113,7 @@ class AnimPickerPanel(QtWidgets.QWidget):
         self.rubber_band: Optional[QtWidgets.QRubberBand] = None
         self.default_btn_size = QSize(40, 40)
         self.view_offset_raw = QPointF()
+        self.grid_size = QPoint(10, 10)
         self.view_scale = 1.0
         self.view_scale_min = 0.25
         self.view_scale_max = 3.0
@@ -113,8 +126,10 @@ class AnimPickerPanel(QtWidgets.QWidget):
         self.is_drag_selecting = False
         # the list of all buttons
         self.buttons: List[AnimPickerButton] = []
+        # the current button being placed with left click, gives an opportunity to reposition before committing
+        self.placement_btn: Optional[AnimPickerButton] = None
         self.cb_ids = []
-        # last mouse position during drags, used for panning and zooming
+        # last mouse position during drags, used for panning, zooming, and dragging buttons
         self.drag_last_pos = QPoint()
 
         layout = QtWidgets.QVBoxLayout(self)
@@ -221,18 +236,22 @@ class AnimPickerPanel(QtWidgets.QWidget):
         self.add_view_scale(delta_scale, event.pos())
 
     def mousePressEvent(self, event: QtGui.QMouseEvent):
-        btns = event.buttons()
         mods = event.modifiers()
+        self.drag_last_pos = event.pos()
 
-        if btns & QtCore.Qt.LeftButton and mods & QtCore.Qt.ShiftModifier and not self.is_locked:
+        if event.buttons() == QtCore.Qt.LeftButton and mods & QtCore.Qt.ShiftModifier and not self.is_locked:
             location = self.inverse_transform_pos(event.localPos().toPoint())
-            self.add_picker_btn(location, self.default_btn_size)
+            self.placement_btn = self.add_picker_btn(location, self.default_btn_size)
 
         elif mods & QtCore.Qt.AltModifier:
             # start drag for pan or zoom
-            self.drag_last_pos = event.pos()
+            pass
 
-        elif btns & QtCore.Qt.LeftButton:
+        elif event.button() == QtCore.Qt.MiddleButton and not self.is_locked:
+            # drag move selected buttons
+            pass
+
+        elif event.button() == QtCore.Qt.LeftButton:
             # start selection
             additive = bool(mods & QtCore.Qt.ShiftModifier)
             self.start_selection(event.pos(), additive)
@@ -245,25 +264,47 @@ class AnimPickerPanel(QtWidgets.QWidget):
     def mouseMoveEvent(self, event: QtGui.QMouseEvent):
         btns = event.buttons()
         mods = event.modifiers()
-        if self.is_drag_selecting:
+        drag_delta: QPointF = QPointF(event.pos() - self.drag_last_pos)
+        self.drag_last_pos = event.pos()
+
+        if self.placement_btn:
+            # placing a new button
+            location = self.inverse_transform_pos(event.pos())
+            self.placement_btn.set_location(location)
+            self._update_btn_geometry(self.placement_btn)
+            pass
+
+        elif self.is_drag_selecting:
             self.update_selection(event.pos())
             if self.rubber_band:
                 self.rubber_band.setGeometry(self.selection_rect.normalized())
 
         elif mods & QtCore.Qt.AltModifier:
-            delta: QPoint = event.pos() - self.drag_last_pos
             if btns & QtCore.Qt.RightButton:
                 # drag zooming
-                delta_zoom = (delta.x() + delta.y()) * self.drag_zoom_sensitivity
+                delta_zoom = (drag_delta.x() + drag_delta.y()) * self.drag_zoom_sensitivity
                 self.add_view_scale(delta_zoom, self.panel_center)
             elif btns & QtCore.Qt.MiddleButton | QtCore.Qt.LeftButton:
                 # drag panning
-                self.set_view_offset_raw(self.view_offset_raw + delta)
-            self.drag_last_pos = event.pos()
+                self.set_view_offset_raw(self.view_offset_raw + drag_delta)
+
+        elif btns & QtCore.Qt.MiddleButton and not self.is_locked:
+            # drag move selected buttons
+            for btn in self.buttons:
+                if btn.is_selected():
+                    # add offset
+                    btn.set_location(btn.location + (drag_delta * (1.0 / self.view_scale)))
+                    self._update_btn_geometry(btn)
 
     def mouseReleaseEvent(self, event: QtGui.QMouseEvent):
         mods = event.modifiers()
-        if self.is_drag_selecting:
+        if self.placement_btn:
+            # commit snapping to grid
+            self.placement_btn.set_location(self._snap_pos_to_grid(self.placement_btn.location))
+            self._update_btn_geometry(self.placement_btn)
+            self.placement_btn = None
+
+        elif self.is_drag_selecting:
             operation = "replace"
             if mods & QtCore.Qt.ShiftModifier:
                 operation = "add"
@@ -272,6 +313,13 @@ class AnimPickerPanel(QtWidgets.QWidget):
             self.finish_selection(event.pos(), operation)
             if self.rubber_band:
                 self.rubber_band.hide()
+
+        elif event.button() == QtCore.Qt.MiddleButton and not self.is_locked:
+            # drag moved buttons, commit snapping to grid
+            for btn in self.buttons:
+                if btn.is_selected():
+                    btn.set_location(self._snap_pos_to_grid(btn.location))
+                    self._update_btn_geometry(btn)
 
     def start_selection(self, origin: QPoint, additive=False):
         if self.select_on_drag and not additive:
@@ -329,7 +377,7 @@ class AnimPickerPanel(QtWidgets.QWidget):
         # TODO: use event, or custom layout
         # update all geometry
         for btn in self.buttons:
-            btn.setGeometry(self.transform_rect(btn.base_rect))
+            self._update_btn_geometry(btn)
 
     def _on_scene_selection_changed(self, client_data=None):
         """Called when the Maya scene selection has changed. Update the picker's display."""
@@ -341,17 +389,15 @@ class AnimPickerPanel(QtWidgets.QWidget):
         """
         Add a picker button at the given unscaled location and size.
         """
-        print(f"Add button at {location}")
-        center_offset = (QPointF(size.width(), size.width()) * 0.5).toPoint()
-        base_rect = QRect(location - center_offset, size)
+        btn = AnimPickerButton(location, size, self)
+        self._update_btn_geometry(btn)
         sel = pm.selected()
-        btn = AnimPickerButton(base_rect, self)
-        btn.setGeometry(self.transform_rect(btn.base_rect))
         if sel:
             btn.set_node(sel[0].nodeName())
             pm.select(sel[0], deselect=True)
         self.buttons.append(btn)
         btn.show()
+        return btn
 
     def delete_selected_buttons(self):
         sel_btns = [btn for btn in self.buttons if btn.is_selected()]
@@ -359,6 +405,23 @@ class AnimPickerPanel(QtWidgets.QWidget):
             btn.setParent(None)
             btn.deleteLater()
             self.buttons.remove(btn)
+
+    def _update_btn_geometry(self, btn: AnimPickerButton):
+        """
+        Update the actual geometry of a button to include its position and view transformations.
+        """
+        grid_location = self._snap_pos_to_grid(btn.location)
+        center_offset = (QPointF(*btn.size.toTuple()) * 0.5).toPoint()
+        rect = QRect(grid_location - center_offset, btn.size)
+        btn.setGeometry(self.transform_rect(rect))
+
+    def _snap_pos_to_grid(self, pos: QPoint):
+        """
+        Snap a position to the picker grid.
+        """
+        x = round(pos.x() / self.grid_size.x()) * self.grid_size.x()
+        y = round(pos.y() / self.grid_size.y()) * self.grid_size.y()
+        return QPoint(x, y)
 
     def get_buttons_in_rect(self, rect: QRect):
         """
