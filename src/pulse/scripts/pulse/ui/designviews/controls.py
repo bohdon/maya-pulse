@@ -6,7 +6,6 @@ from ...vendor.Qt import QtCore, QtWidgets
 
 
 class ControlsDesignPanel(QtWidgets.QWidget):
-
     def __init__(self, parent):
         super(ControlsDesignPanel, self).__init__(parent)
 
@@ -26,7 +25,7 @@ class ControlsDesignPanel(QtWidgets.QWidget):
         def createControlShapeButton(text, shapeData):
             btn = QtWidgets.QPushButton(parent)
             btn.setStatusTip("Create a new control")
-            if 'icon' in shapeData:
+            if "icon" in shapeData:
                 btn.setIcon(getIcon("controls/" + shapeData["icon"]))
                 btn.setIconSize(QtCore.QSize(32, 32))
             else:
@@ -40,7 +39,7 @@ class ControlsDesignPanel(QtWidgets.QWidget):
         col = 0
         columnCount = 4
         for s in shapes:
-            btn = createControlShapeButton(s['name'], s)
+            btn = createControlShapeButton(s["name"], s)
             create_layout.addWidget(btn, row, col, 1, 1)
             col += 1
             if col == columnCount:
@@ -55,22 +54,23 @@ class ControlsDesignPanel(QtWidgets.QWidget):
         edit_layout.setSpacing(2)
 
         def createRotateComponentsButton(text, cssClasses: str, axis, degrees):
-            _axes = {0: 'X', 1: 'Y', 2: 'Z'}
+            _axes = {0: "X", 1: "Y", 2: "Z"}
 
             btn = QtWidgets.QPushButton(parent)
             btn.setText(text)
-            btn.setStatusTip("Rotate the components of the selected controls "
-                             f"{degrees} degrees around the {_axes[axis]} axis")
-            btn.setProperty('cssClasses', cssClasses)
+            btn.setStatusTip(
+                "Rotate the components of the selected controls " f"{degrees} degrees around the {_axes[axis]} axis"
+            )
+            btn.setProperty("cssClasses", cssClasses)
 
             btn.clicked.connect(cmd(editor_utils.rotate_selected_components_around_axis, axis, degrees))
             edit_layout.addWidget(btn)
 
-        createRotateComponentsButton('- X', 'x-axis', 0, -90)
-        createRotateComponentsButton('+ X', 'x-axis', 0, 90)
-        createRotateComponentsButton('- Y', 'y-axis', 1, -90)
-        createRotateComponentsButton('+ Y', 'y-axis', 1, 90)
-        createRotateComponentsButton('- Z', 'z-axis', 2, -90)
-        createRotateComponentsButton('+ Z', 'z-axis', 2, 90)
+        createRotateComponentsButton("- X", "x-axis", 0, -90)
+        createRotateComponentsButton("+ X", "x-axis", 0, 90)
+        createRotateComponentsButton("- Y", "y-axis", 1, -90)
+        createRotateComponentsButton("+ Y", "y-axis", 1, 90)
+        createRotateComponentsButton("- Z", "z-axis", 2, -90)
+        createRotateComponentsButton("+ Z", "z-axis", 2, 90)
 
         layout.addLayout(edit_layout)

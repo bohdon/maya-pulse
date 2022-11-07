@@ -37,7 +37,7 @@ class SourceEditorLauncher(object):
     """
 
     # the name of the editor to use, can be the short name of an editor if in PATH, or the full path to one
-    editor_path = option_var_property('pulse.editor.sourceEditorPath', 'pycharm.cmd')
+    editor_path = option_var_property("pulse.editor.sourceEditorPath", "pycharm.cmd")
 
     def set_editor_path(self, value):
         self.editor_path = value
@@ -68,8 +68,8 @@ class SourceEditorLauncher(object):
             module:
                 A python module to open.
         """
-        if not hasattr(module, '__file__'):
-            LOG.error('%s has no __file__ attribute.', module)
+        if not hasattr(module, "__file__"):
+            LOG.error("%s has no __file__ attribute.", module)
             return
 
         self.open_file(module.__file__)
@@ -80,11 +80,11 @@ class SourceEditorLauncher(object):
         """
         exec_name = self._get_editor_path()
         if not exec_name:
-            LOG.error(f'No source editor was selected')
+            LOG.error(f"No source editor was selected")
             return
 
         launch_args = [exec_name]
         launch_args.extend(args)
 
-        LOG.info("Launching source editor: %s", ' '.join([str(a) for a in launch_args]))
+        LOG.info("Launching source editor: %s", " ".join([str(a) for a in launch_args]))
         subprocess.Popen(launch_args)

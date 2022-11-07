@@ -18,7 +18,7 @@ from . import nodes
 
 LOG = logging.getLogger(__name__)
 
-LINK_METACLASS = 'pulse_link'
+LINK_METACLASS = "pulse_link"
 
 # map of link types to positioner classes
 POSITIONER_CLASS_MAP = {}
@@ -26,12 +26,12 @@ POSITIONER_CLASS_MAP = {}
 
 class LinkType(object):
     # the linked object will follow the target's position
-    DEFAULT = 'default'
+    DEFAULT = "default"
     # the linked object will be placed automatically
     # based on an ik pole vector, and target distance
-    IK_POLE = 'ikpole'
+    IK_POLE = "ikpole"
     # the linked object will be placed at weighted position between targets
-    WEIGHTED = 'weighted'
+    WEIGHTED = "weighted"
 
 
 def create_default_link(follower, leader, keep_offset=False):
@@ -46,7 +46,7 @@ def recreate_link(node, keep_offset=False):
     """
     link_data = get_link_meta_data(node)
     if link_data:
-        positioner = get_positioner(link_data.get('type', LinkType.DEFAULT))
+        positioner = get_positioner(link_data.get("type", LinkType.DEFAULT))
         positioner.keepOffset = keep_offset
         positioner.recreate_link(node, link_data)
 
@@ -68,7 +68,7 @@ def get_linked_nodes(node):
     Return all leaders a node is linked to.
     """
     link_data = get_link_meta_data(node)
-    positioner = get_positioner(link_data.get('type', LinkType.DEFAULT))
+    positioner = get_positioner(link_data.get("type", LinkType.DEFAULT))
     positioner.get_target_nodes(link_data)
 
 
@@ -83,7 +83,7 @@ def get_link_meta_data(node):
     return result
 
 
-def get_positioner(link_type) -> 'LinkPositioner':
+def get_positioner(link_type) -> "LinkPositioner":
     """
     Create and return a new positioner instance for a link type.
     """
@@ -128,7 +128,7 @@ def apply_link_position(node, quiet=False):
             LOG.warning("Node is not linked to anything: %s", node)
         return
 
-    positioner = get_positioner(link_data.get('type', LinkType.DEFAULT))
+    positioner = get_positioner(link_data.get("type", LinkType.DEFAULT))
     positioner.apply_link_position(node, link_data)
 
 
@@ -149,7 +149,7 @@ class LinkPositioner(object):
         """
         Set the metadata for a linked node
         """
-        link_data['type'] = self.linkType
+        link_data["type"] = self.linkType
         meta.setMetaData(node, className=LINK_METACLASS, data=link_data)
 
     def create_link(self, follower, target_nodes):
@@ -162,7 +162,7 @@ class LinkPositioner(object):
             target_nodes: The nodes to link to the follower.
         """
         link_data = {
-            'targetNodes': target_nodes,
+            "targetNodes": target_nodes,
         }
 
         if self.keepOffset:
@@ -191,15 +191,15 @@ class LinkPositioner(object):
         offset_mtx = pm.dt.TransformationMatrix(follower.wm.get() * pm.dt.Matrix(target_mtx).inverse())
 
         # translate
-        offsets['offsetTranslate'] = [round(v, precision) for v in offset_mtx.getTranslation('world')]
+        offsets["offsetTranslate"] = [round(v, precision) for v in offset_mtx.getTranslation("world")]
 
         # rotate
         rot = offset_mtx.getRotation()
-        rot.setDisplayUnit('degrees')
-        offsets['offsetRotate'] = [round(v, precision) for v in rot]
+        rot.setDisplayUnit("degrees")
+        offsets["offsetRotate"] = [round(v, precision) for v in rot]
 
         # scale
-        offsets['offsetScale'] = [round(v, precision) for v in offset_mtx.getScale('world')]
+        offsets["offsetScale"] = [round(v, precision) for v in offset_mtx.getScale("world")]
 
         return offsets
 
@@ -208,16 +208,16 @@ class LinkPositioner(object):
         Return the offset matrix to apply using any offsets
         defined in the link's metadata.
         """
-        t_offset = link_data.get('offsetTranslate')
-        r_offset = link_data.get('offsetRotate')
-        s_offset = link_data.get('offsetScale')
+        t_offset = link_data.get("offsetTranslate")
+        r_offset = link_data.get("offsetRotate")
+        s_offset = link_data.get("offsetScale")
         mtx = pm.dt.TransformationMatrix()
         if s_offset:
-            mtx.setScale(s_offset, 'world')
+            mtx.setScale(s_offset, "world")
         if r_offset:
             mtx.setRotation(r_offset)
         if t_offset:
-            mtx.setTranslation(t_offset, 'world')
+            mtx.setTranslation(t_offset, "world")
         return mtx
 
     def apply_link_position(self, follower, link_data):
@@ -252,7 +252,7 @@ class LinkPositioner(object):
             return target_nodes[0]
 
     def get_target_nodes(self, link_data):
-        return link_data.get('targetNodes', [])
+        return link_data.get("targetNodes", [])
 
 
 class DefaultLinkPositioner(LinkPositioner):
@@ -287,11 +287,11 @@ class IKPoleLinkPositioner(LinkPositioner):
 
     def create_link(self, follower, target_nodes):
         link_data = {
-            'targetNodes': target_nodes,
+            "targetNodes": target_nodes,
         }
 
         if self.ikpoleDistance is not None:
-            link_data['ikpoleDistance'] = self.ikpoleDistance
+            link_data["ikpoleDistance"] = self.ikpoleDistance
 
         self.set_link_meta_data(follower, link_data)
 
@@ -299,15 +299,15 @@ class IKPoleLinkPositioner(LinkPositioner):
         leader = target_nodes[0]
         pole_vector, mid_point = joints.get_ik_pole_vector_and_mid_point_for_joint(leader)
 
-        distance = link_data.get('ikpoleDistance')
+        distance = link_data.get("ikpoleDistance")
         if not distance:
             # calculate distance based on followers current location
-            mid_to_follower_vector = follower.getTranslation(space='world') - mid_point
+            mid_to_follower_vector = follower.getTranslation(space="world") - mid_point
             distance = pole_vector.dot(mid_to_follower_vector)
 
         new_translate = mid_point + pole_vector * distance
         target_mtx = pm.dt.TransformationMatrix(follower.wm.get())
-        target_mtx.setTranslation(new_translate, space='world')
+        target_mtx.setTranslation(new_translate, space="world")
         return target_mtx
 
 
@@ -331,11 +331,11 @@ class WeightedLinkPositioner(LinkPositioner):
         if self.weights is None:
             self.weights = [1] * len(target_nodes)
         elif len(target_nodes) != len(self.weights):
-            raise ValueError('weights must be the same length as targetNodes')
+            raise ValueError("weights must be the same length as targetNodes")
 
         link_data = {
-            'targetNodes': target_nodes,
-            'weights': self.weights,
+            "targetNodes": target_nodes,
+            "weights": self.weights,
         }
 
         if self.keepOffset:
@@ -346,28 +346,28 @@ class WeightedLinkPositioner(LinkPositioner):
         self.set_link_meta_data(follower, link_data)
 
     def recreate_link(self, node, link_data):
-        self.weights = link_data.get('weights')
+        self.weights = link_data.get("weights")
         self.create_link(node, self.get_target_nodes(link_data))
 
     def calculate_target_matrix(self, follower, target_nodes, link_data):
         mtxs = [n.wm.get() for n in target_nodes]
-        weights = link_data.get('weights', [])
+        weights = link_data.get("weights", [])
         total_weight = sum(weights)
 
         # pair and sort by weights, so the highest weight gets starting priority
         mtx_weights = list(zip(mtxs, weights))
         sorted(mtx_weights, key=operator.itemgetter(1), reverse=True)
 
-        target_translate = pm.dt.TransformationMatrix(mtxs[0]).getTranslation(space='world')
+        target_translate = pm.dt.TransformationMatrix(mtxs[0]).getTranslation(space="world")
         # blend to each following mtx using weights
         for mtx, weight in mtx_weights[1:]:
             alpha = weight / total_weight
-            translate = pm.dt.TransformationMatrix(mtx).getTranslation(space='world')
+            translate = pm.dt.TransformationMatrix(mtx).getTranslation(space="world")
             target_translate = math.lerp_vector(target_translate, translate, alpha)
 
         # currently only blending translate, the rest stays unmodified
         target_mtx = pm.dt.TransformationMatrix(follower.wm.get())
-        target_mtx.setTranslation(target_translate, space='world')
+        target_mtx.setTranslation(target_translate, space="world")
         return target_mtx
 
 

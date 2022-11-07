@@ -14,8 +14,8 @@ from .core import BlueprintUIModel, PulseWindow
 from .gen.action_palette import Ui_ActionPalette
 
 LOG = logging.getLogger(__name__)
-LOG_LEVEL_KEY = 'PYLOG_%s' % LOG.name.split('.')[0].upper()
-LOG.setLevel(os.environ.get(LOG_LEVEL_KEY, 'INFO').upper())
+LOG_LEVEL_KEY = "PYLOG_%s" % LOG.name.split(".")[0].upper()
+LOG.setLevel(os.environ.get(LOG_LEVEL_KEY, "INFO").upper())
 
 
 class ActionPalette(QtWidgets.QWidget):
@@ -64,7 +64,7 @@ class ActionPalette(QtWidgets.QWidget):
             # add label
             label = QtWidgets.QLabel(parent)
             label.setText(cat)
-            label.setProperty('cssClasses', 'section-title')
+            label.setProperty("cssClasses", "section-title")
             catLay.addWidget(label)
 
         for actionSpec in allActionSpecs:
@@ -78,8 +78,7 @@ class ActionPalette(QtWidgets.QWidget):
             btn.clicked.connect(partial(self.blueprintModel.createAction, actionId))
             categoryLayouts[actionCategory].addWidget(btn)
 
-        spacer = QtWidgets.QSpacerItem(
-            0, 0, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
+        spacer = QtWidgets.QSpacerItem(0, 0, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
 
         layout.addItem(spacer)
 
@@ -92,7 +91,7 @@ class ActionPalette(QtWidgets.QWidget):
 
 
 class ActionPaletteWindow(PulseWindow):
-    OBJECT_NAME = 'pulseActionPaletteWindow'
-    WINDOW_MODULE = 'pulse.ui.actionpalette'
-    WINDOW_TITLE = 'Pulse Action Palette'
+    OBJECT_NAME = "pulseActionPaletteWindow"
+    WINDOW_MODULE = "pulse.ui.actionpalette"
+    WINDOW_TITLE = "Pulse Action Palette"
     WIDGET_CLASS = ActionPalette

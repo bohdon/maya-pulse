@@ -45,11 +45,15 @@ def save_scene_if_dirty(prompt=True):
         else:
             # either save as or cancel
             kwargs = dict(
-                title='Warning: Scene Not Saved', message='Save changes to untitled scene?',
-                db="Save", cb="Cancel", ds="Cancel", button=("Save", "Cancel"),
+                title="Warning: Scene Not Saved",
+                message="Save changes to untitled scene?",
+                db="Save",
+                cb="Cancel",
+                ds="Cancel",
+                button=("Save", "Cancel"),
             )
             result = pm.confirmDialog(**kwargs)
-            if result == 'Save':
+            if result == "Save":
                 pm.runtime.SaveSceneAs()
                 return bool(pm.sceneName())
             else:
@@ -61,11 +65,15 @@ def save_scene_if_dirty(prompt=True):
             return pm.saveFile(force=True)
         else:
             kwargs = dict(
-                title='Save Scene', message=f'Save changes to\n{pm.sceneName()}',
-                db="Save", cb="Cancel", ds="Cancel", button=("Save", "Cancel"),
+                title="Save Scene",
+                message=f"Save changes to\n{pm.sceneName()}",
+                db="Save",
+                cb="Cancel",
+                ds="Cancel",
+                button=("Save", "Cancel"),
             )
             result = pm.confirmDialog(**kwargs)
-            if result == 'Save':
+            if result == "Save":
                 return pm.saveFile(force=True)
             else:
                 return False
@@ -79,6 +87,7 @@ def get_editor_blueprint():
     Return the shared Blueprint instance from the default UI model
     """
     from .ui.core import BlueprintUIModel
+
     return BlueprintUIModel.getDefaultModel().blueprint
 
 
@@ -89,13 +98,13 @@ def get_selected_transforms(include_children=False):
     Args:
         include_children (bool): If true, also include all descendants of the selected nodes.
     """
-    sel = pm.selected(type=['transform', 'joint'])
+    sel = pm.selected(type=["transform", "joint"])
     if include_children:
         result = []
         for s in sel:
             if s not in result:
                 result.append(s)
-            for child in s.listRelatives(ad=True, type=['transform', 'joint']):
+            for child in s.listRelatives(ad=True, type=["transform", "joint"]):
                 if child not in result:
                     result.append(child)
         return result
@@ -116,7 +125,7 @@ def disable_segment_scale_compensate_for_selected():
     Disable segment scale compensation on the selected joints
     """
     for jnt in pm.selected():
-        if jnt.nodeType() == 'joint':
+        if jnt.nodeType() == "joint":
             jnt.ssc.set(False)
 
 
@@ -134,7 +143,7 @@ def create_offset_for_selected():
     """
     Create an offset group for the selected nodes
     """
-    pm.select([nodes.create_offset_transform(s) for s in pm.selected(type='transform')])
+    pm.select([nodes.create_offset_transform(s) for s in pm.selected(type="transform")])
 
 
 def freeze_scales_for_selected_hierarchies(skip_joints=True):
@@ -149,7 +158,7 @@ def freeze_scales_for_selected_hierarchies(skip_joints=True):
     with preservedSelection() as sel:
         top_nodes = nodes.get_parent_nodes(sel[:])
         for topNode in top_nodes:
-            if not skip_joints or topNode.nodeType() != 'joint':
+            if not skip_joints or topNode.nodeType() != "joint":
                 nodes.freeze_scales_for_hierarchy(topNode)
 
 
@@ -178,7 +187,7 @@ def freeze_joints_for_selected_hierarchies():
     with preservedSelection() as sel:
         top_nodes = nodes.get_parent_nodes(sel[:])
         for topNode in top_nodes:
-            if topNode.nodeType() == 'joint':
+            if topNode.nodeType() == "joint":
                 joints.freeze_joints(topNode)
 
 
@@ -190,7 +199,7 @@ def parent_selected():
     """
     sel = pm.selected()
     if len(sel) < 2:
-        pm.warning('More that one node must be selected')
+        pm.warning("More that one node must be selected")
         return
     nodes.set_parent(sel[1:], sel[0])
     pm.select(sel)
@@ -222,15 +231,16 @@ def rotate_selected_components_around_axis(axis, degrees=90):
             shapes.rotate_components(shape, rotation)
 
 
-def orient_to_world_for_selected(include_children=False, preserve_children=True,
-                                 preserve_shapes=True, sync_joint_axes=True):
+def orient_to_world_for_selected(
+    include_children=False, preserve_children=True, preserve_shapes=True, sync_joint_axes=True
+):
     """
     Orient the selected joints or transforms to match the world aligned axes.
     """
     # TODO: implement preserve_shapes
     sel = get_selected_transforms(include_children)
     for node in sel:
-        if node.nodeType() == 'joint':
+        if node.nodeType() == "joint":
             joints.orient_joint_to_world(node)
             if sync_joint_axes:
                 joints.match_joint_rotation_to_orient(node, preserve_children)
@@ -238,29 +248,31 @@ def orient_to_world_for_selected(include_children=False, preserve_children=True,
             pm.rotate(node, (0, 0, 0), a=True, ws=True, pcp=preserve_children)
 
 
-def orient_to_joint_for_selected(axis_order, up_axis_str, include_children=False,
-                                 preserve_children=True, preserve_shapes=True, sync_joint_axes=True):
+def orient_to_joint_for_selected(
+    axis_order, up_axis_str, include_children=False, preserve_children=True, preserve_shapes=True, sync_joint_axes=True
+):
     sel = get_selected_transforms(include_children)
     for node in sel:
-        if node.nodeType() == 'joint':
+        if node.nodeType() == "joint":
             joints.orient_joint(node, axis_order, up_axis_str)
 
 
 def orient_to_parent_for_selected(include_children=False, preserve_children=True):
     sel = get_selected_transforms(include_children)
     for node in sel:
-        if node.nodeType() == 'joint':
+        if node.nodeType() == "joint":
             joints.orient_joint_to_parent(node, preserve_children)
 
 
 def orient_ik_joints_for_selected(aim_axis="x", pole_axis="y", preserve_children=True):
-    sel = pm.selected(type='joint')
+    sel = pm.selected(type="joint")
     for node in sel:
         joints.orient_ik_joints(node, aim_axis=aim_axis, pole_axis=pole_axis, preserve_children=preserve_children)
 
 
-def rotate_selected_orients_around_axis(axis, degrees=90, preserve_children=True,
-                                        preserve_shapes=True, sync_joint_axes=True):
+def rotate_selected_orients_around_axis(
+    axis, degrees=90, preserve_children=True, preserve_shapes=True, sync_joint_axes=True
+):
     """
     Rotate the selected nodes around the given axis
     If the node is a joint, its jointOrient will be rotated
@@ -274,21 +286,20 @@ def rotate_selected_orients_around_axis(axis, degrees=90, preserve_children=True
             translate and scale axes updated to match the new orientation.
     """
     # if currently on move tool, make sure its object space
-    if pm.currentCtx() == pm.melGlobals['$gMove']:
-        pm.manipMoveContext('Move', e=True, mode=0)
+    if pm.currentCtx() == pm.melGlobals["$gMove"]:
+        pm.manipMoveContext("Move", e=True, mode=0)
 
     rotation = pm.dt.Vector()
     rotation[axis] = degrees
 
     sel_nodes = pm.selected()
     for node in sel_nodes:
-        rotate_orient_or_transform(
-            node, rotation,
-            preserve_children, preserve_shapes, sync_joint_axes)
+        rotate_orient_or_transform(node, rotation, preserve_children, preserve_shapes, sync_joint_axes)
 
 
-def rotate_orient_or_transform(node: pm.nt.Transform, rotation: pm.dt.Vector, preserve_children=True,
-                               preserve_shapes=True, sync_joint_axes=True):
+def rotate_orient_or_transform(
+    node: pm.nt.Transform, rotation: pm.dt.Vector, preserve_children=True, preserve_shapes=True, sync_joint_axes=True
+):
     """
     Rotate a node in local space, or if it's a joint, by modifying the joint orient.
     Additionally, can preserve child transform positions and/or shapes (such as control cvs).
@@ -301,7 +312,7 @@ def rotate_orient_or_transform(node: pm.nt.Transform, rotation: pm.dt.Vector, pr
         sync_joint_axes (bool): If True, joints will also have their
             translate and scale axes updated to match the new orientation.
     """
-    if node.nodeType() == 'joint':
+    if node.nodeType() == "joint":
         joints.rotate_joint_orient(node, rotation)
         if sync_joint_axes:
             joints.match_joint_rotation_to_orient(node, preserve_children)
@@ -320,19 +331,19 @@ def rotate_orient_or_transform(node: pm.nt.Transform, rotation: pm.dt.Vector, pr
 def orient_joint_to_rotation_for_selected(include_children=False, preserve_children=True):
     sel_nodes = get_selected_transforms(include_children)
     for node in sel_nodes:
-        if node.nodeType() == 'joint':
+        if node.nodeType() == "joint":
             joint = node.node()
             joints.orient_joint_to_rotation(joint, preserve_children)
 
 
 def interactive_orient_for_selected():
-    sel = pm.selected(type='joint')
+    sel = pm.selected(type="joint")
     rotate_axes = [s.rotateAxis for s in sel]
     pm.select(rotate_axes)
 
 
 def fixup_joint_orient_for_selected(aim_axis="x", keep_axis="y", preserve_children=True):
-    sel = pm.selected(type='joint')
+    sel = pm.selected(type="joint")
     for node in sel:
         joints.fixup_joint_orient(node, aim_axis=aim_axis, keep_axis=keep_axis, preserve_children=preserve_children)
 
@@ -341,7 +352,7 @@ def match_joint_rotation_to_orient_for_selected(preserve_children=True):
     # handle current selection containing both joints, and possibly pivots of joints
     sel = pm.selected()
     for s in sel:
-        if s.nodeType() == 'joint':
+        if s.nodeType() == "joint":
             joint = s.node()
             joints.match_joint_rotation_to_orient(joint, preserve_children)
 
@@ -354,7 +365,7 @@ def mark_end_joints_for_selected():
     for s in sel:
         end_joints = joints.get_end_joints(s)
         for end_joint in end_joints:
-            end_joint.rename('END_jnt')
+            end_joint.rename("END_jnt")
             end_joint.overrideEnabled.set(True)
             end_joint.overrideRGBColors.set(True)
             end_joint.overrideColorRGB.set((0.35, 0, 0))
@@ -367,23 +378,35 @@ def get_detailed_channel_box_attrs(node):
     """
     attrs = [
         # rotate order
-        'ro',
+        "ro",
         # rotate axis
-        'rax', 'ray', 'raz',
+        "rax",
+        "ray",
+        "raz",
         # rotate pivot
-        'rpx', 'rpy', 'rpz',
+        "rpx",
+        "rpy",
+        "rpz",
         # scale pivot
-        'spx', 'spy', 'spz',
+        "spx",
+        "spy",
+        "spz",
         # rotate pivot translate
-        'rptx', 'rpty', 'rptz',
+        "rptx",
+        "rpty",
+        "rptz",
         # scale pivot translate
-        'sptx', 'spty', 'sptz',
+        "sptx",
+        "spty",
+        "sptz",
     ]
 
-    if node.nodeType() == 'joint':
+    if node.nodeType() == "joint":
         attrs += [
             # joint orient
-            'jox', 'joy', 'joz',
+            "jox",
+            "joy",
+            "joz",
         ]
 
     return attrs
@@ -391,7 +414,7 @@ def get_detailed_channel_box_attrs(node):
 
 def is_detailed_channel_box_enabled(node) -> bool:
     def is_visible_in_cb(_node, attr):
-        return cmds.getAttr(_node + '.' + attr, cb=True)
+        return cmds.getAttr(_node + "." + attr, cb=True)
 
     attrs = get_detailed_channel_box_attrs(node)
     if any([is_visible_in_cb(node, a) for a in attrs]):
@@ -405,7 +428,7 @@ def set_detailed_channel_box_enabled(node, enabled=True):
     """
     attrs = get_detailed_channel_box_attrs(node)
     for attr in attrs:
-        pm.cmds.setAttr(node + '.' + attr, cb=enabled)
+        pm.cmds.setAttr(node + "." + attr, cb=enabled)
 
 
 def toggle_detailed_channel_box_for_selected():
@@ -485,23 +508,23 @@ def upgrade_all_links():
 
             # support legacy data of just a target node, not a dict
             if isinstance(link_data, pm.PyNode):
-                link_data = {'targetNodes': [link_data]}
+                link_data = {"targetNodes": [link_data]}
                 changed = True
 
             # ensure link type key exists
-            if 'type' not in link_data:
-                link_data['type'] = links.LinkType.DEFAULT
+            if "type" not in link_data:
+                link_data["type"] = links.LinkType.DEFAULT
                 changed = True
 
             # upgrade targetNode (single target) to targetNodes (list of targets)
-            if 'targetNode' in link_data:
-                target_node = link_data['targetNode']
-                del link_data['targetNode']
-                link_data['targetNodes'] = [target_node]
+            if "targetNode" in link_data:
+                target_node = link_data["targetNode"]
+                del link_data["targetNode"]
+                link_data["targetNodes"] = [target_node]
                 changed = True
 
             if changed:
-                LOG.info('Updated link data for %s', n)
+                LOG.info("Updated link data for %s", n)
                 links.set_link_meta_data(n, link_data)
 
 
@@ -518,9 +541,9 @@ def position_link_for_selected():
             # something was selected, but no linked nodes
             LOG.warning("No linked nodes were selected")
 
-    show_progress = (len(sel) > 20)
+    show_progress = len(sel) > 20
     if show_progress:
-        pm.progressWindow(t='Positioning Links', min=0, max=len(sel))
+        pm.progressWindow(t="Positioning Links", min=0, max=len(sel))
     for node in sel:
         links.apply_link_position(node)
         if show_progress:
@@ -540,8 +563,9 @@ def unpair_selected():
         sym.unpair_mirror_node(s)
 
 
-def mirror_selected(recursive=True, create=True, curve_shapes=True, links=True,
-                    reparent=True, transform=True, appearance=True):
+def mirror_selected(
+    recursive=True, create=True, curve_shapes=True, links=True, reparent=True, transform=True, appearance=True
+):
     """
     Perform a mirroring operation on the selected nodes.
 
@@ -601,7 +625,7 @@ def save_skin_weights_for_selected(file_path=None):
         if not scene_name:
             LOG.warning("Scene is not saved")
             return
-        file_path = os.path.splitext(scene_name)[0] + '.weights'
+        file_path = os.path.splitext(scene_name)[0] + ".weights"
 
     sel_skins = [skins.get_skin_from_mesh(m) for m in pm.selected()]
     sel_skins = [s for s in sel_skins if s]
@@ -626,9 +650,9 @@ def save_all_skin_weights(file_path=None):
         if not scene_name:
             LOG.warning("Scene is not saved")
             return
-        file_path = f'{os.path.splitext(scene_name)[0]}.weights'
+        file_path = f"{os.path.splitext(scene_name)[0]}.weights"
 
-    all_skins = pm.ls(type='skinCluster')
+    all_skins = pm.ls(type="skinCluster")
 
     if not all_skins:
         LOG.warning("No skins were found to save")
@@ -646,7 +670,7 @@ def get_named_color(name: str) -> Optional[LinearColor]:
     blueprint = get_editor_blueprint()
     if blueprint:
         config = blueprint.get_config()
-        color_config = config.get('colors', {})
+        color_config = config.get("colors", {})
         hex_color = color_config.get(name)
         if hex_color:
             return LinearColor.from_hex(hex_color)
@@ -658,7 +682,7 @@ def get_color_name(color: LinearColor) -> Optional[str]:
     """
     blueprint = get_editor_blueprint()
     if blueprint:
-        color_config = blueprint.get_config().get('colors', {})
+        color_config = blueprint.get_config().get("colors", {})
         # build a reverse map of names indexed by color
         colors_to_names = {h: n for n, h in color_config.items()}
         hex_color = color.as_hex()

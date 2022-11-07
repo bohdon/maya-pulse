@@ -20,7 +20,6 @@ LOG = logging.getLogger(__name__)
 
 
 class ActionTreeStyledItemDelegate(QtWidgets.QStyledItemDelegate):
-
     def __init__(self, parent=None):
         super(ActionTreeStyledItemDelegate, self).__init__(parent=parent)
 
@@ -100,7 +99,7 @@ class ActionTreeView(QtWidgets.QTreeView):
             if path:
                 paths.append(path)
 
-        cmds.undoInfo(openChunk=True, chunkName='Delete Pulse Actions')
+        cmds.undoInfo(openChunk=True, chunkName="Delete Pulse Actions")
         for path in paths:
             cmds.pulseDeleteStep(path)
         cmds.undoInfo(closeChunk=True)
@@ -238,9 +237,9 @@ class ActionTreeWindow(PulseWindow):
     A standalone window that contains an Action Tree.
     """
 
-    OBJECT_NAME = 'pulseActionTreeWindow'
-    WINDOW_MODULE = 'pulse.ui.actiontree'
-    WINDOW_TITLE = 'Pulse Action Tree'
+    OBJECT_NAME = "pulseActionTreeWindow"
+    WINDOW_MODULE = "pulse.ui.actiontree"
+    WINDOW_TITLE = "Pulse Action Tree"
     WIDGET_CLASS = ActionTree
 
     def __init__(self, parent=None):
@@ -257,6 +256,7 @@ class ActionTreeWindow(PulseWindow):
 # ----------------
 
 # TODO: move this outside of a ui module, should be core functionality
+
 
 class MirrorActionUtil(object):
     """
@@ -298,7 +298,7 @@ class MirrorActionUtil(object):
         if destStepName:
             parentPath = sourceStep.get_parent_path()
             if parentPath:
-                return parentPath + '/' + destStepName
+                return parentPath + "/" + destStepName
             return destStepName
 
     def getPairedStep(self, sourceStep) -> BuildStep:
@@ -320,7 +320,7 @@ class MirrorActionUtil(object):
             if not destStep:
                 childIndex = sourceStep.index_in_parent() + 1
                 newStepData = sourceStep.serialize()
-                newStepData['name'] = self.getMirroredStepName(sourceStep.name)
+                newStepData["name"] = self.getMirroredStepName(sourceStep.name)
                 dataStr = serialize_attr_value(newStepData)
                 cmds.pulseCreateStep(sourceStep.get_parent_path(), childIndex, dataStr)
                 return self.blueprintModel.getStep(destStepPath)
@@ -332,11 +332,10 @@ class MirrorActionUtil(object):
         Mirror a BuildStep
         """
         if not self.canMirrorStep(sourceStep):
-            LOG.warning("Cannot mirror %s, only actions with"
-                        "symmetrical names can be mirrored", sourceStep)
+            LOG.warning("Cannot mirror %s, only actions with" "symmetrical names can be mirrored", sourceStep)
             return False
 
-        cmds.undoInfo(openChunk=True, chunkName='Mirror Action')
+        cmds.undoInfo(openChunk=True, chunkName="Mirror Action")
 
         destStep = self.getOrCreatePairedStep(sourceStep)
         if not destStep:
@@ -347,8 +346,7 @@ class MirrorActionUtil(object):
 
         if not destAction or destAction.action_id != sourceAction.action_id:
             # action was set up incorrectly
-            LOG.warning("Cannot mirror %s -> %s, destination action"
-                        "is not tye same type", sourceStep, destStep)
+            LOG.warning("Cannot mirror %s -> %s, destination action" "is not tye same type", sourceStep, destStep)
             return False
 
         destStepPath = destStep.get_full_path()
@@ -356,7 +354,7 @@ class MirrorActionUtil(object):
         # match up variant attrs
         for _, attr in sourceAction.get_attrs().items():
             isVariant = sourceAction.is_variant_attr(attr.name)
-            destAttrPath = f'{destStepPath}.{attr.name}'
+            destAttrPath = f"{destStepPath}.{attr.name}"
             if destAction.is_variant_attr(attr.name) != isVariant:
                 cmds.pulseSetIsVariantAttr(destAttrPath, isVariant)
 
@@ -371,9 +369,9 @@ class MirrorActionUtil(object):
             if not sourceAction.is_variant_attr(attr.name):
                 value = attr.get_value()
                 mirroredValue = self.mirrorActionValue(attr, value)
-                destAttrPath = f'{destStepPath}.{attr.name}'
+                destAttrPath = f"{destStepPath}.{attr.name}"
                 mirroredValueStr = serialize_attr_value(mirroredValue)
-                LOG.debug('%s -> %s', value, mirroredValue)
+                LOG.debug("%s -> %s", value, mirroredValue)
                 cmds.pulseSetActionAttr(destAttrPath, mirroredValueStr)
 
         # mirror variant attr values
@@ -381,9 +379,9 @@ class MirrorActionUtil(object):
             for _, attr in variant.get_attrs().items():
                 value = attr.get_value()
                 mirroredValue = self.mirrorActionValue(attr, value)
-                destAttrPath = f'{destStepPath}.{attr.name}'
+                destAttrPath = f"{destStepPath}.{attr.name}"
                 mirroredValueStr = serialize_attr_value(mirroredValue)
-                LOG.debug('%s -> %s', value, mirroredValue)
+                LOG.debug("%s -> %s", value, mirroredValue)
                 cmds.pulseSetActionAttr(destAttrPath, mirroredValueStr, v=i)
 
         cmds.undoInfo(closeChunk=True)
@@ -400,7 +398,7 @@ class MirrorActionUtil(object):
             value:
                 The attribute value to mirror.
         """
-        if not attr.config.get('canMirror', True):
+        if not attr.config.get("canMirror", True):
             # don't mirror the attributes value, just copy it
             return value
 
@@ -418,16 +416,16 @@ class MirrorActionUtil(object):
 
         # TODO: move mirror logic into BuildActionAttribute and type-specific subclasses?
 
-        if attr.type == 'node':
+        if attr.type == "node":
             return getPairedNodeOrSelf(value)
 
-        elif attr.type == 'nodelist':
+        elif attr.type == "nodelist":
             return [getPairedNodeOrSelf(node) for node in value]
 
-        elif attr.type == 'string':
+        elif attr.type == "string":
             return sym.get_mirrored_name(value, self.getConfig())
 
-        elif attr.type == 'stringlist':
+        elif attr.type == "stringlist":
             return [sym.get_mirrored_name(v, self.getConfig()) for v in value]
 
         return value

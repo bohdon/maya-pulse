@@ -13,7 +13,7 @@ from ..vendor.Qt import QtCore, QtWidgets, QtGui
 
 LOG = logging.getLogger(__name__)
 
-ICON_DIR = os.path.join(os.path.dirname(__file__), 'icons')
+ICON_DIR = os.path.join(os.path.dirname(__file__), "icons")
 
 # mel command that will execute the last repeatable func
 _REPEAT_COMMAND = 'python("{0}._repeatLastFunc()")'.format(__name__)
@@ -39,7 +39,7 @@ def _softUpdateWrapper(wrapper, wrapped):
     Like functools.update_wrapper, but doesn't fail when attributes
     are not found.
     """
-    attrs = ['__name__', '__doc__']
+    attrs = ["__name__", "__doc__"]
     for attr in attrs:
         if hasattr(wrapped, attr):
             setattr(wrapper, attr, getattr(wrapped, attr))
@@ -67,9 +67,7 @@ def repeatable(func):
         result = func(*args, **kwargs)
 
         try:
-            cmds.repeatLast(
-                ac=_REPEAT_COMMAND,
-                acl=func.__name__)
+            cmds.repeatLast(ac=_REPEAT_COMMAND, acl=func.__name__)
         except RuntimeError:
             pass
 
@@ -172,13 +170,11 @@ def clearLayout(layout):
 
 
 def createHSpacer(width=20, height=20):
-    return QtWidgets.QSpacerItem(
-        20, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
+    return QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
 
 
 def createVSpacer(width=20, height=20):
-    return QtWidgets.QSpacerItem(
-        20, 20, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
+    return QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
 
 
 def addItemsToGrid(gridLayout, items):

@@ -15,6 +15,7 @@ class ConnectMatrixMethod(IntEnum):
     """
     Options for connecting a matrix to a nodes offsetParentMatrix attribute
     """
+
     # only connect the offset parent matrix, keep all other attributes the same
     CONNECT_ONLY = 0
     # zero out all relative transform values once connected
@@ -28,6 +29,7 @@ class ConnectMatrixMethod(IntEnum):
 # Node Retrieval
 # --------------
 
+
 def get_all_parents(node, include_node=False):
     """
     Return all parents of a node
@@ -40,8 +42,8 @@ def get_all_parents(node, include_node=False):
         A list of nodes
     """
     if isinstance(node, str):
-        split = node.split('|')
-        return ['|'.join(split[:i]) for i in reversed(range(2, len(split)))]
+        split = node.split("|")
+        return ["|".join(split[:i]) for i in reversed(range(2, len(split)))]
     parents = []
     parent = node.getParent()
     if parent is not None:
@@ -89,7 +91,7 @@ def get_node_branch(root, end):
     return nodes[index:]
 
 
-def duplicate_branch(root, end, parent=None, name_fmt='{0}'):
+def duplicate_branch(root, end, parent=None, name_fmt="{0}"):
     """
     Duplicate a node branch from root to end (inclusive).
 
@@ -103,7 +105,7 @@ def duplicate_branch(root, end, parent=None, name_fmt='{0}'):
     result = []
     all_nodes = get_node_branch(root, end)
     if all_nodes is None:
-        raise ValueError(f'Invalid root and end nodes: {root} {end}')
+        raise ValueError(f"Invalid root and end nodes: {root} {end}")
     next_parent = parent
     for node in all_nodes:
         # duplicate only this node
@@ -127,11 +129,12 @@ def get_assemblies(nodes):
     """
     if not isinstance(nodes, (list, tuple)):
         nodes = [nodes]
-    return list(set([n[:(n + '|').find('|', 1)] for n in nodes]))
+    return list(set([n[: (n + "|").find("|", 1)] for n in nodes]))
 
 
 # Transform Parenting
 # -------------------
+
 
 def get_descendants_top_to_bottom(node, **kwargs):
     """
@@ -159,10 +162,10 @@ def get_transform_hierarchy(transform, include_parent=True):
     if include_parent:
         result.append((transform.getParent(), [transform]))
 
-    descendants = transform.listRelatives(ad=True, type='transform')
+    descendants = transform.listRelatives(ad=True, type="transform")
 
     for t in [transform] + descendants:
-        children = t.getChildren(type='transform')
+        children = t.getChildren(type="transform")
         if children:
             result.append((t, children))
 
@@ -238,14 +241,15 @@ def parent_in_order(nodes):
     set_parent(nodes, safe_parent)
     # parent all nodes in order
     for i in range(len(nodes) - 1):
-        parent, child = nodes[i:i + 2]
+        parent, child = nodes[i : i + 2]
         set_parent(child, parent)
 
 
 # Node Creation
 # -------------
 
-def create_offset_transform(node, name='{0}_offset'):
+
+def create_offset_transform(node, name="{0}_offset"):
     """
     Create a transform that is inserted as the new parent of a node,
     at the same world location as the node. This effectively transfers
@@ -260,32 +264,36 @@ def create_offset_transform(node, name='{0}_offset'):
     """
     # create the offset transform
     _name = name.format(node.nodeName())
-    offset = pm.createNode('transform', n=_name)
+    offset = pm.createNode("transform", n=_name)
 
     # parent the offset to the node and reset
     # its local transformation
     offset.setParent(node)
-    pm.xform(offset, objectSpace=True,
-             translation=[0, 0, 0],
-             rotation=[0, 0, 0],
-             scale=[1, 1, 1],
-             shear=[0, 0, 0],
-             )
+    pm.xform(
+        offset,
+        objectSpace=True,
+        translation=[0, 0, 0],
+        rotation=[0, 0, 0],
+        scale=[1, 1, 1],
+        shear=[0, 0, 0],
+    )
 
     # with transforms now absorbed, move offset to be a sibling of the node
     offset.setParent(node.getParent())
 
     # now parent the node to the new offset, and reset its transform
     node.setParent(offset)
-    pm.xform(node, objectSpace=True,
-             translation=[0, 0, 0],
-             rotation=[0, 0, 0],
-             scale=[1, 1, 1],
-             shear=[0, 0, 0],
-             # reset rotate axis since it is now part
-             # of the offset transform
-             rotateAxis=[0, 0, 0],
-             )
+    pm.xform(
+        node,
+        objectSpace=True,
+        translation=[0, 0, 0],
+        rotation=[0, 0, 0],
+        scale=[1, 1, 1],
+        shear=[0, 0, 0],
+        # reset rotate axis since it is now part
+        # of the offset transform
+        rotateAxis=[0, 0, 0],
+    )
     if cmds.about(api=True) >= 20200000:
         # also need to reset offsetParentMatrix
         node.opm.set(pm.dt.Matrix())
@@ -295,6 +303,7 @@ def create_offset_transform(node, name='{0}_offset'):
 
 # Attribute Retrieval
 # -------------------
+
 
 def get_expanded_attr_names(attrs):
     """
@@ -309,12 +318,12 @@ def get_expanded_attr_names(attrs):
     """
     _attrs = []
     for attr in attrs:
-        if attr in ('t', 'r', 'rp', 's', 'sp', 'ra'):
+        if attr in ("t", "r", "rp", "s", "sp", "ra"):
             # translate, rotate, scale and their pivots, also rotate axis
-            _attrs.extend([attr + a for a in 'xyz'])
-        elif attr in ('sh',):
+            _attrs.extend([attr + a for a in "xyz"])
+        elif attr in ("sh",):
             # shear
-            _attrs.extend([attr + a for a in ('xy', 'xz', 'yz')])
+            _attrs.extend([attr + a for a in ("xy", "xz", "yz")])
         else:
             # not a known compound attribute
             _attrs.append(attr)
@@ -386,6 +395,7 @@ def get_attr_or_value_dimension(attr_or_value):
 # Constraints
 # -----------
 
+
 def set_constraint_locked(constraint, locked):
     """
     Lock all important attributes on a constraint node
@@ -394,16 +404,14 @@ def set_constraint_locked(constraint, locked):
         constraint: A ParentConstraint or ScaleConstraint node
         locked: A bool, whether to make the constraint locked or unlocked
     """
-    attrs = ['nodeState']
+    attrs = ["nodeState"]
     if isinstance(constraint, pm.nt.ScaleConstraint):
-        attrs.extend(['offset%s' % a for a in 'XYZ'])
+        attrs.extend(["offset%s" % a for a in "XYZ"])
     elif isinstance(constraint, pm.nt.ParentConstraint):
         targets = constraint.target.getArrayIndices()
         for i in targets:
-            attrs.extend(['target[%d].targetOffsetTranslate%s' %
-                          (i, a) for a in 'XYZ'])
-            attrs.extend(['target[%d].targetOffsetRotate%s' % (i, a)
-                          for a in 'XYZ'])
+            attrs.extend(["target[%d].targetOffsetTranslate%s" % (i, a) for a in "XYZ"])
+            attrs.extend(["target[%d].targetOffsetRotate%s" % (i, a) for a in "XYZ"])
     for a in attrs:
         constraint.attr(a).setLocked(locked)
 
@@ -420,7 +428,7 @@ def convert_scale_constraint_to_world_space(scale_constraint):
     for i in range(scale_constraint.target.numElements()):
         inputs = scale_constraint.target[i].targetParentMatrix.inputs(p=True)
         for input in inputs:
-            if input.longName().startswith('parentMatrix'):
+            if input.longName().startswith("parentMatrix"):
                 # disconnect and replace with world matrix
                 input // scale_constraint.target[i].targetParentMatrix
                 input.node().wm >> scale_constraint.target[i].targetParentMatrix
@@ -450,8 +458,12 @@ def full_constraint(leader, follower):
     return pc, sc
 
 
-def connect_matrix(matrix: pm.Attribute, node: pm.nt.Transform,
-                   method: ConnectMatrixMethod = ConnectMatrixMethod.KEEP_WORLD, keep_joint_hierarchy=True):
+def connect_matrix(
+    matrix: pm.Attribute,
+    node: pm.nt.Transform,
+    method: ConnectMatrixMethod = ConnectMatrixMethod.KEEP_WORLD,
+    keep_joint_hierarchy=True,
+):
     """
     Connect a world matrix to a node, optionally preserving or changing transform
     attributes to adjust accordingly (see `ConnectMatrixMethod`).
@@ -483,16 +495,17 @@ def connect_matrix(matrix: pm.Attribute, node: pm.nt.Transform,
         # TODO: also zero out rotate axis?
         # TODO: unlock/re-lock ra and jo when doing this
         # zero out joint orients
-        if node.hasAttr('jointOrient'):
+        if node.hasAttr("jointOrient"):
             node.jointOrient.set((0, 0, 0))
         # zero out transform values
         cmds.xform(node.longName(), matrix=IDENTITY_MATRIX_FLAT, worldSpace=False)
 
     elif method == ConnectMatrixMethod.KEEP_WORLD:
-        if keep_joint_hierarchy and node.nodeType() == 'joint':
+        if keep_joint_hierarchy and node.nodeType() == "joint":
             raise ValueError(
                 "ConnectMatrixMethod.KEEP_WORLD is not supported with joints and keep_joint_hierarchy=True, "
-                "use CREATE_OFFSET instead")
+                "use CREATE_OFFSET instead"
+            )
 
         # remember the node's world matrix
         world_mtx = node.wm.get()
@@ -505,7 +518,7 @@ def connect_matrix(matrix: pm.Attribute, node: pm.nt.Transform,
     elif method == ConnectMatrixMethod.CREATE_OFFSET:
         # calculate and store offset using a multMatrix node
         offset_mtx = node.pm.get() * matrix.get().inverse()
-        mult_mtx = pm.createNode('multMatrix', n=f"{node.nodeName()}_mtxcon_offset_multMatrix")
+        mult_mtx = pm.createNode("multMatrix", n=f"{node.nodeName()}_mtxcon_offset_multMatrix")
         mult_mtx.matrixIn[0].set(offset_mtx)
         matrix >> mult_mtx.matrixIn[1]
         # make the connection
@@ -517,7 +530,7 @@ def _make_matrix_connection(matrix: pm.Attribute, node: pm.nt.Transform, keep_jo
     Perform the actual matrix connection of a node, either connecting offsetParentMatrix or decomposing
     if the node is a joint and `keep_joint_hierarchy` is True. See `connect_matrix`
     """
-    if keep_joint_hierarchy and node.nodeType() == 'joint':
+    if keep_joint_hierarchy and node.nodeType() == "joint":
         decompose_and_connect_matrix(matrix, node, inherits_transform=True)
     else:
         matrix >> node.offsetParentMatrix
@@ -566,14 +579,15 @@ def decompose_and_connect_matrix(matrix: pm.Attribute, node: pm.nt.Transform, in
     if not node.rotateAxis.isLocked():
         node.rotateAxis.set((0, 0, 0))
 
-    if node.hasAttr('jointOrient') and not node.jointOrient.isLocked():
+    if node.hasAttr("jointOrient") and not node.jointOrient.isLocked():
         node.jointOrient.set((0, 0, 0))
 
     return decomp
 
 
-def disconnect_offset_matrix(follower, preserve_position=True, preserve_transform_values=True,
-                             keep_inherit_transform=False):
+def disconnect_offset_matrix(
+    follower, preserve_position=True, preserve_transform_values=True, keep_inherit_transform=False
+):
     """
     Disconnect any inputs to the offsetParentMatrix of a node, and re-enable inheritsTransform.
 
@@ -625,7 +639,7 @@ def freeze_scales_for_hierarchy(node: pm.nt.DagNode):
         node (pm.PyNode): A Transform node
     """
     hierarchy = get_transform_hierarchy(node)
-    children = node.listRelatives(ad=True, type='transform')
+    children = node.listRelatives(ad=True, type="transform")
     for c in children:
         c.setParent(None)
     for n in [node] + children:
@@ -669,7 +683,7 @@ def freeze_pivots_for_hierarchy(transform):
         transform: A Transform node
     """
     hierarchy = get_transform_hierarchy(transform)
-    children = transform.listRelatives(ad=True, type='transform')
+    children = transform.listRelatives(ad=True, type="transform")
     for c in children:
         c.setParent(None)
     for n in [transform] + children:
@@ -683,7 +697,7 @@ def freeze_offset_matrix(transform):
     current local matrix values into its offsetParentMatrix. This operation is idempotent.
     """
     if not transform.offsetParentMatrix.isSettable():
-        LOG.warning('Cannot freeze %s offset matrix, offsetParentMatrix is not settable', transform)
+        LOG.warning("Cannot freeze %s offset matrix, offsetParentMatrix is not settable", transform)
         return
     local_mtx = transform.m.get()
     offset_mtx = transform.offsetParentMatrix.get()
@@ -693,7 +707,7 @@ def freeze_offset_matrix(transform):
 
 
 def freeze_offset_matrix_for_hierarchy(transform):
-    children = transform.listRelatives(ad=True, type='transform')
+    children = transform.listRelatives(ad=True, type="transform")
     for node in [transform] + children:
         freeze_offset_matrix(node)
 
@@ -704,7 +718,7 @@ def unfreeze_offset_matrix(transform):
     offset parent matrix values into its translate, rotate, and scale. This operation is idempotent.
     """
     if not transform.offsetParentMatrix.isSettable():
-        LOG.warning('Cannot unfreeze %s offset matrix, offsetParentMatrix is not settable', transform)
+        LOG.warning("Cannot unfreeze %s offset matrix, offsetParentMatrix is not settable", transform)
         return
     local_mtx = transform.m.get()
     offset_mtx = transform.offsetParentMatrix.get()
@@ -714,7 +728,7 @@ def unfreeze_offset_matrix(transform):
 
 
 def unfreeze_offset_matrix_for_hierarchy(transform):
-    children = transform.listRelatives(ad=True, type='transform')
+    children = transform.listRelatives(ad=True, type="transform")
     for node in [transform] + children:
         unfreeze_offset_matrix(node)
 
@@ -726,7 +740,7 @@ def get_euler_rotation_from_matrix(matrix):
     if not isinstance(matrix, pm.dt.TransformationMatrix):
         matrix = pm.dt.TransformationMatrix(matrix)
     r_euler = matrix.getRotation()
-    r_euler.setDisplayUnit('degrees')
+    r_euler.setDisplayUnit("degrees")
     return r_euler
 
 
@@ -757,7 +771,7 @@ def set_world_matrix(node, matrix, translate=True, rotate=True, scale=True):
 
         # only set some components
         if translate:
-            cmds.xform(node.longName(), translation=matrix.getTranslation('world'), worldSpace=True)
+            cmds.xform(node.longName(), translation=matrix.getTranslation("world"), worldSpace=True)
         if rotate:
             # convert the rotation order
             rotate_order = node.getRotationOrder()
@@ -769,7 +783,7 @@ def set_world_matrix(node, matrix, translate=True, rotate=True, scale=True):
             cmds.xform(node.longName(), rotation=rotation, worldSpace=True)
         if scale:
             local_scale_matrix = matrix * node.pim.get()
-            cmds.xform(node.longName(), scale=local_scale_matrix.getScale('world'))
+            cmds.xform(node.longName(), scale=local_scale_matrix.getScale("world"))
 
 
 def match_world_matrix(leader: pm.nt.Transform, *followers: pm.nt.Transform):
@@ -827,7 +841,7 @@ def get_scale_matrix(matrix):
     """
     Return a matrix representing only the scale of a TransformationMatrix
     """
-    s = pm.dt.TransformationMatrix(matrix).getScale('world')
+    s = pm.dt.TransformationMatrix(matrix).getScale("world")
     return pm.dt.Matrix((s[0], 0, 0), (0, s[1], 0), (0, 0, s[2]))
 
 
@@ -957,6 +971,7 @@ def are_nodes_aligned(node_a, node_b):
 
 # Node Coloring
 # -------------
+
 
 def get_override_color(node) -> LinearColor:
     """

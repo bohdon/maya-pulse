@@ -18,8 +18,8 @@ from . import utils
 
 LOG = logging.getLogger(__name__)
 
-SELECT_ICON_PATH = ':/icon/circle_left.svg'
-RESET_ICON_PATH = ':/icon/reset.svg'
+SELECT_ICON_PATH = ":/icon/circle_left.svg"
+RESET_ICON_PATH = ":/icon/reset.svg"
 TOOL_ICON_SIZE = QtCore.QSize(20, 20)
 
 
@@ -31,7 +31,7 @@ class ActionAttrForm(QtWidgets.QFrame):
     """
 
     # map of attribute types to form widget classes
-    TYPE_MAP: dict[Optional[str], type['ActionAttrForm']] = {}
+    TYPE_MAP: dict[Optional[str], type["ActionAttrForm"]] = {}
 
     LABEL_WIDTH = 120
     LABEL_HEIGHT = 20
@@ -61,12 +61,12 @@ class ActionAttrForm(QtWidgets.QFrame):
             return ActionAttrForm.TYPE_MAP[None](index, attr, variantIndex, parent=parent)
 
     @classmethod
-    def addFormType(cls, typeName: Optional[str], formClass: type['ActionAttrForm']):
+    def addFormType(cls, typeName: Optional[str], formClass: type["ActionAttrForm"]):
         cls.TYPE_MAP[typeName] = formClass
 
     def __init__(self, index, attr: BuildActionAttribute, variantIndex: int, parent=None):
         super(ActionAttrForm, self).__init__(parent=parent)
-        self.setObjectName('formFrame')
+        self.setObjectName("formFrame")
 
         self.index = QtCore.QPersistentModelIndex(index)
         # the attribute being edited
@@ -104,8 +104,7 @@ class ActionAttrForm(QtWidgets.QFrame):
             self.resetValueBtn.setVisible(self.isValueSet())
 
     def onModelDataChanged(self):
-        """
-        """
+        """ """
         # TODO: only update if the change affected this attribute
         if not self.index.isValid():
             self.hide()
@@ -213,18 +212,18 @@ class ActionAttrForm(QtWidgets.QFrame):
 
     def _setUiValidState(self, isValid, isFormValid):
         if isValid:
-            self.label.setToolTip('')
-            self.setProperty('cssClasses', '')
+            self.label.setToolTip("")
+            self.setProperty("cssClasses", "")
         elif isFormValid:
             reason = self.attr.get_invalid_reason()
-            self.label.setToolTip(f'Invalid: {reason}')
-            self.setProperty('cssClasses', 'warning')
+            self.label.setToolTip(f"Invalid: {reason}")
+            self.setProperty("cssClasses", "warning")
         else:
-            self.label.setToolTip('Invalid input')
-            self.setProperty('cssClasses', 'error')
+            self.label.setToolTip("Invalid input")
+            self.setProperty("cssClasses", "error")
 
         # force a styling refresh to make use of cssClasses
-        self.setStyleSheet('')
+        self.setStyleSheet("")
 
     def setupDefaultFormUi(self, parent):
         """
@@ -267,7 +266,7 @@ class ActionAttrForm(QtWidgets.QFrame):
         self.resetValueBtn.setIcon(QtGui.QIcon(RESET_ICON_PATH))
         self.resetValueBtn.setFixedSize(TOOL_ICON_SIZE)
         utils.setRetainSizeWhenHidden(self.resetValueBtn, True)
-        self.resetValueBtn.setStatusTip('Reset value to default')
+        self.resetValueBtn.setStatusTip("Reset value to default")
         self.resetValueBtn.clicked.connect(self.resetValueToDefault)
         self.mainLayout.addWidget(self.resetValueBtn)
         self.mainLayout.setAlignment(self.resetValueBtn, QtCore.Qt.AlignTop)
@@ -294,7 +293,7 @@ class BatchAttrForm(QtWidgets.QFrame):
     form usually appears when the attribute is marked as variant.
     """
 
-    TYPE_MAP: dict[Optional[str], type['BatchAttrForm']] = {}
+    TYPE_MAP: dict[Optional[str], type["BatchAttrForm"]] = {}
 
     LABEL_WIDTH = ActionAttrForm.LABEL_WIDTH
     LABEL_HEIGHT = ActionAttrForm.LABEL_HEIGHT
@@ -317,12 +316,12 @@ class BatchAttrForm(QtWidgets.QFrame):
             return BatchAttrForm.TYPE_MAP[None](index, attr, parent=parent)
 
     @classmethod
-    def addFormType(cls, attrType: Optional[str], formClass: type['BatchAttrForm']):
+    def addFormType(cls, attrType: Optional[str], formClass: type["BatchAttrForm"]):
         cls.TYPE_MAP[attrType] = formClass
 
     def __init__(self, index, attr: BuildActionAttribute, parent=None):
         super(BatchAttrForm, self).__init__(parent=parent)
-        self.setObjectName('formFrame')
+        self.setObjectName("formFrame")
 
         self.index = QtCore.QPersistentModelIndex(index)
         self.attr = attr
@@ -398,7 +397,7 @@ class BatchAttrForm(QtWidgets.QFrame):
         if not step:
             return
 
-        return f'{step.get_full_path()}.{self.attr.name}'
+        return f"{step.get_full_path()}.{self.attr.name}"
 
     def setVariantValues(self, values):
         attrPath = self.getAttrPath()
@@ -470,7 +469,7 @@ class DefaultAttrForm(ActionAttrForm):
         instead of potentially a list with config-defined default values in it.
         """
         if not self._isFormValueValid():
-            if not self.textEdit.text().strip(' '):
+            if not self.textEdit.text().strip(" "):
                 self.setAttrValue(self.attr.get_type_default_value())
                 self._updateValidState()
                 return
@@ -518,7 +517,7 @@ class IntAttrForm(ActionAttrForm):
         self.spinBox = QtWidgets.QSpinBox(parent)
         self.spinBox.setMinimumHeight(self.LABEL_HEIGHT)
         self.spinBox.setMinimumWidth(self.FORM_WIDTH_SMALL)
-        self.spinBox.setRange(self.attr.config.get('min', 0), self.attr.config.get('max', 100))
+        self.spinBox.setRange(self.attr.config.get("min", 0), self.attr.config.get("max", 100))
         self._setFormValue(self.getAttrValue())
         self.spinBox.valueChanged.connect(self._onValueEdited)
 
@@ -545,9 +544,9 @@ class FloatAttrForm(ActionAttrForm):
         self.spinBox = QtWidgets.QDoubleSpinBox(parent)
         self.spinBox.setMinimumHeight(self.LABEL_HEIGHT)
         self.spinBox.setMinimumWidth(self.FORM_WIDTH_SMALL)
-        self.spinBox.setDecimals(self.attr.config.get('decimals', 3))
-        self.spinBox.setSingleStep(self.attr.config.get('stepSize', 0.1))
-        self.spinBox.setRange(self.attr.config.get('min', 0), self.attr.config.get('max', 100))
+        self.spinBox.setDecimals(self.attr.config.get("decimals", 3))
+        self.spinBox.setSingleStep(self.attr.config.get("stepSize", 0.1))
+        self.spinBox.setRange(self.attr.config.get("min", 0), self.attr.config.get("max", 100))
         self._setFormValue(self.getAttrValue())
         self.spinBox.valueChanged.connect(self._onValueEdited)
 
@@ -582,7 +581,7 @@ class StringAttrForm(ActionAttrForm):
         self.lineEdit.setText(attrValue)
 
     def _getFormValue(self):
-        return self.lineEdit.text().strip(' ')
+        return self.lineEdit.text().strip(" ")
 
 
 ActionAttrForm.addFormType(BuildActionAttributeType.STRING, StringAttrForm)
@@ -598,7 +597,7 @@ class OptionAttrForm(ActionAttrForm):
         self.setupDefaultFormUi(parent)
 
         self.combo = QtWidgets.QComboBox(parent)
-        for option in self.attr.config.get('options', []):
+        for option in self.attr.config.get("options", []):
             self.combo.addItem(option)
         self._setFormValue(self.getAttrValue())
         self.combo.currentIndexChanged.connect(self._onValueEdited)
@@ -636,8 +635,9 @@ class NodeAttrForm(ActionAttrForm):
 
         self.pickButton = QtWidgets.QToolButton(parent)
         self.pickButton.setIcon(QtGui.QIcon(SELECT_ICON_PATH))
-        self.pickButton.setStatusTip("Assign the selected node. "
-                                     "Ctrl + click to pop the assigned node from the selection.")
+        self.pickButton.setStatusTip(
+            "Assign the selected node. " "Ctrl + click to pop the assigned node from the selection."
+        )
         self.pickButton.setFixedSize(TOOL_ICON_SIZE)
         self.pickButton.clicked.connect(self.setFromSelection)
         hlayout.addWidget(self.pickButton)
@@ -706,7 +706,7 @@ class NodeListAttrForm(ActionAttrForm):
 
         self.pickButton = QtWidgets.QToolButton(parent)
         self.pickButton.setIcon(QtGui.QIcon(SELECT_ICON_PATH))
-        self.pickButton.setStatusTip('Assign the selected nodes.')
+        self.pickButton.setStatusTip("Assign the selected nodes.")
         self.pickButton.setFixedSize(TOOL_ICON_SIZE)
         self.pickButton.clicked.connect(self.setFromSelection)
         hlayout.addWidget(self.pickButton)
@@ -726,7 +726,7 @@ class NodeListAttrForm(ActionAttrForm):
                 item.setData(QtCore.Qt.UserRole, uuid)
                 self.listWidget.addItem(item)
             else:
-                self.listWidget.addItem('(missing)')
+                self.listWidget.addItem("(missing)")
         # 13px line height per item, clamped in range 40..120, added 8px buffer
         newHeight = max(40, min(120, 8 + 13 * self.listWidget.count()))
         self.listWidget.setFixedHeight(newHeight)
@@ -781,7 +781,7 @@ class FileAttrForm(ActionAttrForm):
         self.line_edit.setText(attrValue)
 
     def _getFormValue(self):
-        return self.line_edit.text().strip(' ')
+        return self.line_edit.text().strip(" ")
 
     def _browse_for_file(self):
         kwargs = {}
@@ -844,7 +844,7 @@ class NodeBatchAttrForm(BatchAttrForm):
 
         pickButton = QtWidgets.QToolButton(parent)
         pickButton.setIcon(QtGui.QIcon(SELECT_ICON_PATH))
-        pickButton.setStatusTip('Assign the selected nodes, one per variant.')
+        pickButton.setStatusTip("Assign the selected nodes, one per variant.")
         pickButton.setFixedSize(TOOL_ICON_SIZE)
         pickButton.clicked.connect(self.setFromSelection)
         hlayout.addWidget(pickButton)
@@ -872,7 +872,6 @@ BatchAttrForm.addFormType(BuildActionAttributeType.NODE, NodeBatchAttrForm)
 
 
 class DefaultBatchAttrForm(BatchAttrForm):
-
     def setupUi(self, parent):
         self.setupDefaultFormUi(parent)
 

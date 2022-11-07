@@ -27,7 +27,7 @@ def import_all_references(load_unloaded=True, depth_limit=10, remove_namespace=F
             if not ref.isLoaded():
                 if load_unloaded:
                     LOG.debug("Loading %s", ref)
-                    ref.load(loadReferenceDepth='all')
+                    ref.load(loadReferenceDepth="all")
                 else:
                     continue
 
@@ -39,7 +39,7 @@ def import_all_references(load_unloaded=True, depth_limit=10, remove_namespace=F
                 LOG.debug("Importing %s", ref)
                 ref.importContents(removeNamespace=remove_namespace)
             except RuntimeError as e:
-                LOG.warning('Could not import reference: %s\n%s', path, e)
+                LOG.warning("Could not import reference: %s\n%s", path, e)
 
             # Import any subrefs
             if len(sub_refs):
@@ -60,24 +60,24 @@ def import_all_references(load_unloaded=True, depth_limit=10, remove_namespace=F
         try:
             bad_list = [str(b) for b in bad]
             pm.delete(bad)
-            LOG.debug('Deleted bad references: %s', bad_list)
+            LOG.debug("Deleted bad references: %s", bad_list)
         except Exception as e:
-            LOG.error('Could not delete bad references: %s', bad)
+            LOG.error("Could not delete bad references: %s", bad)
 
     return True
 
 
 def import_all_references_confirm():
     confirm_kw = {
-        't': 'Import All References',
-        'm': 'This action is not undoable.\nContinue?',
-        'b': ['OK', 'Cancel'],
-        'cb': 'Cancel',
-        'ds': 'dismiss',
-        'icn': 'warning',
+        "t": "Import All References",
+        "m": "This action is not undoable.\nContinue?",
+        "b": ["OK", "Cancel"],
+        "cb": "Cancel",
+        "ds": "dismiss",
+        "icn": "warning",
     }
     result = pm.confirmDialog(**confirm_kw)
-    if result != 'OK':
+    if result != "OK":
         return False
     return True
 

@@ -23,7 +23,7 @@ class QuickColorEditor(QtWidgets.QWidget):
         # the blueprint config
         self.config = self.blueprintModel.blueprint.get_config()
         # the section of the config containing all colors
-        self.colors_config = self.config.get('colors', {})
+        self.colors_config = self.config.get("colors", {})
 
         self.ui = Ui_QuickColorEditor()
         self.ui.setupUi(self)
@@ -50,13 +50,13 @@ class QuickColorEditor(QtWidgets.QWidget):
         btn.setMinimumHeight(30)
         btn.setText(name)
         # btn.setStyleSheet(color.as_fg_style())
-        btn.setStyleSheet(f'border: 2px solid {color.as_style()}')
+        btn.setStyleSheet(f"border: 2px solid {color.as_style()}")
         btn.clicked.connect(cmd(editor_utils.set_override_color_for_selected, color))
         return btn
 
 
 class QuickColorWindow(PulseWindow):
-    OBJECT_NAME = 'pulseQuickColorWindow'
-    WINDOW_MODULE = 'pulse.ui.quickcolor'
-    WINDOW_TITLE = 'Quick Color Editor'
+    OBJECT_NAME = "pulseQuickColorWindow"
+    WINDOW_MODULE = "pulse.ui.quickcolor"
+    WINDOW_TITLE = "Quick Color Editor"
     WIDGET_CLASS = QuickColorEditor

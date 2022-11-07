@@ -28,38 +28,36 @@ class CopyPasteMatrixWidget(QtWidgets.QWidget):
         self.setLayout(layout)
 
         copyBtn = QtWidgets.QPushButton(parent)
-        copyBtn.setText('Copy')
-        copyBtn.setStatusTip(
-            'Copy the world matrices of the selected nodes')
+        copyBtn.setText("Copy")
+        copyBtn.setStatusTip("Copy the world matrices of the selected nodes")
         copyBtn.clicked.connect(self.copySelected)
         layout.addWidget(copyBtn)
 
         pasteBtn = QtWidgets.QPushButton(parent)
-        pasteBtn.setText('Paste')
-        copyBtn.setStatusTip(
-            'Paste copied matrices onto the selected nodes')
+        pasteBtn.setText("Paste")
+        copyBtn.setStatusTip("Paste copied matrices onto the selected nodes")
         pasteBtn.clicked.connect(self.pasteSelected)
         layout.addWidget(pasteBtn)
 
         relativeCopyBtn = QtWidgets.QPushButton(parent)
-        relativeCopyBtn.setText('Relative Copy')
-        copyBtn.setStatusTip(
-            'Copy the relative matrices of the selected nodes')
+        relativeCopyBtn.setText("Relative Copy")
+        copyBtn.setStatusTip("Copy the relative matrices of the selected nodes")
         relativeCopyBtn.clicked.connect(self.relativeCopySelected)
         layout.addWidget(relativeCopyBtn)
 
         relativePasteBtn = QtWidgets.QPushButton(parent)
-        relativePasteBtn.setText('Relative Paste')
+        relativePasteBtn.setText("Relative Paste")
         copyBtn.setStatusTip(
-            'Paste copied matrices on the selected nodes relative '
-            'to the node used during copy or first selected node')
+            "Paste copied matrices on the selected nodes relative "
+            "to the node used during copy or first selected node"
+        )
         relativePasteBtn.clicked.connect(self.relativePasteSelected)
         layout.addWidget(relativePasteBtn)
 
     def copySelected(self):
         sel = pm.selected()
         if not sel:
-            LOG.warning('nothing selected')
+            LOG.warning("nothing selected")
             return
 
         self.copy(sel)
@@ -67,9 +65,7 @@ class CopyPasteMatrixWidget(QtWidgets.QWidget):
     def relativeCopySelected(self):
         sel = pm.selected()
         if len(sel) < 2:
-            LOG.warning(
-                "must select at least one base node, followed by "
-                "any number of nodes to copy ")
+            LOG.warning("must select at least one base node, followed by " "any number of nodes to copy ")
             return
 
         self.copy(sel[1:], baseNode=sel[0])
@@ -78,7 +74,7 @@ class CopyPasteMatrixWidget(QtWidgets.QWidget):
         sel = pm.selected()
 
         if not sel:
-            LOG.warning('nothing selected')
+            LOG.warning("nothing selected")
             return
 
         self.pasteOverTime(sel)
@@ -87,10 +83,10 @@ class CopyPasteMatrixWidget(QtWidgets.QWidget):
         sel = pm.selected()
 
         if not sel:
-            LOG.warning('nothing selected')
+            LOG.warning("nothing selected")
             return
 
-        base_node = self.clipboard.get('baseNode', None)
+        base_node = self.clipboard.get("baseNode", None)
 
         if len(sel) > self.numCopied():
             # use first object in selection as the new base node
@@ -107,7 +103,7 @@ class CopyPasteMatrixWidget(QtWidgets.QWidget):
         """
         Return the number of node matrices in the clipboard
         """
-        return len(self.clipboard.get('matrices', []))
+        return len(self.clipboard.get("matrices", []))
 
     def copy(self, transforms, baseNode=None):
         """
@@ -120,13 +116,11 @@ class CopyPasteMatrixWidget(QtWidgets.QWidget):
         """
         self.clipboard = {}
         if baseNode is not None:
-            self.clipboard['baseNode'] = baseNode
-            self.clipboard['matrices'] = [nodes.get_relative_matrix(
-                n, baseNode) for n in transforms]
-            LOG.debug('copied relative to {0}'.format(baseNode))
+            self.clipboard["baseNode"] = baseNode
+            self.clipboard["matrices"] = [nodes.get_relative_matrix(n, baseNode) for n in transforms]
+            LOG.debug("copied relative to {0}".format(baseNode))
         else:
-            self.clipboard['matrices'] = [
-                nodes.get_world_matrix(n) for n in transforms]
+            self.clipboard["matrices"] = [nodes.get_world_matrix(n) for n in transforms]
 
     def pasteOverTime(self, transforms, base_node=None):
         """
@@ -157,24 +151,24 @@ class CopyPasteMatrixWidget(QtWidgets.QWidget):
             return LOG.warning("nothing has been copied")
 
         # resolve 1 to many or many to many matrices
-        matrices = self.clipboard.get('matrices', [])
+        matrices = self.clipboard.get("matrices", [])
         if len(matrices) < len(transforms):
             if len(matrices) == 1:
                 # expand matrices list to be the same for each node
                 matrices = [matrices[0] for _ in range(len(transforms))]
             else:
                 # more nodes were selected than matrices copied
-                LOG.warning("trying to paste {0} matrices "
-                            "onto {1} nodes, will skip the last nodes".format(
-                    len(matrices), len(transforms)))
+                LOG.warning(
+                    "trying to paste {0} matrices "
+                    "onto {1} nodes, will skip the last nodes".format(len(matrices), len(transforms))
+                )
 
         if baseNode:
             # relative paste
             # zipping clamps to the shortest list
             for matrix, node in zip(matrices, transforms):
                 if node and node == baseNode:
-                    LOG.warning("cannot paste a matrix "
-                                "relative to itself: {0}".format(node))
+                    LOG.warning("cannot paste a matrix " "relative to itself: {0}".format(node))
                     continue
                 LOG.debug("pasting relative to {0}".format(baseNode))
                 nodes.set_relative_matrix(node, matrix, baseNode)
@@ -185,17 +179,17 @@ class CopyPasteMatrixWidget(QtWidgets.QWidget):
 
 
 class CopyPasteMatrixWindow(PulseWindow):
-    OBJECT_NAME = 'pulseCopyPasteMatrixWindow'
+    OBJECT_NAME = "pulseCopyPasteMatrixWindow"
     PREFERRED_SIZE = QtCore.QSize(220, 160)
     STARTING_SIZE = QtCore.QSize(220, 160)
     MINIMUM_SIZE = QtCore.QSize(220, 160)
     REQUIRED_PLUGINS = []
-    WINDOW_MODULE = 'pulse.ui.utilviews'
+    WINDOW_MODULE = "pulse.ui.utilviews"
 
     def __init__(self, parent=None):
         super(CopyPasteMatrixWindow, self).__init__(parent=parent)
 
-        self.setWindowTitle('Copy Paste Matrix')
+        self.setWindowTitle("Copy Paste Matrix")
 
         layout = QtWidgets.QVBoxLayout(self)
         self.setLayout(layout)

@@ -24,7 +24,7 @@ except ImportError:
 else:
     has_rmbmenuhook = True
 
-RMB_MENU_NAME = 'pulseActionNodeContextMenu'
+RMB_MENU_NAME = "pulseActionNodeContextMenu"
 
 
 def registerContextMenu(priority: int = 0):
@@ -33,6 +33,7 @@ def registerContextMenu(priority: int = 0):
     """
     # ensure actions are loaded, since they provide the context menu functionality
     from .. import loader
+
     loader.load_actions()
 
     if has_rmbmenuhook:
@@ -66,7 +67,7 @@ class PulseNodeContextMenu(rmbmenuhook.Menu):
 
         self.submenu_classes = self.getSubMenuClasses()
 
-    def getSubMenuClasses(self) -> List[Type['PulseNodeContextSubMenu']]:
+    def getSubMenuClasses(self) -> List[Type["PulseNodeContextSubMenu"]]:
         """
         Return a list of BuildActionContextMenuItem classes available for a node
         """
@@ -168,7 +169,7 @@ class PulseNodeContextSubMenu(object):
                     return True
             return False
 
-        for s in pm.selected(type='transform'):
+        for s in pm.selected(type="transform"):
             if hasAnyMetaClass(s, metaClassNames):
                 return True
         return False
@@ -185,4 +186,4 @@ class PulseNodeContextSubMenu(object):
                     return True
             return False
 
-        return [s for s in pm.selected(type='transform') if hasAnyMetaClass(s, metaClassNames)]
+        return [s for s in pm.selected(type="transform") if hasAnyMetaClass(s, metaClassNames)]

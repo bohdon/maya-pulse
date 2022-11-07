@@ -11,10 +11,10 @@ def get_root_joint(jnt):
     Args:
         jnt: A Joint node
     """
-    if jnt.nodeType() != 'joint':
+    if jnt.nodeType() != "joint":
         return
     parent = jnt.getParent()
-    while parent and parent.nodeType() == 'joint':
+    while parent and parent.nodeType() == "joint":
         jnt = parent
         parent = parent.getParent()
     return jnt
@@ -62,7 +62,7 @@ def get_end_joints(jnt):
         jnt (PyNode): A joint node
     """
     result = []
-    children = jnt.listRelatives(children=True, typ='joint')
+    children = jnt.listRelatives(children=True, typ="joint")
     if not children:
         result.append(jnt)
     else:
@@ -95,10 +95,10 @@ def insert_joints(child_jnt, count=1):
     pm.select(cl=True)
     parent_jnt = child_jnt.getParent()
     if parent_jnt is None:
-        pm.warning('Cannot insert joints for a joint without a parent')
+        pm.warning("Cannot insert joints for a joint without a parent")
         return result
-    start_position = parent_jnt.getTranslation(space='world')
-    end_position = child_jnt.getTranslation(space='world')
+    start_position = parent_jnt.getTranslation(space="world")
+    end_position = child_jnt.getTranslation(space="world")
     joints = [parent_jnt]
     rad = parent_jnt.radius.get()
     for i in range(count):
@@ -106,7 +106,7 @@ def insert_joints(child_jnt, count=1):
         j = pm.joint(p=joint_pos)
         set_joint_parent(j, joints[-1])
         j.radius.set(rad)
-        pm.joint(j, e=True, oj='xyz', secondaryAxisOrient='yup', zso=True)
+        pm.joint(j, e=True, oj="xyz", secondaryAxisOrient="yup", zso=True)
         result.append(j)
         joints.append(j)
     set_joint_parent(child_jnt, joints[-1])
@@ -124,14 +124,14 @@ def center_joint(jnt, child=None):
     """
     parent = jnt.getParent()
     if not isinstance(parent, pm.nt.Joint):
-        raise ValueError(f'{jnt} is not a child of a joint and cannot be centered')
+        raise ValueError(f"{jnt} is not a child of a joint and cannot be centered")
     if child is None:
-        children = jnt.getChildren(typ='joint')
+        children = jnt.getChildren(typ="joint")
         if not children:
-            raise ValueError(f'{jnt} has no child joints and cannot be centered')
+            raise ValueError(f"{jnt} has no child joints and cannot be centered")
         child = children[0]
     elif not isinstance(child, pm.nt.Joint):
-        raise TypeError('child must be a joint')
+        raise TypeError("child must be a joint")
     mid = nodes.get_translation_midpoint(parent, child)
     pm.move(jnt, mid, ws=True, pcp=True)
 
@@ -186,12 +186,12 @@ def set_joint_matrices(jnt, matrix, r, ra, jo, translate=True, rotate=True):
         r_euler = pm.dt.TransformationMatrix(r).euler
         ra_euler = pm.dt.TransformationMatrix(ra).euler
         jo_euler = pm.dt.TransformationMatrix(jo).euler
-        r_euler.unit = ra_euler.unit = jo_euler.unit = 'degrees'
-        pm.cmds.setAttr(jnt + '.r', *r_euler)
-        pm.cmds.setAttr(jnt + '.ra', *ra_euler)
-        pm.cmds.setAttr(jnt + '.jo', *jo_euler)
+        r_euler.unit = ra_euler.unit = jo_euler.unit = "degrees"
+        pm.cmds.setAttr(jnt + ".r", *r_euler)
+        pm.cmds.setAttr(jnt + ".ra", *ra_euler)
+        pm.cmds.setAttr(jnt + ".jo", *jo_euler)
     if translate:
-        pm.cmds.setAttr(jnt + '.t', *matrix[3][:3])
+        pm.cmds.setAttr(jnt + ".t", *matrix[3][:3])
 
 
 def set_joint_rotation_matrix(jnt, matrix):
@@ -240,7 +240,7 @@ def orient_joint_to_world(joint):
     set_joint_matrices(joint, wm, r, ra, jo)
 
 
-def orient_joint(joint: pm.nt.Joint, axis_order='xyz', up_axis_str='y', **kwargs):
+def orient_joint(joint: pm.nt.Joint, axis_order="xyz", up_axis_str="y", **kwargs):
     """
     Orient the joint to point down the bone
 
@@ -253,14 +253,14 @@ def orient_joint(joint: pm.nt.Joint, axis_order='xyz', up_axis_str='y', **kwargs
     """
     if joint.numChildren() > 0:
         # secondary axis orient is in the format 'xup', 'ydown', etc...
-        sao_str = up_axis_str + 'up'
+        sao_str = up_axis_str + "up"
         pm.joint(joint, e=True, oj=axis_order, sao=sao_str, **kwargs)
     else:
         # zero out rotations of end joints
         joint.jo.set([0, 0, 0])
 
 
-def orient_joint_custom(joint, aim_vector, up_vector, aim_axis='x', up_axis='y', preserve_children=False):
+def orient_joint_custom(joint, aim_vector, up_vector, aim_axis="x", up_axis="y", preserve_children=False):
     """
     Orient a joint to point the aim_axis down aim_vector, keeping up_axis as closely aligned to up_vector
     as possible. The third axis will be computed.
@@ -272,10 +272,10 @@ def orient_joint_custom(joint, aim_vector, up_vector, aim_axis='x', up_axis='y',
         child_matrices = [get_joint_matrices(j) for j in children]
 
     # convert the two axes into a rotation matrix
-    if aim_axis == 'x':
-        if up_axis == 'y':
+    if aim_axis == "x":
+        if up_axis == "y":
             new_mtx = math.make_matrix_from_xy(aim_vector, up_vector)
-        elif up_axis == 'z':
+        elif up_axis == "z":
             new_mtx = math.make_matrix_from_xz(aim_vector, up_vector)
         else:
             raise NotImplementedError
@@ -291,7 +291,7 @@ def orient_joint_custom(joint, aim_vector, up_vector, aim_axis='x', up_axis='y',
             set_joint_matrices(child, *child_mtx)
 
 
-def orient_ik_joints(end_joint, aim_axis='x', pole_axis='y', preserve_children=False):
+def orient_ik_joints(end_joint, aim_axis="x", pole_axis="y", preserve_children=False):
     """
     Orient the two parent joints of the given end joint to line up with the IK plane
     created by the triangle between all three joints.
@@ -305,9 +305,9 @@ def orient_ik_joints(end_joint, aim_axis='x', pole_axis='y', preserve_children=F
     mid_joint = end_joint.getParent()
     root_joint = mid_joint.getParent()
 
-    end_pos = end_joint.getTranslation(space='world')
-    mid_pos = mid_joint.getTranslation(space='world')
-    root_pos = root_joint.getTranslation(space='world')
+    end_pos = end_joint.getTranslation(space="world")
+    mid_pos = mid_joint.getTranslation(space="world")
+    root_pos = root_joint.getTranslation(space="world")
 
     # get the aim-down-bone vectors
     root_to_mid_vector = mid_pos - root_pos
@@ -316,10 +316,22 @@ def orient_ik_joints(end_joint, aim_axis='x', pole_axis='y', preserve_children=F
     # get the pole vector
     pole_vector, _ = get_ik_pole_vector_and_mid_point_for_joint(end_joint)
 
-    orient_joint_custom(root_joint, aim_vector=root_to_mid_vector, up_vector=pole_vector,
-                        aim_axis=aim_axis, up_axis=pole_axis, preserve_children=preserve_children)
-    orient_joint_custom(mid_joint, aim_vector=mid_to_end_vector, up_vector=pole_vector,
-                        aim_axis=aim_axis, up_axis=pole_axis, preserve_children=preserve_children)
+    orient_joint_custom(
+        root_joint,
+        aim_vector=root_to_mid_vector,
+        up_vector=pole_vector,
+        aim_axis=aim_axis,
+        up_axis=pole_axis,
+        preserve_children=preserve_children,
+    )
+    orient_joint_custom(
+        mid_joint,
+        aim_vector=mid_to_end_vector,
+        up_vector=pole_vector,
+        aim_axis=aim_axis,
+        up_axis=pole_axis,
+        preserve_children=preserve_children,
+    )
 
 
 def orient_joint_to_parent(joint, preserve_children=False):
@@ -365,7 +377,7 @@ def orient_joint_to_rotation(joint, preserve_children=False):
             set_joint_matrices(child, *childMtx)
 
 
-def fixup_joint_orient(joint, aim_axis='x', keep_axis='y', preserve_children=False):
+def fixup_joint_orient(joint, aim_axis="x", keep_axis="y", preserve_children=False):
     """
     Orient the joint to point down the bone, preserving one existing axis of the current orientation.
 
@@ -382,16 +394,22 @@ def fixup_joint_orient(joint, aim_axis='x', keep_axis='y', preserve_children=Fal
     child = children[0]
 
     # get the down-bone basis vector
-    joint_pos = joint.getTranslation(space='world')
-    child_pos = child.getTranslation(space='world')
+    joint_pos = joint.getTranslation(space="world")
+    child_pos = child.getTranslation(space="world")
     aim_axis_vector = child_pos - joint_pos
 
     # get the keep_axis basis vector
-    keep_axis_index = {'x': 0, 'y': 1, 'z': 2}[keep_axis]
+    keep_axis_index = {"x": 0, "y": 1, "z": 2}[keep_axis]
     keep_axis_vector = joint.wm.get()[keep_axis_index][0:3]
 
-    orient_joint_custom(joint, aim_vector=aim_axis_vector, up_vector=keep_axis_vector,
-                        aim_axis=aim_axis, up_axis=keep_axis, preserve_children=preserve_children)
+    orient_joint_custom(
+        joint,
+        aim_vector=aim_axis_vector,
+        up_vector=keep_axis_vector,
+        aim_axis=aim_axis,
+        up_axis=keep_axis,
+        preserve_children=preserve_children,
+    )
 
 
 def match_joint_rotation_to_orient(joint, preserve_children=False):
@@ -422,9 +440,9 @@ def get_ik_pole_vector_and_mid_point_for_joint(end_joint):
     if not root_joint:
         raise ValueError("%s has no parent joint" % root_joint)
 
-    end = end_joint.getTranslation(space='world')
-    mid = mid_joint.getTranslation(space='world')
-    root = root_joint.getTranslation(space='world')
+    end = end_joint.getTranslation(space="world")
+    mid = mid_joint.getTranslation(space="world")
+    root = root_joint.getTranslation(space="world")
 
     return get_ik_pole_vector_and_mid_point(root, mid, end)
 

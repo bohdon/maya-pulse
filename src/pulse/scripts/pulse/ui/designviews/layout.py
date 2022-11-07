@@ -52,15 +52,16 @@ class LayoutLinkEditorWidget(QtWidgets.QWidget):
     def showEvent(self, event):
         super(LayoutLinkEditorWidget, self).showEvent(event)
         if self.selection_changed_cb is None:
-            print('adding selection changed callback')
-            self.selection_changed_cb = api.MEventMessage.addEventCallback("SelectionChanged",
-                                                                           self.onSceneSelectionChanged)
+            print("adding selection changed callback")
+            self.selection_changed_cb = api.MEventMessage.addEventCallback(
+                "SelectionChanged", self.onSceneSelectionChanged
+            )
         self.update_link_info()
 
     def hideEvent(self, event):
         super(LayoutLinkEditorWidget, self).hideEvent(event)
         if self.selection_changed_cb is not None:
-            print('removing selection changed callback')
+            print("removing selection changed callback")
             api.MMessage.removeCallback(self.selection_changed_cb)
             self.selection_changed_cb = None
 
@@ -127,7 +128,7 @@ class LinkInfoWidget(QtWidgets.QWidget):
 
     def setupMetadataUi(self, parent):
         # get link data keys, sorted with `type` and `targetNodes` first
-        keys = ['type', 'targetNodes']
+        keys = ["type", "targetNodes"]
         keys += [k for k in self.linkData.keys() if k not in keys]
 
         # create labels for each piece of data
@@ -150,13 +151,13 @@ class LayoutLinkEditorWindow(PulseWindow):
     Window containing the LayoutLinkEditorWidget.
     """
 
-    OBJECT_NAME = 'pulseLayoutLinkEditorWindow'
-    WINDOW_MODULE = 'pulse.ui.designviews.layout'
+    OBJECT_NAME = "pulseLayoutLinkEditorWindow"
+    WINDOW_MODULE = "pulse.ui.designviews.layout"
 
     def __init__(self, parent=None):
         super(LayoutLinkEditorWindow, self).__init__(parent=parent)
 
-        self.setWindowTitle('Layout Link Editor')
+        self.setWindowTitle("Layout Link Editor")
 
         layout = QtWidgets.QVBoxLayout(self)
         layout.setMargin(0)

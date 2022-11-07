@@ -28,7 +28,7 @@ class QuickNameEditor(QtWidgets.QWidget):
         # the blueprint config
         self.config = self.blueprint_model.blueprint.get_config()
         # the section of the config that contains naming keywords
-        self.names_config = self.config.get('names', {})
+        self.names_config = self.config.get("names", {})
 
         self.active_keyword = None
 
@@ -61,7 +61,7 @@ class QuickNameEditor(QtWidgets.QWidget):
         Build the prefixes layout and button grid.
         Returns the layout.
         """
-        prefixes = self.names_config.get('prefixes', {})
+        prefixes = self.names_config.get("prefixes", {})
 
         btn_grid = QtWidgets.QGridLayout()
         btn_grid.setObjectName("prefixBtnGrid")
@@ -71,7 +71,7 @@ class QuickNameEditor(QtWidgets.QWidget):
             x = 0
             y = 0
             for prefix in prefixes:
-                name = prefix['name']
+                name = prefix["name"]
                 btn = QtWidgets.QPushButton()
                 btn.setText(name)
                 btn.setCheckable(True)
@@ -88,8 +88,8 @@ class QuickNameEditor(QtWidgets.QWidget):
 
         else:
             no_names_label = QtWidgets.QLabel(parent)
-            no_names_label.setText('no prefixes')
-            no_names_label.setProperty('cssClasses', 'help')
+            no_names_label.setText("no prefixes")
+            no_names_label.setProperty("cssClasses", "help")
             layout.addWidget(no_names_label)
 
     def setup_suffixes_ui(self, parent, layout):
@@ -97,7 +97,7 @@ class QuickNameEditor(QtWidgets.QWidget):
         Build the suffixes layout and button grid.
         Returns the layout.
         """
-        suffixes = self.names_config.get('suffixes', {})
+        suffixes = self.names_config.get("suffixes", {})
 
         btn_grid = QtWidgets.QGridLayout()
         btn_grid.setObjectName("suffixBtnGrid")
@@ -107,7 +107,7 @@ class QuickNameEditor(QtWidgets.QWidget):
             x = 0
             y = 0
             for suffix in suffixes:
-                name = suffix['name']
+                name = suffix["name"]
                 btn = QtWidgets.QPushButton()
                 btn.setText(name)
                 btn.setCheckable(True)
@@ -124,8 +124,8 @@ class QuickNameEditor(QtWidgets.QWidget):
 
         else:
             no_names_label = QtWidgets.QLabel(parent)
-            no_names_label.setText('no suffixes')
-            no_names_label.setProperty('cssClasses', 'help')
+            no_names_label.setText("no suffixes")
+            no_names_label.setProperty("cssClasses", "help")
             layout.addWidget(no_names_label)
 
     def setup_keywords_ui(self, parent, layout):
@@ -133,7 +133,7 @@ class QuickNameEditor(QtWidgets.QWidget):
         Build the keywords layout and all categories and button grids.
         Returns the layout.
         """
-        keywords = self.names_config.get('keywords', {})
+        keywords = self.names_config.get("keywords", {})
 
         if keywords:
             cats_layout = QtWidgets.QHBoxLayout(parent)
@@ -149,8 +149,8 @@ class QuickNameEditor(QtWidgets.QWidget):
 
         else:
             no_names_label = QtWidgets.QLabel(parent)
-            no_names_label.setText('no keywords')
-            no_names_label.setProperty('cssClasses', 'help')
+            no_names_label.setText("no keywords")
+            no_names_label.setProperty("cssClasses", "help")
             layout.addWidget(no_names_label)
 
     def setupKeywordCategoryUi(self, parent, name: str, keywords: list[str]):
@@ -167,13 +167,13 @@ class QuickNameEditor(QtWidgets.QWidget):
 
         cat_label = QtWidgets.QLabel(parent)
         cat_label.setText(names.to_title(name))
-        cat_label.setProperty('cssClasses', 'section-title')
+        cat_label.setProperty("cssClasses", "section-title")
         layout.addWidget(cat_label)
 
         # create button for all keywords
         for name in keywords:
             btn = QtWidgets.QPushButton()
-            btn.setObjectName('keywordBtn_' + name)
+            btn.setObjectName("keywordBtn_" + name)
             btn.setText(name)
             btn.setCheckable(True)
             btn.installEventFilter(self)
@@ -226,8 +226,8 @@ class QuickNameEditor(QtWidgets.QWidget):
         for name in names:
             is_found = False
             for item in cat_items:
-                if item['name'] == name:
-                    name_pairs.append((item['sort'], item['name']))
+                if item["name"] == name:
+                    name_pairs.append((item["sort"], item["name"]))
                     is_found = True
                     break
             if not is_found:
@@ -246,8 +246,8 @@ class QuickNameEditor(QtWidgets.QWidget):
         for name, btn in self.prefix_btns.items():
             if btn.isChecked():
                 prefixes.append(name)
-        prefixes = self.sort_ordered_names(prefixes, 'prefixes')
-        return '_'.join(prefixes)
+        prefixes = self.sort_ordered_names(prefixes, "prefixes")
+        return "_".join(prefixes)
 
     def evaluate_suffix(self):
         """
@@ -258,8 +258,8 @@ class QuickNameEditor(QtWidgets.QWidget):
         for name, btn in self.suffix_btns.items():
             if btn.isChecked():
                 suffixes.append(name)
-        suffixes = self.sort_ordered_names(suffixes, 'suffixes')
-        return '_'.join(suffixes)
+        suffixes = self.sort_ordered_names(suffixes, "suffixes")
+        return "_".join(suffixes)
 
     def evaluate_name(self, include_number=False):
         """
@@ -271,16 +271,16 @@ class QuickNameEditor(QtWidgets.QWidget):
         if prefix:
             components.append(prefix)
         # keyword
-        keyword = self.active_keyword if self.active_keyword else '*'
+        keyword = self.active_keyword if self.active_keyword else "*"
         if include_number:
-            num_fmt = self.names_config.get('numberFormat', '_{num:02}')
+            num_fmt = self.names_config.get("numberFormat", "_{num:02}")
             keyword += num_fmt
         components.append(keyword)
         # suffix
         suffix = self.evaluate_suffix()
         if suffix:
             components.append(suffix)
-        return '_'.join(components)
+        return "_".join(components)
 
     def _on_prefix_or_suffix_clicked(self, *args, **kwargs):
         """
@@ -318,7 +318,7 @@ class QuickNameEditor(QtWidgets.QWidget):
 
 
 class QuickNameWindow(PulseWindow):
-    OBJECT_NAME = 'pulseQuickNameWindow'
-    WINDOW_MODULE = 'pulse.ui.quickname'
-    WINDOW_TITLE = 'Quick Name Editor'
+    OBJECT_NAME = "pulseQuickNameWindow"
+    WINDOW_MODULE = "pulse.ui.quickname"
+    WINDOW_TITLE = "Quick Name Editor"
     WIDGET_CLASS = QuickNameEditor

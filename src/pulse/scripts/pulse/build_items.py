@@ -19,7 +19,7 @@ class BuildActionSpec(object):
     Contains information about a registered build action class and its config.
     """
 
-    def __init__(self, action_cls: type['BuildAction'], module):
+    def __init__(self, action_cls: type["BuildAction"], module):
         # the BuildAction subclass
         self.action_cls = action_cls
         # the python module containing the BuildAction
@@ -31,7 +31,7 @@ class BuildActionSpec(object):
     def is_valid(self) -> bool:
         return self.action_cls is not None and self.id
 
-    def is_equal(self, other: 'BuildActionSpec') -> bool:
+    def is_equal(self, other: "BuildActionSpec") -> bool:
         """
         Return true if this action spec is the same as another.
         """
@@ -58,7 +58,7 @@ class BuildActionSpec(object):
         """
         doc = self.action_cls.__doc__
         if doc:
-            doc = doc.strip().split('\n')[0]
+            doc = doc.strip().split("\n")[0]
         return doc
 
     @property
@@ -91,12 +91,12 @@ def _increment_name(name: str) -> str:
     """
     Increment a name by adding or increasing a numerical suffix.
     """
-    num_match = re.match('(.*?)([0-9]+$)', name)
+    num_match = re.match("(.*?)([0-9]+$)", name)
     if num_match:
         base, num = num_match.groups()
         return base + str(int(num) + 1)
     else:
-        return name + ' 1'
+        return name + " 1"
 
 
 def _copy_data(data, ref_node=None):
@@ -186,7 +186,7 @@ class BuildActionRegistry(object):
         if action_id in self._action_specs:
             return self._action_specs[action_id]
 
-    def find_action_by_class(self, action_cls: type['BuildAction']) -> Optional[BuildActionSpec]:
+    def find_action_by_class(self, action_cls: type["BuildAction"]) -> Optional[BuildActionSpec]:
         """
         Find a BuildActionSpec by action class.
         """
@@ -199,6 +199,7 @@ class BuildActionError(Exception):
     """
     A BuildAction was misconfigured or failed during build
     """
+
     pass
 
 
@@ -206,17 +207,18 @@ class BuildActionAttributeType(object):
     """
     Constants defining the build action attribute types.
     """
+
     UNKNOWN = None
-    BOOL = 'bool'
-    INT = 'int'
-    FLOAT = 'float'
-    VECTOR3 = 'vector3'
-    STRING = 'string'
-    STRING_LIST = 'stringlist'
-    OPTION = 'option'
-    NODE = 'node'
-    NODE_LIST = 'nodelist'
-    FILE = 'file'
+    BOOL = "bool"
+    INT = "int"
+    FLOAT = "float"
+    VECTOR3 = "vector3"
+    STRING = "string"
+    STRING_LIST = "stringlist"
+    OPTION = "option"
+    NODE = "node"
+    NODE_LIST = "nodelist"
+    FILE = "file"
 
 
 class BuildActionAttribute(object):
@@ -233,17 +235,17 @@ class BuildActionAttribute(object):
     class_attr_type: Optional[str] = BuildActionAttributeType.UNKNOWN
 
     # cached map of attribute types to BuildActionAttribute classes for faster lookup
-    _attr_class_map: dict[Optional[str]: type['BuildActionAttribute']] = {}
+    _attr_class_map: dict[Optional[str] : type["BuildActionAttribute"]] = {}
 
     @classmethod
-    def from_spec(cls, name: str, action_spec: BuildActionSpec = None, action_id: str = None) -> 'BuildActionAttribute':
+    def from_spec(cls, name: str, action_spec: BuildActionSpec = None, action_id: str = None) -> "BuildActionAttribute":
         """
         Create a BuildActionAttribute object from a name and spec, using the
         appropriate class based on the attribute type.
         """
         # Note: for some reason, logging a warning or printing anything during the construction
         #       of a BuildActionAttribute causes Maya to crash during blueprint reload.
-        attr_type: str = cls._find_attr_config(name, action_spec).get('type')
+        attr_type: str = cls._find_attr_config(name, action_spec).get("type")
         subclass: Optional[type[BuildActionAttribute]] = cls._find_attr_class(attr_type)
         if subclass:
             return subclass(name, action_spec, action_id)
@@ -295,7 +297,7 @@ class BuildActionAttribute(object):
         if action_spec:
             attrs_config = action_spec.attrs
             for attr_config in attrs_config:
-                if attr_config.get('name') == attr_name:
+                if attr_config.get("name") == attr_name:
                     return attr_config
         return {}
 
@@ -314,15 +316,15 @@ class BuildActionAttribute(object):
 
     @property
     def type(self):
-        return self.config.get('type')
+        return self.config.get("type")
 
     @property
     def description(self):
-        return self.config.get('description')
+        return self.config.get("description")
 
     @property
     def is_optional(self):
-        return self.config.get('optional', False)
+        return self.config.get("optional", False)
 
     @property
     def default_value(self) -> Any:
@@ -330,8 +332,8 @@ class BuildActionAttribute(object):
         Return the default value of the attribute.
         """
         # 'value' key represents the default value of the attribute in the config
-        if 'value' in self.config:
-            return self.config['value']
+        if "value" in self.config:
+            return self.config["value"]
         return self.get_type_default_value()
 
     def get_type_default_value(self):
@@ -381,7 +383,7 @@ class BuildActionAttribute(object):
         and storing the reason it is invalid if applicable.
         """
         if self.class_attr_type == BuildActionAttributeType.UNKNOWN:
-            self._invalid_reason = 'unknown_type'
+            self._invalid_reason = "unknown_type"
             self._is_valid = False
         else:
             self._invalid_reason = None
@@ -458,9 +460,11 @@ class BuildActionVector3Attribute(BuildActionAttribute):
         return [0.0, 0.0, 0.0]
 
     def is_acceptable_value(self, new_value):
-        return (isinstance(new_value, list) and
-                len(new_value) == 3 and
-                all([isinstance(v, (int, float)) for v in new_value]))
+        return (
+            isinstance(new_value, list)
+            and len(new_value) == 3
+            and all([isinstance(v, (int, float)) for v in new_value])
+        )
 
 
 class BuildActionStringAttribute(BuildActionAttribute):
@@ -471,7 +475,7 @@ class BuildActionStringAttribute(BuildActionAttribute):
     class_attr_type = BuildActionAttributeType.STRING
 
     def get_type_default_value(self):
-        return ''
+        return ""
 
     def is_acceptable_value(self, new_value):
         return isinstance(new_value, str)
@@ -479,7 +483,7 @@ class BuildActionStringAttribute(BuildActionAttribute):
     def validate(self):
         # unless explicitly optional, there must be a value (default is accepted)
         if not self.is_optional and not self.get_value():
-            self._invalid_reason = 'required'
+            self._invalid_reason = "required"
             self._is_valid = False
         else:
             self._invalid_reason = None
@@ -515,9 +519,9 @@ class BuildActionOptionAttribute(BuildActionAttribute):
 
     def validate(self):
         value = self.get_value()
-        num_options = len(self.config.get('options', []))
+        num_options = len(self.config.get("options", []))
         if value < 0 or value >= num_options:
-            self._invalid_reason = 'out_of_range'
+            self._invalid_reason = "out_of_range"
             self._is_valid = False
         else:
             self._invalid_reason = None
@@ -536,12 +540,13 @@ class BuildActionNodeAttribute(BuildActionAttribute):
 
     def is_acceptable_value(self, new_value):
         import pymel.core as pm
+
         return new_value is None or isinstance(new_value, pm.nt.DependNode)
 
     def validate(self):
         # unless explicitly optional, a value must be set
         if not self.is_optional and not self.is_value_set():
-            self._invalid_reason = 'required'
+            self._invalid_reason = "required"
             self._is_valid = False
         else:
             self._invalid_reason = None
@@ -560,12 +565,13 @@ class BuildActionNodeListAttribute(BuildActionAttribute):
 
     def is_acceptable_value(self, new_value):
         import pymel.core as pm
+
         return isinstance(new_value, list) and all([isinstance(v, pm.nt.DependNode) for v in new_value])
 
     def validate(self):
         # unless explicitly optional, a value must be set
         if not self.is_optional and not self.is_value_set():
-            self._invalid_reason = 'required'
+            self._invalid_reason = "required"
             self._is_valid = False
             return
 
@@ -577,6 +583,7 @@ class BuildActionFileAttribute(BuildActionAttribute):
     """
     An attribute that points to a single file.
     """
+
     class_attr_type = BuildActionAttributeType.FILE
 
     def get_type_default_value(self):
@@ -622,7 +629,7 @@ class BuildActionData(object):
         self._attrs = {}
         # add attribute instances for all attribute definitions in the spec
         if self.spec:
-            attr_names = [a.get('name') for a in self.spec.attrs]
+            attr_names = [a.get("name") for a in self.spec.attrs]
             self.add_attrs(attr_names)
 
     @property
@@ -741,7 +748,7 @@ class BuildActionData(object):
         Return this BuildActionData as a serialized dict object
         """
         data = UnsortableOrderedDict()
-        data['id'] = self._action_id
+        data["id"] = self._action_id
         # serialize all attributes
         for attr_name, attr in self._attrs.items():
             # don't serialize default attribute values
@@ -756,7 +763,7 @@ class BuildActionData(object):
         Args:
             data: A dict containing serialized data for this action
         """
-        self._action_id = data['id']
+        self._action_id = data["id"]
 
         # update spec
         self.find_spec()
@@ -776,7 +783,7 @@ class BuildActionData(object):
 
             # do a fake init of attributes based solely on the data
             for attr_name in data.keys():
-                if attr_name not in self._attrs and attr_name not in ('id', 'variantAttrs', 'variants'):
+                if attr_name not in self._attrs and attr_name not in ("id", "variantAttrs", "variants"):
                     self.add_attr(attr_name)
 
             # set attribute values
@@ -815,13 +822,13 @@ class BuildActionDataVariant(BuildActionData):
     def serialize(self):
         data = super(BuildActionDataVariant, self).serialize()
         # store the subset of attribute names available to this variant.
-        data['variantAttrs'] = list(self.get_attr_names())
+        data["variantAttrs"] = list(self.get_attr_names())
         return data
 
     def deserialize(self, data):
         # restore the set of attributes available to the variant,
         # they will be initted during the super deserialize
-        self._initial_attr_names = data.get('variantAttrs', [])
+        self._initial_attr_names = data.get("variantAttrs", [])
 
         super(BuildActionDataVariant, self).deserialize(data)
 
@@ -1024,15 +1031,15 @@ class BuildActionProxy(BuildActionData):
     def serialize(self):
         data = super(BuildActionProxy, self).serialize()
         if self._variant_attr_names:
-            data['variantAttrs'] = self._variant_attr_names
+            data["variantAttrs"] = self._variant_attr_names
         if self._variants:
-            data['variants'] = [self.serialize_variant(v) for v in self._variants]
+            data["variants"] = [self.serialize_variant(v) for v in self._variants]
         return data
 
     def deserialize(self, data):
         super(BuildActionProxy, self).deserialize(data)
-        self._variant_attr_names = data.get('variantAttrs', [])
-        self._variants = [self.deserialize_variant(v) for v in data.get('variants', [])]
+        self._variant_attr_names = data.get("variantAttrs", [])
+        self._variants = [self.deserialize_variant(v) for v in data.get("variants", [])]
 
     def serialize_variant(self, variant: BuildActionDataVariant):
         """
@@ -1041,8 +1048,8 @@ class BuildActionProxy(BuildActionData):
         """
         data = variant.serialize()
         # prune unnecessary data from the variant for optimization
-        del data['id']
-        del data['variantAttrs']
+        del data["id"]
+        del data["variantAttrs"]
         return data
 
     def deserialize_variant(self, data: dict):
@@ -1052,12 +1059,12 @@ class BuildActionProxy(BuildActionData):
         """
         variant = BuildActionDataVariant()
         # add necessary additional data for deserializing the variant
-        data['id'] = self._action_id
-        data['variantAttrs'] = self._variant_attr_names
+        data["id"] = self._action_id
+        data["variantAttrs"] = self._variant_attr_names
         variant.deserialize(data)
         return variant
 
-    def action_iterator(self) -> Iterable['BuildAction']:
+    def action_iterator(self) -> Iterable["BuildAction"]:
         """
         Generator that yields all the BuildActions represented
         by this proxy. If variants are in use, constructs a BuildAction
@@ -1103,13 +1110,13 @@ class BuildAction(BuildActionData):
     id = None
 
     # the display name of the action as seen in the UI
-    display_name = 'Unknown'
+    display_name = "Unknown"
 
     # the color of the action for highlighting
     color = (1, 1, 1)
 
     # the menu category where the action will be grouped
-    category = 'General'
+    category = "General"
 
     # the list of attribute definition configs for this action
     # should be of at least the form: {'name': 'myAttr', 'type':BuildActionAttributeType.BOOL}
@@ -1119,7 +1126,7 @@ class BuildAction(BuildActionData):
     editor_form_class: Optional[type] = None
 
     @staticmethod
-    def from_action_id(action_id: str) -> Optional['BuildAction']:
+    def from_action_id(action_id: str) -> Optional["BuildAction"]:
         """
         Create and return a BuildAction by class action_id.
         """
@@ -1132,7 +1139,7 @@ class BuildAction(BuildActionData):
         return action
 
     @staticmethod
-    def from_data(data) -> Optional['BuildAction']:
+    def from_data(data) -> Optional["BuildAction"]:
         """
         Create and return a BuildAction based on the given serialized data.
 
@@ -1142,7 +1149,7 @@ class BuildAction(BuildActionData):
         Args:
             data: A dict object containing serialized BuildAction data
         """
-        action_id = data.get('id')
+        action_id = data.get("id")
         if not action_id:
             LOG.error("BuildAction.from_data: Invalid data, missing 'id' key: %s", data)
             return
@@ -1164,6 +1171,7 @@ class BuildAction(BuildActionData):
         self._log = None
         # builder is only available during build
         from pulse.blueprints import BlueprintBuilder
+
         self.builder: Optional[BlueprintBuilder] = None
         # rig is only available during build
         self.rig: Optional[pm.nt.Transform] = None
@@ -1182,7 +1190,7 @@ class BuildAction(BuildActionData):
         """
         Return the name of the logger for this BuildAction
         """
-        return f'pulse.action.{self.action_id}'
+        return f"pulse.action.{self.action_id}"
 
     @property
     def log(self):
@@ -1202,7 +1210,7 @@ class BuildAction(BuildActionData):
         Return all metadata on the rig being built
         """
         if not self.rig:
-            self.log.error('Cannot get rig meta data, no rig is set')
+            self.log.error("Cannot get rig meta data, no rig is set")
             return {}
         return meta.getMetaData(self.rig, RIG_METACLASS)
 
@@ -1214,7 +1222,7 @@ class BuildAction(BuildActionData):
             data: A dict containing metadata to update on the rig
         """
         if not self.rig:
-            self.log.error('Cannot update rig meta data, no rig is set')
+            self.log.error("Cannot update rig meta data, no rig is set")
             return
         meta.updateMetaData(self.rig, RIG_METACLASS, data)
 
@@ -1256,8 +1264,7 @@ class BuildAction(BuildActionData):
         """
         min_api_version = self.get_min_api_version()
         if min_api_version > 0 and cmds.about(api=True) < min_api_version:
-            raise BuildActionError(
-                "Maya api version %s is required to use %s" % (min_api_version, self._actionId))
+            raise BuildActionError("Maya api version %s is required to use %s" % (min_api_version, self._actionId))
 
     def run_validate(self):
         """
@@ -1275,9 +1282,9 @@ class BuildAction(BuildActionData):
         """
         for attr_name, attr in self._attrs.items():
             # TODO: leave this implementation up to the attribute class type
-            if attr.type == 'nodelist':
+            if attr.type == "nodelist":
                 if None in attr.get_value():
-                    raise BuildActionError('%s contains a missing object' % attr_name)
+                    raise BuildActionError("%s contains a missing object" % attr_name)
 
     def validate(self):
         """
@@ -1301,7 +1308,7 @@ class BuildStep(object):
     cannot have children.
     """
 
-    default_name = 'New Step'
+    default_name = "New Step"
 
     # TODO (bsayre): consider adding method to change the action type of the current proxy,
     #       whilst preserving or transferring as much attr data as possible
@@ -1415,11 +1422,11 @@ class BuildStep(object):
     def parent(self):
         return self._parent
 
-    def set_parent_internal(self, new_parent: Optional['BuildStep']):
+    def set_parent_internal(self, new_parent: Optional["BuildStep"]):
         self._parent = new_parent
         self._on_parent_changed()
 
-    def set_parent(self, new_parent: Optional['BuildStep']):
+    def set_parent(self, new_parent: Optional["BuildStep"]):
         """
         Set the parent of this BuildStep, removing it from its old parent if necessary.
         """
@@ -1461,11 +1468,11 @@ class BuildStep(object):
         """
         if self._action_proxy:
             if self._action_proxy.is_variant_action():
-                return f'{self._name} (x{self._action_proxy.num_variants()})'
+                return f"{self._name} (x{self._action_proxy.num_variants()})"
             else:
-                return f'{self._name}'
+                return f"{self._name}"
         else:
-            return f'{self._name} ({self.num_children()})'
+            return f"{self._name} ({self.num_children()})"
 
     def get_color(self) -> LinearColor:
         """
@@ -1486,7 +1493,7 @@ class BuildStep(object):
         if self._parent:
             parent_path = self._parent.get_full_path()
             if parent_path:
-                return f'{parent_path}/{self._name}'
+                return f"{parent_path}/{self._name}"
             else:
                 return self._name
         else:
@@ -1518,25 +1525,25 @@ class BuildStep(object):
 
         self._children = []
 
-    def add_child(self, step: 'BuildStep'):
+    def add_child(self, step: "BuildStep"):
         if not self.can_have_children():
             return
 
         if step is self:
-            raise ValueError('Cannot add step as child of itself')
+            raise ValueError("Cannot add step as child of itself")
 
         if not isinstance(step, BuildStep):
-            raise TypeError(f'Expected BuildStep, got {type(step).__name__}')
+            raise TypeError(f"Expected BuildStep, got {type(step).__name__}")
 
         if step not in self._children:
             self._children.append(step)
             step.set_parent_internal(self)
 
-    def add_children(self, steps: List['BuildStep']):
+    def add_children(self, steps: List["BuildStep"]):
         for step in steps:
             self.add_child(step)
 
-    def remove_child(self, step: 'BuildStep'):
+    def remove_child(self, step: "BuildStep"):
         if not self.can_have_children():
             return
 
@@ -1571,12 +1578,12 @@ class BuildStep(object):
         if self.parent:
             self.parent.remove_child(self)
 
-    def insert_child(self, index, step: 'BuildStep'):
+    def insert_child(self, index, step: "BuildStep"):
         if not self.can_have_children():
             return
 
         if not isinstance(step, BuildStep):
-            raise TypeError(f'Expected BuildStep, got {type(step).__name__}')
+            raise TypeError(f"Expected BuildStep, got {type(step).__name__}")
 
         if step not in self._children:
             self._children.insert(index, step)
@@ -1591,7 +1598,7 @@ class BuildStep(object):
     def has_any_children(self):
         return self.num_children() != 0
 
-    def has_parent(self, step: 'BuildStep'):
+    def has_parent(self, step: "BuildStep"):
         """
         Return True if the step is an immediate or distance parent of this step.
         """
@@ -1602,7 +1609,7 @@ class BuildStep(object):
                 return self.parent.has_parent(step)
         return False
 
-    def get_child_at(self, index: int) -> Optional['BuildStep']:
+    def get_child_at(self, index: int) -> Optional["BuildStep"]:
         if not self.can_have_children():
             return
 
@@ -1612,7 +1619,7 @@ class BuildStep(object):
 
         return self._children[index]
 
-    def get_child_index(self, step: 'BuildStep'):
+    def get_child_index(self, step: "BuildStep"):
         """
         Return the index of a BuildStep within this step's list of children
         """
@@ -1621,7 +1628,7 @@ class BuildStep(object):
 
         return self._children.index(step)
 
-    def get_child_by_name(self, name: str) -> Optional['BuildStep']:
+    def get_child_by_name(self, name: str) -> Optional["BuildStep"]:
         """
         Return a child step by name
         """
@@ -1632,22 +1639,22 @@ class BuildStep(object):
             if step.name == name:
                 return step
 
-    def get_child_by_path(self, path: str) -> Optional['BuildStep']:
+    def get_child_by_path(self, path: str) -> Optional["BuildStep"]:
         """
         Return a child step by relative path
         """
         if not self.can_have_children():
             return
 
-        if '/' in path:
-            child_name, grand_child_path = path.split('/', 1)
+        if "/" in path:
+            child_name, grand_child_path = path.split("/", 1)
             child = self.get_child_by_name(child_name)
             if child:
                 return child.get_child_by_path(grand_child_path)
         else:
             return self.get_child_by_name(path)
 
-    def child_iterator(self) -> Iterable['BuildStep']:
+    def child_iterator(self) -> Iterable["BuildStep"]:
         """
         Generator that yields all children, recursively.
         """
@@ -1697,17 +1704,17 @@ class BuildStep(object):
         Return this BuildStep as a serialized dict object
         """
         data = UnsortableOrderedDict()
-        data['name'] = self._name
+        data["name"] = self._name
 
         if self.isDisabled:
-            data['isDisabled'] = True
+            data["isDisabled"] = True
 
         if self._action_proxy:
-            data['action'] = self._action_proxy.serialize()
+            data["action"] = self._action_proxy.serialize()
 
         if self.num_children() > 0:
             # TODO: perform a recursion loop check
-            data['children'] = [c.serialize() for c in self._children]
+            data["children"] = [c.serialize() for c in self._children]
 
         return data
 
@@ -1718,11 +1725,11 @@ class BuildStep(object):
         Args:
             data: A dict containing serialized data for this step
         """
-        self.isDisabled = data.get('isDisabled', False)
+        self.isDisabled = data.get("isDisabled", False)
 
-        if 'action' in data:
+        if "action" in data:
             new_action_proxy = BuildActionProxy()
-            new_action_proxy.deserialize(data['action'])
+            new_action_proxy.deserialize(data["action"])
             self.set_action_proxy(new_action_proxy)
         else:
             self._action_proxy = None
@@ -1730,7 +1737,7 @@ class BuildStep(object):
         # set name after action, so that if no name has
         # been set yet, it will be initialized with the name
         # of the action
-        self.set_name(data.get('name', None))
+        self.set_name(data.get("name", None))
 
         # TODO: warn if throwing away children in a rare case that
         #       both a proxy and children existed (maybe data was manually created).
@@ -1738,19 +1745,19 @@ class BuildStep(object):
             # detach any existing children
             self.clear_children()
             # deserialize all children, and connect them to this parent
-            self._children = [BuildStep.from_data(c) for c in data.get('children', [])]
+            self._children = [BuildStep.from_data(c) for c in data.get("children", [])]
             for child in self._children:
                 if child:
                     child.set_parent_internal(self)
 
     @staticmethod
-    def get_topmost_steps(steps: List['BuildStep']) -> List['BuildStep']:
+    def get_topmost_steps(steps: List["BuildStep"]) -> List["BuildStep"]:
         """
         Return a copy of the list of BuildSteps that doesn't include
         any BuildSteps that have a parent or distant parent in the list.
         """
 
-        def has_any_parent(step: BuildStep, parents: List['BuildStep']):
+        def has_any_parent(step: BuildStep, parents: List["BuildStep"]):
             for parent in parents:
                 if step != parent and step.has_parent(parent):
                     return True

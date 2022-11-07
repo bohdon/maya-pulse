@@ -36,12 +36,12 @@ class ActionPackagesList(QtWidgets.QWidget):
         for package in registry.action_packages:
             label = QtWidgets.QLabel(self)
             label.setTextInteractionFlags(QtCore.Qt.LinksAccessibleByMouse | QtCore.Qt.TextSelectableByMouse)
-            label.setProperty('cssClasses', 'block')
+            label.setProperty("cssClasses", "block")
             label.setText(self.getPackageDisplayName(package))
             self.layout.addWidget(label)
 
     def getPackageDisplayName(self, package):
-        return f'{package.__name__} ({package.__path__[0]})'
+        return f"{package.__name__} ({package.__path__[0]})"
 
     def showEvent(self, event: QtGui.QShowEvent):
         super(ActionPackagesList, self).showEvent(event)
@@ -130,7 +130,8 @@ class MainSettingsWindow(PulseWindow):
     """
     The settings window for Pulse and the current blueprint.
     """
-    OBJECT_NAME = 'pulseMainSettingsWindow'
-    WINDOW_MODULE = 'pulse.ui.main_settings'
-    WINDOW_TITLE = 'Pulse Settings'
+
+    OBJECT_NAME = "pulseMainSettingsWindow"
+    WINDOW_MODULE = "pulse.ui.main_settings"
+    WINDOW_TITLE = "Pulse Settings"
     WIDGET_CLASS = MainSettings

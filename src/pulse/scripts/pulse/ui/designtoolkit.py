@@ -70,23 +70,23 @@ class DesignToolkit(QtWidgets.QWidget):
         for panelDef in self.panelDefinitions:
             # create a collapsible container to wrap the design panel
             panel_widget = PulsePanelWidget(parent)
-            panel_widget.set_title_text(panelDef['title'])
+            panel_widget.set_title_text(panelDef["title"])
 
             # create the contents widget
-            content_widget = panelDef['widgetClass'](parent)
+            content_widget = panelDef["widgetClass"](parent)
             panel_widget.set_content_widget(content_widget)
 
             layout.addWidget(panel_widget)
 
 
 class DesignToolkitWindow(PulseWindow):
-    OBJECT_NAME = 'pulseDesignToolkitWindow'
-    WINDOW_MODULE = 'pulse.ui.designtoolkit'
+    OBJECT_NAME = "pulseDesignToolkitWindow"
+    WINDOW_MODULE = "pulse.ui.designtoolkit"
 
     def __init__(self, parent=None):
         super().__init__(parent=parent)
 
-        self.setWindowTitle('Pulse Design Toolkit')
+        self.setWindowTitle("Pulse Design Toolkit")
 
         layout = QtWidgets.QVBoxLayout(self)
         layout.setMargin(0)

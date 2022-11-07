@@ -19,7 +19,6 @@ LOG = logging.getLogger(__name__)
 
 
 class MainToolbar(QtWidgets.QWidget):
-
     def __init__(self, parent=None):
         super(MainToolbar, self).__init__(parent=parent)
 
@@ -84,9 +83,9 @@ class MainToolbar(QtWidgets.QWidget):
 
         fileName = self.blueprint_model.getBlueprintFileName()
         if fileName is None:
-            fileName = 'untitled'
+            fileName = "untitled"
         if self.blueprint_model.isFileModified():
-            fileName += '*'
+            fileName += "*"
 
         self.ui.rig_name_label.setText(self.blueprint_model.getSetting(BlueprintSettings.RIG_NAME))
         self.ui.blueprint_file_name_label.setText(fileName)
@@ -133,7 +132,7 @@ class MainToolbar(QtWidgets.QWidget):
             self.ui.blueprint_mode_label.setEnabled(False)
             self.ui.rig_mode_label.setEnabled(True)
             # update mode frame color
-            self.ui.mode_frame.setProperty('cssClasses', 'toolbar-rig')
+            self.ui.mode_frame.setProperty("cssClasses", "toolbar-rig")
         else:
             # blueprint editing mode
             self.ui.validate_btn.setEnabled(True)
@@ -143,10 +142,10 @@ class MainToolbar(QtWidgets.QWidget):
             self.ui.blueprint_mode_label.setEnabled(True)
             self.ui.rig_mode_label.setEnabled(False)
             # update mode frame color
-            self.ui.mode_frame.setProperty('cssClasses', 'toolbar-blueprint')
+            self.ui.mode_frame.setProperty("cssClasses", "toolbar-blueprint")
 
         can_interactive_build = self.blueprint_model.is_interactive_building() or not self.doesRigExist()
         self.ui.interactive_build_btn.setEnabled(can_interactive_build)
 
         # refresh stylesheet for mode frame
-        self.ui.mode_frame.setStyleSheet('')
+        self.ui.mode_frame.setStyleSheet("")

@@ -7,7 +7,7 @@ def to_title(name):
     """
     if not isinstance(name, str):
         return
-    return re.sub('([A-Z])', ' \\1', name).title()
+    return re.sub("([A-Z])", " \\1", name).title()
 
 
 def to_camel(name):
@@ -15,5 +15,5 @@ def to_camel(name):
     Return a string formatted to 'camelCase'
     """
     split = name.split()
-    split[0] = f'{split[0][0].lower()}{split[0][1:]}'
-    return ''.join(split)
+    split[0] = f"{split[0][0].lower()}{split[0][1:]}"
+    return "".join(split)

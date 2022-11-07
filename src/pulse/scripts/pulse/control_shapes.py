@@ -10,7 +10,7 @@ from . import links
 from . import nodes
 from . import util_nodes
 
-CONTROL_SHAPE_METACLASS = 'pulse_controlshape'
+CONTROL_SHAPE_METACLASS = "pulse_controlshape"
 BUILTIN_CONTROL_SHAPES_LOADED = False
 CONTROL_SHAPES = {}
 
@@ -65,6 +65,7 @@ def connect_node_to_control_point(node, curve_shape, point_index):
 # Control Shape Registration
 # --------------------------
 
+
 def get_control_shapes():
     """
     Return all available control shapes
@@ -74,9 +75,9 @@ def get_control_shapes():
         return (a > b) - (a < b)
 
     def sort_func(a, b):
-        result = cmp(a.get('sort', 999), b.get('sort', 999))
+        result = cmp(a.get("sort", 999), b.get("sort", 999))
         if result == 0:
-            result = cmp(a['name'], b['name'])
+            result = cmp(a["name"], b["name"])
         return result
 
     return sorted(CONTROL_SHAPES.values(), key=functools.cmp_to_key(sort_func))
@@ -107,7 +108,7 @@ def unregister_control_shape(name):
         del CONTROL_SHAPES[name]
 
 
-def load_control_shapes_from_directory(start_dir, pattern='*_control.yaml'):
+def load_control_shapes_from_directory(start_dir, pattern="*_control.yaml"):
     """
     Return control shape data for all controls found by searching
     a directory. Search is performed recursively for
@@ -117,7 +118,7 @@ def load_control_shapes_from_directory(start_dir, pattern='*_control.yaml'):
         start_dir: A str path of the directory to search
         pattern: A fnmatch pattern to filter which files to load
     """
-    if '~' in start_dir:
+    if "~" in start_dir:
         start_dir = os.path.expanduser(start_dir)
 
     result = []
@@ -128,9 +129,9 @@ def load_control_shapes_from_directory(start_dir, pattern='*_control.yaml'):
 
         if os.path.isfile(full_path):
             if fnmatch(path, pattern):
-                with open(full_path, 'r') as fp:
+                with open(full_path, "r") as fp:
                     data = yaml.load(fp.read())
-                name = data.get('name')
+                name = data.get("name")
                 if name:
                     result.append(data)
                 else:
@@ -148,10 +149,10 @@ def load_builtin_control_shapes():
     """
     global BUILTIN_CONTROL_SHAPES_LOADED
     if not BUILTIN_CONTROL_SHAPES_LOADED:
-        controls_dir = os.path.join(os.path.dirname(__file__), 'controls')
+        controls_dir = os.path.join(os.path.dirname(__file__), "controls")
         shapes = load_control_shapes_from_directory(controls_dir)
         for s in shapes:
-            register_control_shape(s['name'], s)
+            register_control_shape(s["name"], s)
         BUILTIN_CONTROL_SHAPES_LOADED = True
 
 
@@ -166,12 +167,12 @@ def save_control_shape_to_file(name, icon, curve, file_path):
         file_path: The path to the file where the shape should be saved.
     """
     data = {
-        'name': name,
-        'icon': icon,
-        'sort': 100,
-        'curves': get_shape_data(curve),
+        "name": name,
+        "icon": icon,
+        "sort": 100,
+        "curves": get_shape_data(curve),
     }
-    with open(file_path, 'w') as fp:
+    with open(file_path, "w") as fp:
         yaml.dump(data, fp)
 
 
@@ -191,15 +192,15 @@ def create_control(shape_data, name=None, target_node=None, link=False, parent=N
         parent: An optional transform node to parent the control to.
     """
     if target_node and not isinstance(target_node, pm.nt.Transform):
-        raise TypeError('target_node must be a Transform node')
+        raise TypeError("target_node must be a Transform node")
     if name is None:
-        name = 'ctl1'
+        name = "ctl1"
     # create control transform
     ctl = pm.group(em=True, n=name)
     add_shapes(ctl, shape_data)
     if target_node:
         # match target node transform settings
-        ctl.setAttr('rotateOrder', target_node.getAttr('rotateOrder'))
+        ctl.setAttr("rotateOrder", target_node.getAttr("rotateOrder"))
         nodes.match_world_matrix(target_node, ctl)
         if link:
             links.create_default_link(ctl, target_node)
@@ -244,9 +245,9 @@ def add_shapes(node, shape_data):
     Returns the new shape nodes.
     """
     if not isinstance(node, pm.nt.Transform):
-        raise TypeError(f'Expected a Transform node, got {type(node).__name__}')
+        raise TypeError(f"Expected a Transform node, got {type(node).__name__}")
     result = []
-    for curveData in shape_data['curves']:
+    for curveData in shape_data["curves"]:
         curve = pm.curve(**curveData)
         shape = curve.getShape()
         pm.parent(shape, node, s=True, r=True)
@@ -261,9 +262,9 @@ def remove_shapes(node):
     Only works for meshes, curves, and nurbs surfaces.
     """
     if not isinstance(node, pm.nt.Transform):
-        raise TypeError(f'Expected a Transform node, got {type(node).__name__}')
+        raise TypeError(f"Expected a Transform node, got {type(node).__name__}")
     for s in node.getShapes():
-        if s.nodeType() in ('mesh', 'nurbsCurve', 'nurbsSurface'):
+        if s.nodeType() in ("mesh", "nurbsCurve", "nurbsSurface"):
             pm.delete(s)
 
 
@@ -272,7 +273,7 @@ def replace_shapes(node, shape_data):
     Replace the shapes on the given control node with the given shape data.
     """
     if not isinstance(node, pm.nt.Transform):
-        raise TypeError(f'Expected a Transform node, got {type(node).__name__}')
+        raise TypeError(f"Expected a Transform node, got {type(node).__name__}")
 
     color = nodes.get_override_color(node)
     remove_shapes(node)
@@ -289,13 +290,13 @@ def get_shape_data(node):
         node (PyNode): A transform containing one or more curve shapes
     """
     result = []
-    shapes = node.getShapes(type='nurbsCurve')
+    shapes = node.getShapes(type="nurbsCurve")
     for shape in shapes:
         shape_data = {
-            'degree': shape.degree(),
-            'periodic': shape.form() == pm.nt.NurbsCurve.Form.periodic,
-            'knot': shape.getKnots(),
-            'point': [p.tolist() for p in shape.getCVs()],
+            "degree": shape.degree(),
+            "periodic": shape.form() == pm.nt.NurbsCurve.Form.periodic,
+            "knot": shape.getKnots(),
+            "point": [p.tolist() for p in shape.getCVs()],
         }
         result.append(shape_data)
     return result

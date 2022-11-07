@@ -67,16 +67,16 @@ def lerp_matrix(a: pm.dt.Matrix, b: pm.dt.Matrix, alpha: float) -> pm.dt.Matrix:
     """
     a_trans = pm.dt.TransformationMatrix(a)
     b_trans = pm.dt.TransformationMatrix(b)
-    a_t = a_trans.getTranslation(space='world')
+    a_t = a_trans.getTranslation(space="world")
     a_r = a_trans.getRotation()
-    a_s = pm.dt.Vector(a_trans.getScale(space='world'))
-    b_t = b_trans.getTranslation(space='world')
+    a_s = pm.dt.Vector(a_trans.getScale(space="world"))
+    b_t = b_trans.getTranslation(space="world")
     b_r = b_trans.getRotation()
-    b_s = pm.dt.Vector(b_trans.getScale(space='world'))
+    b_s = pm.dt.Vector(b_trans.getScale(space="world"))
 
     mtx = pm.dt.TransformationMatrix()
-    mtx.setTranslation(lerp_vector(a_t, b_t, alpha), space='world')
+    mtx.setTranslation(lerp_vector(a_t, b_t, alpha), space="world")
     # TODO: troubleshoot rotation interpolation, doesn't seem to work correctly
     mtx.setRotation(lerp_rotation(a_r, b_r, alpha))
-    mtx.setScale(lerp_vector(a_s, b_s, alpha), space='world')
+    mtx.setScale(lerp_vector(a_s, b_s, alpha), space="world")
     return mtx

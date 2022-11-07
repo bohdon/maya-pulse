@@ -1,10 +1,10 @@
 import pymel.core as pm
 
 CAM_NAMES = [
-    'perspShape',
-    'topShape',
-    'frontShape',
-    'sideShape',
+    "perspShape",
+    "topShape",
+    "frontShape",
+    "sideShape",
 ]
 
 CAM_SETTINGS = {}
@@ -28,7 +28,7 @@ def restore_cameras():
     Restore the default cameras to the last saved position
     """
     for camName in CAM_NAMES:
-        if not pm.objExists(camName) or not camName in CAM_SETTINGS:
+        if not pm.objExists(camName) or camName not in CAM_SETTINGS:
             continue
         cam: pm.nt.Camera = pm.PyNode(camName)
         _set_camera_settings(cam, CAM_SETTINGS[camName])

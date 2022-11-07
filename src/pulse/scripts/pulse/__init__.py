@@ -23,12 +23,13 @@ def reload():
     is_ui_showing = False
     try:
         from . import ui
+
         is_ui_showing = ui.is_editor_ui_showing()
         ui.tear_down_ui()
     except:
         pass
 
-    pm.unloadPlugin('pulse', force=True)
+    pm.unloadPlugin("pulse", force=True)
 
     try:
         ui.destroy_ui_model_instances()
@@ -36,9 +37,10 @@ def reload():
         pass
 
     # delete all pulse modules from sys
-    mayacoretools.deleteModules('pulse*')
+    mayacoretools.deleteModules("pulse*")
 
     from .ui import show_editor_ui, menu
+
     menu.install_main_menu()
 
     if is_ui_showing:

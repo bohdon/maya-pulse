@@ -13,30 +13,28 @@ IS_QUAT_PLUGIN_LOADED = False
 # Map of utility node types to default output attribute names.
 # Used to determine which attribute to return by default when creating utility nodes.
 OUTPUT_ATTR_NAMES = {
-    'addDoubleLinear': 'output',
-    'aimMatrix': 'outputMatrix',
-    'angleBetween': 'angle',
-    'blendColors': 'output',
-    'blendMatrix': 'outputMatrix',
-    'choice': 'output',
-    'clamp': 'output',
-    'composeMatrix': 'outputMatrix',
-    'condition': 'outColor',
-    'distanceBetween': 'distance',
-    'floatMath': 'outFloat',
-    'inverseMatrix': 'outputMatrix',
-    'multMatrix': 'matrixSum',
-    'multiplyDivide': 'output',
-    'reverse': 'output',
-    'setRange': 'outValue',
-    'vectorProduct': 'output',
+    "addDoubleLinear": "output",
+    "aimMatrix": "outputMatrix",
+    "angleBetween": "angle",
+    "blendColors": "output",
+    "blendMatrix": "outputMatrix",
+    "choice": "output",
+    "clamp": "output",
+    "composeMatrix": "outputMatrix",
+    "condition": "outColor",
+    "distanceBetween": "distance",
+    "floatMath": "outFloat",
+    "inverseMatrix": "outputMatrix",
+    "multMatrix": "matrixSum",
+    "multiplyDivide": "output",
+    "reverse": "output",
+    "setRange": "outValue",
+    "vectorProduct": "output",
 }
 
 # Map of node types to functions used to retrieve the output attribute names.
 # If the function is a string, attempts to resolve it from globals().
-OUTPUT_ATTR_NAME_FUNCS = {
-    'plusMinusAverage': 'get_plus_minus_average_output_attr'
-}
+OUTPUT_ATTR_NAME_FUNCS = {"plusMinusAverage": "get_plus_minus_average_output_attr"}
 
 
 class PlusMinusAverageOperation(IntEnum):
@@ -96,7 +94,7 @@ def load_matrix_plugin():
     global IS_MATRIX_PLUGIN_LOADED
     if not IS_MATRIX_PLUGIN_LOADED:
         try:
-            pm.loadPlugin('matrixNodes', quiet=True)
+            pm.loadPlugin("matrixNodes", quiet=True)
             IS_MATRIX_PLUGIN_LOADED = True
         except:
             pass
@@ -106,7 +104,7 @@ def load_quat_plugin():
     global IS_QUAT_PLUGIN_LOADED
     if not IS_QUAT_PLUGIN_LOADED:
         try:
-            pm.loadPlugin('quatNodes', quiet=True)
+            pm.loadPlugin("quatNodes", quiet=True)
             IS_QUAT_PLUGIN_LOADED = True
         except:
             pass
@@ -211,7 +209,7 @@ def get_plus_minus_average_output_attr(input):
 
     if num_children > 0:
         # get output of same dimension (1D, 2D, or 3D)
-        output_attr = input_node.attr('output{0}D'.format(num_children))
+        output_attr = input_node.attr("output{0}D".format(num_children))
 
         if input.isChild():
             # return a matching child attribute
@@ -251,8 +249,8 @@ def _filter_for_best_input_attrs(attrs):
     the original attrs list will be returned.
     """
     non_input_attr_names = [
-        'firstTerm',
-        'secondTerm',
+        "firstTerm",
+        "secondTerm",
     ]
     # TODO: check node type
     filtered_attrs = [a for a in attrs if a.longName() not in non_input_attr_names]
@@ -350,7 +348,7 @@ def set_or_connect_attr(attr, val):
 
 
 def add(*inputs):
-    """ Return an attribute that represents the given inputs added together. """
+    """Return an attribute that represents the given inputs added together."""
     return plus_minus_average(inputs, PlusMinusAverageOperation.SUM)
 
 
@@ -365,12 +363,12 @@ def subtract(*inputs):
 
 
 def average(*inputs):
-    """ Return an attribute that represents the average of the given inputs. """
+    """Return an attribute that represents the average of the given inputs."""
     return plus_minus_average(inputs, PlusMinusAverageOperation.AVERAGE)
 
 
 def plus_minus_average(inputs, operation):
-    node = pm.shadingNode('plusMinusAverage', asUtility=True)
+    node = pm.shadingNode("plusMinusAverage", asUtility=True)
     node.operation.set(operation)
 
     if len(inputs) > 0:
@@ -382,8 +380,7 @@ def plus_minus_average(inputs, operation):
         elif input_dim == 3:
             multi_attr = node.input3D
         else:
-            raise ValueError(
-                "Input dimension is not 1D, 2D, or 3D: {0}".format(inputs))
+            raise ValueError("Input dimension is not 1D, 2D, or 3D: {0}".format(inputs))
         for i, input in enumerate(inputs):
             # hook up inputs
             set_or_connect_attr(multi_attr[i], input)
@@ -394,13 +391,13 @@ def plus_minus_average(inputs, operation):
 
 # TODO: move internal functions to another module so these functions can shadow builtin names
 
+
 def min_float(a, b):
     """
     Return an attribute that represents min(a, b).
     Only supports float values.
     """
-    return _create_utility_and_return_output(
-        'floatMath', floatA=a, floatB=b, operation=FloatMathOperation.MIN)
+    return _create_utility_and_return_output("floatMath", floatA=a, floatB=b, operation=FloatMathOperation.MIN)
 
 
 def max_float(a, b):
@@ -408,37 +405,35 @@ def max_float(a, b):
     Return an attribute that represents max(a, b).
     Only supports float values.
     """
-    return _create_utility_and_return_output(
-        'floatMath', floatA=a, floatB=b, operation=FloatMathOperation.MAX)
+    return _create_utility_and_return_output("floatMath", floatA=a, floatB=b, operation=FloatMathOperation.MAX)
 
 
 def multiply(a, b):
-    """ Return an attribute that represents a * b. """
+    """Return an attribute that represents a * b."""
     return multiply_divide(a, b, MultiplyDivideOperation.MULTIPLY)
 
 
 def divide(a, b):
-    """ Return an attribute that represents a / b. """
+    """Return an attribute that represents a / b."""
     return multiply_divide(a, b, MultiplyDivideOperation.DIVIDE)
 
 
 def pow(a, b):
-    """ Return an attribute that represents a ^ b. """
+    """Return an attribute that represents a ^ b."""
     return multiply_divide(a, b, MultiplyDivideOperation.POWER)
 
 
 def sqrt(a):
-    """ Return an attribute that represents the square root of a. """
+    """Return an attribute that represents the square root of a."""
     return multiply_divide(a, 0.5, MultiplyDivideOperation.POWER)
 
 
 def multiply_divide(input1, input2, operation=MultiplyDivideOperation.DIVIDE):
-    return _create_utility_and_return_output(
-        'multiplyDivide', input1=input1, input2=input2, operation=operation)
+    return _create_utility_and_return_output("multiplyDivide", input1=input1, input2=input2, operation=operation)
 
 
 def reverse(input):
-    return _create_utility_and_return_output('reverse', input=input)
+    return _create_utility_and_return_output("reverse", input=input)
 
 
 def clamp(input, min, max):
@@ -447,7 +442,7 @@ def clamp(input, min, max):
     [min, max].
     All inputs can be either attributes or values.
     """
-    return _create_utility_and_return_output('clamp', input=input, min=min, max=max)
+    return _create_utility_and_return_output("clamp", input=input, min=min, max=max)
 
 
 def set_range(value, min, max, old_min, old_max):
@@ -456,8 +451,7 @@ def set_range(value, min, max, old_min, old_max):
     [old_min, old_max] to the range [min, max].
     All inputs can be either attributes or values.
     """
-    return _create_utility_and_return_output(
-        'setRange', value=value, min=min, max=max, oldMin=old_min, oldMax=old_max)
+    return _create_utility_and_return_output("setRange", value=value, min=min, max=max, oldMin=old_min, oldMax=old_max)
 
 
 def blend2(a, b, blender):
@@ -468,7 +462,7 @@ def blend2(a, b, blender):
     # clamp blender
     if not isinstance(blender, pm.Attribute):
         blender = max(min(blender, 1), 0)
-    return _create_utility_and_return_output('blendColors', color1=a, color2=b, blender=blender)
+    return _create_utility_and_return_output("blendColors", color1=a, color2=b, blender=blender)
 
 
 def distance(a, b, ws=True, make_local=True):
@@ -482,11 +476,11 @@ def distance(a, b, ws=True, make_local=True):
         ws: Use world space matrices
         make_local: If True, makes both matrix inputs to the distance utils be matrices local to node A.
     """
-    node_type = 'distanceBetween'
+    node_type = "distanceBetween"
     in_matrix1 = a.node().wm if ws and not make_local else a.node().m
     in_matrix2 = b.node().wm if ws or make_local else b.node().m
     if make_local:
-        mult = pm.createNode('multMatrix')
+        mult = pm.createNode("multMatrix")
         in_matrix2 >> mult.matrixIn[0]
         a.node().pim >> mult.matrixIn[1]
         in_matrix2 = mult.matrixSum
@@ -555,8 +549,13 @@ def condition(first_term, second_term, true_val, false_val, operation):
         operation (ConditionOperation): The condition node operation to use
     """
     return _create_utility_and_return_output(
-        'condition', firstTerm=first_term, secondTerm=second_term,
-        colorIfTrue=true_val, colorIfFalse=false_val, operation=operation)
+        "condition",
+        firstTerm=first_term,
+        secondTerm=second_term,
+        colorIfTrue=true_val,
+        colorIfFalse=false_val,
+        operation=operation,
+    )
 
 
 def choice(selector, *inputs) -> pm.Attribute:
@@ -567,7 +566,7 @@ def choice(selector, *inputs) -> pm.Attribute:
         selector: The selector value or attribute.
         *inputs: The array of input values or attributes to select based on the selector.
     """
-    choice_node = pm.shadingNode('choice', asUtility=True)
+    choice_node = pm.shadingNode("choice", asUtility=True)
     set_or_connect_attr(choice_node.selector, selector)
     for i, input in enumerate(inputs):
         set_or_connect_attr(choice_node.input[i], input)
@@ -582,8 +581,9 @@ def dot(a, b) -> pm.Attribute:
         a: A vector value or attribute
         b: A vector value or attribute
     """
-    return _create_utility_and_return_output('vectorProduct', input1=a, input2=b,
-                                             operation=VectorProductOperation.DOT_PRODUCT)
+    return _create_utility_and_return_output(
+        "vectorProduct", input1=a, input2=b, operation=VectorProductOperation.DOT_PRODUCT
+    )
 
 
 def cross(a, b) -> pm.Attribute:
@@ -594,8 +594,9 @@ def cross(a, b) -> pm.Attribute:
         a: A vector value or attribute
         b: A vector value or attribute
     """
-    return _create_utility_and_return_output('vectorProduct', input1=a, input2=b,
-                                             operation=VectorProductOperation.CROSS_PRODUCT)
+    return _create_utility_and_return_output(
+        "vectorProduct", input1=a, input2=b, operation=VectorProductOperation.CROSS_PRODUCT
+    )
 
 
 def matrix_multiply_vector(matrix, vector) -> pm.Attribute:
@@ -606,8 +607,9 @@ def matrix_multiply_vector(matrix, vector) -> pm.Attribute:
         matrix: A transformation matrix value or attribute
         vector: A vector value or attribute representing a direction
     """
-    return _create_utility_and_return_output('vectorProduct', input1=vector, matrix=matrix,
-                                             operation=VectorProductOperation.VECTOR_MATRIX_PRODUCT)
+    return _create_utility_and_return_output(
+        "vectorProduct", input1=vector, matrix=matrix, operation=VectorProductOperation.VECTOR_MATRIX_PRODUCT
+    )
 
 
 def matrix_multiply_point(matrix, point) -> pm.Attribute:
@@ -618,13 +620,14 @@ def matrix_multiply_point(matrix, point) -> pm.Attribute:
         matrix: A transformation matrix value or attribute
         point: A vector value or attribute representing a location
     """
-    return _create_utility_and_return_output('vectorProduct', input1=point, matrix=matrix,
-                                             operation=VectorProductOperation.POINT_MATRIX_PRODUCT)
+    return _create_utility_and_return_output(
+        "vectorProduct", input1=point, matrix=matrix, operation=VectorProductOperation.POINT_MATRIX_PRODUCT
+    )
 
 
 def mult_matrix(*matrices):
     load_matrix_plugin()
-    mmtx = pm.shadingNode('multMatrix', asUtility=True)
+    mmtx = pm.shadingNode("multMatrix", asUtility=True)
     for i, matrix in enumerate(matrices):
         set_or_connect_attr(mmtx.matrixIn[i], matrix)
     return mmtx.matrixSum
@@ -637,7 +640,7 @@ def inverse_matrix(matrix) -> pm.Attribute:
     Args:
         matrix: A matrix value or attribute
     """
-    return _create_utility_and_return_output('inverseMatrix', inputMatrix=matrix)
+    return _create_utility_and_return_output("inverseMatrix", inputMatrix=matrix)
 
 
 def compose_matrix(translate=None, rotate=None, scale=None) -> pm.Attribute:
@@ -651,12 +654,12 @@ def compose_matrix(translate=None, rotate=None, scale=None) -> pm.Attribute:
     """
     kwargs = {}
     if translate is not None:
-        kwargs['inputTranslate'] = translate
+        kwargs["inputTranslate"] = translate
     if rotate is not None:
-        kwargs['inputRotate'] = rotate
+        kwargs["inputRotate"] = rotate
     if scale is not None:
-        kwargs['inputScale'] = scale
-    return _create_utility_and_return_output('composeMatrix', useEulerRotation=True, **kwargs)
+        kwargs["inputScale"] = scale
+    return _create_utility_and_return_output("composeMatrix", useEulerRotation=True, **kwargs)
 
 
 def decompose_matrix(matrix):
@@ -667,10 +670,11 @@ def decompose_matrix(matrix):
         The `decomposeMatrix` node (not output attributes).
     """
     load_matrix_plugin()
-    return create_utility_node('decomposeMatrix', inputMatrix=matrix)
+    return create_utility_node("decomposeMatrix", inputMatrix=matrix)
 
 
 # TODO: add aimMatrix functions
+
 
 def align_matrix_to_direction(matrix, keep_axis, align_axis, align_direction, align_matrix) -> pm.Attribute:
     """
@@ -683,11 +687,16 @@ def align_matrix_to_direction(matrix, keep_axis, align_axis, align_direction, al
         align_direction: The direction vector value or attribute that the secondary axis should align to
         align_matrix: A matrix applied to the direction vector
     """
-    return _create_utility_and_return_output('aimMatrix', inputMatrix=matrix,
-                                             primaryInputAxis=keep_axis, primaryMode=AlignMatrixPrimaryMode.LOCK_AXIS,
-                                             secondaryInputAxis=align_axis,
-                                             secondaryMode=AlignMatrixSecondaryMode.ALIGN,
-                                             secondaryTargetVector=align_direction, secondaryTargetMatrix=align_matrix)
+    return _create_utility_and_return_output(
+        "aimMatrix",
+        inputMatrix=matrix,
+        primaryInputAxis=keep_axis,
+        primaryMode=AlignMatrixPrimaryMode.LOCK_AXIS,
+        secondaryInputAxis=align_axis,
+        secondaryMode=AlignMatrixSecondaryMode.ALIGN,
+        secondaryTargetVector=align_direction,
+        secondaryTargetMatrix=align_matrix,
+    )
 
 
 def align_matrix_to_point(matrix, keep_axis, align_axis, align_target_point, align_matrix):
@@ -703,11 +712,16 @@ def align_matrix_to_point(matrix, keep_axis, align_axis, align_target_point, ali
 
     Returns:
     """
-    return _create_utility_and_return_output('aimMatrix', inputMatrix=matrix,
-                                             primaryInputAxis=keep_axis, primaryMode=AlignMatrixPrimaryMode.LOCK_AXIS,
-                                             secondaryInputAxis=align_axis, secondaryMode=AlignMatrixSecondaryMode.AIM,
-                                             secondaryTargetVector=align_target_point,
-                                             secondaryTargetMatrix=align_matrix)
+    return _create_utility_and_return_output(
+        "aimMatrix",
+        inputMatrix=matrix,
+        primaryInputAxis=keep_axis,
+        primaryMode=AlignMatrixPrimaryMode.LOCK_AXIS,
+        secondaryInputAxis=align_axis,
+        secondaryMode=AlignMatrixSecondaryMode.AIM,
+        secondaryTargetVector=align_target_point,
+        secondaryTargetMatrix=align_matrix,
+    )
 
 
 def blend_matrix(input_matrix, target_matrix, weight):
@@ -730,7 +744,7 @@ def blend_matrix_multi(input_matrix, *targets_and_weights):
         input_matrix: A transformation matrix value or attribute
         *targets_and_weights: A list of tuples containing (target matrix, weight) values or attributes
     """
-    blend = pm.shadingNode('blendMatrix', asUtility=True)
+    blend = pm.shadingNode("blendMatrix", asUtility=True)
     set_or_connect_attr(blend.inputMatrix, input_matrix)
     for i, (matrix, weight) in enumerate(targets_and_weights):
         set_or_connect_attr(blend.target[i].targetMatrix, matrix)

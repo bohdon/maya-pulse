@@ -6,7 +6,6 @@ from ..gen.designpanel_weights import Ui_WeightsDesignPanel
 
 
 class WeightsDesignPanel(QtWidgets.QWidget):
-
     def __init__(self, parent):
         super(WeightsDesignPanel, self).__init__(parent)
 

@@ -36,25 +36,24 @@ def import_all_submodules(pkg_name: str):
     # find all __init__.py files recursively
     for base_dir, dir_names, file_names in os.walk(pkg_path):
         # potential name of a sub-package
-        if os.path.basename(base_dir) in ('__pycache__',):
+        if os.path.basename(base_dir) in ("__pycache__",):
             continue
 
-        sub_pkg_name = os.path.relpath(base_dir, pkg_path).replace('/', '.').replace('\\', '.')
+        sub_pkg_name = os.path.relpath(base_dir, pkg_path).replace("/", ".").replace("\\", ".")
 
         for file_name in file_names:
-            if file_name in ('__init__.py', '__main__.py'):
+            if file_name in ("__init__.py", "__main__.py"):
                 continue
 
-            if fnmatch(file_name, '*.py'):
+            if fnmatch(file_name, "*.py"):
                 module_name = os.path.splitext(file_name)[0]
                 # leading dot to make sure it's a relative import to the root package
-                sub_module_name = f'.{sub_pkg_name}.{module_name}'
+                sub_module_name = f".{sub_pkg_name}.{module_name}"
                 importlib.import_module(sub_module_name, pkg_name)
 
 
 def _is_same_python_file(path_a, path_b):
-    return (os.path.normpath(os.path.splitext(path_a)[0]) ==
-            os.path.normpath(os.path.splitext(path_b)[0]))
+    return os.path.normpath(os.path.splitext(path_a)[0]) == os.path.normpath(os.path.splitext(path_b)[0])
 
 
 def load_actions():
@@ -104,6 +103,7 @@ class BuildActionPackageRegistry(object):
 
     def _add_builtin_actions(self):
         from . import builtin_actions
+
         self.add_package(builtin_actions)
 
     def add_package(self, package, reload=False):
@@ -169,7 +169,7 @@ class BuildActionLoader(object):
         Args:
             package: A python package containing BuildActions
         """
-        LOG.info('Loading Pulse actions from package: %s', package)
+        LOG.info("Loading Pulse actions from package: %s", package)
 
         return self._load_actions_from_module(package)
 
@@ -177,7 +177,7 @@ class BuildActionLoader(object):
         """
         Perform the actual recursive loading of actions within a package or module.
         """
-        LOG.debug('Loading actions from module: %s', module)
+        LOG.debug("Loading actions from module: %s", module)
 
         action_specs: List[BuildActionSpec] = []
         for name in dir(module):
@@ -191,7 +191,7 @@ class BuildActionLoader(object):
                 # load BuildAction subclass
                 action_spec = BuildActionSpec(obj, module)
                 action_specs.append(action_spec)
-                LOG.debug('Loaded BuildAction: %s', action_spec)
+                LOG.debug("Loaded BuildAction: %s", action_spec)
 
         if self.use_registry:
             self.register_actions(action_specs)
@@ -209,7 +209,7 @@ class BuildActionLoader(object):
             if not obj.__package__:
                 return False
             # add trailing . to ensure it's not some similarly named sibling
-            return obj.__package__ == parent_name or obj.__package__.startswith(f'{parent_name}.')
+            return obj.__package__ == parent_name or obj.__package__.startswith(f"{parent_name}.")
 
     def register_actions(self, action_specs: List[BuildActionSpec]):
         """

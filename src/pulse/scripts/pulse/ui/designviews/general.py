@@ -11,7 +11,6 @@ from ..quickname import QuickNameWindow
 
 
 class GeneralDesignPanel(QtWidgets.QWidget):
-
     def __init__(self, parent):
         super(GeneralDesignPanel, self).__init__(parent)
 
@@ -34,5 +33,5 @@ class GeneralDesignPanel(QtWidgets.QWidget):
         """
         objs = []
         for obj in pm.selected():
-            objs.extend(obj.listRelatives(ad=True, type=['transform', 'joint']))
+            objs.extend(obj.listRelatives(ad=True, type=["transform", "joint"]))
         pm.select(objs, add=True)

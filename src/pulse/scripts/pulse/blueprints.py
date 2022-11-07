@@ -25,7 +25,7 @@ def get_default_config_file() -> str:
     Return the path to the default blueprint config file
     """
     pulse_dir = os.path.dirname(version.__file__)
-    return os.path.realpath(os.path.join(pulse_dir, 'config/default_blueprint_config.yaml'))
+    return os.path.realpath(os.path.join(pulse_dir, "config/default_blueprint_config.yaml"))
 
 
 def load_default_config() -> Optional[dict]:
@@ -43,7 +43,7 @@ def _load_config(file_path) -> Optional[dict]:
         LOG.warning("Config file not found: %s", file_path)
         return
 
-    with open(file_path, 'r') as fp:
+    with open(file_path, "r") as fp:
         return yaml.load(fp)
 
 
@@ -51,9 +51,10 @@ class BlueprintSettings(object):
     """
     Constants defining the keys for Blueprint settings.
     """
-    RIG_NAME = 'rigName'
-    RIG_NODE_NAME_FORMAT = 'rigNodeNameFormat'
-    DEBUG_BUILD = 'debugBuild'
+
+    RIG_NAME = "rigName"
+    RIG_NODE_NAME_FORMAT = "rigNodeNameFormat"
+    DEBUG_BUILD = "debugBuild"
 
 
 class Blueprint(object):
@@ -64,7 +65,7 @@ class Blueprint(object):
     """
 
     @staticmethod
-    def from_data(data) -> 'Blueprint':
+    def from_data(data) -> "Blueprint":
         """
         Create a Blueprint instance from serialized data
         """
@@ -79,7 +80,7 @@ class Blueprint(object):
         # the version of this blueprint
         self.version: str = BLUEPRINT_VERSION
         # the root step of this blueprint
-        self.rootStep: BuildStep = BuildStep('Root')
+        self.rootStep: BuildStep = BuildStep("Root")
         # the config file to use when designing this Blueprint
         self.config_file_path: str = get_default_config_file()
         # the config, automatically loaded when calling `get_config`
@@ -90,9 +91,9 @@ class Blueprint(object):
         Add new or missing settings to the Blueprint, do not overwrite any existing settings.
         """
         if BlueprintSettings.RIG_NAME not in self.settings:
-            self.set_setting(BlueprintSettings.RIG_NAME, '')
+            self.set_setting(BlueprintSettings.RIG_NAME, "")
         if BlueprintSettings.RIG_NODE_NAME_FORMAT not in self.settings:
-            self.set_setting(BlueprintSettings.RIG_NODE_NAME_FORMAT, '{rigName}_rig')
+            self.set_setting(BlueprintSettings.RIG_NODE_NAME_FORMAT, "{rigName}_rig")
         if BlueprintSettings.DEBUG_BUILD not in self.settings:
             self.set_setting(BlueprintSettings.DEBUG_BUILD, False)
 
@@ -110,9 +111,9 @@ class Blueprint(object):
 
     def serialize(self) -> UnsortableOrderedDict:
         data = UnsortableOrderedDict()
-        data['version'] = self.version
-        data['settings'] = self.settings
-        data['steps'] = self.rootStep.serialize()
+        data["version"] = self.version
+        data["settings"] = self.settings
+        data["steps"] = self.rootStep.serialize()
         return data
 
     def deserialize(self, data: dict) -> bool:
@@ -120,9 +121,9 @@ class Blueprint(object):
         Returns:
             True if the data was deserialized successfully
         """
-        self.version = data.get('version', None)
-        self.settings = data.get('settings', {})
-        self.rootStep.deserialize(data.get('steps', {'name': 'Root'}))
+        self.version = data.get("version", None)
+        self.settings = data.get("settings", {})
+        self.rootStep.deserialize(data.get("steps", {"name": "Root"}))
         # inject new or missing settings
         self.add_missing_settings()
         return True
@@ -135,7 +136,7 @@ class Blueprint(object):
         LOG.debug("Loading blueprint: %s", file_path)
 
         try:
-            with open(file_path, 'r') as fp:
+            with open(file_path, "r") as fp:
                 data = yaml.load(fp, Loader=PulseLoader)
         except IOError:
             return False
@@ -153,7 +154,7 @@ class Blueprint(object):
         LOG.debug("Saving blueprint: %s", file_path)
 
         data = self.serialize()
-        with open(file_path, 'w') as fp:
+        with open(file_path, "w") as fp:
             yaml.dump(data, fp, default_flow_style=False, Dumper=PulseDumper)
 
         return True
@@ -196,19 +197,21 @@ class Blueprint(object):
         """
         Add a set of core BuildActions to the blueprint.
         """
-        rename_action = BuildStep(action_id='Pulse.RenameScene')
-        import_action = BuildStep(action_id='Pulse.ImportReferences')
-        hierarchy_action = BuildStep(action_id='Pulse.BuildCoreHierarchy')
-        hierarchy_attr = hierarchy_action.action_proxy.get_attr('allNodes')
+        rename_action = BuildStep(action_id="Pulse.RenameScene")
+        import_action = BuildStep(action_id="Pulse.ImportReferences")
+        hierarchy_action = BuildStep(action_id="Pulse.BuildCoreHierarchy")
+        hierarchy_attr = hierarchy_action.action_proxy.get_attr("allNodes")
         if hierarchy_attr:
             hierarchy_attr.set_value(True)
-        main_group = BuildStep('Main')
-        self.rootStep.add_children([
-            rename_action,
-            import_action,
-            hierarchy_action,
-            main_group,
-        ])
+        main_group = BuildStep("Main")
+        self.rootStep.add_children(
+            [
+                rename_action,
+                import_action,
+                hierarchy_action,
+                main_group,
+            ]
+        )
 
     def get_config(self) -> dict:
         """
@@ -239,7 +242,7 @@ class BlueprintFile(object):
     """
 
     # the file extension to use for blueprint files
-    file_ext: str = 'yml'
+    file_ext: str = "yml"
 
     def __init__(self, file_path: Optional[str] = None, is_read_only: bool = False):
         self.blueprint = Blueprint()
@@ -352,7 +355,7 @@ class BlueprintFile(object):
 
         if scene_name:
             base_name = os.path.splitext(scene_name)[0]
-            return f'{base_name}.{self.file_ext}'
+            return f"{base_name}.{self.file_ext}"
 
 
 class BlueprintBuilder(object):
@@ -369,21 +372,21 @@ class BlueprintBuilder(object):
         to ensure that building can at least be started.
         """
         if not blueprint:
-            LOG.error('No Blueprint was provided')
+            LOG.error("No Blueprint was provided")
             return False
 
         if not blueprint.get_setting(BlueprintSettings.RIG_NAME):
-            LOG.error('Rig name is not set')
+            LOG.error("Rig name is not set")
             return False
 
         if not blueprint.rootStep.has_any_children():
-            LOG.error('Blueprint has no actions. Create new actions to begin.')
+            LOG.error("Blueprint has no actions. Create new actions to begin.")
             return False
 
         return True
 
     @classmethod
-    def from_current_scene(cls, blueprint: Blueprint) -> 'BlueprintBuilder':
+    def from_current_scene(cls, blueprint: Blueprint) -> "BlueprintBuilder":
         """
         Create and return a new BlueprintBuilder instance
         using a blueprint and the current scene.
@@ -410,7 +413,7 @@ class BlueprintBuilder(object):
             raise ValueError("Blueprint 'rigName' setting is not set.")
 
         # the name of this builder object, used in logs
-        self.builder_name = 'Builder'
+        self.builder_name = "Builder"
 
         self.errors = []
         self.generator: Optional[Iterable[dict]] = None
@@ -441,7 +444,7 @@ class BlueprintBuilder(object):
         self.rig_name: str = self.blueprint.get_setting(BlueprintSettings.RIG_NAME)
 
         # create a logger, and setup a file handler
-        self.log = logging.getLogger('pulse.build')
+        self.log = logging.getLogger("pulse.build")
         self.log.setLevel(logging.DEBUG if self.debug else logging.INFO)
         self.file_handler: Optional[logging.FileHandler] = None
         self.setup_file_logger(self.log, log_dir)
@@ -454,15 +457,15 @@ class BlueprintBuilder(object):
             log_dir = tempfile.gettempdir()
 
         # the output directory for log files
-        date_str = datetime.now().strftime('%Y-%m-%d_%H%M%S')
-        rig_name = self.blueprint.get_setting(BlueprintSettings.RIG_NAME, 'test')
-        log_file_name = f'pulse_build_{rig_name}_{date_str}.log'
+        date_str = datetime.now().strftime("%Y-%m-%d_%H%M%S")
+        rig_name = self.blueprint.get_setting(BlueprintSettings.RIG_NAME, "test")
+        log_file_name = f"pulse_build_{rig_name}_{date_str}.log"
         log_file = os.path.join(log_dir, log_file_name)
 
         self.file_handler = logging.FileHandler(log_file)
         self.file_handler.setLevel(logging.DEBUG)
 
-        log_formatter = logging.Formatter('%(asctime)s %(levelname)s %(name)s: %(message)s')
+        log_formatter = logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s")
         self.file_handler.setFormatter(log_formatter)
 
         logger.handlers = [self.file_handler]
@@ -538,12 +541,12 @@ class BlueprintBuilder(object):
 
     def next(self):
         iter_result = next(self.generator)
-        self.phase = iter_result['phase']
+        self.phase = iter_result["phase"]
         # handle the result of the build iteration
-        if self.phase == 'finished':
+        if self.phase == "finished":
             self.finish()
         # report progress
-        self.on_progress(iter_result['index'], iter_result['total'], iter_result['status'])
+        self.on_progress(iter_result["index"], iter_result["total"], iter_result["status"])
 
     def check_pause(self):
         """
@@ -592,9 +595,9 @@ class BlueprintBuilder(object):
     def get_finish_build_in_view_message(self) -> str:
         error_count = len(self.errors)
         if error_count > 0:
-            return f'Build Finished with {error_count} error(s)'
+            return f"Build Finished with {error_count} error(s)"
         else:
-            return 'Build Successful'
+            return "Build Successful"
 
     def on_progress(self, index: int, total: int, status: str):
         """
@@ -611,7 +614,7 @@ class BlueprintBuilder(object):
         """
         if self.show_progress_ui:
             if index == 0:
-                pm.progressWindow(t='Building Blueprint', min=0)
+                pm.progressWindow(t="Building Blueprint", min=0)
             pm.progressWindow(e=True, progress=index, max=total, status=status)
             # pm.refresh()
 
@@ -642,9 +645,9 @@ class BlueprintBuilder(object):
         # show results with in view message
         in_view_msg = self.get_finish_build_in_view_message()
         if error_count:
-            pm.inViewMessage(amg=in_view_msg, pos='topCenter', backColor=0xaa8336, fade=True, fadeStayTime=3000)
+            pm.inViewMessage(amg=in_view_msg, pos="topCenter", backColor=0xAA8336, fade=True, fadeStayTime=3000)
         else:
-            pm.inViewMessage(amg=in_view_msg, pos='topCenter', fade=True)
+            pm.inViewMessage(amg=in_view_msg, pos="topCenter", fade=True)
 
     def on_cancel(self):
         """
@@ -678,7 +681,7 @@ class BlueprintBuilder(object):
         step.add_validate_error(exc)
 
         self.errors.append(exc)
-        self.log.error('/%s (%s): %s', step.get_full_path(), action.action_id, exc, exc_info=self.debug)
+        self.log.error("/%s (%s): %s", step.get_full_path(), action.action_id, exc, exc_info=self.debug)
 
     def action_iterator(self) -> Iterable[tuple[BuildStep, BuildAction]]:
         """
@@ -703,16 +706,16 @@ class BlueprintBuilder(object):
         It runs all BuildSteps and BuildActions in order.
         """
 
-        yield dict(index=0, total=2, phase='setup', status='Create Rig Structure')
+        yield dict(index=0, total=2, phase="setup", status="Create Rig Structure")
 
         self.create_rig_structure()
 
-        yield dict(index=1, total=2, phase='setup', status='Retrieve Actions')
+        yield dict(index=1, total=2, phase="setup", status="Retrieve Actions")
 
         # recursively iterate through all build actions
         all_actions = list(self.action_iterator())
         action_count = len(all_actions)
-        self.log.info('Generated %s actions.', action_count)
+        self.log.info("Generated %s actions.", action_count)
 
         # clear all validate results before running
         for step, action in all_actions:
@@ -724,14 +727,14 @@ class BlueprintBuilder(object):
 
             # return progress for the action that is about to run
             self.current_build_step_path = step.get_full_path()
-            yield dict(index=index, total=action_count, phase='actions', status=self.current_build_step_path)
+            yield dict(index=index, total=action_count, phase="actions", status=self.current_build_step_path)
 
             # run the action
             action.builder = self
             action.rig = self.rig
             self.run_build_action(step, action, index, action_count)
 
-        yield dict(index=action_count, total=action_count, phase='finished', status='Finished')
+        yield dict(index=action_count, total=action_count, phase="finished", status="Finished")
 
     def create_rig_structure(self):
         """
@@ -742,11 +745,15 @@ class BlueprintBuilder(object):
         self.rig = create_rig_node(rig_node_name)
 
         # add some additional meta data
-        meta.updateMetaData(self.rig, RIG_METACLASS, dict(
-            version=BLUEPRINT_VERSION,
-            blueprintFile=self.scene_file_path,
-        ))
-        self.log.info('Created rig structure: %s', self.rig.nodeName())
+        meta.updateMetaData(
+            self.rig,
+            RIG_METACLASS,
+            dict(
+                version=BLUEPRINT_VERSION,
+                blueprintFile=self.scene_file_path,
+            ),
+        )
+        self.log.info("Created rig structure: %s", self.rig.nodeName())
 
     def run_build_action(self, step: BuildStep, action: BuildAction, index: int, action_count: int):
         start_time = time.time()
@@ -760,7 +767,7 @@ class BlueprintBuilder(object):
         duration = end_time - start_time
 
         path = step.get_full_path()
-        self.log.info('[%s/%s] %s (%.03fs)', index + 1, action_count, path, duration)
+        self.log.info("[%s/%s] %s (%.03fs)", index + 1, action_count, path, duration)
 
 
 class BlueprintValidator(BlueprintBuilder):
@@ -770,7 +777,7 @@ class BlueprintValidator(BlueprintBuilder):
 
     def __init__(self, *args, **kwargs):
         super(BlueprintValidator, self).__init__(*args, **kwargs)
-        self.builder_name = 'Validator'
+        self.builder_name = "Validator"
 
     def setup_file_logger(self, logger: logging.Logger, log_dir: str):
         # no file logging for validation
@@ -792,7 +799,7 @@ class BlueprintValidator(BlueprintBuilder):
 
     def get_finish_build_in_view_message(self):
         error_count = len(self.errors)
-        return f'Validate Finished with {error_count} error(s)'
+        return f"Validate Finished with {error_count} error(s)"
 
     def run_build_action(self, step: BuildStep, action: BuildAction, index: int, action_count: int):
         try:

@@ -22,8 +22,8 @@ from .core import PulseWindow
 from .gen.action_editor import Ui_ActionEditor
 
 LOG = logging.getLogger(__name__)
-LOG_LEVEL_KEY = 'PYLOG_%s' % LOG.name.split('.')[0].upper()
-LOG.setLevel(os.environ.get(LOG_LEVEL_KEY, 'INFO').upper())
+LOG_LEVEL_KEY = "PYLOG_%s" % LOG.name.split(".")[0].upper()
+LOG.setLevel(os.environ.get(LOG_LEVEL_KEY, "INFO").upper())
 
 
 class BuildStepNotificationsList(QtWidgets.QWidget):
@@ -33,7 +33,7 @@ class BuildStepNotificationsList(QtWidgets.QWidget):
 
     def __init__(self, step: BuildStep, parent=None):
         super(BuildStepNotificationsList, self).__init__(parent=parent)
-        self.setObjectName('formFrame')
+        self.setObjectName("formFrame")
 
         self.step = step
 
@@ -46,7 +46,7 @@ class BuildStepNotificationsList(QtWidgets.QWidget):
         hasNotifications = False
         for validate_result in self.step.get_validate_results():
             label = QtWidgets.QLabel(parent)
-            label.setProperty('cssClasses', 'notification error')
+            label.setProperty("cssClasses", "notification error")
             label.setTextInteractionFlags(QtCore.Qt.LinksAccessibleByMouse | QtCore.Qt.TextSelectableByMouse)
             label.setText(str(validate_result))
             label.setToolTip(self.formatErrorText(validate_result))
@@ -57,7 +57,7 @@ class BuildStepNotificationsList(QtWidgets.QWidget):
 
     def formatErrorText(self, exc: Exception):
         lines = traceback.format_exception(type(exc), exc, exc.__traceback__)
-        return ''.join(lines).strip()
+        return "".join(lines).strip()
 
 
 class BuildStepForm(QtWidgets.QWidget):
@@ -103,7 +103,7 @@ class BuildStepForm(QtWidgets.QWidget):
     def getStepDisplayName(self, step: BuildStep):
         parentPath = step.get_parent_path()
         if parentPath:
-            return f'{step.get_parent_path()}/{step.get_display_name()}'.replace('/', ' / ')
+            return f"{step.get_parent_path()}/{step.get_display_name()}".replace("/", " / ")
         else:
             return step.get_display_name()
 
@@ -150,13 +150,13 @@ class BuildStepForm(QtWidgets.QWidget):
 
         self.displayNameLabel = QtWidgets.QLabel(parent)
         self.displayNameLabel.setText(self.getStepDisplayName(step))
-        self.displayNameLabel.setProperty('cssClasses', 'section-title')
+        self.displayNameLabel.setProperty("cssClasses", "section-title")
         self.displayNameLabel.setStyleSheet(f"color: {color_str}; background-color: {bg_color_str}")
         layout.addWidget(self.displayNameLabel)
 
         if step.is_action():
             edit_btn = QtWidgets.QToolButton(parent)
-            edit_btn.setIcon(QtGui.QIcon(':/icon/file_pen.svg'))
+            edit_btn.setIcon(QtGui.QIcon(":/icon/file_pen.svg"))
             edit_btn.setStatusTip("Edit this action's python script.")
             edit_btn.clicked.connect(self._openActionScriptInSourceEditor)
             layout.addWidget(edit_btn)
@@ -289,7 +289,7 @@ class BuildActionDataForm(QtWidgets.QWidget):
         if not actionData:
             return
 
-        if not hasattr(self, 'missingLabel'):
+        if not hasattr(self, "missingLabel"):
             self.missingLabel = None
 
         if actionData.is_missing_spec():
@@ -367,7 +367,7 @@ class MainBuildActionDataForm(BuildActionDataForm):
     def createAttrForm(self, actionData: BuildActionData, attr: BuildActionAttribute, parent):
         isVariant = False
         # duck type of action proxy
-        if hasattr(actionData, 'is_variant_attr'):
+        if hasattr(actionData, "is_variant_attr"):
             isVariant = actionData.is_variant_attr(attr.name)
 
         if isVariant:
@@ -381,9 +381,11 @@ class MainBuildActionDataForm(BuildActionDataForm):
         toggleVariantBtn = QtWidgets.QToolButton(parent)
         toggleVariantBtn.setCheckable(True)
         toggleVariantBtn.setFixedSize(QtCore.QSize(20, 20))
-        toggleVariantBtn.setStyleSheet('padding: 4px;')
-        toggleVariantBtn.setStatusTip('Toggle this attribute between singular and variant. Variants allow multiple '
-                                      'actions to be defined in one place, with a mix of different properties.')
+        toggleVariantBtn.setStyleSheet("padding: 4px;")
+        toggleVariantBtn.setStatusTip(
+            "Toggle this attribute between singular and variant. Variants allow multiple "
+            "actions to be defined in one place, with a mix of different properties."
+        )
 
         attrForm.labelLayout.insertWidget(0, toggleVariantBtn)
         attrForm.labelLayout.setAlignment(toggleVariantBtn, QtCore.Qt.AlignTop)
@@ -395,16 +397,16 @@ class MainBuildActionDataForm(BuildActionDataForm):
     def shouldRecreateAttrForm(self, actionData: BuildActionData, attr: BuildActionAttribute, attrForm):
         isVariant = False
         # duck type of action proxy
-        if hasattr(actionData, 'is_variant_attr'):
+        if hasattr(actionData, "is_variant_attr"):
             isVariant = actionData.is_variant_attr(attr.name)
 
-        return getattr(attrForm, 'isBatchForm', False) != isVariant
+        return getattr(attrForm, "isBatchForm", False) != isVariant
 
     def updateAttrForm(self, actionData: BuildActionData, attr: BuildActionAttribute, attrForm):
         # update variant state of the attribute
         isVariant = False
         # duck type of action proxy
-        if hasattr(actionData, 'is_variant_attr'):
+        if hasattr(actionData, "is_variant_attr"):
             isVariant = actionData.is_variant_attr(attr.name)
 
         attrForm.toggleVariantBtn.setChecked(isVariant)
@@ -425,7 +427,7 @@ class MainBuildActionDataForm(BuildActionDataForm):
         if not actionProxy:
             return
 
-        attrPath = f'{step.get_full_path()}.{attrName}'
+        attrPath = f"{step.get_full_path()}.{attrName}"
 
         isVariant = actionProxy.is_variant_attr(attrName)
         cmds.pulseSetIsVariantAttr(attrPath, not isVariant)
@@ -518,15 +520,15 @@ class BuildActionProxyForm(QtWidgets.QWidget):
         # add variant button
         addVariantBtn = QtWidgets.QToolButton(self.variantHeader)
         addVariantBtn.setFixedSize(QtCore.QSize(20, 20))
-        addVariantBtn.setStyleSheet('padding: 4px')
-        addVariantBtn.setStatusTip('Add a variant to this action.')
+        addVariantBtn.setStyleSheet("padding: 4px")
+        addVariantBtn.setStatusTip("Add a variant to this action.")
         addVariantBtn.setIcon(QtGui.QIcon(":/icon/plus.svg"))
         addVariantBtn.clicked.connect(self.addVariant)
         variantHeaderLayout.addWidget(addVariantBtn)
 
         self.variantsLabel = QtWidgets.QLabel(self.variantHeader)
         self.variantsLabel.setText("Variants: ")
-        self.variantsLabel.setProperty('cssClasses', 'help')
+        self.variantsLabel.setProperty("cssClasses", "help")
         variantHeaderLayout.addWidget(self.variantsLabel)
 
         # variant list layout
@@ -694,7 +696,7 @@ class ActionEditor(QtWidgets.QWidget):
 
 
 class ActionEditorWindow(PulseWindow):
-    OBJECT_NAME = 'pulseActionEditorWindow'
-    WINDOW_MODULE = 'pulse.ui.actioneditor'
-    WINDOW_TITLE = 'Pulse Action Editor'
+    OBJECT_NAME = "pulseActionEditorWindow"
+    WINDOW_MODULE = "pulse.ui.actioneditor"
+    WINDOW_TITLE = "Pulse Action Editor"
     WIDGET_CLASS = ActionEditor

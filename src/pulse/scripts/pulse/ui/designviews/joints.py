@@ -12,7 +12,6 @@ from ..gen.designpanel_joint_orients import Ui_JointOrientsDesignPanel
 
 
 class JointsDesignPanel(QtWidgets.QWidget):
-
     def __init__(self, parent):
         super(JointsDesignPanel, self).__init__(parent)
 
@@ -29,15 +28,15 @@ class JointsDesignPanel(QtWidgets.QWidget):
 
 
 class DesignPanelJointOrients(QtWidgets.QWidget):
-    AXIS_ORDER_OPTIONS = ['XYZ', 'XZY', 'YXZ', 'YZX', 'ZXY', 'ZYX']
-    UP_AXIS_OPTIONS = ['X', 'Y', 'Z']
+    AXIS_ORDER_OPTIONS = ["XYZ", "XZY", "YXZ", "YZX", "ZXY", "ZYX"]
+    UP_AXIS_OPTIONS = ["X", "Y", "Z"]
 
-    axis_order = option_var_property('pulse.editor.orientAxisOrder', 0)
-    up_axis = option_var_property('pulse.editor.orientUpAxis', 1)
-    keep_axes_synced = option_var_property('pulse.editor.keepAxesSynced', True)
-    preserve_children = option_var_property('pulse.editor.orientPreserveChildren', True)
-    preserve_shapes = option_var_property('pulse.editor.orientPreserveShapes', True)
-    include_children = option_var_property('pulse.editor.orientIncludeChildren', False)
+    axis_order = option_var_property("pulse.editor.orientAxisOrder", 0)
+    up_axis = option_var_property("pulse.editor.orientUpAxis", 1)
+    keep_axes_synced = option_var_property("pulse.editor.keepAxesSynced", True)
+    preserve_children = option_var_property("pulse.editor.orientPreserveChildren", True)
+    preserve_shapes = option_var_property("pulse.editor.orientPreserveShapes", True)
+    include_children = option_var_property("pulse.editor.orientIncludeChildren", False)
 
     def set_axis_order(self, value):
         self.axis_order = value

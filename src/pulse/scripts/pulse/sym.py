@@ -17,7 +17,7 @@ from .vendor.overrides import overrides
 
 LOG = logging.getLogger(__name__)
 
-MIRROR_METACLASS = 'pulse_mirror'
+MIRROR_METACLASS = "pulse_mirror"
 
 MIRROR_THRESHOLD = 0.0001
 
@@ -43,8 +43,8 @@ class MirrorMode(object):
         sides of an axis, as if they matched in world space in rest pose
     """
 
-    SIMPLE = 'simple'
-    ALIGNED = 'aligned'
+    SIMPLE = "simple"
+    ALIGNED = "aligned"
 
 
 def get_all_mirror_nodes():
@@ -75,7 +75,7 @@ def validate_mirror_node(node):
     if not is_mirror_node(node):
         return False
     data = meta.getMetaData(node, MIRROR_METACLASS)
-    other_node = data['otherNode']
+    other_node = data["otherNode"]
     if other_node is None:
         LOG.debug("%s paired node not found, removing mirroring data", node)
         meta.removeMetaData(node, MIRROR_METACLASS)
@@ -138,7 +138,7 @@ def duplicate_and_pair_node(source_node):
         dest_node = pm.duplicate([source_node] + source_node.getChildren(s=True), po=True)[0]
         # handle bug in recent maya versions where extra empty
         # transforms will be included in the duplicate
-        extra = dest_node.listRelatives(typ='transform')
+        extra = dest_node.listRelatives(typ="transform")
         if extra:
             LOG.debug("Deleting extra transforms from mirroring: %s", source_node)
             pm.delete(extra)
@@ -156,7 +156,7 @@ def set_mirroring_data(node, other_node):
         other_node: The counterpart node to be stored in the mirroring data
     """
     data = {
-        'otherNode': other_node,
+        "otherNode": other_node,
     }
     meta.setMetaData(node, MIRROR_METACLASS, data, undoable=True)
 
@@ -173,14 +173,14 @@ def get_paired_node(node, validate=True):
     if is_mirror_node(node):
         data = meta.getMetaData(node, MIRROR_METACLASS)
         if validate:
-            other_node = data['otherNode']
+            other_node = data["otherNode"]
             if other_node and validate:
                 if get_paired_node(other_node, False) == node:
                     return other_node
                 else:
-                    LOG.debug('%s pairing not reciprocated', node)
+                    LOG.debug("%s pairing not reciprocated", node)
         else:
-            return data['otherNode']
+            return data["otherNode"]
 
 
 def remove_mirroring_data(node):
@@ -201,7 +201,7 @@ def is_centered(node, axis=0):
     Return True if the node is centered on a specific world axis.
     """
     axis = nodes.get_axis(axis)
-    abs_axis_val = abs(node.getTranslation(space='world')[axis.index])
+    abs_axis_val = abs(node.getTranslation(space="world")[axis.index])
     return abs_axis_val < MIRROR_THRESHOLD
 
 
@@ -461,7 +461,7 @@ class MirrorCurveShapes(MirrorOperation):
         self.replaceExistingShapes = True
 
         # the shape types to consider when replacing existing shapes
-        self.shapeTypes = ['nurbsCurve']
+        self.shapeTypes = ["nurbsCurve"]
 
     @overrides
     def mirror_node(self, source_node: pm.nt.Transform, dest_node: pm.nt.Transform, is_new_node: bool):
@@ -533,7 +533,7 @@ class MirrorJointDisplay(MirrorOperation):
 
     @overrides
     def mirror_node(self, source_node: pm.nt.Transform, dest_node: pm.nt.Transform, is_new_node: bool):
-        if source_node.type() == 'joint' and dest_node.type() == 'joint':
+        if source_node.type() == "joint" and dest_node.type() == "joint":
             dest_node.radius.set(source_node.radius.get())
 
 
@@ -566,7 +566,7 @@ def _create_name_replacement(search, replace):
     Regexes replace prefixes, suffixes, or middles, as long as
     the search is separated with '_' from adjacent characters.
     """
-    regex = re.compile(f'(?<![^_]){search}(?=(_|$))')
+    regex = re.compile(f"(?<![^_]){search}(?=(_|$))")
     return regex, replace
 
 
@@ -578,13 +578,13 @@ def _generate_mirror_name_replacements(config):
         A list of (regex, replacement) tuples.
     """
     replacements = []
-    sym_config = config.get('symmetry', {})
-    pairs = sym_config.get('pairs', [])
+    sym_config = config.get("symmetry", {})
+    pairs = sym_config.get("pairs", [])
 
     for pair in pairs:
-        if 'left' in pair and 'right' in pair:
-            left = pair['left']
-            right = pair['right']
+        if "left" in pair and "right" in pair:
+            left = pair["left"]
+            right = pair["right"]
             l2r = _create_name_replacement(left, right)
             r2l = _create_name_replacement(right, left)
             replacements.append(l2r)
@@ -694,11 +694,11 @@ class MirrorLinks(BlueprintMirrorOperation):
 
             # TODO: provide a layer of abstraction, mirroring shouldn't have to know the details
 
-            source_target_nodes = source_link_data.get('targetNodes')
+            source_target_nodes = source_link_data.get("targetNodes")
             if source_target_nodes:
                 dest_target_nodes = [get_paired_node(n) for n in source_target_nodes]
                 if dest_target_nodes:
-                    dest_link_data['targetNodes'] = dest_target_nodes
+                    dest_link_data["targetNodes"] = dest_target_nodes
                     links.set_link_meta_data(dest_node, dest_link_data)
 
             # position the dest node using the link
@@ -799,7 +799,7 @@ class MirrorUtil(object):
                     result.append(sourceNode)
 
             if self.isRecursive:
-                children = nodes.get_descendants_top_to_bottom(sourceNode, type=['transform', 'joint'])
+                children = nodes.get_descendants_top_to_bottom(sourceNode, type=["transform", "joint"])
 
                 for child in children:
                     if child not in result:
@@ -899,11 +899,12 @@ class MirrorData(object):
         self.attrs = {}
 
     def __repr__(self):
-        return f'<{self.__class__.__name__} ({self.dest_node})>'
+        return f"<{self.__class__.__name__} ({self.dest_node})>"
 
 
-def get_mirror_data(source_node: pm.nt.Transform, dest_node: pm.nt.Transform = None,
-                    params: MirrorParams = None) -> Optional[MirrorData]:
+def get_mirror_data(
+    source_node: pm.nt.Transform, dest_node: pm.nt.Transform = None, params: MirrorParams = None
+) -> Optional[MirrorData]:
     """
     Return a MirrorData object that represents mirroring to apply from a source node to a target node.
 
@@ -938,8 +939,9 @@ def get_mirror_data(source_node: pm.nt.Transform, dest_node: pm.nt.Transform = N
         source_val = result.attrs.get(attr_name)
         mirrored_val = eval_custom_mirror_attr_exp(source_node, dest_node, attr_name, expression)
         result.attrs[attr_name] = mirrored_val
-        LOG.debug("Mirrored custom attribute %s: %s -> %s, expression:\n%s",
-                  attr_name, source_val, mirrored_val, expression)
+        LOG.debug(
+            "Mirrored custom attribute %s: %s -> %s, expression:\n%s", attr_name, source_val, mirrored_val, expression
+        )
 
     # then gather any simple custom attributes to mirror without changing the value
     for attr_name in params.mirrored_attr_names:
@@ -957,41 +959,43 @@ def apply_mirror_data(mirror_data: MirrorData):
     LOG.debug("Applying Mirror Settings: %s", mirror_data)
     params = mirror_data.params
     if any([params.affect_translate, params.affect_rotate, params.affect_scale]):
-        set_mirrored_matrices(mirror_data.dest_node, mirror_data.matrices, translate=params.affect_translate,
-                              rotate=params.affect_rotate, scale=params.affect_scale)
+        set_mirrored_matrices(
+            mirror_data.dest_node,
+            mirror_data.matrices,
+            translate=params.affect_translate,
+            rotate=params.affect_rotate,
+            scale=params.affect_scale,
+        )
 
     if params.affect_attrs:
         for attr_name, val in mirror_data.attrs.items():
             LOG.debug("%s -> %s", attr_name, val)
-            attr = mirror_data['destNode'].attr(attr_name)
+            attr = mirror_data["destNode"].attr(attr_name)
             attr.set(val)
 
 
 def eval_custom_mirror_attr_exp(source_node, dest_node, attr, exp):
     LOG.debug("Raw Exp: %s", repr(exp))
 
-    _globals = {
-        'node': source_node,
-        'dest_node': dest_node
-    }
+    _globals = {"node": source_node, "dest_node": dest_node}
 
     if hasattr(source_node, attr):
-        _globals['value'] = getattr(source_node, attr).get()
+        _globals["value"] = getattr(source_node, attr).get()
     else:
         raise KeyError(f"{source_node} missing mirrored attr {attr}")
     if hasattr(dest_node, attr):
-        _globals['dest_value'] = getattr(dest_node, attr).get()
+        _globals["dest_value"] = getattr(dest_node, attr).get()
     else:
         raise KeyError(f"{dest_node} missing mirrored attr {attr}")
 
     # Add a return to the last line of the expression, so we can treat it as a function
-    body = [line for line in exp.strip().split('\n') if line]
+    body = [line for line in exp.strip().split("\n") if line]
     last_line = body.pop(-1)
-    _exp = CUSTOM_EXP_FMT.format(body='\n\t'.join(body + ['']), lastLine=last_line)
+    _exp = CUSTOM_EXP_FMT.format(body="\n\t".join(body + [""]), lastLine=last_line)
 
     # TODO: do this without exec
     exec(_exp, _globals)
-    result = _globals['result']
+    result = _globals["result"]
 
     return result
 
@@ -1010,13 +1014,13 @@ def get_mirrored_matrices(node, params: MirrorParams) -> dict:
     """
     result = {}
     if isinstance(node, pm.nt.Joint):
-        result['type'] = 'joint'
+        result["type"] = "joint"
         jnt_matrices = joints.get_joint_matrices(node)
-        result['matrices'] = get_mirrored_joint_matrices(*jnt_matrices, params=params)
+        result["matrices"] = get_mirrored_joint_matrices(*jnt_matrices, params=params)
     else:
         node_wm = nodes.get_world_matrix(node)
-        result['type'] = 'node'
-        result['matrices'] = [get_mirrored_transform_matrix(node_wm, params=params)]
+        result["type"] = "node"
+        result["matrices"] = [get_mirrored_transform_matrix(node_wm, params=params)]
     return result
 
 
@@ -1025,12 +1029,12 @@ def set_mirrored_matrices(node, mirrored_matrices, translate=True, rotate=True, 
     Set the world matrix for the given node using the given mirrored matrices
     Automatically interprets Transform vs. Joint matrix settings
     """
-    if mirrored_matrices['type'] == 'joint':
+    if mirrored_matrices["type"] == "joint":
         LOG.debug("Applying Joint Matrices")
-        joints.set_joint_matrices(node, *mirrored_matrices['matrices'], translate=translate, rotate=rotate)
+        joints.set_joint_matrices(node, *mirrored_matrices["matrices"], translate=translate, rotate=rotate)
     else:
         LOG.debug("Applying Transform Matrix")
-        nodes.set_world_matrix(node, *mirrored_matrices['matrices'], translate=translate, rotate=rotate, scale=scale)
+        nodes.set_world_matrix(node, *mirrored_matrices["matrices"], translate=translate, rotate=rotate, scale=scale)
 
 
 def get_mirrored_transform_matrix(matrix, params: MirrorParams):

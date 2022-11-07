@@ -63,7 +63,7 @@ class MayaCallbackEvents(object):
         if not self._areMayaCallbacksRegistered:
             self._areMayaCallbacksRegistered = True
             self._callbackIDs = list(self._add_maya_callbacks())
-            LOG.debug('%s._register_maya_callbacks', self.__class__.__name__)
+            LOG.debug("%s._register_maya_callbacks", self.__class__.__name__)
 
     def _add_maya_callbacks(self):
         """
@@ -84,7 +84,7 @@ class MayaCallbackEvents(object):
             for cbId in self._callbackIDs:
                 api.MMessage.removeCallback(cbId)
             self._callbackIDs = []
-            LOG.debug('%s._unregister_maya_callbacks', self.__class__.__name__)
+            LOG.debug("%s._unregister_maya_callbacks", self.__class__.__name__)
 
     def add_subscriber(self, subscriber):
         """
@@ -136,8 +136,8 @@ class RigLifecycleEvents(MayaCallbackEvents):
     # override
     def _add_maya_callbacks(self):
         # rig nodes are always of type 'transform'
-        add_id = api.MDGMessage.addNodeAddedCallback(self._on_node_added, 'transform')
-        remove_id = api.MDGMessage.addNodeRemovedCallback(self._on_node_removed, 'transform')
+        add_id = api.MDGMessage.addNodeAddedCallback(self._on_node_added, "transform")
+        remove_id = api.MDGMessage.addNodeRemovedCallback(self._on_node_removed, "transform")
         return add_id, remove_id
 
     def _on_node_added(self, node, *args):
@@ -149,7 +149,7 @@ class RigLifecycleEvents(MayaCallbackEvents):
         # TODO: do this more precisely, don't use deferred
 
         mfn = api.MFnDependencyNode(node)
-        if mfn.typeName() != 'transform':
+        if mfn.typeName() != "transform":
             # rig nodes must be transforms
             return
 

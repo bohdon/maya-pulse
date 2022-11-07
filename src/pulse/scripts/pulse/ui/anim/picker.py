@@ -20,7 +20,6 @@ class AnimPickerButton(QtWidgets.QPushButton):
 
 
 class AnimPickerWidget(QtWidgets.QWidget):
-
     def __init__(self, parent=None):
         super(AnimPickerWidget, self).__init__(parent=parent)
 
@@ -54,7 +53,7 @@ class AnimPickerWidget(QtWidgets.QWidget):
         self._on_view_scale_changed()
 
     def _update_zoom_label(self):
-        self.ui.zoom_label.setText('%.02f' % self.view_scale)
+        self.ui.zoom_label.setText("%.02f" % self.view_scale)
 
     def _on_view_scale_changed(self):
         self._update_zoom_label()
@@ -65,7 +64,7 @@ class AnimPickerWidget(QtWidgets.QWidget):
                 child.setGeometry(self._get_scaled_geometry(child.location, child.size))
 
     def add_picker_btn(self, location: QtCore.QPoint, size: QtCore.QSize):
-        print(f'adding button, location: {location}, size: {size}')
+        print(f"adding button, location: {location}, size: {size}")
         btn = AnimPickerButton(location, size, self)
         btn.setGeometry(self._get_scaled_geometry(btn.location, btn.size))
         btn.show()
@@ -79,7 +78,7 @@ class AnimPickerWidget(QtWidgets.QWidget):
 
 
 class AnimPickerWindow(PulseWindow):
-    OBJECT_NAME = 'pulseAnimPickerWindow'
-    WINDOW_MODULE = 'pulse.ui.anim.picker'
-    WINDOW_TITLE = 'Anim Picker'
+    OBJECT_NAME = "pulseAnimPickerWindow"
+    WINDOW_MODULE = "pulse.ui.anim.picker"
+    WINDOW_TITLE = "Anim Picker"
     WIDGET_CLASS = AnimPickerWidget

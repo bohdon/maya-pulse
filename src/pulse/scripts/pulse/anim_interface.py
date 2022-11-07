@@ -1,7 +1,7 @@
 from .vendor import pymetanode as meta
 from .vendor import yaml
 
-ANIM_CTL_METACLASS = 'pulse_animcontrol'
+ANIM_CTL_METACLASS = "pulse_animcontrol"
 
 
 def get_all_anim_ctls():
@@ -40,14 +40,12 @@ def get_rig_anim_interface(ctls, exclude_attrs=None):
             }
         }
     """
-    interface = {
-        'ctls': {}
-    }
+    interface = {"ctls": {}}
 
     for ctl in ctls:
         ctl_name = ctl.nodeName()
         ctl_interface = get_anim_ctl_interface(ctl, exclude_attrs=exclude_attrs)
-        interface['ctls'][ctl_name] = ctl_interface
+        interface["ctls"][ctl_name] = ctl_interface
     return interface
 
 
@@ -87,8 +85,8 @@ def get_anim_ctl_interface(ctl, exclude_attrs=None):
     """
     interface = {
         # get world matrix, simplified
-        'worldMatrix': get_approx_attr_value(ctl.wm),
-        'attrs': {}
+        "worldMatrix": get_approx_attr_value(ctl.wm),
+        "attrs": {},
     }
 
     # get all keyable attribute info
@@ -100,13 +98,13 @@ def get_anim_ctl_interface(ctl, exclude_attrs=None):
             if attr_name in exclude_attrs:
                 continue
 
-        attr_info['type'] = attr.type()
-        attr_info['default'] = get_approx_attr_value(attr)
+        attr_info["type"] = attr.type()
+        attr_info["default"] = get_approx_attr_value(attr)
 
-        if attr.type() == 'enum':
-            attr_info['enums'] = get_enum_dict_by_index(attr.getEnums())
+        if attr.type() == "enum":
+            attr_info["enums"] = get_enum_dict_by_index(attr.getEnums())
 
-        interface['attrs'][attr_name] = attr_info
+        interface["attrs"][attr_name] = attr_info
 
     return interface
 
@@ -147,7 +145,7 @@ def get_approx_value(value):
     if isinstance(value, (int, float)):
         approx_val = round(value, 3)
         return 0 if approx_val == 0 else approx_val
-    elif hasattr(value, '__iter__'):
+    elif hasattr(value, "__iter__"):
         return [get_approx_value(v) for v in value]
     else:
         return value
@@ -170,7 +168,7 @@ def save_rig_anim_interface(filepath, exclude_attrs=None, find_control_func=None
 
     interface = get_rig_anim_interface(ctls, exclude_attrs=exclude_attrs)
 
-    with open(filepath, 'w') as fp:
+    with open(filepath, "w") as fp:
         yaml.safe_dump(interface, fp, default_flow_style=False)
 
     print(filepath)

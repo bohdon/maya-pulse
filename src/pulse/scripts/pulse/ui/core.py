@@ -62,7 +62,7 @@ class PulsePanelWidget(QtWidgets.QWidget):
 
         # title label
         self.title_label = QtWidgets.QLabel(self.header_frame)
-        self.title_label.setProperty('cssClasses', 'section-title')
+        self.title_label.setProperty("cssClasses", "section-title")
         self.header_layout.addWidget(self.title_label)
 
         self.main_layout.addWidget(self.header_frame)
@@ -112,18 +112,18 @@ class PulseWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
     DEFAULT_TAB_CONTROL = None
 
     # a string of python code to run when the workspace control is shown
-    UI_SCRIPT = 'from {module} import {cls}\n{cls}.createWindow(restore=True)'
+    UI_SCRIPT = "from {module} import {cls}\n{cls}.createWindow(restore=True)"
 
     # a string of python code to run when the workspace control is closed
-    CLOSE_SCRIPT = 'from {module} import {cls}\n{cls}.windowClosed()'
+    CLOSE_SCRIPT = "from {module} import {cls}\n{cls}.windowClosed()"
 
-    REQUIRED_PLUGINS = ['pulse']
+    REQUIRED_PLUGINS = ["pulse"]
 
     # reference to singleton instance
     INSTANCE = None
 
     # the file path to the stylesheet for this window, relative to this module
-    STYLESHEET_PATH = 'style/window_style.qss'
+    STYLESHEET_PATH = "style/window_style.qss"
 
     # if set, instantiate a single QWidget of this class and wrap it in a simple layout
     WIDGET_CLASS = None
@@ -147,17 +147,17 @@ class PulseWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             mixinPtr = mui.MQtUtil.findControl(cls.INSTANCE.objectName())
             mui.MQtUtil.addWidgetToMayaLayout(int(mixinPtr), int(parent))
         else:
-            uiScript = cls.UI_SCRIPT.format(
-                module=cls.WINDOW_MODULE, cls=cls.__name__)
-            closeScript = cls.CLOSE_SCRIPT.format(
-                module=cls.WINDOW_MODULE, cls=cls.__name__)
+            uiScript = cls.UI_SCRIPT.format(module=cls.WINDOW_MODULE, cls=cls.__name__)
+            closeScript = cls.CLOSE_SCRIPT.format(module=cls.WINDOW_MODULE, cls=cls.__name__)
 
-            cls.INSTANCE.show(dockable=True,
-                              floating=(cls.DEFAULT_DOCK_AREA is None),
-                              area=cls.DEFAULT_DOCK_AREA,
-                              uiScript=uiScript,
-                              closeCallback=closeScript,
-                              requiredPlugin=cls.REQUIRED_PLUGINS)
+            cls.INSTANCE.show(
+                dockable=True,
+                floating=(cls.DEFAULT_DOCK_AREA is None),
+                area=cls.DEFAULT_DOCK_AREA,
+                uiScript=uiScript,
+                closeCallback=closeScript,
+                requiredPlugin=cls.REQUIRED_PLUGINS,
+            )
 
             # if set, dock the control as a tab of an existing control
             if cls.DEFAULT_TAB_CONTROL:
@@ -167,7 +167,7 @@ class PulseWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
 
     @classmethod
     def getWorkspaceControlName(cls):
-        return cls.OBJECT_NAME + 'WorkspaceControl'
+        return cls.OBJECT_NAME + "WorkspaceControl"
 
     @classmethod
     def destroyWindow(cls):
@@ -188,8 +188,7 @@ class PulseWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         Close the window, if it exists
         """
         if cls.windowExists():
-            cmds.workspaceControl(
-                cls.getWorkspaceControlName(), e=True, vis=False)
+            cmds.workspaceControl(cls.getWorkspaceControlName(), e=True, vis=False)
 
     @classmethod
     def toggleWindow(cls):
@@ -215,8 +214,7 @@ class PulseWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         Return True if the window is visible and raised on screen.
         False when collapsed, hidden, or not the active tab in a tab group.
         """
-        return cls.windowExists() and cmds.workspaceControl(
-            cls.getWorkspaceControlName(), q=True, r=True)
+        return cls.windowExists() and cmds.workspaceControl(cls.getWorkspaceControlName(), q=True, r=True)
 
     def __init__(self, parent=None):
         super(PulseWindow, self).__init__(parent=parent)
@@ -258,10 +256,10 @@ class PulseWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
 
             if os.path.isfile(full_path):
                 # found the stylesheet, apply it
-                with open(full_path, 'r') as fp:
+                with open(full_path, "r") as fp:
                     self.setStyleSheet(fp.read())
             else:
-                LOG.warning(f'Could not find stylesheet: {full_path}')
+                LOG.warning(f"Could not find stylesheet: {full_path}")
 
     def _setup_widget_ui(self, widget_cls):
         """
@@ -292,13 +290,13 @@ class BlueprintUIModel(QtCore.QObject):
     INSTANCES = {}
 
     # automatically save the blueprint file when the maya scene is saved
-    autoSave = option_var_property('pulse.editor.auto_save', True)
+    autoSave = option_var_property("pulse.editor.auto_save", True)
 
     # automatically load the blueprint file when a maya scene is opened
-    autoLoad = option_var_property('pulse.editor.auto_load', True)
+    autoLoad = option_var_property("pulse.editor.auto_load", True)
 
     # automatically show the action editor when selecting an action in the tree
-    autoShowActionEditor = option_var_property('pulse.editor.auto_show_action_editor', True)
+    autoShowActionEditor = option_var_property("pulse.editor.auto_show_action_editor", True)
 
     def setAutoSave(self, value):
         self.autoSave = value
@@ -329,14 +327,14 @@ class BlueprintUIModel(QtCore.QObject):
     rigExistsChanged = QtCore.Signal()
 
     @classmethod
-    def getDefaultModel(cls) -> 'BlueprintUIModel':
+    def getDefaultModel(cls) -> "BlueprintUIModel":
         """
         Return the default model instance used by editor views.
         """
         return cls.getSharedModel(None)
 
     @classmethod
-    def getSharedModel(cls, name) -> 'BlueprintUIModel':
+    def getSharedModel(cls, name) -> "BlueprintUIModel":
         """
         Return a shared UI model by name, creating a new
         model if necessary. Will always return a valid
@@ -487,7 +485,7 @@ class BlueprintUIModel(QtCore.QObject):
 
         self._blueprintFile = BlueprintFile()
         self._blueprintFile.resolve_file_path(allow_existing=False)
-        self._blueprintFile.blueprint.set_setting(BlueprintSettings.RIG_NAME, 'untitled')
+        self._blueprintFile.blueprint.set_setting(BlueprintSettings.RIG_NAME, "untitled")
 
         self.buildStepTreeModel.setBlueprint(self.blueprint)
         self.buildStepTreeModel.endResetModel()
@@ -535,9 +533,9 @@ class BlueprintUIModel(QtCore.QObject):
         sceneName = pm.sceneName()
         if sceneName:
             sceneDir = str(sceneName.parent)
-            kwargs['startingDirectory'] = sceneDir
+            kwargs["startingDirectory"] = sceneDir
 
-        file_path_results = pm.fileDialog2(fileMode=1, fileFilter='Pulse Blueprint(*.yml)', **kwargs)
+        file_path_results = pm.fileDialog2(fileMode=1, fileFilter="Pulse Blueprint(*.yml)", **kwargs)
         if file_path_results:
             file_path = file_path_results[0]
             self.openFile(file_path)
@@ -581,7 +579,7 @@ class BlueprintUIModel(QtCore.QObject):
 
         if forcePrompt or not self._blueprintFile.has_file_path():
             # prompt for file path
-            file_path_results = pm.fileDialog2(cap='Save Blueprint', fileFilter='Pulse Blueprint (*.yml)')
+            file_path_results = pm.fileDialog2(cap="Save Blueprint", fileFilter="Pulse Blueprint (*.yml)")
             if not file_path_results:
                 return False
             self._blueprintFile.file_path = file_path_results[0]
@@ -617,12 +615,16 @@ class BlueprintUIModel(QtCore.QObject):
         """
         filePath = self.getBlueprintFilePath()
         if filePath:
-            message = f'Save changes to {filePath}?'
+            message = f"Save changes to {filePath}?"
         else:
-            message = f'Save changes to unsaved Blueprint?'
-        response = pm.confirmDialog(title='Save Blueprint Changes', message=message,
-                                    button=['Save', "Don't Save", 'Cancel'], dismissString='Cancel')
-        if response == 'Save':
+            message = f"Save changes to unsaved Blueprint?"
+        response = pm.confirmDialog(
+            title="Save Blueprint Changes",
+            message=message,
+            button=["Save", "Don't Save", "Cancel"],
+            dismissString="Cancel",
+        )
+        if response == "Save":
             return self.saveFileWithPrompt()
         elif response == "Don't Save":
             return True
@@ -638,11 +640,13 @@ class BlueprintUIModel(QtCore.QObject):
             if self.isFileModified():
                 # confirm loss of changes
                 filePath = self.getBlueprintFilePath()
-                response = pm.confirmDialog(title='Reload Blueprint',
-                                            message=f'Are you sure you want to reload {filePath}? '
-                                                    'All changes will be lost.',
-                                            button=['Reload', 'Cancel'], dismissString='Cancel')
-                if response != 'Reload':
+                response = pm.confirmDialog(
+                    title="Reload Blueprint",
+                    message=f"Are you sure you want to reload {filePath}? " "All changes will be lost.",
+                    button=["Reload", "Cancel"],
+                    dismissString="Cancel",
+                )
+                if response != "Reload":
                     return
 
             self.buildStepTreeModel.beginResetModel()
@@ -687,7 +691,7 @@ class BlueprintUIModel(QtCore.QObject):
         Set a Blueprint setting.
         """
         if self.isReadOnly():
-            LOG.error('setSetting: Cannot edit readonly Blueprint')
+            LOG.error("setSetting: Cannot edit readonly Blueprint")
             return
 
         oldValue = self.blueprint.get_setting(key)
@@ -725,7 +729,7 @@ class BlueprintUIModel(QtCore.QObject):
 
     def _onBeforeSaveScene(self, clientData=None):
         if self._shouldAutoSave():
-            LOG.debug('Auto-saving Blueprint...')
+            LOG.debug("Auto-saving Blueprint...")
 
             # automatically resolve file path if not yet set
             if not self._blueprintFile.has_file_path():
@@ -781,7 +785,7 @@ class BlueprintUIModel(QtCore.QObject):
             The newly created BuildStep, or None if the operation failed.
         """
         if self.isReadOnly():
-            LOG.error('createStep: Cannot edit readonly Blueprint')
+            LOG.error("createStep: Cannot edit readonly Blueprint")
             return
 
         parentStep = self.blueprint.get_step_by_path(parentPath)
@@ -790,8 +794,7 @@ class BlueprintUIModel(QtCore.QObject):
             return
 
         parentIndex = self.buildStepTreeModel.indexByStep(parentStep)
-        self.buildStepTreeModel.beginInsertRows(
-            parentIndex, childIndex, childIndex)
+        self.buildStepTreeModel.beginInsertRows(parentIndex, childIndex, childIndex)
 
         try:
             step = BuildStep.from_data(data)
@@ -813,7 +816,7 @@ class BlueprintUIModel(QtCore.QObject):
             True if the step was deleted successfully
         """
         if self.isReadOnly():
-            LOG.error('deleteStep: Cannot edit readonly Blueprint')
+            LOG.error("deleteStep: Cannot edit readonly Blueprint")
             return False
 
         step = self.blueprint.get_step_by_path(stepPath)
@@ -822,8 +825,7 @@ class BlueprintUIModel(QtCore.QObject):
             return False
 
         stepIndex = self.buildStepTreeModel.indexByStep(step)
-        self.buildStepTreeModel.beginRemoveRows(
-            stepIndex.parent(), stepIndex.row(), stepIndex.row())
+        self.buildStepTreeModel.beginRemoveRows(stepIndex.parent(), stepIndex.row(), stepIndex.row())
 
         step.remove_from_parent()
 
@@ -840,7 +842,7 @@ class BlueprintUIModel(QtCore.QObject):
             the operation failed.
         """
         if self.isReadOnly():
-            LOG.error('moveStep: Cannot edit readonly Blueprint')
+            LOG.error("moveStep: Cannot edit readonly Blueprint")
             return
 
         step = self.blueprint.get_step_by_path(sourcePath)
@@ -867,7 +869,7 @@ class BlueprintUIModel(QtCore.QObject):
 
     def renameStep(self, stepPath, targetName):
         if self.isReadOnly():
-            LOG.error('renameStep: Cannot edit readonly Blueprint')
+            LOG.error("renameStep: Cannot edit readonly Blueprint")
             return
 
         step = self.blueprint.get_step_by_path(stepPath)
@@ -898,10 +900,10 @@ class BlueprintUIModel(QtCore.QObject):
                 A string representation of serialized BuildStep data used to create the new steps.
         """
         if self.isReadOnly():
-            LOG.warning('cannot create steps, blueprint is read only')
+            LOG.warning("cannot create steps, blueprint is read only")
             return
 
-        LOG.debug('creating new steps at selection: %s', stepData)
+        LOG.debug("creating new steps at selection: %s", stepData)
 
         selIndexes = self.buildStepSelectionModel.selectedIndexes()
         if not selIndexes:
@@ -911,12 +913,12 @@ class BlueprintUIModel(QtCore.QObject):
 
         def getParentAndInsertIndex(index) -> tuple[BuildStep, int]:
             step = model.stepForIndex(index)
-            LOG.debug('step: %s', step)
+            LOG.debug("step: %s", step)
             if step.can_have_children():
-                LOG.debug('inserting at num children: %d', step.num_children())
+                LOG.debug("inserting at num children: %d", step.num_children())
                 return step, step.num_children()
             else:
-                LOG.debug('inserting at selected + 1: %d', index.row() + 1)
+                LOG.debug("inserting at selected + 1: %d", index.row() + 1)
                 return step.parent, index.row() + 1
 
         newPaths = []
@@ -924,11 +926,10 @@ class BlueprintUIModel(QtCore.QObject):
             parentStep, insertIndex = getParentAndInsertIndex(index)
             parentPath = parentStep.get_full_path() if parentStep else None
             if not parentPath:
-                parentPath = ''
+                parentPath = ""
             if not stepData:
-                stepData = ''
-            newStepPath = cmds.pulseCreateStep(
-                parentPath, insertIndex, stepData)
+                stepData = ""
+            newStepPath = cmds.pulseCreateStep(parentPath, insertIndex, stepData)
             if newStepPath:
                 # TODO: remove this if/when plugin command only returns single string
                 newStepPath = newStepPath[0]
@@ -945,7 +946,7 @@ class BlueprintUIModel(QtCore.QObject):
             LOG.warning("Cannot create group, blueprint is read-only")
             return
 
-        LOG.debug('create_group')
+        LOG.debug("create_group")
         newPaths = self.createStepsForSelection()
         self.buildStepSelectionModel.setSelectedItemPaths(newPaths)
 
@@ -954,7 +955,7 @@ class BlueprintUIModel(QtCore.QObject):
             LOG.warning("Cannot create action, blueprint is read-only")
             return
 
-        LOG.debug('create_action: %s', actionId)
+        LOG.debug("create_action: %s", actionId)
         stepData = "{'action':{'id':'%s'}}" % actionId
         newPaths = self.createStepsForSelection(stepData=stepData)
         self.buildStepSelectionModel.setSelectedItemPaths(newPaths)
@@ -982,8 +983,7 @@ class BlueprintUIModel(QtCore.QObject):
             return
 
         if not step.is_action():
-            LOG.error(
-                'getActionData: %s step is not an action', step)
+            LOG.error("getActionData: %s step is not an action", step)
             return
 
         return step.action_proxy.serialize()
@@ -997,8 +997,7 @@ class BlueprintUIModel(QtCore.QObject):
             return
 
         if not step.is_action():
-            LOG.error(
-                'setActionData: %s step is not an action', step)
+            LOG.error("setActionData: %s step is not an action", step)
             return
 
         step.action_proxy.deserialize(data)
@@ -1018,14 +1017,14 @@ class BlueprintUIModel(QtCore.QObject):
         Returns:
             The attribute value, of varying types
         """
-        stepPath, attrName = attrPath.split('.')
+        stepPath, attrName = attrPath.split(".")
 
         step = self.getStep(stepPath)
         if not step:
             return
 
         if not step.is_action():
-            LOG.error('getActionAttr: %s is not an action', step)
+            LOG.error("getActionAttr: %s is not an action", step)
             return
 
         if variantIndex >= 0:
@@ -1044,17 +1043,17 @@ class BlueprintUIModel(QtCore.QObject):
         Set the value for an attribute on the Blueprint
         """
         if self.isReadOnly():
-            LOG.error('setActionAttr: Cannot edit readonly Blueprint')
+            LOG.error("setActionAttr: Cannot edit readonly Blueprint")
             return
 
-        stepPath, attrName = attrPath.split('.')
+        stepPath, attrName = attrPath.split(".")
 
         step = self.getStep(stepPath)
         if not step:
             return
 
         if not step.is_action():
-            LOG.error('setActionAttr: %s is not an action', step)
+            LOG.error("setActionAttr: %s is not an action", step)
             return
 
         # TODO: log errors for missing attributes
@@ -1074,24 +1073,22 @@ class BlueprintUIModel(QtCore.QObject):
         self.modify()
 
     def isActionAttrVariant(self, attrPath):
-        stepPath, attrName = attrPath.split('.')
+        stepPath, attrName = attrPath.split(".")
 
         step = self.getStep(stepPath)
         if not step.is_action():
-            LOG.error(
-                "isActionAttrVariant: {0} is not an action".format(step))
+            LOG.error("isActionAttrVariant: {0} is not an action".format(step))
             return
 
         return step.action_proxy.is_variant_attr(attrName)
 
     def setIsActionAttrVariant(self, attrPath, isVariant):
-        """
-        """
+        """ """
         if self.isReadOnly():
-            LOG.error('setIsActionAttrVariant: Cannot edit readonly Blueprint')
+            LOG.error("setIsActionAttrVariant: Cannot edit readonly Blueprint")
             return
 
-        stepPath, attrName = attrPath.split('.')
+        stepPath, attrName = attrPath.split(".")
 
         step = self.getStep(stepPath)
         if not step:
@@ -1195,7 +1192,7 @@ class BlueprintUIModel(QtCore.QObject):
         # auto run setup phase
         while True:
             self.interactiveBuilder.next()
-            if self.interactiveBuilder.phase == 'actions':
+            if self.interactiveBuilder.phase == "actions":
                 break
 
         # TODO: add build events for situations like this
@@ -1348,18 +1345,18 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
             iconName: str
             if not step.is_action():
                 if step.is_disabled_in_hierarchy():
-                    iconName = 'step_group_disabled'
+                    iconName = "step_group_disabled"
                 else:
-                    iconName = 'step_group'
+                    iconName = "step_group"
             else:
                 if step.is_disabled_in_hierarchy():
-                    iconName = 'step_action_disabled'
+                    iconName = "step_action_disabled"
                 elif step.has_warnings():
-                    iconName = 'warning'
+                    iconName = "warning"
                 else:
-                    iconName = 'step_action'
+                    iconName = "step_action"
 
-            return QtGui.QIcon(f':/icon/{iconName}.svg')
+            return QtGui.QIcon(f":/icon/{iconName}.svg")
 
         elif role == QtCore.Qt.SizeHintRole:
             return QtCore.QSize(0, 20)
@@ -1392,7 +1389,7 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
 
         if role == QtCore.Qt.EditRole:
             if not value:
-                value = ''
+                value = ""
             stepPath = step.get_full_path()
             cmds.pulseRenameStep(stepPath, value)
             return True
@@ -1425,7 +1422,7 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
             self._emitDataChangedOnAllChildren(childIndex, roles)
 
     def mimeTypes(self):
-        return ['text/plain']
+        return ["text/plain"]
 
     def mimeData(self, indexes):
         result = QtCore.QMimeData()
@@ -1441,14 +1438,14 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
 
         stepDataList = [step.serialize() for step in steps]
         data_str = meta.encodeMetaData(stepDataList)
-        result.setData('text/plain', data_str.encode())
+        result.setData("text/plain", data_str.encode())
         return result
 
     def supportedDropActions(self):
         return QtCore.Qt.CopyAction | QtCore.Qt.MoveAction
 
     def getStepDataListFromMimeData(self, data: QtCore.QMimeData):
-        data_str = data.data('text/plain').data().decode()
+        data_str = data.data("text/plain").data().decode()
         if data_str:
             try:
                 meta_data = meta.decodeMetaData(data_str)
@@ -1483,7 +1480,7 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
             # TODO: log error here, even though we shouldn't in canDropMimeData
             return False
 
-        print('dropData', step_data, data, action, row, column, parentIndex)
+        print("dropData", step_data, data, action, row, column, parentIndex)
 
         beginRow = 0
         parentPath = None
@@ -1501,12 +1498,12 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
                     parentPath = os.path.dirname(parentStep.get_full_path())
 
         if not parentPath:
-            parentPath = ''
+            parentPath = ""
             beginRow = self.rowCount(QtCore.QModelIndex())
         if row != -1:
             beginRow = row
 
-        cmds.undoInfo(openChunk=True, chunkName='Drag Pulse Actions')
+        cmds.undoInfo(openChunk=True, chunkName="Drag Pulse Actions")
         self.isMoveActionOpen = True
         cmds.evalDeferred(self._deferredMoveUndoClose)
 
@@ -1521,7 +1518,7 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
                 # hacky, but because steps are removed after the new ones are created,
                 # we need to rename the steps back to their original names in case they
                 # were auto-renamed to avoid conflicts
-                targetName = step_data[i].get('name', '')
+                targetName = step_data[i].get("name", "")
                 self.dragRenameQueue.append((newStepPath, targetName))
 
         # always return false, since we don't need the item view to handle removing moved items
@@ -1548,7 +1545,7 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
                 paths.append(path)
 
         if not self.isMoveActionOpen:
-            cmds.undoInfo(openChunk=True, chunkName='Delete Pulse Actions')
+            cmds.undoInfo(openChunk=True, chunkName="Delete Pulse Actions")
 
         for path in paths:
             cmds.pulseDeleteStep(path)
@@ -1628,7 +1625,7 @@ class BuildStepSelectionModel(QtCore.QItemSelectionModel):
         """
         Set the selection using BuildStep paths
         """
-        if not self.model() or not hasattr(self.model(), '_blueprint'):
+        if not self.model() or not hasattr(self.model(), "_blueprint"):
             return
 
         blueprint = self.model()._blueprint

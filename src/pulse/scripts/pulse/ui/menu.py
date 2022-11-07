@@ -5,11 +5,11 @@ import webbrowser
 
 import pymel.core as pm
 
-MAIN_MENU_LABEL = 'Pulse'
-MAIN_MENU_ID = 'pulse_main_menu'
-DOCUMENTATION_URL = 'https://maya-pulse.readthedocs.io/'
-ISSUES_URL = 'https://github.com/bohdon/maya-pulse/issues'
-WORKFLOW_TOOLS_URL = 'https://github.com/bohdon/maya-workflowtools'
+MAIN_MENU_LABEL = "Pulse"
+MAIN_MENU_ID = "pulse_main_menu"
+DOCUMENTATION_URL = "https://maya-pulse.readthedocs.io/"
+ISSUES_URL = "https://github.com/bohdon/maya-pulse/issues"
+WORKFLOW_TOOLS_URL = "https://github.com/bohdon/maya-workflowtools"
 
 
 def _cmd(command):
@@ -59,10 +59,18 @@ def install_main_menu():
     pm.menuItem(parent=anim_menu_id, label="Anim Picker", command=_cmd(AnimPickerWindow.toggleWindow))
     pm.menuItem(parent=anim_menu_id, label="Copy Paste Matrix Util", command=_cmd(CopyPasteMatrixWindow.toggleWindow))
     pm.menuItem(parent=anim_menu_id, divider=True)
-    pm.menuItem(parent=anim_menu_id, label="Register Context Menus", command=_cmd(contextmenus.registerContextMenu),
-                enable=contextmenus.canRegisterContextMenus())
-    pm.menuItem(parent=anim_menu_id, label="Unregister Context Menus", command=_cmd(contextmenus.unregisterContextMenu),
-                enable=contextmenus.canRegisterContextMenus())
+    pm.menuItem(
+        parent=anim_menu_id,
+        label="Register Context Menus",
+        command=_cmd(contextmenus.registerContextMenu),
+        enable=contextmenus.canRegisterContextMenus(),
+    )
+    pm.menuItem(
+        parent=anim_menu_id,
+        label="Unregister Context Menus",
+        command=_cmd(contextmenus.unregisterContextMenu),
+        enable=contextmenus.canRegisterContextMenus(),
+    )
     pm.menuItem(parent=anim_menu_id, label="Extras", divider=True)
     pm.menuItem(parent=anim_menu_id, label="Get Workflow Tools...", command=_url_cmd(WORKFLOW_TOOLS_URL))
 
@@ -90,4 +98,4 @@ def _create_menu(label: str, menu_id: str):
     if pm.menu(menu_id, exists=True):
         pm.deleteUI(menu_id)
 
-    pm.menu(menu_id, parent='MayaWindow', tearOff=True, allowOptionBoxes=True, label=label)
+    pm.menu(menu_id, parent="MayaWindow", tearOff=True, allowOptionBoxes=True, label=label)
