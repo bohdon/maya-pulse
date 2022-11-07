@@ -64,15 +64,22 @@ class AnimPickerButton(QtWidgets.QPushButton):
     default_size = QSize(40, 40)
 
     @classmethod
-    def from_data(cls, data: dict, parent=None):
+    def from_data(cls, data: dict, namespace=None, parent=None):
         """
         Construct an AnimPickerButton from serialized data.
         """
-        btn = AnimPickerButton(parent=parent)
+        btn = AnimPickerButton(namespace=namespace, parent=parent)
         btn.deserialize(data)
         return btn
 
-    def __init__(self, location: QPointF = None, size: QSize = None, node: Optional[str] = None, parent=None):
+    def __init__(
+        self,
+        location: QPointF = None,
+        size: QSize = None,
+        node: Optional[str] = None,
+        namespace: str = None,
+        parent=None,
+    ):
         """
         Args:
             location: The center location of the button.
@@ -92,7 +99,8 @@ class AnimPickerButton(QtWidgets.QPushButton):
         self._location = location
         self._size = size
         # the node this button selects
-        self.node = node
+        self._node = node
+        self.namespace = namespace
         self.base_color_alpha = 0.5
         self.color: Optional[LinearColor] = LinearColor(0.5, 0.5, 0.5, self.base_color_alpha)
         self.pre_select_color = LinearColor(1, 1, 1, 0.75)
@@ -110,7 +118,7 @@ class AnimPickerButton(QtWidgets.QPushButton):
         data = {
             "location": self._location.toTuple(),
             "size": self._size.toTuple(),
-            "node": self.node,
+            "node": self._node,
         }
         return data
 
@@ -119,7 +127,7 @@ class AnimPickerButton(QtWidgets.QPushButton):
         if "size" in data:
             self._size = QSize(*data["size"])
         if "node" in data:
-            self.node = data["node"]
+            self._node = data["node"]
             self._update_node_info()
             self._update_style()
 
@@ -139,6 +147,21 @@ class AnimPickerButton(QtWidgets.QPushButton):
     def set_size(self, size: QSize):
         """Set the size of the button. Enforces minimum sizes."""
         self._size = QSize(max(size.width(), 20), max(size.height(), 20))
+
+    @property
+    def node(self):
+        return self._node
+
+    def node_name(self) -> Optional[str]:
+        """
+        Return the node name to use for selection. Applies the active namespace if one is set.
+        """
+        if self.is_node_set():
+            if self.namespace:
+                # namespace must include the trailing ':', e.g. 'namespace:'
+                return f"{self.namespace}{self._node.rsplit(':')[-1]}"
+            else:
+                return self._node
 
     def is_selected(self) -> bool:
         """
@@ -161,19 +184,19 @@ class AnimPickerButton(QtWidgets.QPushButton):
         if sel and isinstance(sel[0], pm.PyNode):
             # convert to node names
             sel = [n.nodeName() for n in sel]
-        return self.node and self.node in sel
+        return self.is_node_set() and self.node_name() in sel
 
     def is_node_set(self) -> bool:
         """
         Return true if a node has been set for this button. Does not check whether the node exists in the scene.
         """
-        return bool(self.node)
+        return bool(self._node)
 
     def has_valid_node(self) -> bool:
         """
         Return true if this button has a node that is valid and exists in the scene.
         """
-        return bool(self.node and cmds.ls(self.node))
+        return bool(self.is_node_set() and cmds.ls(self.node_name()))
 
     def select(self, is_pre_select=False):
         """
@@ -186,7 +209,7 @@ class AnimPickerButton(QtWidgets.QPushButton):
         self.set_is_selected(True, is_pre_select)
         if not is_pre_select:
             try:
-                pm.select(self.node, add=True)
+                pm.select(self.node_name(), add=True)
             except TypeError as e:
                 logger.warning(f"{e}")
 
@@ -195,7 +218,7 @@ class AnimPickerButton(QtWidgets.QPushButton):
         self.set_is_selected(False)
         if not is_pre_select:
             try:
-                pm.select(self.node, deselect=True)
+                pm.select(self.node_name(), deselect=True)
             except TypeError as e:
                 pass
 
@@ -226,16 +249,16 @@ class AnimPickerButton(QtWidgets.QPushButton):
                 )
 
     def set_node(self, node: Optional[str]):
-        self.node = node
+        self._node = node
         self._update_node_info()
 
     def _update_node_info(self):
         """
         Attempt to pull node information for display purposes, e.g. status tip, color.
         """
-        self.setStatusTip(self.node if self.node else "")
+        self.setStatusTip(self.node_name() if self.is_node_set() else "")
         try:
-            pynode = pm.PyNode(self.node)
+            pynode = pm.PyNode(self.node_name())
         except:
             pass
         else:
@@ -273,6 +296,9 @@ class AnimPickerPanel(QtWidgets.QWidget):
 
         # is the picker currently locked for editing?
         self.is_locked = True
+
+        # the current namespace to use for selection, not serialized
+        self.namespace = None
 
         self.rubber_band: Optional[QtWidgets.QRubberBand] = None
         self.view_offset_raw = QPointF()
@@ -338,7 +364,7 @@ class AnimPickerPanel(QtWidgets.QWidget):
 
         # load buttons
         for btn_data in data.get("buttons", []):
-            btn = AnimPickerButton.from_data(btn_data, self)
+            btn = AnimPickerButton.from_data(btn_data, namespace=self.namespace, parent=self)
             self.add_button(btn)
 
         self._on_view_changed()
@@ -669,11 +695,12 @@ class AnimPickerPanel(QtWidgets.QWidget):
             node = sel[0].nodeName()
             pm.select(sel[0], deselect=True)
 
-        btn = AnimPickerButton(location, size, node, self)
+        btn = AnimPickerButton(location, size, node, namespace=self.namespace, parent=self)
         self.add_button(btn)
         return btn
 
     def add_button(self, btn: AnimPickerButton):
+        btn.namespace = self.namespace
         self._update_btn_geometry(btn)
         self.buttons.append(btn)
         btn.show()
@@ -799,25 +826,25 @@ class AnimPickerPanel(QtWidgets.QWidget):
         """
         if self.select_operation == AnimPickerSelectOperation.REPLACE:
             # select all selected btn nodes
-            node_args = [btn.node for btn in self.buttons if btn.is_selected()]
+            node_args = [btn.node_name() for btn in self.buttons if btn.is_selected()]
             sel_kwargs = dict(replace=True)
 
         elif self.select_operation == AnimPickerSelectOperation.ADD:
             # find buttons that are selected, but their nodes are not
             sel = cmds.ls(selection=True)
-            node_args = [btn.node for btn in self.buttons if btn.is_selected() and not btn.is_node_selected(sel)]
+            node_args = [btn.node_name() for btn in self.buttons if btn.is_selected() and not btn.is_node_selected(sel)]
             sel_kwargs = dict(add=True)
 
         elif self.select_operation == AnimPickerSelectOperation.TOGGLE:
             # find any buttons that don't match, and mark them for toggle
             sel = cmds.ls(selection=True)
-            node_args = [btn.node for btn in self.buttons if btn.is_selected() != btn.is_node_selected(sel)]
+            node_args = [btn.node_name() for btn in self.buttons if btn.is_selected() != btn.is_node_selected(sel)]
             sel_kwargs = dict(toggle=True)
 
         elif self.select_operation == AnimPickerSelectOperation.DESELECT:
             # find buttons that are no longer selected, and deselect their nodes
             sel = cmds.ls(selection=True)
-            node_args = [btn.node for btn in self.buttons if not btn.is_selected() and btn.is_node_selected(sel)]
+            node_args = [btn.node_name() for btn in self.buttons if not btn.is_selected() and btn.is_node_selected(sel)]
             sel_kwargs = dict(deselect=True)
 
         else:
@@ -916,6 +943,7 @@ class AnimPickerWidget(QtWidgets.QWidget):
             return
 
         logger.info(f"Loading picker from rig: {rig}")
+        self.picker_panel.namespace = rig.namespace()
         self.deserialize(picker_data)
 
     def _save_active_rig_picker(self):
