@@ -172,3 +172,9 @@ QFrame#formFrame[cssClasses~="error"] {
     background-color: rgb(255, 80, 80, 10%);
     border-radius: 3px;
 }
+
+
+/* Anim picker */
+QPushButton[cssClasses~="anim-picker-btn"] {
+    border-radius: 3px;
+}

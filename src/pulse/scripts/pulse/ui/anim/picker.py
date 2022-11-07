@@ -25,11 +25,12 @@ def scale_rect(rect: QRect, scale: float) -> QRect:
 
 
 class AnimPickerButton(QtWidgets.QPushButton):
-    def __init__(self, location: Union[QPointF, QPoint], size: QSize, parent=None):
+    def __init__(self, location: Union[QPointF, QPoint], size: QSize, node: Optional[str] = None, parent=None):
         """
         Args:
             location: The center location of the button.
             size: The size of the button.
+            node: The node to select when this button is selected.
             parent: The parent object.
         """
         super(AnimPickerButton, self).__init__(parent=parent)
@@ -37,12 +38,20 @@ class AnimPickerButton(QtWidgets.QPushButton):
         # the geometry of this button at 1x zoom
         self.location = QPointF(location)
         self.size = size
-        self._is_selected = False
         # the node this button selects
-        self.node: Optional[str] = None
-        self.color: Optional[LinearColor] = None
+        self.node = node
+        self.base_color_alpha = 0.5
+        self.color: Optional[LinearColor] = LinearColor(0.5, 0.5, 0.5, self.base_color_alpha)
+        self.pre_select_color = LinearColor(1, 1, 1, 0.75)
+        self.select_color = LinearColor(1, 1, 1, 1)
+        self._is_selected = False
+
+        self.setProperty("cssClasses", "anim-picker-btn")
 
         self.clicked.connect(self.select)
+
+        self._update_node_info()
+        self._update_style()
 
     def set_location(self, pos: Union[QPointF, QPoint]):
         """Set the center location of the button."""
@@ -72,6 +81,12 @@ class AnimPickerButton(QtWidgets.QPushButton):
             sel = [n.nodeName() for n in sel]
         return self.node and self.node in sel
 
+    def is_node_set(self) -> bool:
+        """
+        Return true if a node has been set for this button. Does not check whether the node exists in the scene.
+        """
+        return bool(self.node)
+
     def has_valid_node(self) -> bool:
         """
         Return true if this button has a node that is valid and exists in the scene.
@@ -86,7 +101,7 @@ class AnimPickerButton(QtWidgets.QPushButton):
             is_pre_select: If true, don't select the nodes in the scene, just indicate
                 visually that the button is selected.
         """
-        self.set_is_selected(True)
+        self.set_is_selected(True, is_pre_select)
         if not is_pre_select:
             try:
                 pm.select(self.node, add=True)
@@ -102,28 +117,64 @@ class AnimPickerButton(QtWidgets.QPushButton):
             except TypeError as e:
                 pass
 
-    def set_is_selected(self, value: bool):
+    def set_is_selected(self, value: bool, is_pre_select=False):
         self._is_selected = value
-        if value:
-            self.setStyleSheet("background-color: white")
-        else:
-            if self.color:
-                self.setStyleSheet(self.color.as_bg_style())
+        self._update_style(is_pre_select)
+
+    def _update_style(self, is_pre_selected=False):
+        if self.node:
+            # a node value is set, show with fill
+            if self.is_selected():
+                if is_pre_selected:
+                    self.setStyleSheet(f"background-color: {self.pre_select_color.as_style()};")
+                else:
+                    self.setStyleSheet(f"background-color: {self.select_color.as_style()};")
             else:
-                self.setStyleSheet("")
+                self.setStyleSheet(f"background-color: {self.color.as_style()};")
+        else:
+            # no node, show as hollow
+            if self.is_selected():
+                self.setStyleSheet(f"border: 2px solid {self.pre_select_color.as_style()};")
+            else:
+                self.setStyleSheet(f"border: 2px solid {self.color.as_style()};")
 
     def set_node(self, node: Optional[str]):
         self.node = node
+        self._update_node_info()
+
+    def _update_node_info(self):
+        """
+        Attempt to pull node information for display purposes, e.g. status tip, color.
+        """
         self.setStatusTip(self.node if self.node else "")
         try:
-            pynode = pm.PyNode(node)
+            pynode = pm.PyNode(self.node)
         except:
             pass
         else:
-            self.color = nodes.get_override_color(pynode)
-            if self.color and not self.is_selected():
-                self.color.a = 0.5
-                self.setStyleSheet(self.color.as_bg_style())
+            node_color = nodes.get_override_color(pynode)
+            if node_color:
+                self.color = node_color
+                # dim the color a bit to make white selection stand out
+                self.color.a = self.base_color_alpha
+
+
+class AnimPickerSelectOperation(object):
+    """
+    The types of selection operations, e.g. replace, add, etc.
+    """
+
+    NONE = None
+    # replace the selection completely
+    REPLACE = "replace"
+    # add to the selection
+    ADD = "add"
+    # toggle the selection
+    TOGGLE = "toggle"
+    # deselect nodes
+    DESELECT = "deselect"
+    # select only the picker buttons for editing, unavailable when locked
+    EDIT = "edit"
 
 
 class AnimPickerPanel(QtWidgets.QWidget):
@@ -149,8 +200,8 @@ class AnimPickerPanel(QtWidgets.QWidget):
         self.select_on_drag = False
         self.pending_node_selection: List[pm.PyNode] = []
         self.selection_rect = QRect()
-        # the current selection operation, one of "replace", "add", or "deselect
-        self.select_operation: Optional[str] = None
+        # the current selection operation
+        self.select_operation: Optional[str] = AnimPickerSelectOperation.NONE
         self.is_drag_selecting = False
         # the list of all buttons
         self.buttons: List[AnimPickerButton] = []
@@ -280,11 +331,11 @@ class AnimPickerPanel(QtWidgets.QWidget):
         mods = event.modifiers()
         self.drag_last_pos = event.pos()
 
-        if event.buttons() == QtCore.Qt.LeftButton and mods & QtCore.Qt.ShiftModifier and not self.is_locked:
+        if event.buttons() == QtCore.Qt.LeftButton and mods == QtCore.Qt.ShiftModifier and not self.is_locked:
             location = self.inverse_transform_pos(event.localPos().toPoint())
             self.placement_btn = self.add_picker_btn(location, self.default_btn_size)
 
-        elif mods & QtCore.Qt.AltModifier:
+        elif mods == QtCore.Qt.AltModifier:
             # start drag for pan or zoom
             pass
 
@@ -365,20 +416,28 @@ class AnimPickerPanel(QtWidgets.QWidget):
         super(AnimPickerPanel, self).resizeEvent(event)
 
     def start_selection(self, origin: QPoint):
-        if self.select_on_drag and self.select_operation == "replace":
+        if self.select_on_drag and self.select_operation == AnimPickerSelectOperation.REPLACE:
             pm.select(clear=True)
         self.is_drag_selecting = True
         self.selection_rect = QRect(origin, QSize())
 
     def update_select_operation(self, modifiers: QtCore.Qt.KeyboardModifiers):
         """Update the current select operation based on keyboard modifiers."""
-        self.select_operation = "replace"
+        self.select_operation = AnimPickerSelectOperation.REPLACE
         if modifiers == QtCore.Qt.ShiftModifier | QtCore.Qt.ControlModifier:
-            self.select_operation = "add"
+            self.select_operation = AnimPickerSelectOperation.ADD
         elif modifiers == QtCore.Qt.ShiftModifier:
-            self.select_operation = "toggle"
+            if self.is_locked:
+                self.select_operation = AnimPickerSelectOperation.TOGGLE
+            else:
+                # shift while editing places new nodes
+                self.select_operation = AnimPickerSelectOperation.NONE
         elif modifiers == QtCore.Qt.ControlModifier:
-            self.select_operation = "deselect"
+            if self.is_locked:
+                self.select_operation = AnimPickerSelectOperation.DESELECT
+            else:
+                # ctrl while editing selects buttons without nodes
+                self.select_operation = AnimPickerSelectOperation.EDIT
 
     def update_selection(self, pos: QPoint):
         # always set bottom right to preserve direction, use normalize when needed
@@ -436,12 +495,14 @@ class AnimPickerPanel(QtWidgets.QWidget):
         """
         Add a picker button at the given unscaled location and size.
         """
-        btn = AnimPickerButton(location, size, self)
-        self._update_btn_geometry(btn)
+        node = None
         sel = pm.selected()
         if sel:
-            btn.set_node(sel[0].nodeName())
+            node = sel[0].nodeName()
             pm.select(sel[0], deselect=True)
+
+        btn = AnimPickerButton(location, size, node, self)
+        self._update_btn_geometry(btn)
         self.buttons.append(btn)
         btn.show()
         return btn
@@ -492,24 +553,40 @@ class AnimPickerPanel(QtWidgets.QWidget):
 
         def _should_btn_be_selected(_btn):
             is_intersecting = _btn.geometry().intersects(rect)
-            if self.select_operation == "add":
-                # either intersecting, or previously selected
-                return is_intersecting or _btn.is_node_selected(sel_nodes)
-            elif self.select_operation == "toggle":
-                # return the inverse of selected if intersecting
-                is_selected = _btn.is_node_selected(sel_nodes)
-                return (not is_selected) if is_intersecting else is_selected
-            elif self.select_operation == "deselect":
-                # must not be intersecting and previously selected
-                return not is_intersecting and _btn.is_node_selected(sel_nodes)
+            if _btn.is_node_set():
+                # use scene selection
+                if self.select_operation == AnimPickerSelectOperation.ADD:
+                    # either intersecting, or previously selected
+                    return is_intersecting or _btn.is_node_selected(sel_nodes)
+                elif self.select_operation == AnimPickerSelectOperation.TOGGLE:
+                    # return the inverse of selected if intersecting
+                    is_selected = _btn.is_node_selected(sel_nodes)
+                    return (not is_selected) if is_intersecting else is_selected
+                elif self.select_operation == AnimPickerSelectOperation.DESELECT:
+                    # must not be intersecting and previously selected
+                    return not is_intersecting and _btn.is_node_selected(sel_nodes)
+                else:
+                    # operation is either REPLACE or EDIT
+                    # intersection fully determines selection
+                    return is_intersecting
             else:
-                # operation is default, "replace",
-                # intersection fully determines selection
-                return is_intersecting
+                # use button selection only
+                if (
+                    self.select_operation == AnimPickerSelectOperation.ADD
+                    or self.select_operation == AnimPickerSelectOperation.TOGGLE
+                ):
+                    # no toggle for node-less buttons, only add
+                    return is_intersecting or _btn.is_selected()
+                elif self.select_operation == AnimPickerSelectOperation.DESELECT:
+                    return not is_intersecting and _btn.is_selected()
+                else:
+                    # operation is either REPLACE or EDIT
+                    # intersection fully determines selection
+                    return is_intersecting
 
         # pre-selecting means the scene nodes will not be selected until we
         # commit this selection later, the buttons will just be highlighted
-        is_pre_select = not self.select_on_drag
+        is_pre_select = (not self.select_on_drag) or (self.select_operation == AnimPickerSelectOperation.EDIT)
 
         for btn in self.buttons:
             should_be_selected = _should_btn_be_selected(btn)
@@ -529,37 +606,38 @@ class AnimPickerPanel(QtWidgets.QWidget):
         """
         Select/add/deselect any pending nodes that were pre-selected during a drag select.
         """
-        sel_kwargs = {}
-        node_args = []
-
-        if self.select_operation == "replace":
+        if self.select_operation == AnimPickerSelectOperation.REPLACE:
             # select all selected btn nodes
             node_args = [btn.node for btn in self.buttons if btn.is_selected()]
             sel_kwargs = dict(replace=True)
 
-        elif self.select_operation == "add":
+        elif self.select_operation == AnimPickerSelectOperation.ADD:
             # find buttons that are selected, but their nodes are not
             sel = cmds.ls(selection=True)
             node_args = [btn.node for btn in self.buttons if btn.is_selected() and not btn.is_node_selected(sel)]
             sel_kwargs = dict(add=True)
 
-        elif self.select_operation == "toggle":
+        elif self.select_operation == AnimPickerSelectOperation.TOGGLE:
             # find any buttons that don't match, and mark them for toggle
             sel = cmds.ls(selection=True)
             node_args = [btn.node for btn in self.buttons if btn.is_selected() != btn.is_node_selected(sel)]
             sel_kwargs = dict(toggle=True)
 
-        elif self.select_operation == "deselect":
+        elif self.select_operation == AnimPickerSelectOperation.DESELECT:
             # find buttons that are no longer selected, and deselect their nodes
             sel = cmds.ls(selection=True)
             node_args = [btn.node for btn in self.buttons if not btn.is_selected() and btn.is_node_selected(sel)]
             sel_kwargs = dict(deselect=True)
 
+        else:
+            # don't change scene selection when using EDIT or NONE operation
+            return
+
         # run the select
         try:
             pm.select(node_args, **sel_kwargs)
         except TypeError as e:
-            logger.warning("{e}")
+            logger.warning(f"{e}")
             # if selection fails, make sure buttons revert to match scene selection
             self.update_btn_selection_to_match_scene()
 
