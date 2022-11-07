@@ -216,9 +216,14 @@ class AnimPickerButton(QtWidgets.QPushButton):
         else:
             # no node, show as hollow
             if self.is_selected():
-                self.setStyleSheet(f"border: 2px solid {self.pre_select_color.as_style()};")
+                self.setStyleSheet(
+                    f"border: 2px solid {self.pre_select_color.as_style()};"
+                    f"background-color: rgba(255, 255, 255, 2%);"
+                )
             else:
-                self.setStyleSheet(f"border: 2px solid {self.color.as_style()};")
+                self.setStyleSheet(
+                    f"border: 2px solid {self.color.as_style()}; background-color: rgba(255, 255, 255, 2%);"
+                )
 
     def set_node(self, node: Optional[str]):
         self.node = node
@@ -328,6 +333,8 @@ class AnimPickerPanel(QtWidgets.QWidget):
         # load view data
         self.view_scale = data.get("view_scale", 1.0)
         self.view_offset_raw = QPointF(*data.get("view_offset", (0.0, 0.0)))
+        self.viewScaleChanged.emit(self.view_scale)
+        self.viewOffsetChanged.emit(self.view_offset)
 
         # load buttons
         for btn_data in data.get("buttons", []):
@@ -391,7 +398,7 @@ class AnimPickerPanel(QtWidgets.QWidget):
         super(AnimPickerPanel, self).paintEvent(event)
 
         painter = QtGui.QPainter(self)
-        painter.setPen(QtGui.QColor(0, 0, 0, 30))
+        painter.setPen(QtGui.QColor(0, 0, 0, 20))
 
         # draw axes
         rect = self.rect()
@@ -405,6 +412,37 @@ class AnimPickerPanel(QtWidgets.QWidget):
             p3 = QPoint(origin_x, rect.top())
             p4 = QPoint(origin_x, rect.bottom())
             painter.drawLine(p3, p4)
+
+        # draw grid
+        if self.is_locked:
+            return
+
+        grid_spacing = QPointF(self.grid_size) * self.view_scale
+        if grid_spacing.x() <= 0 or grid_spacing.y() <= 0:
+            return
+
+        # get the top left corner in world-space
+        top_left_point = self.inverse_transform_pos(QPoint(0, 0))
+        # snap top left point to grid
+        top_left_point = self._snap_pos_to_grid(top_left_point)
+        # convert back to view space
+        top_left_point = self.transform_pos(top_left_point)
+        x = top_left_point.x()
+        y = top_left_point.y()
+
+        # draw horz lines
+        while y < rect.bottom():
+            p1 = QPoint(rect.left(), y)
+            p2 = QPoint(rect.right(), y)
+            painter.drawLine(p1, p2)
+            y += grid_spacing.y()
+
+        # draw vert lines
+        while x < rect.right():
+            p1 = QPoint(x, rect.top())
+            p2 = QPoint(x, rect.bottom())
+            painter.drawLine(p1, p2)
+            x += grid_spacing.x()
 
     def showEvent(self, event: QtGui.QShowEvent):
         super(AnimPickerPanel, self).showEvent(event)
@@ -633,6 +671,7 @@ class AnimPickerPanel(QtWidgets.QWidget):
 
         btn = AnimPickerButton(location, size, node, self)
         self.add_button(btn)
+        return btn
 
     def add_button(self, btn: AnimPickerButton):
         self._update_btn_geometry(btn)
@@ -667,13 +706,16 @@ class AnimPickerPanel(QtWidgets.QWidget):
 
     def _snap_pos_to_grid(self, pos: QPoint) -> QPoint:
         """
-        Snap a position to the picker grid.
+        Snap a world-space position to the picker grid.
         """
         x = round(pos.x() / self.grid_size.x()) * self.grid_size.x()
         y = round(pos.y() / self.grid_size.y()) * self.grid_size.y()
         return QPoint(x, y)
 
     def _snap_size_to_grid(self, size: QSize) -> QSize:
+        """
+        Snap a world-space size to the picker grid.
+        """
         # sizes use twice the grid size since button locations are centered
         grid_size_2x = self.grid_size * 2
         width = round(size.width() / grid_size_2x.x()) * grid_size_2x.x()
