@@ -12,6 +12,7 @@ from PySide2.QtCore import *
 from PySide2.QtGui import *
 from PySide2.QtWidgets import *
 
+from  . import icons_rc
 
 class Ui_AnimPicker(object):
     def setupUi(self, AnimPicker):
@@ -20,10 +21,19 @@ class Ui_AnimPicker(object):
         AnimPicker.resize(533, 470)
         self.horizontalLayoutWidget = QWidget(AnimPicker)
         self.horizontalLayoutWidget.setObjectName(u"horizontalLayoutWidget")
-        self.horizontalLayoutWidget.setGeometry(QRect(10, 10, 160, 21))
+        self.horizontalLayoutWidget.setGeometry(QRect(10, 10, 101, 25))
         self.horizontalLayout = QHBoxLayout(self.horizontalLayoutWidget)
         self.horizontalLayout.setObjectName(u"horizontalLayout")
+        self.horizontalLayout.setSizeConstraint(QLayout.SetFixedSize)
         self.horizontalLayout.setContentsMargins(0, 0, 0, 0)
+        self.zoom_reset_btn = QToolButton(self.horizontalLayoutWidget)
+        self.zoom_reset_btn.setObjectName(u"zoom_reset_btn")
+        icon = QIcon()
+        icon.addFile(u":/icon/reset.svg", QSize(), QIcon.Normal, QIcon.Off)
+        self.zoom_reset_btn.setIcon(icon)
+
+        self.horizontalLayout.addWidget(self.zoom_reset_btn)
+
         self.label = QLabel(self.horizontalLayoutWidget)
         self.label.setObjectName(u"label")
 
@@ -42,6 +52,7 @@ class Ui_AnimPicker(object):
 
     def retranslateUi(self, AnimPicker):
         AnimPicker.setWindowTitle(QCoreApplication.translate("AnimPicker", u"Anim Picker", None))
+        self.zoom_reset_btn.setText("")
         self.label.setText(QCoreApplication.translate("AnimPicker", u"Zoom:", None))
         self.zoom_label.setText(QCoreApplication.translate("AnimPicker", u"1.0", None))
     # retranslateUi
