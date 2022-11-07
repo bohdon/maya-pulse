@@ -31,33 +31,50 @@ class Ui_AnimPicker(object):
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.header_frame.sizePolicy().hasHeightForWidth())
         self.header_frame.setSizePolicy(sizePolicy)
+        self.header_frame.setMinimumSize(QSize(0, 30))
         self.header_frame.setFrameShape(QFrame.StyledPanel)
         self.header_frame.setFrameShadow(QFrame.Raised)
         self.horizontalLayout_2 = QHBoxLayout(self.header_frame)
-        self.horizontalLayout_2.setSpacing(2)
+        self.horizontalLayout_2.setSpacing(4)
         self.horizontalLayout_2.setObjectName(u"horizontalLayout_2")
         self.horizontalLayout_2.setContentsMargins(2, 2, 2, 2)
-        self.toggle_lock_btn = QToolButton(self.header_frame)
-        self.toggle_lock_btn.setObjectName(u"toggle_lock_btn")
+        self.refresh_btn = QToolButton(self.header_frame)
+        self.refresh_btn.setObjectName(u"refresh_btn")
         icon = QIcon()
-        icon.addFile(u":/icon/lock.svg", QSize(), QIcon.Normal, QIcon.Off)
-        self.toggle_lock_btn.setIcon(icon)
+        icon.addFile(u":/icon/rotate_right.svg", QSize(), QIcon.Normal, QIcon.Off)
+        self.refresh_btn.setIcon(icon)
 
-        self.horizontalLayout_2.addWidget(self.toggle_lock_btn)
+        self.horizontalLayout_2.addWidget(self.refresh_btn)
+
+        self.rigs_layout = QHBoxLayout()
+        self.rigs_layout.setObjectName(u"rigs_layout")
+
+        self.horizontalLayout_2.addLayout(self.rigs_layout)
+
+        self.horizontalSpacer = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
+
+        self.horizontalLayout_2.addItem(self.horizontalSpacer)
 
         self.locked_label = QLabel(self.header_frame)
         self.locked_label.setObjectName(u"locked_label")
 
         self.horizontalLayout_2.addWidget(self.locked_label)
 
-        self.horizontalSpacer = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
+        self.toggle_lock_btn = QToolButton(self.header_frame)
+        self.toggle_lock_btn.setObjectName(u"toggle_lock_btn")
+        icon1 = QIcon()
+        icon1.addFile(u":/icon/lock.svg", QSize(), QIcon.Normal, QIcon.Off)
+        self.toggle_lock_btn.setIcon(icon1)
 
-        self.horizontalLayout_2.addItem(self.horizontalSpacer)
+        self.horizontalLayout_2.addWidget(self.toggle_lock_btn)
 
-        self.namespaces_layout = QHBoxLayout()
-        self.namespaces_layout.setObjectName(u"namespaces_layout")
+        self.save_btn = QToolButton(self.header_frame)
+        self.save_btn.setObjectName(u"save_btn")
+        icon2 = QIcon()
+        icon2.addFile(u":/icon/floppy_disk.svg", QSize(), QIcon.Normal, QIcon.Off)
+        self.save_btn.setIcon(icon2)
 
-        self.horizontalLayout_2.addLayout(self.namespaces_layout)
+        self.horizontalLayout_2.addWidget(self.save_btn)
 
 
         self.verticalLayout.addWidget(self.header_frame)
@@ -79,9 +96,9 @@ class Ui_AnimPicker(object):
         self.horizontalLayout.setContentsMargins(2, 2, 2, 2)
         self.zoom_reset_btn = QToolButton(self.footer_frame)
         self.zoom_reset_btn.setObjectName(u"zoom_reset_btn")
-        icon1 = QIcon()
-        icon1.addFile(u":/icon/reset.svg", QSize(), QIcon.Normal, QIcon.Off)
-        self.zoom_reset_btn.setIcon(icon1)
+        icon3 = QIcon()
+        icon3.addFile(u":/icon/reset.svg", QSize(), QIcon.Normal, QIcon.Off)
+        self.zoom_reset_btn.setIcon(icon3)
 
         self.horizontalLayout.addWidget(self.zoom_reset_btn)
 
@@ -101,8 +118,17 @@ class Ui_AnimPicker(object):
 
     def retranslateUi(self, AnimPicker):
         AnimPicker.setWindowTitle(QCoreApplication.translate("AnimPicker", u"Anim Picker", None))
+#if QT_CONFIG(statustip)
+        self.refresh_btn.setStatusTip(QCoreApplication.translate("AnimPicker", u"Refresh the available rigs.", None))
+#endif // QT_CONFIG(statustip)
         self.locked_label.setText(QCoreApplication.translate("AnimPicker", u"Locked", None))
         self.locked_label.setProperty("cssClasses", QCoreApplication.translate("AnimPicker", u"help", None))
+#if QT_CONFIG(statustip)
+        self.toggle_lock_btn.setStatusTip(QCoreApplication.translate("AnimPicker", u"Lock or unlock the picker for editing.", None))
+#endif // QT_CONFIG(statustip)
+#if QT_CONFIG(statustip)
+        self.zoom_reset_btn.setStatusTip(QCoreApplication.translate("AnimPicker", u"Reset the view to default.", None))
+#endif // QT_CONFIG(statustip)
         self.zoom_reset_btn.setText("")
         self.zoom_label.setText(QCoreApplication.translate("AnimPicker", u"1.0", None))
         self.zoom_label.setProperty("cssClasses", QCoreApplication.translate("AnimPicker", u"help", None))

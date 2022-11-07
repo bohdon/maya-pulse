@@ -2,21 +2,25 @@
 An anim picker for easily selecting controls while animating.
 """
 import logging
+from functools import partial
 from typing import List, Optional, Union
 from maya import OpenMaya, cmds
 import pymel.core as pm
 
-from ... import nodes
+from ... import nodes, rigs
 from ...colors import LinearColor
 from ...prefs import option_var_property
 from ...vendor.Qt import QtCore, QtGui, QtWidgets
 from ...vendor.Qt.QtCore import QPoint, QPointF, QRect, QSize, QSizeF
-
+from ...vendor import pymetanode as meta
 from ..core import PulseWindow
+from ..utils import clearLayout
 
 from ..gen.anim_picker import Ui_AnimPicker
 
 logger = logging.getLogger(__name__)
+
+PICKER_METACLASS = "pulse_animpicker"
 
 
 def scale_rect(rect: QRect, scale: float) -> QRect:
@@ -24,8 +28,51 @@ def scale_rect(rect: QRect, scale: float) -> QRect:
     return QRect(top_left, rect.size() * scale)
 
 
+def find_picker_nodes() -> List[pm.PyNode]:
+    """
+    Return all nodes in the scene that have picker metadata.
+    """
+    return meta.findMetaNodes(PICKER_METACLASS)
+
+
+def load_picker_from_node(node: pm.PyNode):
+    """
+    Load anim picker data from a node.
+
+    Args:
+        node: A pynode with picker data.
+    """
+    return meta.getMetaData(node, PICKER_METACLASS)
+
+
+def save_picker_to_node(picker_data: dict, node: pm.PyNode):
+    """
+    Save anim picker data to a node.
+
+    Args:
+        node: A PyNode to save the data on.
+    """
+    meta.setMetaData(node, PICKER_METACLASS, picker_data)
+
+
 class AnimPickerButton(QtWidgets.QPushButton):
-    def __init__(self, location: Union[QPointF, QPoint], size: QSize, node: Optional[str] = None, parent=None):
+    """
+    Represents a single button in the anim picker. Associated with one node in the scene,
+    and when this button is selected, so is the node and vice versa.
+    """
+
+    default_size = QSize(40, 40)
+
+    @classmethod
+    def from_data(cls, data: dict, parent=None):
+        """
+        Construct an AnimPickerButton from serialized data.
+        """
+        btn = AnimPickerButton(parent=parent)
+        btn.deserialize(data)
+        return btn
+
+    def __init__(self, location: QPointF = None, size: QSize = None, node: Optional[str] = None, parent=None):
         """
         Args:
             location: The center location of the button.
@@ -35,8 +82,14 @@ class AnimPickerButton(QtWidgets.QPushButton):
         """
         super(AnimPickerButton, self).__init__(parent=parent)
 
+        if location is None:
+            location = QPointF()
+
+        if size is None:
+            size = self.default_size
+
         # the geometry of this button at 1x zoom
-        self._location = QPointF(location)
+        self._location = location
         self._size = size
         # the node this button selects
         self.node = node
@@ -52,6 +105,23 @@ class AnimPickerButton(QtWidgets.QPushButton):
 
         self._update_node_info()
         self._update_style()
+
+    def serialize(self) -> dict:
+        data = {
+            "location": self._location.toTuple(),
+            "size": self._size.toTuple(),
+            "node": self.node,
+        }
+        return data
+
+    def deserialize(self, data: dict):
+        self._location = QPointF(*data.get("location", (0.0, 0.0)))
+        if "size" in data:
+            self._size = QSize(*data["size"])
+        if "node" in data:
+            self.node = data["node"]
+            self._update_node_info()
+            self._update_style()
 
     @property
     def location(self):
@@ -200,7 +270,6 @@ class AnimPickerPanel(QtWidgets.QWidget):
         self.is_locked = True
 
         self.rubber_band: Optional[QtWidgets.QRubberBand] = None
-        self.default_btn_size = QSize(40, 40)
         self.view_offset_raw = QPointF()
         self.grid_size = QPoint(10, 10)
         self.view_scale = 1.0
@@ -234,6 +303,39 @@ class AnimPickerPanel(QtWidgets.QWidget):
 
     def __del__(self):
         self._unregister_callbacks()
+
+    def serialize(self) -> dict:
+        # TODO: external model object, add undo/redo support, etc
+
+        # save basic data like view state
+        data = {"view_scale": self.view_scale, "view_offset": self.view_offset.toTuple(), "buttons": []}
+
+        # save buttons data
+        for btn in self.buttons:
+            btn_data = btn.serialize()
+            data["buttons"].append(btn_data)
+
+        return data
+
+    def deserialize(self, data: dict):
+        self.clear_all_buttons()
+        self.reset_view()
+
+        logger.info(f"Picker data: {data}")
+        if not data:
+            return
+
+        # load view data
+        self.view_scale = data.get("view_scale", 1.0)
+        self.view_offset_raw = QPointF(*data.get("view_offset", (0.0, 0.0)))
+
+        # load buttons
+        for btn_data in data.get("buttons", []):
+            btn = AnimPickerButton.from_data(btn_data, self)
+            self.add_button(btn)
+
+        self._on_view_changed()
+        self.repaint()
 
     def set_is_locked(self, value: bool):
         self.is_locked = value
@@ -345,8 +447,8 @@ class AnimPickerPanel(QtWidgets.QWidget):
         self.drag_last_pos = event.pos()
 
         if event.buttons() == QtCore.Qt.LeftButton and mods == QtCore.Qt.ShiftModifier and not self.is_locked:
-            location = self.inverse_transform_pos(event.localPos().toPoint())
-            self.placement_btn = self.add_picker_btn(location, self.default_btn_size)
+            location = QPointF(self.inverse_transform_pos(event.localPos().toPoint()))
+            self.placement_btn = self.create_button(location)
 
         elif mods == QtCore.Qt.AltModifier or (event.button() == QtCore.Qt.MiddleButton and self.is_locked):
             # start drag for pan or zoom, only allow middle-mouse-only when locked
@@ -519,7 +621,7 @@ class AnimPickerPanel(QtWidgets.QWidget):
         for btn in self.buttons:
             btn.set_is_selected(btn.is_node_selected(sel))
 
-    def add_picker_btn(self, location: QPoint, size: QSize):
+    def create_button(self, location: QPointF, size: QSize = None):
         """
         Add a picker button at the given unscaled location and size.
         """
@@ -530,10 +632,12 @@ class AnimPickerPanel(QtWidgets.QWidget):
             pm.select(sel[0], deselect=True)
 
         btn = AnimPickerButton(location, size, node, self)
+        self.add_button(btn)
+
+    def add_button(self, btn: AnimPickerButton):
         self._update_btn_geometry(btn)
         self.buttons.append(btn)
         btn.show()
-        return btn
 
     def delete_selected_buttons(self):
         sel_btns = [btn for btn in self.buttons if btn.is_selected()]
@@ -541,6 +645,12 @@ class AnimPickerPanel(QtWidgets.QWidget):
             btn.setParent(None)
             btn.deleteLater()
             self.buttons.remove(btn)
+
+    def clear_all_buttons(self):
+        for btn in self.buttons:
+            btn.setParent(None)
+            btn.deleteLater()
+        self.buttons.clear()
 
     def _update_btn_geometry(self, btn: AnimPickerButton):
         """
@@ -695,6 +805,12 @@ class AnimPickerWidget(QtWidgets.QWidget):
     def __init__(self, parent=None):
         super(AnimPickerWidget, self).__init__(parent=parent)
 
+        # the list of rigs in the scene, pickers are browsed by rig
+        self.rigs: List[pm.PyNode] = []
+        self._active_rig: Optional[pm.PyNode] = None
+
+        self.rig_buttons: List[QtWidgets.QPushButton] = []
+
         self.ui = Ui_AnimPicker()
         self.ui.setupUi(self)
 
@@ -705,9 +821,69 @@ class AnimPickerWidget(QtWidgets.QWidget):
 
         self.ui.toggle_lock_btn.clicked.connect(self.toggle_locked)
         self.ui.zoom_reset_btn.clicked.connect(self.picker_panel.reset_view)
+        self.ui.refresh_btn.clicked.connect(self._refresh_rigs)
+        self.ui.save_btn.clicked.connect(self._save_active_rig_picker)
 
         self._update_zoom_label()
         self._on_locked_changed()
+        self._refresh_rigs()
+
+    def _refresh_rigs(self):
+        self._active_rig = None
+        self._on_active_rig_changed()
+        self.rigs = rigs.get_all_rigs()
+        self.deserialize()
+
+        logger.info(f"Anim picker found {len(self.rigs)} rig(s)...")
+
+        clearLayout(self.ui.rigs_layout)
+        for rig in self.rigs:
+            btn = QtWidgets.QPushButton(self)
+            btn.setCheckable(True)
+            btn.setText(rig.nodeName())
+            btn.clicked.connect(partial(self._set_active_rig, rig))
+            self.rig_buttons.append(btn)
+            self.ui.rigs_layout.addWidget(btn)
+
+        if self.rigs:
+            self._set_active_rig(self.rigs[0])
+
+    def _set_active_rig(self, rig: pm.PyNode):
+        # could be a stale rig button, make sure the rig is valid
+        if rig:
+            self._active_rig = rig
+            self._open_rig_picker(self._active_rig)
+            self._on_active_rig_changed()
+
+    def _on_active_rig_changed(self):
+        self._refresh_active_rig_btn()
+        self.ui.save_btn.setEnabled(self._active_rig is not None)
+
+    def _refresh_active_rig_btn(self):
+        # highlight active rig button
+        for rig_btn in self.rig_buttons:
+            if self._active_rig and rig_btn.text() == self._active_rig.nodeName():
+                rig_btn.setChecked(True)
+            else:
+                rig_btn.setChecked(False)
+
+    def _open_rig_picker(self, rig: pm.PyNode):
+        picker_data = load_picker_from_node(rig)
+        if not picker_data:
+            logger.warning(f"{rig} has no anim picker data.")
+            return
+
+        logger.info(f"Loading picker from rig: {rig}")
+        self.deserialize(picker_data)
+
+    def _save_active_rig_picker(self):
+        """
+        Save the picker for the currently active rig to the rig node.
+        """
+        if self._active_rig:
+            picker_data = self.serialize()
+            save_picker_to_node(picker_data, self._active_rig)
+            logger.info(f"Saved picker to rig: {self._active_rig}")
 
     def _on_view_scale_changed(self, view_scale: float):
         self._update_zoom_label()
@@ -730,6 +906,20 @@ class AnimPickerWidget(QtWidgets.QWidget):
         else:
             self.ui.toggle_lock_btn.setIcon(QtGui.QIcon(":/icon/lock_open.svg"))
             self.ui.locked_label.setText("Unlocked")
+
+    def serialize(self) -> dict:
+        """
+        Serialize the current picker to data.
+        """
+        return self.picker_panel.serialize()
+
+    def deserialize(self, picker_data: dict = None):
+        """
+        Deserialize picker data for the active rig.
+        """
+        if not picker_data:
+            picker_data = {}
+        self.picker_panel.deserialize(picker_data)
 
 
 class AnimPickerWindow(PulseWindow):

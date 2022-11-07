@@ -43,6 +43,12 @@
        <verstretch>0</verstretch>
       </sizepolicy>
      </property>
+     <property name="minimumSize">
+      <size>
+       <width>0</width>
+       <height>30</height>
+      </size>
+     </property>
      <property name="frameShape">
       <enum>QFrame::StyledPanel</enum>
      </property>
@@ -51,7 +57,7 @@
      </property>
      <layout class="QHBoxLayout" name="horizontalLayout_2">
       <property name="spacing">
-       <number>2</number>
+       <number>4</number>
       </property>
       <property name="leftMargin">
        <number>2</number>
@@ -66,22 +72,18 @@
        <number>2</number>
       </property>
       <item>
-       <widget class="QToolButton" name="toggle_lock_btn">
+       <widget class="QToolButton" name="refresh_btn">
+        <property name="statusTip">
+         <string>Refresh the available rigs.</string>
+        </property>
         <property name="icon">
          <iconset resource="icons/icons.qrc">
-          <normaloff>:/icon/lock.svg</normaloff>:/icon/lock.svg</iconset>
+          <normaloff>:/icon/rotate_right.svg</normaloff>:/icon/rotate_right.svg</iconset>
         </property>
        </widget>
       </item>
       <item>
-       <widget class="QLabel" name="locked_label">
-        <property name="text">
-         <string>Locked</string>
-        </property>
-        <property name="cssClasses" stdset="0">
-         <string>help</string>
-        </property>
-       </widget>
+       <layout class="QHBoxLayout" name="rigs_layout"/>
       </item>
       <item>
        <spacer name="horizontalSpacer">
@@ -97,7 +99,33 @@
        </spacer>
       </item>
       <item>
-       <layout class="QHBoxLayout" name="namespaces_layout"/>
+       <widget class="QLabel" name="locked_label">
+        <property name="text">
+         <string>Locked</string>
+        </property>
+        <property name="cssClasses" stdset="0">
+         <string>help</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QToolButton" name="toggle_lock_btn">
+        <property name="statusTip">
+         <string>Lock or unlock the picker for editing.</string>
+        </property>
+        <property name="icon">
+         <iconset resource="icons/icons.qrc">
+          <normaloff>:/icon/lock.svg</normaloff>:/icon/lock.svg</iconset>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QToolButton" name="save_btn">
+        <property name="icon">
+         <iconset resource="icons/icons.qrc">
+          <normaloff>:/icon/floppy_disk.svg</normaloff>:/icon/floppy_disk.svg</iconset>
+        </property>
+       </widget>
       </item>
      </layout>
     </widget>
@@ -137,6 +165,9 @@
       </property>
       <item>
        <widget class="QToolButton" name="zoom_reset_btn">
+        <property name="statusTip">
+         <string>Reset the view to default.</string>
+        </property>
         <property name="text">
          <string/>
         </property>
