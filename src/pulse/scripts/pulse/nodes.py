@@ -1,5 +1,6 @@
 import logging
 from enum import IntEnum
+from typing import Optional
 
 import maya.cmds as cmds
 import pymel.core as pm
@@ -973,7 +974,7 @@ def are_nodes_aligned(node_a, node_b):
 # -------------
 
 
-def get_override_color(node) -> LinearColor:
+def get_override_color(node) -> Optional[LinearColor]:
     """
     Return the override color of a node.
 
@@ -981,8 +982,7 @@ def get_override_color(node) -> LinearColor:
         node (PyNode): A transform node
 
     Returns:
-        The color (RGB tuple), or None if color is
-        not overridden.
+        The color (RGB tuple), or None if color is not overridden.
     """
     shapes = node.getChildren(s=True)
     for shape in shapes:

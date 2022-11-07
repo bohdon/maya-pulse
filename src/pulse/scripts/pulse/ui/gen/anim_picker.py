@@ -18,15 +18,53 @@ class Ui_AnimPicker(object):
     def setupUi(self, AnimPicker):
         if not AnimPicker.objectName():
             AnimPicker.setObjectName(u"AnimPicker")
-        AnimPicker.resize(533, 470)
-        self.horizontalLayoutWidget = QWidget(AnimPicker)
-        self.horizontalLayoutWidget.setObjectName(u"horizontalLayoutWidget")
-        self.horizontalLayoutWidget.setGeometry(QRect(10, 10, 101, 25))
-        self.horizontalLayout = QHBoxLayout(self.horizontalLayoutWidget)
+        AnimPicker.resize(564, 510)
+        AnimPicker.setMinimumSize(QSize(200, 200))
+        self.verticalLayout = QVBoxLayout(AnimPicker)
+        self.verticalLayout.setSpacing(2)
+        self.verticalLayout.setObjectName(u"verticalLayout")
+        self.verticalLayout.setContentsMargins(2, 2, 2, 2)
+        self.header_frame = QFrame(AnimPicker)
+        self.header_frame.setObjectName(u"header_frame")
+        sizePolicy = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Maximum)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.header_frame.sizePolicy().hasHeightForWidth())
+        self.header_frame.setSizePolicy(sizePolicy)
+        self.header_frame.setFrameShape(QFrame.StyledPanel)
+        self.header_frame.setFrameShadow(QFrame.Raised)
+        self.horizontalLayout_2 = QHBoxLayout(self.header_frame)
+        self.horizontalLayout_2.setSpacing(2)
+        self.horizontalLayout_2.setObjectName(u"horizontalLayout_2")
+        self.horizontalLayout_2.setContentsMargins(2, 2, 2, 2)
+        self.horizontalSpacer = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
+
+        self.horizontalLayout_2.addItem(self.horizontalSpacer)
+
+        self.namespaces_layout = QHBoxLayout()
+        self.namespaces_layout.setObjectName(u"namespaces_layout")
+
+        self.horizontalLayout_2.addLayout(self.namespaces_layout)
+
+
+        self.verticalLayout.addWidget(self.header_frame)
+
+        self.panel_layout = QVBoxLayout()
+        self.panel_layout.setObjectName(u"panel_layout")
+
+        self.verticalLayout.addLayout(self.panel_layout)
+
+        self.footer_frame = QFrame(AnimPicker)
+        self.footer_frame.setObjectName(u"footer_frame")
+        sizePolicy.setHeightForWidth(self.footer_frame.sizePolicy().hasHeightForWidth())
+        self.footer_frame.setSizePolicy(sizePolicy)
+        self.footer_frame.setFrameShape(QFrame.StyledPanel)
+        self.footer_frame.setFrameShadow(QFrame.Raised)
+        self.horizontalLayout = QHBoxLayout(self.footer_frame)
+        self.horizontalLayout.setSpacing(2)
         self.horizontalLayout.setObjectName(u"horizontalLayout")
-        self.horizontalLayout.setSizeConstraint(QLayout.SetFixedSize)
-        self.horizontalLayout.setContentsMargins(0, 0, 0, 0)
-        self.zoom_reset_btn = QToolButton(self.horizontalLayoutWidget)
+        self.horizontalLayout.setContentsMargins(2, 2, 2, 2)
+        self.zoom_reset_btn = QToolButton(self.footer_frame)
         self.zoom_reset_btn.setObjectName(u"zoom_reset_btn")
         icon = QIcon()
         icon.addFile(u":/icon/reset.svg", QSize(), QIcon.Normal, QIcon.Off)
@@ -34,15 +72,13 @@ class Ui_AnimPicker(object):
 
         self.horizontalLayout.addWidget(self.zoom_reset_btn)
 
-        self.label = QLabel(self.horizontalLayoutWidget)
-        self.label.setObjectName(u"label")
-
-        self.horizontalLayout.addWidget(self.label)
-
-        self.zoom_label = QLabel(self.horizontalLayoutWidget)
+        self.zoom_label = QLabel(self.footer_frame)
         self.zoom_label.setObjectName(u"zoom_label")
 
         self.horizontalLayout.addWidget(self.zoom_label)
+
+
+        self.verticalLayout.addWidget(self.footer_frame)
 
 
         self.retranslateUi(AnimPicker)
@@ -53,7 +89,7 @@ class Ui_AnimPicker(object):
     def retranslateUi(self, AnimPicker):
         AnimPicker.setWindowTitle(QCoreApplication.translate("AnimPicker", u"Anim Picker", None))
         self.zoom_reset_btn.setText("")
-        self.label.setText(QCoreApplication.translate("AnimPicker", u"Zoom:", None))
         self.zoom_label.setText(QCoreApplication.translate("AnimPicker", u"1.0", None))
+        self.zoom_label.setProperty("cssClasses", QCoreApplication.translate("AnimPicker", u"help", None))
     # retranslateUi
 
