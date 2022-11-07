@@ -37,6 +37,19 @@ class Ui_AnimPicker(object):
         self.horizontalLayout_2.setSpacing(2)
         self.horizontalLayout_2.setObjectName(u"horizontalLayout_2")
         self.horizontalLayout_2.setContentsMargins(2, 2, 2, 2)
+        self.toggle_lock_btn = QToolButton(self.header_frame)
+        self.toggle_lock_btn.setObjectName(u"toggle_lock_btn")
+        icon = QIcon()
+        icon.addFile(u":/icon/lock.svg", QSize(), QIcon.Normal, QIcon.Off)
+        self.toggle_lock_btn.setIcon(icon)
+
+        self.horizontalLayout_2.addWidget(self.toggle_lock_btn)
+
+        self.locked_label = QLabel(self.header_frame)
+        self.locked_label.setObjectName(u"locked_label")
+
+        self.horizontalLayout_2.addWidget(self.locked_label)
+
         self.horizontalSpacer = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
 
         self.horizontalLayout_2.addItem(self.horizontalSpacer)
@@ -66,9 +79,9 @@ class Ui_AnimPicker(object):
         self.horizontalLayout.setContentsMargins(2, 2, 2, 2)
         self.zoom_reset_btn = QToolButton(self.footer_frame)
         self.zoom_reset_btn.setObjectName(u"zoom_reset_btn")
-        icon = QIcon()
-        icon.addFile(u":/icon/reset.svg", QSize(), QIcon.Normal, QIcon.Off)
-        self.zoom_reset_btn.setIcon(icon)
+        icon1 = QIcon()
+        icon1.addFile(u":/icon/reset.svg", QSize(), QIcon.Normal, QIcon.Off)
+        self.zoom_reset_btn.setIcon(icon1)
 
         self.horizontalLayout.addWidget(self.zoom_reset_btn)
 
@@ -88,6 +101,8 @@ class Ui_AnimPicker(object):
 
     def retranslateUi(self, AnimPicker):
         AnimPicker.setWindowTitle(QCoreApplication.translate("AnimPicker", u"Anim Picker", None))
+        self.locked_label.setText(QCoreApplication.translate("AnimPicker", u"Locked", None))
+        self.locked_label.setProperty("cssClasses", QCoreApplication.translate("AnimPicker", u"help", None))
         self.zoom_reset_btn.setText("")
         self.zoom_label.setText(QCoreApplication.translate("AnimPicker", u"1.0", None))
         self.zoom_label.setProperty("cssClasses", QCoreApplication.translate("AnimPicker", u"help", None))

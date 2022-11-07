@@ -66,6 +66,24 @@
        <number>2</number>
       </property>
       <item>
+       <widget class="QToolButton" name="toggle_lock_btn">
+        <property name="icon">
+         <iconset resource="icons/icons.qrc">
+          <normaloff>:/icon/lock.svg</normaloff>:/icon/lock.svg</iconset>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="locked_label">
+        <property name="text">
+         <string>Locked</string>
+        </property>
+        <property name="cssClasses" stdset="0">
+         <string>help</string>
+        </property>
+       </widget>
+      </item>
+      <item>
        <spacer name="horizontalSpacer">
         <property name="orientation">
          <enum>Qt::Horizontal</enum>

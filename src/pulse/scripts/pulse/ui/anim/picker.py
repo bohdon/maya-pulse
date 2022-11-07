@@ -8,6 +8,7 @@ import pymel.core as pm
 
 from ... import nodes
 from ...colors import LinearColor
+from ...prefs import option_var_property
 from ...vendor.Qt import QtCore, QtGui, QtWidgets
 from ...vendor.Qt.QtCore import QPoint, QPointF, QRect, QRectF, QSize, QSizeF
 
@@ -39,21 +40,29 @@ class AnimPickerButton(QtWidgets.QPushButton):
     def is_selected(self):
         return self._is_selected
 
-    def select(self):
-        """Select this button's node."""
-        try:
-            pm.select(self.node, add=True)
-        except TypeError as e:
-            logger.warning(f"{e}")
-        self.set_is_selected(True)
+    def select(self, is_pre_select=False):
+        """
+        Select this button's node.
 
-    def deselect(self):
+        Args:
+            is_pre_select: If true, don't select the nodes in the scene, just indicate
+                visually that the button is selected.
+        """
+        self.set_is_selected(True)
+        if not is_pre_select:
+            try:
+                pm.select(self.node, add=True)
+            except TypeError as e:
+                logger.warning(f"{e}")
+
+    def deselect(self, is_pre_select=False):
         """Deselect the button's node."""
-        try:
-            pm.select(self.node, deselect=True)
-        except TypeError as e:
-            pass
         self.set_is_selected(False)
+        if not is_pre_select:
+            try:
+                pm.select(self.node, deselect=True)
+            except TypeError as e:
+                pass
 
     def set_is_selected(self, value: bool):
         self._is_selected = value
@@ -86,6 +95,9 @@ class AnimPickerPanel(QtWidgets.QWidget):
     def __init__(self, parent=None):
         super(AnimPickerPanel, self).__init__(parent=parent)
 
+        # is the picker currently locked for editing?
+        self.is_locked = True
+
         self.rubber_band: Optional[QtWidgets.QRubberBand] = None
         self.default_btn_size = QSize(40, 40)
         self.view_offset_raw = QPointF()
@@ -93,51 +105,35 @@ class AnimPickerPanel(QtWidgets.QWidget):
         self.view_scale_min = 0.25
         self.view_scale_max = 3.0
         self.wheel_zoom_sensitivity = 0.001
-        self.select_on_drag = True
-        # the current list of selected buttons
-        self.selection: List[AnimPickerButton] = []
+        self.drag_zoom_sensitivity = 0.002
+        # if true, update scene selection while dragging
+        self.select_on_drag = False
+        self.pending_node_selection: List[pm.PyNode] = []
         self.selection_rect = QRect()
         self.is_drag_selecting = False
         # the list of all buttons
         self.buttons: List[AnimPickerButton] = []
         self.cb_ids = []
-        self.drag_pan_last_pos = QPoint()
+        # last mouse position during drags, used for panning and zooming
+        self.drag_last_pos = QPoint()
 
         layout = QtWidgets.QVBoxLayout(self)
         layout.setMargin(0)
-        frame = QtWidgets.QFrame(self)
-        frame.setStyleSheet("background-color: rgba(255, 255, 255, 10%)")
-        layout.addWidget(frame)
+        self.bg_frame = QtWidgets.QFrame(self)
+        self.bg_frame.setStyleSheet("background-color: rgba(255, 255, 255, 10%)")
+        layout.addWidget(self.bg_frame)
+
+        self.setFocusPolicy(QtCore.Qt.StrongFocus)
 
     def __del__(self):
         self._unregister_callbacks()
 
-    def paintEvent(self, event: QtGui.QPaintEvent):
-        super(AnimPickerPanel, self).paintEvent(event)
-
-        painter = QtGui.QPainter(self)
-        painter.setPen(QtGui.QColor(0, 0, 0, 30))
-
-        # draw axes
-        rect = self.rect()
-        # the axes origin in view-space
-        origin_x, origin_y = self.transform_pos(QPoint()).toTuple()
-        if 0 < origin_y < rect.bottom():
-            p1 = QPoint(rect.left(), origin_y)
-            p2 = QPoint(rect.right(), origin_y)
-            painter.drawLine(p1, p2)
-        if 0 < origin_x < rect.right():
-            p3 = QPoint(origin_x, rect.top())
-            p4 = QPoint(origin_x, rect.bottom())
-            painter.drawLine(p3, p4)
-
-    def showEvent(self, event: QtGui.QShowEvent):
-        super(AnimPickerPanel, self).showEvent(event)
-        self._register_callbacks()
-
-    def hideEvent(self, event: QtGui.QHideEvent):
-        super(AnimPickerPanel, self).hideEvent(event)
-        self._unregister_callbacks()
+    def set_is_locked(self, value: bool):
+        self.is_locked = value
+        if self.is_locked:
+            self.bg_frame.setStyleSheet("background-color: rgba(255, 255, 255, 10%)")
+        else:
+            self.bg_frame.setStyleSheet("background-color: rgba(0, 0, 0, 20%)")
 
     def _register_callbacks(self):
         if not self.cb_ids:
@@ -182,29 +178,64 @@ class AnimPickerPanel(QtWidgets.QWidget):
     def inverse_transform_pos(self, point: QPoint) -> QPoint:
         return (QPointF(point - self.center_view_offset) * (1.0 / self.view_scale)).toPoint()
 
+    def paintEvent(self, event: QtGui.QPaintEvent):
+        super(AnimPickerPanel, self).paintEvent(event)
+
+        painter = QtGui.QPainter(self)
+        painter.setPen(QtGui.QColor(0, 0, 0, 30))
+
+        # draw axes
+        rect = self.rect()
+        # the axes origin in view-space
+        origin_x, origin_y = self.transform_pos(QPoint()).toTuple()
+        if 0 < origin_y < rect.bottom():
+            p1 = QPoint(rect.left(), origin_y)
+            p2 = QPoint(rect.right(), origin_y)
+            painter.drawLine(p1, p2)
+        if 0 < origin_x < rect.right():
+            p3 = QPoint(origin_x, rect.top())
+            p4 = QPoint(origin_x, rect.bottom())
+            painter.drawLine(p3, p4)
+
+    def showEvent(self, event: QtGui.QShowEvent):
+        super(AnimPickerPanel, self).showEvent(event)
+        self._register_callbacks()
+
+    def hideEvent(self, event: QtGui.QHideEvent):
+        super(AnimPickerPanel, self).hideEvent(event)
+        self._unregister_callbacks()
+
+    def keyPressEvent(self, event: QtGui.QKeyEvent):
+        if event.key() == QtCore.Qt.Key_Backspace or event.key() == QtCore.Qt.Key_Delete:
+            if not self.is_locked:
+                self.delete_selected_buttons()
+            # consume the key press anyway, in case the user thinks they are in editing mode
+            # TODO: show 'locked' feedback on attempted edit
+            return
+
+        super(AnimPickerPanel, self).keyPressEvent(event)
+
     def wheelEvent(self, event: QtGui.QWheelEvent):
         # zoom in and out
-        old_view_scale = self.view_scale
         delta_scale = event.delta() * self.wheel_zoom_sensitivity
-        self.set_view_scale(self.view_scale + delta_scale)
-        real_delta_scale = self.view_scale - old_view_scale
-
-        # apply zoom centered on panel position
-        focus_pos_ws = QPointF(self.inverse_transform_pos(event.pos()))
-        delta_offset = focus_pos_ws * -real_delta_scale
-        self.set_view_offset_raw(self.view_offset_raw + delta_offset)
+        self.add_view_scale(delta_scale, event.pos())
 
     def mousePressEvent(self, event: QtGui.QMouseEvent):
-        if event.modifiers() & QtCore.Qt.ShiftModifier:
+        btns = event.buttons()
+        mods = event.modifiers()
+
+        if btns & QtCore.Qt.LeftButton and mods & QtCore.Qt.ShiftModifier and not self.is_locked:
             location = self.inverse_transform_pos(event.localPos().toPoint())
             self.add_picker_btn(location, self.default_btn_size)
 
-        elif event.modifiers() & QtCore.Qt.AltModifier:
-            self.drag_pan_last_pos = event.pos()
+        elif mods & QtCore.Qt.AltModifier:
+            # start drag for pan or zoom
+            self.drag_last_pos = event.pos()
 
-        else:
+        elif btns & QtCore.Qt.LeftButton:
             # start selection
-            self.start_selection(event.pos())
+            additive = bool(mods & QtCore.Qt.ShiftModifier)
+            self.start_selection(event.pos(), additive)
             if self.is_drag_selecting:
                 if not self.rubber_band:
                     self.rubber_band = QtWidgets.QRubberBand(QtWidgets.QRubberBand.Rectangle, self)
@@ -212,38 +243,73 @@ class AnimPickerPanel(QtWidgets.QWidget):
                 self.rubber_band.show()
 
     def mouseMoveEvent(self, event: QtGui.QMouseEvent):
-        if event.modifiers() & QtCore.Qt.AltModifier:
-            # drag panning
-            delta = event.pos() - self.drag_pan_last_pos
-            self.set_view_offset_raw(self.view_offset_raw + delta)
-            self.drag_pan_last_pos = event.pos()
-
-        elif self.is_drag_selecting:
+        btns = event.buttons()
+        mods = event.modifiers()
+        if self.is_drag_selecting:
             self.update_selection(event.pos())
             if self.rubber_band:
                 self.rubber_band.setGeometry(self.selection_rect.normalized())
 
+        elif mods & QtCore.Qt.AltModifier:
+            delta: QPoint = event.pos() - self.drag_last_pos
+            if btns & QtCore.Qt.RightButton:
+                # drag zooming
+                delta_zoom = (delta.x() + delta.y()) * self.drag_zoom_sensitivity
+                self.add_view_scale(delta_zoom, self.panel_center)
+            elif btns & QtCore.Qt.MiddleButton | QtCore.Qt.LeftButton:
+                # drag panning
+                self.set_view_offset_raw(self.view_offset_raw + delta)
+            self.drag_last_pos = event.pos()
+
     def mouseReleaseEvent(self, event: QtGui.QMouseEvent):
+        mods = event.modifiers()
         if self.is_drag_selecting:
-            self.finish_selection(event.pos())
+            operation = "replace"
+            if mods & QtCore.Qt.ShiftModifier:
+                operation = "add"
+            elif mods & QtCore.Qt.ControlModifier:
+                operation = "deselect"
+            self.finish_selection(event.pos(), operation)
             if self.rubber_band:
                 self.rubber_band.hide()
 
-    def start_selection(self, origin: QPoint):
-        pm.select(clear=True)
+    def start_selection(self, origin: QPoint, additive=False):
+        if self.select_on_drag and not additive:
+            pm.select(clear=True)
         self.is_drag_selecting = True
         self.selection_rect = QRect(origin, QSize())
 
     def update_selection(self, pos: QPoint):
         # always set bottom right to preserve direction, use normalize when needed
         self.selection_rect.setBottomRight(pos)
-        if self.select_on_drag:
-            self.select_buttons_in_rect(self.selection_rect.normalized())
+        self.select_buttons_in_rect(self.selection_rect.normalized(), is_pre_select=not self.select_on_drag)
 
-    def finish_selection(self, pos: QPoint):
+    def finish_selection(self, pos: QPoint, operation="replace"):
+        """
+        Finish the current drag selection.
+
+        Args:
+            pos: The last position of the drag.
+            operation: The operation to perform, 'replace', 'add', or 'subtract'. Does not apply
+                if using `select_on_drag`.
+        """
         self.is_drag_selecting = False
         self.selection_rect.setBottomRight(pos)
-        self.select_buttons_in_rect(self.selection_rect.normalized())
+        if self.select_on_drag:
+            self.select_buttons_in_rect(self.selection_rect.normalized())
+        else:
+            self.select_buttons_in_rect(self.selection_rect.normalized(), is_pre_select=True)
+            self.commit_selections(operation)
+
+    def add_view_scale(self, delta_scale: float, focus_point: QPoint):
+        old_view_scale = self.view_scale
+        self.set_view_scale(self.view_scale + delta_scale)
+        real_delta_scale = self.view_scale - old_view_scale
+
+        # apply zoom centered on panel position
+        focus_pos_ws = QPointF(self.inverse_transform_pos(focus_point))
+        delta_offset = focus_pos_ws * -real_delta_scale
+        self.set_view_offset_raw(self.view_offset_raw + delta_offset)
 
     def set_view_scale(self, scale: float):
         self.view_scale = max(min(scale, self.view_scale_max), self.view_scale_min)
@@ -287,6 +353,13 @@ class AnimPickerPanel(QtWidgets.QWidget):
         self.buttons.append(btn)
         btn.show()
 
+    def delete_selected_buttons(self):
+        sel_btns = [btn for btn in self.buttons if btn.is_selected()]
+        for btn in sel_btns:
+            btn.setParent(None)
+            btn.deleteLater()
+            self.buttons.remove(btn)
+
     def get_buttons_in_rect(self, rect: QRect):
         """
         Return all buttons intersecting a rect.
@@ -298,25 +371,61 @@ class AnimPickerPanel(QtWidgets.QWidget):
             if btn.geometry().intersects(rect):
                 yield btn
 
-    def select_buttons_in_rect(self, rect: QRect):
+    def select_buttons_in_rect(self, rect: QRect, is_pre_select=False):
         """
         Select all buttons that intersect a rectangle.
 
         Args:
             rect: A rectangle in view space.
+            is_pre_select: If true, don't change the scene selection, accrue a pending list
+                of nodes to select and then commit the selection using `commit_selections`.
         """
-        self.selection.clear()
         for btn in self.buttons:
             is_intersecting = btn.geometry().intersects(rect)
             if is_intersecting:
                 if not btn.is_selected():
-                    self.selection.append(btn)
-                    btn.select()
+                    btn.select(is_pre_select=is_pre_select)
+                    if is_pre_select:
+                        self.pending_node_selection.append(btn.node)
             elif btn.is_selected():
-                btn.deselect()
+                btn.deselect(is_pre_select=is_pre_select)
+                if is_pre_select and btn.node in self.pending_node_selection:
+                    self.pending_node_selection.remove(btn.node)
+
+    def cancel_selections(self):
+        self.pending_node_selection.clear()
+
+    def commit_selections(self, operation="replace"):
+        """
+        Args:
+            operation: The operation to perform, 'replace', 'add', or 'deselect'.
+        """
+        op_kwargs = {}
+        if operation == "replace":
+            op_kwargs["replace"] = True
+        elif operation == "add":
+            op_kwargs["add"] = True
+        elif operation == "deselect":
+            op_kwargs["deselect"] = True
+        try:
+            pm.select(self.pending_node_selection, **op_kwargs)
+        except TypeError as e:
+            logger.warning("{e}")
+        finally:
+            self.pending_node_selection.clear()
 
 
 class AnimPickerWidget(QtWidgets.QWidget):
+    is_locked = option_var_property("pulse.anim.pickerLocked", True)
+
+    def set_is_locked(self, value: bool):
+        if self.is_locked != value:
+            self.is_locked = value
+            self._on_locked_changed()
+
+    # called when the locked state of the picker has changed
+    lockedChanged = QtCore.Signal(bool)
+
     def __init__(self, parent=None):
         super(AnimPickerWidget, self).__init__(parent=parent)
 
@@ -328,8 +437,11 @@ class AnimPickerWidget(QtWidgets.QWidget):
         self.picker_panel.viewOffsetChanged.connect(self._on_view_offset_changed)
         self.ui.panel_layout.addWidget(self.picker_panel)
 
+        self.ui.toggle_lock_btn.clicked.connect(self.toggle_locked)
         self.ui.zoom_reset_btn.clicked.connect(self.picker_panel.reset_view)
+
         self._update_zoom_label()
+        self._on_locked_changed()
 
     def _on_view_scale_changed(self, view_scale: float):
         self._update_zoom_label()
@@ -340,6 +452,18 @@ class AnimPickerWidget(QtWidgets.QWidget):
     def _update_zoom_label(self):
         panel = self.picker_panel
         self.ui.zoom_label.setText(f"{panel.view_scale:.02f} ({panel.view_offset.x()}, {panel.view_offset.y()})")
+
+    def toggle_locked(self):
+        self.set_is_locked(not self.is_locked)
+
+    def _on_locked_changed(self):
+        self.picker_panel.set_is_locked(self.is_locked)
+        if self.is_locked:
+            self.ui.toggle_lock_btn.setIcon(QtGui.QIcon(":/icon/lock.svg"))
+            self.ui.locked_label.setText("Locked")
+        else:
+            self.ui.toggle_lock_btn.setIcon(QtGui.QIcon(":/icon/lock_open.svg"))
+            self.ui.locked_label.setText("Unlocked")
 
 
 class AnimPickerWindow(PulseWindow):
