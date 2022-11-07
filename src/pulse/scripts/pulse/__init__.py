@@ -28,7 +28,7 @@ def reload():
     except:
         pass
 
-    pm.unloadPlugin('pulse')
+    pm.unloadPlugin('pulse', force=True)
 
     try:
         ui.destroy_ui_model_instances()
