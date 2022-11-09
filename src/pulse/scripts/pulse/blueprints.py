@@ -84,7 +84,7 @@ class Blueprint(object):
         # the config file to use when designing this Blueprint
         self.config_file_path: str = get_default_config_file()
         # the config, automatically loaded when calling `get_config`
-        self.config: Optional[dict] = None
+        self._config: Optional[dict] = None
 
     def add_missing_settings(self):
         """
@@ -218,9 +218,9 @@ class Blueprint(object):
         Return the config for this Blueprint.
         Load the config from disk if it hasn't been loaded yet.
         """
-        if self.config is None and self.config_file_path:
+        if self._config is None and self.config_file_path:
             self.load_config()
-        return self.config
+        return self._config
 
     def load_config(self):
         """
@@ -228,7 +228,7 @@ class Blueprint(object):
         Reloads the config even if it is already loaded.
         """
         if self.config_file_path:
-            self.config = _load_config(self.config_file_path)
+            self._config = _load_config(self.config_file_path)
 
 
 class BlueprintFile(object):
@@ -726,7 +726,7 @@ class BlueprintBuilder(object):
             # try-catch each step, so we can stumble over
             # problematic steps without crashing the whole build
             try:
-                for action in step.action_iterator():
+                for action in step.action_iterator(self.blueprint.get_config()):
                     yield step, action
             except Exception as exc:
                 self.on_step_error(step, step.action_proxy, exc=exc)

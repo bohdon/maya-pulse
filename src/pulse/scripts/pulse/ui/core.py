@@ -885,9 +885,7 @@ class BlueprintUIModel(QtCore.QObject):
         step.set_name(targetName)
 
         if step.name != oldName:
-            index = self.buildStepTreeModel.indexByStep(step)
-            self.buildStepTreeModel.dataChanged.emit(index, index, [])
-            self.modify()
+            self._emit_step_changed(step)
 
         return step.get_full_path()
 
@@ -1002,9 +1000,7 @@ class BlueprintUIModel(QtCore.QObject):
 
         step.action_proxy.deserialize(data)
 
-        index = self.buildStepTreeModel.indexByStepPath(stepPath)
-        self.buildStepTreeModel.dataChanged.emit(index, index, [])
-        self.modify()
+        self._emit_step_changed(step)
 
     def getActionAttr(self, attrPath, variantIndex=-1):
         """
@@ -1068,9 +1064,7 @@ class BlueprintUIModel(QtCore.QObject):
             if attr:
                 attr.set_value(value)
 
-        index = self.buildStepTreeModel.indexByStepPath(stepPath)
-        self.buildStepTreeModel.dataChanged.emit(index, index, [])
-        self.modify()
+        self._emit_step_changed(step)
 
     def isActionAttrVariant(self, attrPath):
         stepPath, attrName = attrPath.split(".")
@@ -1103,7 +1097,40 @@ class BlueprintUIModel(QtCore.QObject):
         else:
             step.action_proxy.remove_variant_attr(attrName)
 
-        index = self.buildStepTreeModel.indexByStepPath(stepPath)
+        self._emit_step_changed(step)
+
+    def isActionMirrored(self, stepPath) -> bool:
+        """Return whether a build action is mirrored."""
+        step = self.getStep(stepPath)
+        if not step:
+            return False
+
+        if not step.is_action():
+            LOG.error("setIsActionMirrored: %s is not an action", step)
+            return False
+
+        return step.action_proxy.is_mirrored
+
+    def setIsActionMirrored(self, stepPath, isMirrored):
+        """Set whether a build action is mirrored."""
+        if self.isReadOnly():
+            LOG.error("setIsActionMirrored: Cannot edit readonly Blueprint")
+            return
+
+        step = self.getStep(stepPath)
+        if not step:
+            return
+
+        if not step.is_action():
+            LOG.error("setIsActionMirrored: %s is not an action", step)
+            return
+
+        step.action_proxy.is_mirrored = isMirrored
+
+        self._emit_step_changed(step)
+
+    def _emit_step_changed(self, step: BuildStep):
+        index = self.buildStepTreeModel.indexByStep(step)
         self.buildStepTreeModel.dataChanged.emit(index, index, [])
         self.modify()
 
@@ -1360,21 +1387,29 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
             return step.name
 
         elif role == QtCore.Qt.DecorationRole:
-            iconName: str
+            icon_name: str
             if not step.is_action():
                 if step.is_disabled_in_hierarchy():
-                    iconName = "step_group_disabled"
+                    icon_name = "step_group_disabled"
                 else:
-                    iconName = "step_group"
+                    icon_name = "step_group"
             else:
-                if step.is_disabled_in_hierarchy():
-                    iconName = "step_action_disabled"
+                is_disabled = step.is_disabled_in_hierarchy()
+                is_sym = step.action_proxy.is_mirrored
+                if is_disabled:
+                    if is_sym:
+                        icon_name = "step_action_sym_disabled"
+                    else:
+                        icon_name = "step_action_disabled"
                 elif step.has_warnings():
-                    iconName = "warning"
+                    icon_name = "warning"
                 else:
-                    iconName = "step_action"
+                    if is_sym:
+                        icon_name = "step_action_sym"
+                    else:
+                        icon_name = "step_action"
 
-            return QtGui.QIcon(f":/icon/{iconName}.svg")
+            return QtGui.QIcon(f":/icon/{icon_name}.svg")
 
         elif role == QtCore.Qt.SizeHintRole:
             return QtCore.QSize(0, 20)

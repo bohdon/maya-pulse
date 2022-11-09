@@ -25,6 +25,8 @@
     <file>spell_check.svg</file>
     <file>step_action.svg</file>
     <file>step_action_disabled.svg</file>
+    <file>step_action_sym.svg</file>
+    <file>step_action_sym_disabled.svg</file>
     <file>step_group.svg</file>
     <file>step_group_disabled.svg</file>
     <file>validate.svg</file>

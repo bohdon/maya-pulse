@@ -870,6 +870,8 @@ class BuildActionProxy(BuildActionData):
         self._variant_attr_names: List[str] = []
         # list of all variants containing their own subset of attributes
         self._variants: List[BuildActionDataVariant] = []
+        # when True, also generate mirrored actions for this proxy
+        self.is_mirrored = False
 
     def get_display_name(self):
         """
@@ -1047,6 +1049,8 @@ class BuildActionProxy(BuildActionData):
 
     def serialize(self):
         data = super(BuildActionProxy, self).serialize()
+        if self.is_mirrored:
+            data["is_mirrored"] = True
         if self._variant_attr_names:
             if self.is_valid():
                 # filter out unknown attributes
@@ -1061,6 +1065,7 @@ class BuildActionProxy(BuildActionData):
 
     def deserialize(self, data):
         super(BuildActionProxy, self).deserialize(data)
+        self.is_mirrored = data.get("is_mirrored", False)
         self._variant_attr_names = data.get("variantAttrs", [])
         self._variants = [self.deserialize_variant(v) for v in data.get("variants", [])]
 
@@ -1087,12 +1092,16 @@ class BuildActionProxy(BuildActionData):
         variant.deserialize(data)
         return variant
 
-    def action_iterator(self) -> Iterable["BuildAction"]:
+    def action_iterator(self, config: dict) -> Iterable["BuildAction"]:
         """
-        Generator that yields all the BuildActions represented
-        by this proxy. If variants are in use, constructs a BuildAction
-        for each set of variant attribute values.
+        Generator that yields all the BuildActions represented by this proxy.
+        Expands variants and builds mirrored actions if applicable.
+
+        Args:
+            config: The blueprint config.
         """
+        from . import sym
+
         if not self.is_action_id_valid():
             raise Exception(f"BuildActionProxy has no action id: {self}")
         if self.is_missing_spec():
@@ -1117,6 +1126,20 @@ class BuildActionProxy(BuildActionData):
         else:
             # no variants, just create one action
             yield BuildAction.from_data(_copy_data(self.serialize()))
+
+        if self.is_mirrored:
+            # create a copy of this proxy
+            mirror_action = BuildActionProxy()
+            mirror_action.deserialize(self.serialize())
+
+            # mirror the values
+            mirror_op = sym.MirrorActionUtil(config)
+            mirror_op.mirror_action(self, mirror_action)
+
+            # run the mirrored action's generator, disabling mirroring first
+            mirror_action.is_mirrored = False
+            for action in mirror_action.action_iterator(config):
+                yield action
 
 
 class BuildAction(BuildActionData):
@@ -1690,12 +1713,15 @@ class BuildStep(object):
             for descendant in child.child_iterator():
                 yield descendant
 
-    def action_iterator(self) -> Iterable[BuildAction]:
+    def action_iterator(self, config: dict) -> Iterable[BuildAction]:
         """
         Return a generator that yields all actions for this step.
+
+        Args:
+            config: The blueprint config.
         """
         if self._action_proxy:
-            for elem in self._action_proxy.action_iterator():
+            for elem in self._action_proxy.action_iterator(config):
                 yield elem
 
     def get_validate_results(self):

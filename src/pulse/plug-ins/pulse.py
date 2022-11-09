@@ -402,6 +402,55 @@ class PulseSetIsVariantAttrCmd(PulseCmdBase):
 CMD_CLASSES.append(PulseSetIsVariantAttrCmd)
 
 
+class PulseSetIsActionMirroredCmd(PulseCmdBase):
+    """
+    Command to change whether a Pulse BuildAction is mirrored or not.
+    """
+
+    cmdName = "pulseSetIsActionMirrored"
+
+    # the full path to the step, e.g. 'My/Build/Step'
+    stepPathArgType = om.MSyntax.kString
+    # whether the action should be mirrored
+    valueArgType = om.MSyntax.kBoolean
+    numArgs = 2
+
+    @staticmethod
+    def createCmd():
+        return PulseSetIsActionMirroredCmd()
+
+    @staticmethod
+    def createSyntax():
+        syntax = om.MSyntax()
+        syntax.addArg(PulseSetIsActionMirroredCmd.stepPathArgType)
+        syntax.addArg(PulseSetIsActionMirroredCmd.valueArgType)
+        return syntax
+
+    def doIt(self, args):
+        self.parseArguments(args)
+        self.redoIt()
+
+    def parseArguments(self, args):
+        argparser = self.getArgParser(args)
+        self.stepPath = argparser.commandArgumentString(0)
+        self.newValue = argparser.commandArgumentBool(1)
+
+    def redoIt(self):
+        blueprintModel = getBlueprintModel()
+        if blueprintModel:
+            # TODO: fail if not changing anything
+            self.oldValue = blueprintModel.isActionMirrored(self.stepPath)
+            blueprintModel.setIsActionMirrored(self.stepPath, self.newValue)
+
+    def undoIt(self):
+        blueprintModel = getBlueprintModel()
+        if blueprintModel:
+            blueprintModel.setIsActionAttrVariant(self.stepPath, self.oldValue)
+
+
+CMD_CLASSES.append(PulseSetIsActionMirroredCmd)
+
+
 def initializePlugin(plugin):
     pluginFn = om.MFnPlugin(plugin)
     for cmd in CMD_CLASSES:

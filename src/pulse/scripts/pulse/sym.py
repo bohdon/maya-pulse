@@ -7,6 +7,7 @@ from typing import List, Optional, Tuple
 import pymel.core as pm
 
 from .blueprints import Blueprint
+from .build_items import BuildActionProxy, BuildActionAttribute, BuildActionAttributeType
 from .vendor import pymetanode as meta
 from . import editor_utils
 from . import joints
@@ -1154,3 +1155,87 @@ def counter_rotate_for_mirrored_joint(matrix):
         for col in range(3):
             row[col] *= -1
     return pm.dt.Matrix(x, y, z)
+
+
+class MirrorActionUtil(object):
+    """
+    A util class for mirroring BuildAction data.
+    """
+
+    def __init__(self, config: dict):
+        self.config = config
+
+    def mirror_action(self, src_action: BuildActionProxy, dst_action: BuildActionProxy):
+        """
+        Mirror a BuildActionProxy. Does not handle syncing other settings, so the actions are expected
+        to be identical before being mirrored.
+        """
+        if not dst_action or dst_action.action_id != src_action.action_id:
+            # action was set up incorrectly
+            LOG.warning("Cannot mirror %s -> %s, destination action is not the same type", src_action, dst_action)
+            return False
+
+        #  mirror invariant attr values
+        for _, src_attr in src_action.get_attrs().items():
+            if not src_action.is_variant_attr(src_attr.name):
+                dst_attr = dst_action.get_attr(src_attr.name)
+                value = src_attr.get_value()
+                mirrored_value = self._mirror_action_value(src_attr, value)
+                if mirrored_value != value:
+                    dst_attr.set_value(mirrored_value)
+                    LOG.debug("%s -> %s", value, mirrored_value)
+
+        # mirror variant attr values
+        for i, src_variant in enumerate(src_action.get_variants()):
+            dst_variant = dst_action.get_variant(i)
+            for _, src_attr in src_variant.get_attrs().items():
+                dst_attr = dst_variant.get_attr(src_attr.name)
+                value = src_attr.get_value()
+                mirrored_value = self._mirror_action_value(src_attr, value)
+                if mirrored_value != value:
+                    dst_attr.set_value(mirrored_value)
+                    LOG.debug("[%d] %s -> %s", i, value, mirrored_value)
+
+        return True
+
+    def _mirror_action_value(self, attr: BuildActionAttribute, value):
+        """
+        Return a mirrored value of an attribute, taking into account attribute types and config.
+
+        Args:
+            attr: BuildActionAttribute
+                The attribute to mirror.
+            value:
+                The attribute value to mirror.
+        """
+        if not attr.config.get("canMirror", True):
+            # don't mirror the attributes value, just copy it
+            return value
+
+        def _get_paired_node_or_self(node):
+            """
+            Return the paired node of a node, if one exists, otherwise return the node.
+            """
+            paired_node = get_paired_node(node)
+            if paired_node:
+                return paired_node
+            return node
+
+        if not value:
+            return value
+
+        # TODO: move mirror logic into BuildActionAttribute and type-specific subclasses?
+
+        if attr.type == BuildActionAttributeType.NODE:
+            return _get_paired_node_or_self(value)
+
+        elif attr.type == BuildActionAttributeType.NODE_LIST:
+            return [_get_paired_node_or_self(node) for node in value]
+
+        elif attr.type == BuildActionAttributeType.STRING:
+            return get_mirrored_name(value, self.config)
+
+        elif attr.type == BuildActionAttributeType.STRING_LIST:
+            return [get_mirrored_name(v, self.config) for v in value]
+
+        return value
