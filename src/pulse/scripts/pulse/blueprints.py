@@ -151,7 +151,7 @@ class Blueprint(object):
         Returns:
             True if the save was successful
         """
-        LOG.debug("Saving blueprint: %s", file_path)
+        LOG.info("Saving blueprint: %s", file_path)
 
         data = self.serialize()
         with open(file_path, "w") as fp:
