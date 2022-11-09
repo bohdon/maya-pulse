@@ -3,7 +3,7 @@ import os
 import tempfile
 import time
 from datetime import datetime
-from typing import Optional, Iterable
+from typing import Optional, Iterable, List
 
 # TODO: remove maya dependencies from this core module, add BlueprintBuilder subclass that uses maya progress bars
 import pymel.core as pm
@@ -421,6 +421,8 @@ class BlueprintBuilder(object):
         self.is_finished = False
         self.is_running = False
         self.is_canceled = False
+        # if true, mark the build as cancelled when interrupted, instead of just pausing
+        self.cancel_on_interrupt = True
         # the current phase of building, 'setup', 'actions', or 'finished'
         self.phase: Optional[str] = None
         # the current build step path
@@ -428,7 +430,10 @@ class BlueprintBuilder(object):
         self.start_time = 0.0
         self.end_time = 0.0
         self.elapsed_time = 0.0
-        self.show_progress_ui = False
+        self.show_progress_ui = True
+        self.progress_title = "Building Blueprint"
+        # the results of the last iteration that was performed
+        self._iter_result = {}
 
         # the rig root node, available after the builder starts,
         # and create_rig_structure has been called
@@ -485,13 +490,13 @@ class BlueprintBuilder(object):
             True if the build was started.
         """
         if self.is_started:
-            self.log.warning("Builder has already been started")
+            self.log.warning("Builder has already been started.")
             return False
         if self.is_finished:
-            self.log.error("Cannot re-start a builder that has already finished, make a new builder instead")
+            self.log.error("Cannot re-start a builder that has already finished, make a new builder instead.")
             return False
         if self.is_canceled:
-            self.log.warning("Builder was cancelled, create a new instance to build again")
+            self.log.warning("Builder was cancelled, create a new instance to build again.")
             return False
 
         self.is_started = True
@@ -513,64 +518,80 @@ class BlueprintBuilder(object):
         before this can be called
         """
         if self.is_running:
-            self.log.warning("Builder is already running")
+            self.log.error("Builder is already running.")
             return
 
         if not self.is_started:
-            self.log.warning("Builder has not been started yet")
+            self.log.error("Builder has not been started yet.")
             return
 
-        if self.is_finished or self.is_canceled:
-            self.log.warning("Cannot run/continue a finished or cancelled build")
+        if self.is_finished:
+            self.log.error("Builder has already finished.")
             return
 
         self.is_running = True
 
+        if self.show_progress_ui:
+            pm.progressWindow(title=self.progress_title, minValue=0, progress=0, isInterruptable=True)
+
         while True:
             self.next()
 
-            # check for user cancel
-            if self.check_cancel():
-                self.cancel()
+            if self.show_progress_ui:
+                pm.progressWindow(
+                    edit=True,
+                    progress=self._iter_result["index"],
+                    maxValue=self._iter_result["total"],
+                    status=self._iter_result["status"],
+                )
 
-            # check if we should stop running
-            if self.is_finished or self.is_canceled or self.check_pause():
+            if not self.is_running or self.should_interrupt():
+                if self.cancel_on_interrupt:
+                    self.cancel()
                 break
+
+        if self.show_progress_ui:
+            pm.progressWindow(edit=True, status=None)
+            pm.progressWindow(endProgress=True)
 
         self.is_running = False
 
     def next(self):
-        iter_result = next(self.generator)
-        self.phase = iter_result["phase"]
-        # handle the result of the build iteration
+        """
+        Perform the next step of the build.
+        """
+        self._iter_result = next(self.generator)
+
+        self.phase = self._iter_result["phase"]
         if self.phase == "finished":
             self.finish()
-        # report progress
-        self.on_progress(iter_result["index"], iter_result["total"], iter_result["status"])
 
-    def check_pause(self):
+    def should_interrupt(self):
         """
-        Check for pause. Return True if the build should pause
+        Return True if the running build should be interrupted.
+        Checks for cancellation using the progress window when `show_progress_ui` is enabled.
         """
+        if self.show_progress_ui:
+            return pm.progressWindow(query=True, isCancelled=True)
         return False
 
-    def check_cancel(self):
+    def pause(self):
         """
-        Check for cancellation. Return True if the build should be canceled
+        Pause the current build if it is running.
         """
-        return False
+        self.is_running = False
 
     def cancel(self):
-        """
-        Cancel the current build
-        """
-        self.is_canceled = True
-        self.on_cancel()
+        if self.is_started and not self.is_finished:
+            self.is_running = False
+            self.is_canceled = True
+            self.on_cancel()
 
     def finish(self):
         """
         Finish the build by calling the appropriate finish methods
         """
+        self.is_running = False
         self.is_finished = True
         self.on_finish()
 
@@ -590,7 +611,7 @@ class BlueprintBuilder(object):
 
     def get_finish_build_log_message(self) -> str:
         error_count = len(self.errors)
-        return f"Built Rig '{self.rig_name}', {self.elapsed_time:.3f} seconds, {error_count} error(s)"
+        return f"Built Rig '{self.rig_name}' with {error_count} error(s) ({self.elapsed_time:.3f}s)"
 
     def get_finish_build_in_view_message(self) -> str:
         error_count = len(self.errors)
@@ -599,61 +620,71 @@ class BlueprintBuilder(object):
         else:
             return "Build Successful"
 
-    def on_progress(self, index: int, total: int, status: str):
-        """
-        Called after every step of the build.
-        Override this in subclasses to monitor progress.
+    def get_cancel_log_message(self) -> str:
+        error_count = len(self.errors)
+        return f"Cancelled build of rig '{self.rig_name}' with {error_count} error(s) ({self.elapsed_time:.3f}s)"
 
-        Args:
-            index: int
-                The index of the current action.
-            total: int
-                The total number of actions.
-            status: str
-                A status string representing the current step in progress.
-        """
-        if self.show_progress_ui:
-            if index == 0:
-                pm.progressWindow(t="Building Blueprint", min=0)
-            pm.progressWindow(e=True, progress=index, max=total, status=status)
-            # pm.refresh()
+    def get_cancel_build_in_view_message(self) -> str:
+        error_count = len(self.errors)
+        if error_count > 0:
+            return f"Build Cancelled with {error_count} error(s)"
+        else:
+            return "Build Cancelled"
 
-    def on_finish(self):
-        """
-        Called when the build has completely finished.
-        """
-        if self.show_progress_ui:
-            pm.progressWindow(e=True, status=None)
-            pm.progressWindow(endProgress=True)
-
-        # clear selection
-        pm.select(cl=True)
+    def _on_build_end(self):
+        pm.select(clear=True)
 
         # record time
         self.end_time = time.time()
         self.elapsed_time = self.end_time - self.start_time
 
+    def on_finish(self):
+        """
+        Called when the build has completely finished.
+        """
+        self._on_build_end()
+
         # log results
         finish_msg = self.get_finish_build_log_message()
-
-        error_count = len(self.errors)
-        lvl = logging.WARNING if error_count else logging.INFO
-        self.log.log(lvl, finish_msg, extra=dict(duration=self.elapsed_time, scenePath=self.scene_file_path))
+        had_errors = bool(self.errors)
+        lvl = logging.WARNING if had_errors else logging.INFO
+        self.log.log(lvl, finish_msg)
 
         self.close_file_logger()
 
-        # show results with in view message
+        # show results with in-view message
         in_view_msg = self.get_finish_build_in_view_message()
-        if error_count:
-            pm.inViewMessage(amg=in_view_msg, pos="topCenter", backColor=0xAA8336, fade=True, fadeStayTime=3000)
-        else:
-            pm.inViewMessage(amg=in_view_msg, pos="topCenter", fade=True)
+        in_view_kwargs = {}
+        if had_errors:
+            in_view_kwargs = dict(
+                backColor=0xAA8336,
+                fadeStayTime=3000,
+            )
+        pm.inViewMessage(assistMessage=in_view_msg, position="topCenter", fade=True, **in_view_kwargs)
 
     def on_cancel(self):
         """
-        Called if the build was cancelled
+        Called when the build is cancelled.
         """
-        pass
+        self._on_build_end()
+
+        # log results
+        cancel_msg = self.get_cancel_log_message()
+        had_errors = bool(self.errors)
+        lvl = logging.WARNING if had_errors else logging.INFO
+        self.log.log(lvl, cancel_msg)
+
+        self.close_file_logger()
+
+        # show cancellation with in-view message
+        in_view_msg = self.get_cancel_build_in_view_message()
+        in_view_kwargs = {}
+        if had_errors:
+            in_view_kwargs = dict(
+                backColor=0xAA8336,
+                fadeStayTime=3000,
+            )
+        pm.inViewMessage(assistMessage=in_view_msg, position="topCenter", fade=True, **in_view_kwargs)
 
     def on_error(self, error: Exception):
         """
@@ -706,21 +737,14 @@ class BlueprintBuilder(object):
         It runs all BuildSteps and BuildActions in order.
         """
 
-        yield dict(index=0, total=2, phase="setup", status="Create Rig Structure")
+        self.clear_validate_results()
 
+        yield dict(index=0, total=100, phase="setup", status="Create Rig Structure")
         self.create_rig_structure()
 
-        yield dict(index=1, total=2, phase="setup", status="Retrieve Actions")
-
-        # recursively iterate through all build actions
-        all_actions = list(self.action_iterator())
+        yield dict(index=1, total=100, phase="setup", status="Retrieve Actions")
+        all_actions = self._generate_all_actions()
         action_count = len(all_actions)
-        self.log.info("Generated %s actions.", action_count)
-
-        # clear all validate results before running
-        for step, action in all_actions:
-            # this will be redundant for steps with multiple variants, but it's simple
-            step.clear_validate_results()
 
         for index, (step, action) in enumerate(all_actions):
             # TODO: include more data somehow so we can track variant action indexes
@@ -735,6 +759,13 @@ class BlueprintBuilder(object):
             self.run_build_action(step, action, index, action_count)
 
         yield dict(index=action_count, total=action_count, phase="finished", status="Finished")
+
+    def clear_validate_results(self):
+        """
+        Clear the results of any previous validation or build.
+        """
+        for step in self.blueprint.rootStep.child_iterator():
+            step.clear_validate_results()
 
     def create_rig_structure(self):
         """
@@ -754,6 +785,19 @@ class BlueprintBuilder(object):
             ),
         )
         self.log.info("Created rig structure: %s", self.rig.nodeName())
+
+    def _generate_all_actions(self) -> List[BuildAction]:
+        """
+        Expand all build actions to perform from all build steps and their variants.
+        """
+        start_time = time.time()
+
+        result = list(self.action_iterator())
+
+        end_time = time.time()
+        duration = end_time - start_time
+        self.log.info("Generated %s actions (%.03fs)", len(result), duration)
+        return result
 
     def run_build_action(self, step: BuildStep, action: BuildAction, index: int, action_count: int):
         start_time = time.time()
@@ -778,6 +822,8 @@ class BlueprintValidator(BlueprintBuilder):
     def __init__(self, *args, **kwargs):
         super(BlueprintValidator, self).__init__(*args, **kwargs)
         self.builder_name = "Validator"
+        self.progress_title = "Validating Blueprint"
+        self.show_progress_ui = False
 
     def setup_file_logger(self, logger: logging.Logger, log_dir: str):
         # no file logging for validation
@@ -795,7 +841,7 @@ class BlueprintValidator(BlueprintBuilder):
 
     def get_finish_build_log_message(self):
         error_count = len(self.errors)
-        return f"Validated Rig '{self.rig_name}': {error_count} error(s)"
+        return f"Validated rig '{self.rig_name}' with {error_count} error(s) ({self.elapsed_time:.3f}s)"
 
     def get_finish_build_in_view_message(self):
         error_count = len(self.errors)

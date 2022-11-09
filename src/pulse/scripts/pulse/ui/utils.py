@@ -6,8 +6,11 @@ import logging
 import os
 import traceback
 from functools import partial
+from typing import Optional, Callable
 
 import maya.cmds as cmds
+from maya.OpenMayaUI import MQtUtil
+from shiboken2 import wrapInstance
 
 from ..vendor.Qt import QtCore, QtWidgets, QtGui
 
@@ -158,6 +161,36 @@ def getIcon(filename):
     return QtGui.QIcon(getIconPath(filename))
 
 
+def getMayaPixmap(name: str) -> Optional[QtGui.QPixmap]:
+    """
+    Return a pixmap from Maya's internal resources using MQtUtil.
+    """
+    ptr = MQtUtil.createPixmap(name)
+    if ptr:
+        return wrapInstance(int(ptr), QtGui.QPixmap)
+
+
+def get_rmb_menu_cursor() -> QtGui.QCursor:
+    """
+    Return the mouse cursor to use for rmb menus.
+    """
+    ptr = MQtUtil.createCursor("rmbMenu.png,11,9,17,14,22,18")
+    return wrapInstance(int(ptr), QtGui.QCursor)
+
+
+def set_custom_context_menu(widget: QtWidgets.QWidget, callback: Callable):
+    """
+    Configure a widget to have a custom context menu, built with a custom callback.
+    Also configures the widget with the right click menu cursor icon and ensures
+    the menu appears on right click press instead of release to be consistent with Maya behavior.
+    """
+    widget.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+    widget.customContextMenuRequested.connect(callback)
+    widget.setCursor(get_rmb_menu_cursor())
+    event_filter = RightClickMenuOnPressEventFilter(widget)
+    widget.installEventFilter(event_filter)
+
+
 def clearLayout(layout):
     if layout is None:
         return
@@ -237,3 +270,16 @@ class CollapsibleFrame(QtWidgets.QFrame):
         Return True if the frame is currently collapsed.
         """
         return self._isCollapsed
+
+
+class RightClickMenuOnPressEventFilter(QtCore.QObject):
+    """
+    Handles displaying context menus on right click press instead of release.
+    """
+
+    def eventFilter(self, watched: QtCore.QObject, event: QtCore.QEvent) -> bool:
+        if isinstance(event, QtGui.QMouseEvent):
+            if event.button() == QtCore.Qt.RightButton:
+                watched.customContextMenuRequested.emit(event.pos())
+                return True
+        return False

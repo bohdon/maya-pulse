@@ -6,8 +6,9 @@ import logging
 
 import maya.cmds as cmds
 
-from ..vendor.Qt import QtWidgets
+from ..vendor.Qt import QtCore, QtGui, QtWidgets
 from ..blueprints import BlueprintSettings
+from . import utils
 from .core import BlueprintUIModel
 from .main_settings import MainSettingsWindow
 from .actioneditor import ActionEditorWindow
@@ -29,6 +30,7 @@ class MainToolbar(QtWidgets.QWidget):
 
         self.ui = Ui_MainToolbar()
         self.ui.setupUi(self)
+        utils.set_custom_context_menu(self.ui.build_btn, self._show_build_context_menu)
 
         self._cleanState()
         self._updateMode()
@@ -42,17 +44,33 @@ class MainToolbar(QtWidgets.QWidget):
         self.blueprint_model.readOnlyChanged.connect(self._onReadOnlyChanged)
         self.blueprint_model.settingChanged.connect(self._onSettingChanged)
 
-        # TODO (bsayre): use blueprint model to track interactive build
-
         self.ui.new_blueprint_btn.clicked.connect(self.blueprint_model.newFile)
         self.ui.validate_btn.clicked.connect(self.blueprint_model.run_validation)
         self.ui.build_btn.clicked.connect(self.blueprint_model.run_build)
-        self.ui.interactive_build_btn.clicked.connect(self.blueprint_model.run_or_step_interactive_build)
+        self.ui.interactive_next_btn.clicked.connect(self.blueprint_model.interactive_build_next_action)
+        self.ui.interactive_next_step_btn.clicked.connect(self.blueprint_model.interactive_build_next_step)
+        self.ui.interactive_continue_btn.clicked.connect(self.blueprint_model.continue_interactive_build)
         self.ui.open_blueprint_btn.clicked.connect(self.blueprint_model.open_rig_blueprint)
 
         self.ui.settings_btn.clicked.connect(MainSettingsWindow.toggleWindow)
         self.ui.design_toolkit_btn.clicked.connect(DesignToolkitWindow.toggleWindow)
         self.ui.action_editor_btn.clicked.connect(ActionEditorWindow.toggleWindow)
+
+    def _show_build_context_menu(self, position):
+        menu = QtWidgets.QMenu()
+        interactive_action = menu.addAction("Interactive Build")
+        interactive_action.setStatusTip("Start an interactive build that can be stepped through incrementally.")
+        interactive_action.triggered.connect(self.blueprint_model.run_interactive_build)
+        interactive_action.setEnabled(self.blueprint_model.can_interactive_build())
+        menu.exec_(self.ui.build_btn.mapToGlobal(position))
+
+    def mousePressEvent(self, event: QtGui.QMouseEvent):
+        super(MainToolbar, self).mousePressEvent(event)
+
+    def contextMenuEvent(self, event: QtGui.QContextMenuEvent):
+        print(f"contextMenuEvent({event})")
+        super(MainToolbar, self).contextMenuEvent(event)
+        self.setCursor()
 
     def doesRigExist(self):
         return self.blueprint_model.doesRigExist
@@ -144,8 +162,13 @@ class MainToolbar(QtWidgets.QWidget):
             # update mode frame color
             self.ui.mode_frame.setProperty("cssClasses", "toolbar-blueprint")
 
-        can_interactive_build = self.blueprint_model.is_interactive_building() or not self.doesRigExist()
-        self.ui.interactive_build_btn.setEnabled(can_interactive_build)
+        if self.blueprint_model.is_interactive_building():
+            # show button to step interactive build forward
+            self.ui.interactive_build_frame.setVisible(True)
+            # self.ui.build_btn_stack.setCurrentWidget(self.ui.step_page)
+        else:
+            self.ui.interactive_build_frame.setVisible(False)
+            # self.ui.build_btn_stack.setCurrentWidget(self.ui.build_page)
 
         # refresh stylesheet for mode frame
         self.ui.mode_frame.setStyleSheet("")

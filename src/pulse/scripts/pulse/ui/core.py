@@ -1108,9 +1108,7 @@ class BlueprintUIModel(QtCore.QObject):
         self.modify()
 
     def run_validation(self):
-        """
-        Run a Blueprint Validator for the current blueprint.
-        """
+        """Run a Blueprint Validator for the current blueprint."""
         blueprint = self.blueprint
         if blueprint is not None:
             if not BlueprintBuilder.pre_build_validate(blueprint):
@@ -1119,10 +1117,14 @@ class BlueprintUIModel(QtCore.QObject):
             validator = BlueprintValidator(blueprint)
             validator.start()
 
+    def can_build(self) -> bool:
+        return not self.doesRigExist
+
     def run_build(self):
-        """
-        Build the current blueprint.
-        """
+        """Build the current blueprint."""
+        if not self.can_build():
+            return False
+
         blueprint = self.blueprint
         if blueprint is None:
             return
@@ -1141,34 +1143,23 @@ class BlueprintUIModel(QtCore.QObject):
                 return
 
         builder = BlueprintBuilder.from_current_scene(blueprint)
-        builder.show_progress_ui = True
         builder.start()
 
         # TODO: add build events so this can be done by observer pattern
         cmds.evalDeferred(self.refreshRigExists, low=True)
 
+    def can_interactive_build(self) -> bool:
+        return self.can_build()
+
     def is_interactive_building(self) -> bool:
-        """
-        Return true if an interactive build is currently active.
-        """
+        """Return true if an interactive build is currently active."""
         return self.interactiveBuilder is not None
 
-    def run_or_step_interactive_build(self):
-        """
-        Start an interactive build, or perform the next build step if an
-        interactive build is already active.
-        """
-        if self.interactiveBuilder:
-            self.interactiveBuilder.next()
-            if self.interactiveBuilder.is_finished:
-                self.interactiveBuilder = None
-
-            # TODO: add build events for situations like this
-            cmds.evalDeferred(self.refreshRigExists, low=True)
-        else:
-            self.run_interactive_build()
-
     def run_interactive_build(self):
+        if self.is_interactive_building() or not self.can_interactive_build():
+            # already running
+            return
+
         blueprint = self.blueprint
         if blueprint is None:
             return
@@ -1187,6 +1178,7 @@ class BlueprintUIModel(QtCore.QObject):
                 return
 
         self.interactiveBuilder = BlueprintBuilder.from_current_scene(blueprint)
+        self.interactiveBuilder.cancel_on_interrupt = False
         self.interactiveBuilder.start(run=False)
 
         # auto run setup phase
@@ -1195,8 +1187,36 @@ class BlueprintUIModel(QtCore.QObject):
             if self.interactiveBuilder.phase == "actions":
                 break
 
-        # TODO: add build events for situations like this
+        # TODO: add build event to refresh ui
         cmds.evalDeferred(self.refreshRigExists, low=True)
+
+    def interactive_build_next_action(self):
+        """Perform the next build action of an interactive build."""
+        if self.interactiveBuilder:
+            self.interactiveBuilder.next()
+            if self.interactiveBuilder.is_finished:
+                self.interactiveBuilder = None
+            # TODO: add build event to refresh ui
+            cmds.evalDeferred(self.refreshRigExists, low=True)
+
+    def interactive_build_next_step(self):
+        """Skip to the next build step of an interactive build."""
+        if self.interactiveBuilder:
+            step = self.interactiveBuilder.current_build_step_path
+            while step == self.interactiveBuilder.current_build_step_path:
+                self.interactiveBuilder.next()
+                if self.interactiveBuilder.is_finished:
+                    self.interactiveBuilder = None
+                    break
+                # TODO: add build event to refresh ui
+                cmds.evalDeferred(self.refreshRigExists, low=True)
+
+    def continue_interactive_build(self):
+        """Resume running the current interactive build."""
+        if self.interactiveBuilder:
+            self.interactiveBuilder.run()
+            if self.interactiveBuilder.is_finished:
+                self.interactiveBuilder = None
 
     def cancel_interactive_build(self):
         if self.interactiveBuilder:
@@ -1204,9 +1224,7 @@ class BlueprintUIModel(QtCore.QObject):
             self.interactiveBuilder = None
 
     def open_rig_blueprint(self):
-        """
-        Open the blueprint maya scene for the first rig in the scene.
-        """
+        """Open the blueprint maya scene for the first rig in the scene."""
         # TODO: don't need this stub, just listen for pre-close maya scene callback to clear interactive build
         self.cancel_interactive_build()
         rigs.open_first_rig_blueprint()

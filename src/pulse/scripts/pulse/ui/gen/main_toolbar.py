@@ -18,7 +18,7 @@ class Ui_MainToolbar(object):
     def setupUi(self, MainToolbar):
         if not MainToolbar.objectName():
             MainToolbar.setObjectName(u"MainToolbar")
-        MainToolbar.resize(448, 132)
+        MainToolbar.resize(431, 158)
         self.verticalLayout_5 = QVBoxLayout(MainToolbar)
         self.verticalLayout_5.setObjectName(u"verticalLayout_5")
         self.verticalLayout_5.setContentsMargins(0, 0, 0, 0)
@@ -95,48 +95,63 @@ class Ui_MainToolbar(object):
 
         self.buttons_layout.addWidget(self.validate_btn)
 
-        self.horizontalLayout_2 = QHBoxLayout()
-        self.horizontalLayout_2.setSpacing(4)
-        self.horizontalLayout_2.setObjectName(u"horizontalLayout_2")
-        self.interactive_build_btn = QPushButton(self.mode_frame)
-        self.interactive_build_btn.setObjectName(u"interactive_build_btn")
-        sizePolicy = QSizePolicy(QSizePolicy.Maximum, QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.interactive_build_btn.sizePolicy().hasHeightForWidth())
-        self.interactive_build_btn.setSizePolicy(sizePolicy)
-        self.interactive_build_btn.setMinimumSize(QSize(30, 0))
-        icon1 = QIcon()
-        icon1.addFile(u":/icon/forward_step.svg", QSize(), QIcon.Normal, QIcon.Off)
-        self.interactive_build_btn.setIcon(icon1)
-        self.interactive_build_btn.setIconSize(QSize(14, 14))
-
-        self.horizontalLayout_2.addWidget(self.interactive_build_btn)
-
         self.build_btn = QPushButton(self.mode_frame)
         self.build_btn.setObjectName(u"build_btn")
         self.build_btn.setMinimumSize(QSize(80, 0))
-        icon2 = QIcon()
-        icon2.addFile(u":/icon/build.svg", QSize(), QIcon.Normal, QIcon.Off)
-        self.build_btn.setIcon(icon2)
+        icon1 = QIcon()
+        icon1.addFile(u":/icon/build.svg", QSize(), QIcon.Normal, QIcon.Off)
+        self.build_btn.setIcon(icon1)
         self.build_btn.setIconSize(QSize(14, 14))
 
-        self.horizontalLayout_2.addWidget(self.build_btn)
-
-
-        self.buttons_layout.addLayout(self.horizontalLayout_2)
+        self.buttons_layout.addWidget(self.build_btn)
 
         self.open_blueprint_btn = QPushButton(self.mode_frame)
         self.open_blueprint_btn.setObjectName(u"open_blueprint_btn")
-        icon3 = QIcon()
-        icon3.addFile(u":/icon/angle_left.svg", QSize(), QIcon.Normal, QIcon.Off)
-        self.open_blueprint_btn.setIcon(icon3)
+        icon2 = QIcon()
+        icon2.addFile(u":/icon/angle_left.svg", QSize(), QIcon.Normal, QIcon.Off)
+        self.open_blueprint_btn.setIcon(icon2)
         self.open_blueprint_btn.setIconSize(QSize(14, 14))
 
         self.buttons_layout.addWidget(self.open_blueprint_btn)
 
 
         self.verticalLayout_2.addLayout(self.buttons_layout)
+
+        self.interactive_build_frame = QFrame(self.mode_frame)
+        self.interactive_build_frame.setObjectName(u"interactive_build_frame")
+        self.interactive_build_frame.setFrameShape(QFrame.StyledPanel)
+        self.interactive_build_frame.setFrameShadow(QFrame.Raised)
+        self.horizontalLayout_2 = QHBoxLayout(self.interactive_build_frame)
+        self.horizontalLayout_2.setObjectName(u"horizontalLayout_2")
+        self.horizontalLayout_2.setContentsMargins(0, 0, 0, 0)
+        self.interactive_next_btn = QPushButton(self.interactive_build_frame)
+        self.interactive_next_btn.setObjectName(u"interactive_next_btn")
+        self.interactive_next_btn.setMinimumSize(QSize(80, 0))
+        icon3 = QIcon()
+        icon3.addFile(u":/icon/forward_step.svg", QSize(), QIcon.Normal, QIcon.Off)
+        self.interactive_next_btn.setIcon(icon3)
+        self.interactive_next_btn.setIconSize(QSize(14, 14))
+
+        self.horizontalLayout_2.addWidget(self.interactive_next_btn)
+
+        self.interactive_next_step_btn = QPushButton(self.interactive_build_frame)
+        self.interactive_next_step_btn.setObjectName(u"interactive_next_step_btn")
+        self.interactive_next_step_btn.setMinimumSize(QSize(80, 0))
+        self.interactive_next_step_btn.setIcon(icon3)
+        self.interactive_next_step_btn.setIconSize(QSize(14, 14))
+
+        self.horizontalLayout_2.addWidget(self.interactive_next_step_btn)
+
+        self.interactive_continue_btn = QPushButton(self.interactive_build_frame)
+        self.interactive_continue_btn.setObjectName(u"interactive_continue_btn")
+        self.interactive_continue_btn.setMinimumSize(QSize(80, 0))
+        self.interactive_continue_btn.setIcon(icon1)
+        self.interactive_continue_btn.setIconSize(QSize(14, 14))
+
+        self.horizontalLayout_2.addWidget(self.interactive_continue_btn)
+
+
+        self.verticalLayout_2.addWidget(self.interactive_build_frame)
 
 
         self.verticalLayout.addWidget(self.mode_frame)
@@ -211,10 +226,6 @@ class Ui_MainToolbar(object):
 #endif // QT_CONFIG(statustip)
         self.validate_btn.setText(QCoreApplication.translate("MainToolbar", u" Validate", None))
 #if QT_CONFIG(statustip)
-        self.interactive_build_btn.setStatusTip(QCoreApplication.translate("MainToolbar", u"Run an interactive build.", None))
-#endif // QT_CONFIG(statustip)
-        self.interactive_build_btn.setText("")
-#if QT_CONFIG(statustip)
         self.build_btn.setStatusTip(QCoreApplication.translate("MainToolbar", u"Save the blueprint and scene and build the rig.", None))
 #endif // QT_CONFIG(statustip)
         self.build_btn.setText(QCoreApplication.translate("MainToolbar", u" Build", None))
@@ -222,6 +233,18 @@ class Ui_MainToolbar(object):
         self.open_blueprint_btn.setStatusTip(QCoreApplication.translate("MainToolbar", u"Open the blueprint scene that built this rig.", None))
 #endif // QT_CONFIG(statustip)
         self.open_blueprint_btn.setText(QCoreApplication.translate("MainToolbar", u" Open Blueprint", None))
+#if QT_CONFIG(statustip)
+        self.interactive_next_btn.setStatusTip(QCoreApplication.translate("MainToolbar", u"Run the next action of the interactive build.", None))
+#endif // QT_CONFIG(statustip)
+        self.interactive_next_btn.setText(QCoreApplication.translate("MainToolbar", u" Next Action", None))
+#if QT_CONFIG(statustip)
+        self.interactive_next_step_btn.setStatusTip(QCoreApplication.translate("MainToolbar", u"Skip to the next step of the interactive build.", None))
+#endif // QT_CONFIG(statustip)
+        self.interactive_next_step_btn.setText(QCoreApplication.translate("MainToolbar", u" Next Step", None))
+#if QT_CONFIG(statustip)
+        self.interactive_continue_btn.setStatusTip(QCoreApplication.translate("MainToolbar", u"Continue to the interactive build to the end.", None))
+#endif // QT_CONFIG(statustip)
+        self.interactive_continue_btn.setText(QCoreApplication.translate("MainToolbar", u" Continue", None))
         self.toolbar_frame.setProperty("cssClasses", QCoreApplication.translate("MainToolbar", u"toolbar", None))
         self.settings_btn.setText(QCoreApplication.translate("MainToolbar", u" Settings", None))
         self.design_toolkit_btn.setText(QCoreApplication.translate("MainToolbar", u" Design Toolkit", None))
