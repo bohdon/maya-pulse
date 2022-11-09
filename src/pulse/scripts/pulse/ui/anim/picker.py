@@ -736,7 +736,8 @@ class AnimPickerPanel(QtWidgets.QWidget):
             # drag resize selected buttons
             for btn in self.buttons:
                 if btn.is_selected():
-                    delta_size = (QSizeF(drag_delta.x(), drag_delta.y()) * self.drag_resize_sensitivity).toSize()
+                    # negate Y so that dragging up is increase, down is decrease
+                    delta_size = (QSizeF(drag_delta.x(), -drag_delta.y()) * self.drag_resize_sensitivity).toSize()
                     btn.set_size(btn.size + delta_size)
                     self._update_btn_geometry(btn)
 
