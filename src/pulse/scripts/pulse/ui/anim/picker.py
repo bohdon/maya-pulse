@@ -2,12 +2,13 @@
 An anim picker for easily selecting controls while animating.
 """
 import logging
+import os
 from functools import partial
 from typing import List, Optional, Union
 from maya import OpenMaya, cmds
 import pymel.core as pm
 
-from ... import nodes, rigs
+from ... import nodes
 from ...colors import LinearColor
 from ...prefs import option_var_property
 from ...vendor.Qt import QtCore, QtGui, QtWidgets
@@ -35,24 +36,130 @@ def find_picker_nodes() -> List[pm.PyNode]:
     return meta.findMetaNodes(PICKER_METACLASS)
 
 
-def load_picker_from_node(node: pm.PyNode):
+class AnimPickerModel(object):
     """
-    Load anim picker data from a node.
-
-    Args:
-        node: A pynode with picker data.
+    An object containing anim picker data.
     """
-    return meta.getMetaData(node, PICKER_METACLASS)
+
+    def __init__(self):
+        self._name = "unknown"
+        self._namespace = ""
+        self.picker_data = {}
+        # does the picker have unsaved changes?
+        self._dirty = False
+
+    def __repr__(self):
+        return f"<{self.__class__.__name__} '{self.get_name()}'>"
+
+    def get_name(self) -> str:
+        return self._name
+
+    def get_namespace(self) -> str:
+        return self._namespace
+
+    def is_modified(self) -> bool:
+        return self._dirty
+
+    def modify(self):
+        self._dirty = True
+
+    def clear_modified(self):
+        self._dirty = False
+
+    def save(self):
+        pass
+
+    def load(self):
+        pass
 
 
-def save_picker_to_node(picker_data: dict, node: pm.PyNode):
-    """
-    Save anim picker data to a node.
+class AnimPickerFile(AnimPickerModel):
+    def __init__(self, file_path: str = None):
+        super().__init__()
+        self.file_path: Optional[str] = file_path
 
-    Args:
-        node: A PyNode to save the data on.
-    """
-    meta.setMetaData(node, PICKER_METACLASS, picker_data)
+    def get_name(self) -> str:
+        if self.file_path:
+            return os.path.basename(self.file_path)
+        return super().get_name()
+
+    def save(self):
+        if not self.file_path:
+            return
+
+        logger.info(f"Saving anim picker to file: {self.file_path}")
+        data_str = meta.encodeMetaData(self.picker_data)
+        with open(self.file_path, "w") as fp:
+            fp.write(data_str)
+
+        self.clear_modified()
+
+    def load(self):
+        if not self.file_path:
+            return
+
+        logger.info(f"Loading anim picker from file: {self.file_path}")
+        with open(self.file_path, "r") as fp:
+            content = fp.read()
+        data = meta.decodeMetaData(content)
+        if not isinstance(data, dict):
+            return
+
+        self.picker_data = data
+
+        self.clear_modified()
+
+    def save_as(self, file_path):
+        self.file_path = file_path
+        self.save()
+
+    def open(self, file_path):
+        self.file_path = file_path
+        self.load()
+
+
+class AnimPickerNode(AnimPickerModel):
+    def __init__(self, node: pm.PyNode = None):
+        super().__init__()
+        self.node: Optional[pm.PyNode] = node
+
+    def get_name(self) -> str:
+        if self.node:
+            return self.node.nodeName()
+        return super().get_name()
+
+    def get_namespace(self) -> str:
+        return self.node.namespace() if self.node else ""
+
+    def save(self):
+        if not self.node:
+            return
+
+        logger.info(f"Saving anim picker to node: {self.node}")
+        meta.setMetaData(self.node, PICKER_METACLASS, self.picker_data)
+        self.clear_modified()
+
+    def load(self):
+        if not self.node:
+            return
+
+        logger.info(f"Loading anim picker from node: {self.node}")
+        if not meta.hasMetaClass(self.node, PICKER_METACLASS):
+            # no picker data, important that we return in order to not
+            # clear modified status on new nodes.
+            return
+
+        self.picker_data = meta.getMetaData(self.node, PICKER_METACLASS)
+        self.clear_modified()
+
+    def revert_reference_edits(self):
+        """
+        If this node is referenced, remove reference edits made to the node in order to
+        revert the picker back to its original state from the referenced file.
+        """
+        if self.node and self.node.isReferenced():
+            attr = self.node.attr(meta.core.METADATA_ATTR)
+            pm.referenceEdit(attr, removeEdits=True, failedEdits=True, successfulEdits=True, editCommand="setAttr")
 
 
 class AnimPickerButton(QtWidgets.QPushButton):
@@ -288,17 +395,27 @@ class AnimPickerSelectOperation(object):
 
 
 class AnimPickerPanel(QtWidgets.QWidget):
+    """
+    The main panel for using and editing an anim picker.
+    Contains various buttons and handles applying view transformations when
+    the user zooms and pans.
+    """
+
+    # called when the picker is modified
+    pickerModified = QtCore.Signal()
+
     viewScaleChanged = QtCore.Signal(float)
     viewOffsetChanged = QtCore.Signal(QPoint)
 
     def __init__(self, parent=None):
         super(AnimPickerPanel, self).__init__(parent=parent)
 
+        # the current picker being edited or viewed
+        self._picker_model: Optional[AnimPickerModel] = None
+        self._is_deserializing = False
+
         # is the picker currently locked for editing?
         self.is_locked = True
-
-        # the current namespace to use for selection, not serialized
-        self.namespace = None
 
         self.rubber_band: Optional[QtWidgets.QRubberBand] = None
         self.view_offset_raw = QPointF()
@@ -335,8 +452,52 @@ class AnimPickerPanel(QtWidgets.QWidget):
     def __del__(self):
         self._unregister_callbacks()
 
+    def _reset(self):
+        self.clear_all_buttons()
+        self.reset_view()
+
+    def set_model(self, picker: AnimPickerModel):
+        if picker != self._picker_model:
+            # update the current model before discarding it
+            if self._picker_model:
+                self.update_model()
+
+            self._picker_model = picker
+            self.load()
+
+    def load(self):
+        """
+        Load the picker data from the model. Does not actually force the model to load
+        from its source, this just updates the panel to the current state of the model.
+        """
+        if self._picker_model:
+            self.deserialize(self._picker_model.picker_data)
+        else:
+            self._reset()
+
+    def update_model(self):
+        """
+        Write the current picker data to the model. Note that this is not the same
+        as saving the model, since it's still only in memory.
+        """
+        if self._picker_model:
+            self._picker_model.picker_data = self.serialize()
+
+    def get_namespace(self) -> str:
+        return self._picker_model.get_namespace() if self._picker_model else ""
+
+    def modify(self):
+        """
+        Call to indicate the picker has been changed, marks the picker as modified.
+        """
+        if self._picker_model and not self._is_deserializing:
+            # TODO: is this too inefficient to serialize on every change?
+            self._picker_model.picker_data = self.serialize()
+            self._picker_model.modify()
+            self.pickerModified.emit()
+
     def serialize(self) -> dict:
-        # TODO: external model object, add undo/redo support, etc
+        # TODO: add undo/redo support, etc
 
         # save basic data like view state
         data = {"view_scale": self.view_scale, "view_offset": self.view_offset.toTuple(), "buttons": []}
@@ -349,11 +510,12 @@ class AnimPickerPanel(QtWidgets.QWidget):
         return data
 
     def deserialize(self, data: dict):
-        self.clear_all_buttons()
-        self.reset_view()
+        self._is_deserializing = True
+        self._reset()
 
         logger.info(f"Picker data: {data}")
         if not data:
+            self._is_deserializing = False
             return
 
         # load view data
@@ -364,9 +526,13 @@ class AnimPickerPanel(QtWidgets.QWidget):
 
         # load buttons
         for btn_data in data.get("buttons", []):
-            btn = AnimPickerButton.from_data(btn_data, namespace=self.namespace, parent=self)
+            btn = AnimPickerButton.from_data(btn_data, namespace=self.get_namespace(), parent=self)
             self.add_button(btn)
 
+        self._is_deserializing = False
+
+        # TODO: this isn't accurate, should be 'picker modified state changed'
+        self.pickerModified.emit()
         self._on_view_changed()
         self.repaint()
 
@@ -579,6 +745,7 @@ class AnimPickerPanel(QtWidgets.QWidget):
         if self.placement_btn:
             # commit snapping to grid
             self.placement_btn.set_location(self._snap_pos_to_grid(self.placement_btn.location))
+            self.modify()
             self._update_btn_geometry(self.placement_btn)
             self.placement_btn = None
 
@@ -593,6 +760,7 @@ class AnimPickerPanel(QtWidgets.QWidget):
             for btn in self.buttons:
                 if btn.is_selected():
                     btn.set_location(self._snap_pos_to_grid(btn.location))
+                    self.modify()
                     self._update_btn_geometry(btn)
 
         elif event.button() == QtCore.Qt.RightButton and not self.is_locked:
@@ -600,6 +768,7 @@ class AnimPickerPanel(QtWidgets.QWidget):
             for btn in self.buttons:
                 if btn.is_selected():
                     btn.set_size(self._snap_size_to_grid(btn.size))
+                    self.modify()
                     self._update_btn_geometry(btn)
 
     def resizeEvent(self, event: QtGui.QResizeEvent):
@@ -695,28 +864,34 @@ class AnimPickerPanel(QtWidgets.QWidget):
             node = sel[0].nodeName()
             pm.select(sel[0], deselect=True)
 
-        btn = AnimPickerButton(location, size, node, namespace=self.namespace, parent=self)
+        btn = AnimPickerButton(location, size, node, namespace=self.get_namespace(), parent=self)
         self.add_button(btn)
         return btn
 
     def add_button(self, btn: AnimPickerButton):
-        btn.namespace = self.namespace
+        btn.namespace = self.get_namespace()
         self._update_btn_geometry(btn)
         self.buttons.append(btn)
         btn.show()
 
+        self.modify()
+
     def delete_selected_buttons(self):
         sel_btns = [btn for btn in self.buttons if btn.is_selected()]
-        for btn in sel_btns:
-            btn.setParent(None)
-            btn.deleteLater()
-            self.buttons.remove(btn)
+        if sel_btns:
+            for btn in sel_btns:
+                btn.setParent(None)
+                btn.deleteLater()
+                self.buttons.remove(btn)
+            self.modify()
 
     def clear_all_buttons(self):
-        for btn in self.buttons:
-            btn.setParent(None)
-            btn.deleteLater()
-        self.buttons.clear()
+        if self.buttons:
+            for btn in self.buttons:
+                btn.setParent(None)
+                btn.deleteLater()
+            self.buttons.clear()
+            self.modify()
 
     def _update_btn_geometry(self, btn: AnimPickerButton):
         """
@@ -874,86 +1049,174 @@ class AnimPickerWidget(QtWidgets.QWidget):
     def __init__(self, parent=None):
         super(AnimPickerWidget, self).__init__(parent=parent)
 
-        # the list of rigs in the scene, pickers are browsed by rig
-        self.rigs: List[pm.PyNode] = []
-        self._active_rig: Optional[pm.PyNode] = None
+        # the list of available pickers, which may be a mix of nodes and files
+        self._pickers: List[AnimPickerModel] = []
+        # the currently opened picker
+        self._current_picker: Optional[AnimPickerModel] = None
 
-        self.rig_buttons: List[QtWidgets.QPushButton] = []
+        # map of pickers to their buttons in the toolbar
+        self.picker_buttons: dict[AnimPickerModel, QtWidgets.QPushButton] = {}
 
         self.ui = Ui_AnimPicker()
         self.ui.setupUi(self)
 
         self.picker_panel = AnimPickerPanel(self)
+        self.picker_panel.pickerModified.connect(self._on_picker_modified)
         self.picker_panel.viewScaleChanged.connect(self._on_view_scale_changed)
         self.picker_panel.viewOffsetChanged.connect(self._on_view_offset_changed)
         self.ui.panel_layout.addWidget(self.picker_panel)
 
         self.ui.toggle_lock_btn.clicked.connect(self.toggle_locked)
         self.ui.zoom_reset_btn.clicked.connect(self.picker_panel.reset_view)
-        self.ui.refresh_btn.clicked.connect(self._refresh_rigs)
-        self.ui.save_btn.clicked.connect(self._save_active_rig_picker)
+        self.ui.refresh_btn.clicked.connect(self.refresh_pickers)
+        self.ui.new_btn.clicked.connect(self.new_picker_for_selected)
+        self.ui.save_btn.clicked.connect(self._save_current_picker)
 
         self._update_zoom_label()
         self._on_locked_changed()
-        self._refresh_rigs()
+        self.refresh_pickers()
 
-    def _refresh_rigs(self):
-        self._active_rig = None
-        self._on_active_rig_changed()
-        self.rigs = rigs.get_all_rigs()
-        self.deserialize()
+    def keyPressEvent(self, event: QtGui.QKeyEvent):
+        # Ctrl + Shift + R to revert reference edits
+        if event.key() == QtCore.Qt.Key_R and event.modifiers() == QtCore.Qt.ControlModifier | QtCore.Qt.ShiftModifier:
+            self.revert_reference_edits()
+            return
+        super(AnimPickerWidget, self).keyPressEvent(event)
 
-        logger.info(f"Anim picker found {len(self.rigs)} rig(s)...")
+    def clear_all_pickers(self):
+        # TODO: prompt to save all
+        self._pickers = []
+        clearLayout(self.ui.picker_list_layout)
 
-        clearLayout(self.ui.rigs_layout)
-        for rig in self.rigs:
-            btn = QtWidgets.QPushButton(self)
-            btn.setCheckable(True)
-            btn.setText(rig.nodeName())
-            btn.clicked.connect(partial(self._set_active_rig, rig))
-            self.rig_buttons.append(btn)
-            self.ui.rigs_layout.addWidget(btn)
-
-        if self.rigs:
-            self._set_active_rig(self.rigs[0])
-
-    def _set_active_rig(self, rig: pm.PyNode):
-        # could be a stale rig button, make sure the rig is valid
-        if rig:
-            self._active_rig = rig
-            self._open_rig_picker(self._active_rig)
-            self._on_active_rig_changed()
-
-    def _on_active_rig_changed(self):
-        self._refresh_active_rig_btn()
-        self.ui.save_btn.setEnabled(self._active_rig is not None)
-
-    def _refresh_active_rig_btn(self):
-        # highlight active rig button
-        for rig_btn in self.rig_buttons:
-            if self._active_rig and rig_btn.text() == self._active_rig.nodeName():
-                rig_btn.setChecked(True)
-            else:
-                rig_btn.setChecked(False)
-
-    def _open_rig_picker(self, rig: pm.PyNode):
-        picker_data = load_picker_from_node(rig)
-        if not picker_data:
-            logger.warning(f"{rig} has no anim picker data.")
+    def add_picker(self, picker: AnimPickerModel):
+        if picker in self._pickers:
             return
 
-        logger.info(f"Loading picker from rig: {rig}")
-        self.picker_panel.namespace = rig.namespace()
-        self.deserialize(picker_data)
+        logger.info(f"Adding picker {picker}")
+        picker.load()
+        self._pickers.append(picker)
 
-    def _save_active_rig_picker(self):
+        # add a button representing the picker
+        btn = QtWidgets.QPushButton(self)
+        btn.setStatusTip(str(picker))
+        btn.setCheckable(True)
+        self._update_button_text(btn, picker)
+        btn.clicked.connect(partial(self.set_current_picker, picker))
+        self.picker_buttons[picker] = btn
+        self.ui.picker_list_layout.addWidget(btn)
+
+    def new_picker_for_selected(self):
+        """Create a new picker, saved on the selected node."""
+        sel = pm.selected(type="transform")
+        existing_nodes = [picker.node for picker in self._pickers if isinstance(picker, AnimPickerNode)]
+        # find first selected node that doesn't already have a picker
+        for node in sel:
+            if node in existing_nodes:
+                continue
+
+            picker = AnimPickerNode(node)
+            picker.modify()
+            self.add_picker(picker)
+            self.set_current_picker(picker)
+            break
+
+    def revert_reference_edits(self):
         """
-        Save the picker for the currently active rig to the rig node.
+        Revert reference edits on the current picker if it's from a referenced node.
         """
-        if self._active_rig:
-            picker_data = self.serialize()
-            save_picker_to_node(picker_data, self._active_rig)
-            logger.info(f"Saved picker to rig: {self._active_rig}")
+        if self._current_picker and isinstance(self._current_picker, AnimPickerNode):
+            self._current_picker.revert_reference_edits()
+            self._current_picker.load()
+            self.picker_panel.load()
+
+    def set_current_picker(self, picker: Optional[AnimPickerModel]):
+        # could be a stale rig button, make sure the rig is valid
+        if picker != self._current_picker:
+            self._current_picker = picker
+            self._on_picker_changed()
+        else:
+            # temporary fix to prevent buttons from being unchecked when clicked
+            self._refresh_picker_btns()
+
+    def close_picker_with_prompt(self) -> bool:
+        """
+        Close the current picker.
+
+        Returns:
+            True if the picker was closed, or no picker was open, false if cancelled.
+        """
+        if self._current_picker and self._current_picker.is_modified():
+            response = pm.confirmDialog(
+                title="Save Picker Changes",
+                message=f"Do you want to save changes made to {self._current_picker.get_name()}?",
+                button=["Save", "Don't Save", "Cancel"],
+                dismissString="Cancel",
+            )
+            if response == "Save":
+                self._save_current_picker()
+            elif response == "Don't Save":
+                # ignore lost changes
+                self._current_picker.clear_modified()
+                self._on_picker_modified()
+            elif response == "Cancel":
+                return False
+
+            self._current_picker = None
+            self._on_picker_changed()
+
+        return True
+
+    def _on_picker_changed(self):
+        self.picker_panel.set_model(self._current_picker)
+        self._refresh_picker_btns()
+        self.ui.save_btn.setEnabled(self._current_picker is not None)
+
+    def _refresh_picker_btns(self):
+        # highlight active picker button
+        for picker, btn in self.picker_buttons.items():
+            self._update_button_text(btn, picker)
+            if self._current_picker and picker == self._current_picker:
+                btn.setChecked(True)
+            else:
+                btn.setChecked(False)
+
+    def refresh_pickers(self):
+        """
+        Find all available picker models, including rigs and files.
+        """
+        self.set_current_picker(None)
+        self.clear_all_pickers()
+        self._find_picker_nodes()
+
+        # open the first picker
+        if self._pickers:
+            self.set_current_picker(self._pickers[0])
+
+    def _find_picker_nodes(self):
+        picker_nodes = find_picker_nodes()
+
+        for node in picker_nodes:
+            if meta.hasMetaClass(node, PICKER_METACLASS):
+                picker = AnimPickerNode(node)
+                self.add_picker(picker)
+
+    def _save_current_picker(self):
+        """
+        Save the currently open picker.
+        """
+        if self._current_picker:
+            self.picker_panel.update_model()
+            self._current_picker.save()
+            self._on_picker_modified()
+
+    def _on_picker_modified(self):
+        btn = self.picker_buttons.get(self._current_picker)
+        if btn:
+            self._update_button_text(btn, self._current_picker)
+
+    def _update_button_text(self, button: QtWidgets.QPushButton, picker: AnimPickerModel):
+        suffix = "*" if picker.is_modified() else ""
+        button.setText(f"{picker.get_name()}{suffix}")
 
     def _on_view_scale_changed(self, view_scale: float):
         self._update_zoom_label()
@@ -976,20 +1239,6 @@ class AnimPickerWidget(QtWidgets.QWidget):
         else:
             self.ui.toggle_lock_btn.setIcon(QtGui.QIcon(":/icon/lock_open.svg"))
             self.ui.locked_label.setText("Unlocked")
-
-    def serialize(self) -> dict:
-        """
-        Serialize the current picker to data.
-        """
-        return self.picker_panel.serialize()
-
-    def deserialize(self, picker_data: dict = None):
-        """
-        Deserialize picker data for the active rig.
-        """
-        if not picker_data:
-            picker_data = {}
-        self.picker_panel.deserialize(picker_data)
 
 
 class AnimPickerWindow(PulseWindow):

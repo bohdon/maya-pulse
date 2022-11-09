@@ -46,10 +46,18 @@ class Ui_AnimPicker(object):
 
         self.horizontalLayout_2.addWidget(self.refresh_btn)
 
-        self.rigs_layout = QHBoxLayout()
-        self.rigs_layout.setObjectName(u"rigs_layout")
+        self.picker_list_layout = QHBoxLayout()
+        self.picker_list_layout.setObjectName(u"picker_list_layout")
 
-        self.horizontalLayout_2.addLayout(self.rigs_layout)
+        self.horizontalLayout_2.addLayout(self.picker_list_layout)
+
+        self.new_btn = QToolButton(self.header_frame)
+        self.new_btn.setObjectName(u"new_btn")
+        icon1 = QIcon()
+        icon1.addFile(u":/icon/plus.svg", QSize(), QIcon.Normal, QIcon.Off)
+        self.new_btn.setIcon(icon1)
+
+        self.horizontalLayout_2.addWidget(self.new_btn)
 
         self.horizontalSpacer = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
 
@@ -62,17 +70,17 @@ class Ui_AnimPicker(object):
 
         self.toggle_lock_btn = QToolButton(self.header_frame)
         self.toggle_lock_btn.setObjectName(u"toggle_lock_btn")
-        icon1 = QIcon()
-        icon1.addFile(u":/icon/lock.svg", QSize(), QIcon.Normal, QIcon.Off)
-        self.toggle_lock_btn.setIcon(icon1)
+        icon2 = QIcon()
+        icon2.addFile(u":/icon/lock.svg", QSize(), QIcon.Normal, QIcon.Off)
+        self.toggle_lock_btn.setIcon(icon2)
 
         self.horizontalLayout_2.addWidget(self.toggle_lock_btn)
 
         self.save_btn = QToolButton(self.header_frame)
         self.save_btn.setObjectName(u"save_btn")
-        icon2 = QIcon()
-        icon2.addFile(u":/icon/floppy_disk.svg", QSize(), QIcon.Normal, QIcon.Off)
-        self.save_btn.setIcon(icon2)
+        icon3 = QIcon()
+        icon3.addFile(u":/icon/floppy_disk.svg", QSize(), QIcon.Normal, QIcon.Off)
+        self.save_btn.setIcon(icon3)
 
         self.horizontalLayout_2.addWidget(self.save_btn)
 
@@ -96,9 +104,9 @@ class Ui_AnimPicker(object):
         self.horizontalLayout.setContentsMargins(2, 2, 2, 2)
         self.zoom_reset_btn = QToolButton(self.footer_frame)
         self.zoom_reset_btn.setObjectName(u"zoom_reset_btn")
-        icon3 = QIcon()
-        icon3.addFile(u":/icon/reset.svg", QSize(), QIcon.Normal, QIcon.Off)
-        self.zoom_reset_btn.setIcon(icon3)
+        icon4 = QIcon()
+        icon4.addFile(u":/icon/reset.svg", QSize(), QIcon.Normal, QIcon.Off)
+        self.zoom_reset_btn.setIcon(icon4)
 
         self.horizontalLayout.addWidget(self.zoom_reset_btn)
 
@@ -121,6 +129,10 @@ class Ui_AnimPicker(object):
 #if QT_CONFIG(statustip)
         self.refresh_btn.setStatusTip(QCoreApplication.translate("AnimPicker", u"Refresh the available rigs.", None))
 #endif // QT_CONFIG(statustip)
+#if QT_CONFIG(statustip)
+        self.new_btn.setStatusTip(QCoreApplication.translate("AnimPicker", u"Create a new picker for the selected node.", None))
+#endif // QT_CONFIG(statustip)
+        self.new_btn.setText(QCoreApplication.translate("AnimPicker", u"...", None))
         self.locked_label.setText(QCoreApplication.translate("AnimPicker", u"Locked", None))
         self.locked_label.setProperty("cssClasses", QCoreApplication.translate("AnimPicker", u"help", None))
 #if QT_CONFIG(statustip)
