@@ -531,8 +531,7 @@ class AnimPickerPanel(QtWidgets.QWidget):
 
         self._is_deserializing = False
 
-        # TODO: this isn't accurate, should be 'picker modified state changed'
-        self.pickerModified.emit()
+        self.update_btn_selection_to_match_scene()
         self._on_view_changed()
         self.repaint()
 
@@ -1058,6 +1057,8 @@ class AnimPickerWidget(QtWidgets.QWidget):
         # map of pickers to their buttons in the toolbar
         self.picker_buttons: dict[AnimPickerModel, QtWidgets.QPushButton] = {}
 
+        self.sync_views = True
+
         self.ui = Ui_AnimPicker()
         self.ui.setupUi(self)
 
@@ -1168,7 +1169,16 @@ class AnimPickerWidget(QtWidgets.QWidget):
         return True
 
     def _on_picker_changed(self):
+        if self.sync_views:
+            view_scale = self.picker_panel.view_scale
+            view_offset_raw = self.picker_panel.view_offset_raw
+
         self.picker_panel.set_model(self._current_picker)
+
+        if self.sync_views:
+            self.picker_panel.set_view_scale(view_scale)
+            self.picker_panel.set_view_offset_raw(view_offset_raw)
+
         self._refresh_picker_btns()
         self.ui.save_btn.setEnabled(self._current_picker is not None)
 
