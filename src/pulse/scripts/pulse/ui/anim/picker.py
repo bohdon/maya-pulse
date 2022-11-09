@@ -1079,6 +1079,37 @@ class AnimPickerWidget(QtWidgets.QWidget):
         self.refresh_pickers()
 
     def keyPressEvent(self, event: QtGui.QKeyEvent):
+        # number keys to switch pickers
+        if event.key() == QtCore.Qt.Key_1:
+            self.set_current_picker_by_index(0)
+            return
+        elif event.key() == QtCore.Qt.Key_2:
+            self.set_current_picker_by_index(1)
+            return
+        elif event.key() == QtCore.Qt.Key_3:
+            self.set_current_picker_by_index(2)
+            return
+        elif event.key() == QtCore.Qt.Key_4:
+            self.set_current_picker_by_index(3)
+            return
+        elif event.key() == QtCore.Qt.Key_5:
+            self.set_current_picker_by_index(4)
+            return
+        elif event.key() == QtCore.Qt.Key_6:
+            self.set_current_picker_by_index(5)
+            return
+        elif event.key() == QtCore.Qt.Key_7:
+            self.set_current_picker_by_index(6)
+            return
+        elif event.key() == QtCore.Qt.Key_8:
+            self.set_current_picker_by_index(7)
+            return
+        elif event.key() == QtCore.Qt.Key_9:
+            self.set_current_picker_by_index(8)
+            return
+        elif event.key() == QtCore.Qt.Key_0:
+            self.set_current_picker_by_index(9)
+            return
         # Ctrl + Shift + R to revert reference edits
         if event.key() == QtCore.Qt.Key_R and event.modifiers() == QtCore.Qt.ControlModifier | QtCore.Qt.ShiftModifier:
             self.revert_reference_edits()
@@ -1139,6 +1170,10 @@ class AnimPickerWidget(QtWidgets.QWidget):
         else:
             # temporary fix to prevent buttons from being unchecked when clicked
             self._refresh_picker_btns()
+
+    def set_current_picker_by_index(self, index: int):
+        if 0 <= index < len(self._pickers):
+            self.set_current_picker(self._pickers[index])
 
     def close_picker_with_prompt(self) -> bool:
         """
