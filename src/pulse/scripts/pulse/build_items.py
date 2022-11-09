@@ -282,12 +282,16 @@ class BuildActionAttribute(object):
     def __repr__(self):
         return f"<{self.__class__.__name__} '{self.action_id}.{self.name}'>"
 
-    def is_valid_attribute(self) -> bool:
+    def is_known_attribute(self) -> bool:
         """
         Return true if this attribute is a known and valid attribute for a build action.
         Will be false if the attribute is a placeholder left behind for a missing attribute.
         """
-        return self.action_spec is not None and self.name is not None
+        if self.action_spec and self.name:
+            for attr in self.action_spec.attrs:
+                if attr.get("name") == self.name:
+                    return True
+        return False
 
     @classmethod
     def _find_attr_config(cls, attr_name: str, action_spec: BuildActionSpec) -> dict:
@@ -696,6 +700,12 @@ class BuildActionData(object):
         """
         return self._attrs
 
+    def get_known_attrs(self) -> dict[str, BuildActionAttribute]:
+        """
+        Return all attributes for this BuildAction class that are known, valid attributes.
+        """
+        return {name: attr for name, attr in self._attrs.items() if attr.is_known_attribute()}
+
     def get_attr_names(self) -> Iterable[str]:
         """
         Return a list of attribute names for this BuildAction class
@@ -749,9 +759,16 @@ class BuildActionData(object):
         """
         data = UnsortableOrderedDict()
         data["id"] = self._action_id
+        # if this action's spec is not valid, then keep all invalid attributes since we don't
+        # know if they are real attributes or not.
+        keep_invalid = not self.is_valid()
         # serialize all attributes
         for attr_name, attr in self._attrs.items():
-            # don't serialize default attribute values
+            # discard attributes that are no-longer valid
+            if not (attr.is_known_attribute() or keep_invalid):
+                LOG.info("Discarding unknown attribute data: %s", attr)
+                continue
+            # don't serialize default values
             if attr.is_value_set():
                 data[attr_name] = attr.get_value()
         return data
@@ -1031,7 +1048,13 @@ class BuildActionProxy(BuildActionData):
     def serialize(self):
         data = super(BuildActionProxy, self).serialize()
         if self._variant_attr_names:
-            data["variantAttrs"] = self._variant_attr_names
+            if self.is_valid():
+                # filter out unknown attributes
+                known_attrs = self.get_known_attrs()
+                data["variantAttrs"] = [name for name in self._variant_attr_names if name in known_attrs]
+            else:
+                # include all attributes since we can't verify which are known
+                data["variantAttrs"] = self._variant_attr_names
         if self._variants:
             data["variants"] = [self.serialize_variant(v) for v in self._variants]
         return data
