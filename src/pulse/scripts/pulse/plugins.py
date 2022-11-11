@@ -98,9 +98,9 @@ class CmdFlag(CmdSyntaxItem):
             return arg_parser.flagArgumentString(self.flag, index)
 
 
-class PulseCmdBase(MPxCommand):
+class CmdBase(MPxCommand):
     """
-    Base class for any Pulse command, provides argument parsing utils to simplify writing commands.
+    Base class for any plugin command, provides argument parsing utils to simplify writing commands.
     """
 
     @classmethod
@@ -203,6 +203,12 @@ class PulseCmdBase(MPxCommand):
 
     def isUndoable(self):
         return True
+
+
+class PulseCmdBase(CmdBase):
+    """
+    Extends CmdBase with quick access to the Pulse blueprint model.
+    """
 
     @property
     def blueprint_model(self) -> BlueprintUIModel:
