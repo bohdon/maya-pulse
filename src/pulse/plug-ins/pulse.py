@@ -1,4 +1,5 @@
 import os
+from typing import List, Optional, Type
 
 import maya.api.OpenMaya as om
 
@@ -6,7 +7,7 @@ from pulse.serializer import serialize_attr_value, deserialize_attr_value
 from pulse.ui.core import BlueprintUIModel
 
 # the list of all cmd classes in this plugin
-CMD_CLASSES = []
+_CMD_CLASSES = []
 
 
 def maya_useNewAPI():
@@ -17,56 +18,201 @@ def maya_useNewAPI():
     pass
 
 
-def getBlueprintModel():
-    model = BlueprintUIModel.get_default_model()
-    return model
+def initializePlugin(plugin):
+    plugin_fn = om.MFnPlugin(plugin)
+    cmd_cls: Type[PulseCmdBase]
+    for cmd_cls in _CMD_CLASSES:
+        plugin_fn.registerCommand(cmd_cls.get_name(), cmd_cls.create_cmd, cmd_cls.create_syntax)
 
 
-class CmdFlag(object):
+def uninitializePlugin(plugin):
+    plugin_fn = om.MFnPlugin(plugin)
+    cmd_cls: Type[PulseCmdBase]
+    for cmd_cls in _CMD_CLASSES:
+        plugin_fn.deregisterCommand(cmd_cls.get_name())
+
+
+class CmdSyntaxItem(object):
     """
-    Simple class for wrapping arguments needed to build
-    a maya command Flag. Can be unpacked and passed to
-    MSyntax.addFlag()
+    Base class for an argument or flag that can be added to an MSyntax.
     """
 
-    def __init__(self, flag, flagLong, flagType=None):
+    def __init__(self):
+        # the value of this item
+        self.value = None
+
+    def add_to(self, syntax: om.MSyntax):
+        """Add this item to an MSyntax."""
+        raise NotImplementedError
+
+    def get_value(self, arg_parser: om.MArgParser, index: int):
+        """Return the value of this item from an arg parser."""
+        raise NotImplementedError
+
+
+class CmdArg(CmdSyntaxItem):
+    """
+    Simple class for wrapping argument types for a maya command.
+    Designed to pass the `arg_type` to MSyntax.addArg().
+    """
+
+    def __init__(self, arg_type: int):
+        super().__init__()
+        self.arg_type = arg_type
+
+    def add_to(self, syntax: om.MSyntax):
+        syntax.addArg(self.arg_type)
+
+    def get_value(self, arg_parser: om.MArgParser, index: int):
+        if self.arg_type == om.MSyntax.kBoolean:
+            return arg_parser.commandArgumentBool(index)
+        elif self.arg_type == om.MSyntax.kDouble:
+            return arg_parser.commandArgumentDouble(index)
+        elif self.arg_type == om.MSyntax.kLong:
+            return arg_parser.commandArgumentInt(index)
+        elif self.arg_type == om.MSyntax.kAngle:
+            return arg_parser.commandArgumentMAngle(index)
+        elif self.arg_type == om.MSyntax.kDistance:
+            return arg_parser.commandArgumentMDistance(index)
+        elif self.arg_type == om.MSyntax.kTime:
+            return arg_parser.commandArgumentMTime(index)
+        elif self.arg_type == om.MSyntax.kString:
+            return arg_parser.commandArgumentString(index)
+
+
+class CmdFlag(CmdSyntaxItem):
+    """
+    Simple class for wrapping arguments needed to build a maya command Flag.
+    Can be unpacked and passed to MSyntax.addFlag().
+    """
+
+    def __init__(self, flag: str, flag_long: str, flag_type: Optional[int] = None, default=None):
+        super().__init__()
         self.flag = flag
-        self.flagLong = flagLong
-        self.flagType = flagType
+        self.flag_long = flag_long
+        self.flag_type = flag_type
+        self.default = default
 
-    def __iter__(self):
-        yield self.flag
-        yield self.flagLong
-        if self.flagType is not None:
-            yield self.flagType
+    def add_to(self, syntax: om.MSyntax):
+        args = [self.flag, self.flag_long]
+        if self.flag_type is not None:
+            args.append(self.flag_type)
+        syntax.addFlag(*args)
+
+    def get_value(self, arg_parser: om.MArgParser, index: int):
+        if not arg_parser.isFlagSet(self.flag):
+            return self.default
+        if self.flag_type == om.MSyntax.kBoolean:
+            return arg_parser.flagArgumentBool(self.flag, index)
+        elif self.flag_type == om.MSyntax.kDouble:
+            return arg_parser.flagArgumentDouble(self.flag, index)
+        elif self.flag_type == om.MSyntax.kLong:
+            return arg_parser.flagArgumentInt(self.flag, index)
+        elif self.flag_type == om.MSyntax.kAngle:
+            return arg_parser.flagArgumentMAngle(self.flag, index)
+        elif self.flag_type == om.MSyntax.kDistance:
+            return arg_parser.flagArgumentMDistance(self.flag, index)
+        elif self.flag_type == om.MSyntax.kTime:
+            return arg_parser.flagArgumentMTime(self.flag, index)
+        elif self.flag_type == om.MSyntax.kString:
+            return arg_parser.flagArgumentString(self.flag, index)
 
 
 class PulseCmdBase(om.MPxCommand):
     """
-    Base class for any Pulse command, provides some
-    basic argument parsing and data serialization utils.
+    Base class for any Pulse command, provides argument parsing utils to simplify writing commands.
     """
 
-    cmdName = None
-    # required number of arguments
-    numArgs = 0
+    @classmethod
+    def create_cmd(cls):
+        """Create and return a new instance of this command."""
+        return cls()
+
+    @classmethod
+    def create_syntax(cls):
+        """Return an MSyntax for the command."""
+        syntax = om.MSyntax()
+        for arg in cls.get_args():
+            arg.add_to(syntax)
+        for flag in cls.get_flags():
+            flag.add_to(syntax)
+        return syntax
+
+    @classmethod
+    def get_name(cls):
+        """Return the name of the command."""
+        # take class name, strip Cmd suffix, and make first letter lowercase
+        # 'PulseMyActionCmd' -> 'pulseMyAction'
+        return cls.__name__[0].lower() + cls.__name__[1:-3]
+
+    @classmethod
+    def get_args(cls) -> List[CmdArg]:
+        """Return all available arguments."""
+        return []
+
+    @classmethod
+    def get_flags(cls) -> List[CmdFlag]:
+        """Return all available flags."""
+        return []
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.arg_parser = None
+
+    def get_arg_parser(self, args):
+        """
+        Return an MArgParser for the given args. Ensures that the number of arguments is valid.
+        """
+        num_args = len(self.get_args())
+        if len(args) != num_args:
+            raise TypeError(f"{self.get_name()}() takes exactly {num_args} arguments ({len(args)} given)")
+
+        try:
+            arg_parser = om.MArgParser(self.syntax(), args)
+        except RuntimeError:
+            om.MGlobal.displayError("Error while parsing arguments")
+            raise
+
+        return arg_parser
+
+    def _get_arg_index(self, arg: CmdArg) -> int:
+        args = self.get_args()
+        try:
+            return args.index(arg)
+        except ValueError:
+            return -1
+
+    def get_arg(self, arg: CmdArg, arg_parser: om.MArgParser):
+        """Return the value of an argument."""
+        index = self._get_arg_index(arg)
+        if index >= 0:
+            return arg.get_value(arg_parser, index)
+
+    def _get_flag_index(self, flag: CmdFlag) -> int:
+        flags = self.get_flags()
+        try:
+            return flags.index(flag)
+        except ValueError:
+            return -1
+
+    def get_flag(self, flag: CmdFlag, arg_parser: om.MArgParser):
+        """Return the value of a flag."""
+        index = self._get_flag_index(flag)
+        if index >= 0:
+            return flag.get_value(arg_parser, index)
+
+    def parse_arguments(self, args):
+        """
+        Parse any arguments. Use `get_arg_parser`, `get_arg` and `get_flag` to easily access values.
+        """
+        pass
 
     def isUndoable(self):
         return True
 
-    def getArgParser(self, args):
-        if len(args) != self.numArgs:
-            raise TypeError(
-                "{0.cmdName}() takes exactly {0.numArgs} arguments "
-                "({1} given)".format(self, len(args)))
-
-        try:
-            argparser = om.MArgParser(self.syntax(), args)
-        except RuntimeError:
-            om.MGlobal.displayError('Error while parsing arguments')
-            raise
-
-        return argparser
+    @property
+    def blueprint_model(self) -> BlueprintUIModel:
+        return BlueprintUIModel.get()
 
 
 class PulseCreateStepCmd(PulseCmdBase):
@@ -74,53 +220,40 @@ class PulseCreateStepCmd(PulseCmdBase):
     Command to create a Pulse BuildStep.
     """
 
-    cmdName = "pulseCreateStep"
+    step_path_arg = CmdArg(om.MSyntax.kString)
+    child_index_arg = CmdArg(om.MSyntax.kLong)
+    str_data_arg = CmdArg(om.MSyntax.kString)
 
-    pathFlagType = om.MSyntax.kString
-    indexFlagType = om.MSyntax.kLong
-    dataFlagType = om.MSyntax.kString
-    numArgs = 3
+    @classmethod
+    def get_args(cls) -> List[CmdArg]:
+        return [cls.step_path_arg, cls.child_index_arg, cls.str_data_arg]
 
-    @staticmethod
-    def createCmd():
-        return PulseCreateStepCmd()
-
-    @staticmethod
-    def createSyntax():
-        syntax = om.MSyntax()
-        syntax.addArg(PulseCreateStepCmd.pathFlagType)
-        syntax.addArg(PulseCreateStepCmd.indexFlagType)
-        syntax.addArg(PulseCreateStepCmd.dataFlagType)
-        return syntax
+    def parse_arguments(self, args):
+        parser = self.get_arg_parser(args)
+        self.step_path: str = self.get_arg(self.step_path_arg, parser)
+        self.child_index: int = self.get_arg(self.child_index_arg, parser)
+        self.str_data: str = self.get_arg(self.str_data_arg, parser)
 
     def doIt(self, args):
-        self.parseArguments(args)
+        self.parse_arguments(args)
         return self.redoIt()
 
-    def parseArguments(self, args):
-        argparser = self.getArgParser(args)
-        self.stepPath = argparser.commandArgumentString(0)
-        self.stepChildIndex = argparser.commandArgumentInt(1)
-        self.stepStrData = argparser.commandArgumentString(2)
-
     def redoIt(self):
-        blueprintModel = getBlueprintModel()
-        if blueprintModel:
-            stepData = deserialize_attr_value(self.stepStrData)
-            newStep = blueprintModel.create_step(self.stepPath, self.stepChildIndex, stepData)
-            if not newStep:
+        if self.blueprint_model:
+            step_data = deserialize_attr_value(self.str_data)
+            new_step = self.blueprint_model.create_step(self.step_path, self.child_index, step_data)
+            if not new_step:
                 raise RuntimeError("Failed to create BuildStep")
-            self.newStepPath = newStep.get_full_path()
+            self.new_step_path = new_step.get_full_path()
             self.clearResult()
-            self.setResult(self.newStepPath)
+            self.setResult(self.new_step_path)
 
     def undoIt(self):
-        blueprintModel = getBlueprintModel()
-        if blueprintModel and self.newStepPath:
-            blueprintModel.delete_step(self.newStepPath)
+        if self.blueprint_model and self.new_step_path:
+            self.blueprint_model.delete_step(self.new_step_path)
 
 
-CMD_CLASSES.append(PulseCreateStepCmd)
+_CMD_CLASSES.append(PulseCreateStepCmd)
 
 
 class PulseDeleteStepCmd(PulseCmdBase):
@@ -128,52 +261,38 @@ class PulseDeleteStepCmd(PulseCmdBase):
     Command to delete a Pulse BuildStep.
     """
 
-    cmdName = "pulseDeleteStep"
+    step_path_arg = CmdArg(om.MSyntax.kString)
 
-    pathFlagType = om.MSyntax.kString
-    numArgs = 1
+    @classmethod
+    def get_args(cls) -> List[CmdArg]:
+        return [cls.step_path_arg]
 
-    @staticmethod
-    def createCmd():
-        return PulseDeleteStepCmd()
-
-    @staticmethod
-    def createSyntax():
-        syntax = om.MSyntax()
-        syntax.addArg(PulseDeleteStepCmd.pathFlagType)
-        return syntax
+    def parse_arguments(self, args):
+        parser = self.get_arg_parser(args)
+        self.step_path = self.get_arg(self.step_path_arg, parser)
 
     def doIt(self, args):
-        self.parseArguments(args)
+        self.parse_arguments(args)
         self.redoIt()
 
-    def parseArguments(self, args):
-        argparser = self.getArgParser(args)
-        self.stepPath = argparser.commandArgumentString(0)
-
     def redoIt(self):
-        blueprintModel = getBlueprintModel()
-        if blueprintModel:
-            # save the serialized step data before deleting
-            step = blueprintModel.get_step(self.stepPath)
-            if not step:
-                raise RuntimeError(
-                    "BuildStep not found: {0}".format(self.stepPath))
-            self.deletedStrData = serialize_attr_value(step.serialize())
-            self.deletedChildIndex = step.index_in_parent()
-            if not blueprintModel.delete_step(self.stepPath):
-                raise RuntimeError("Failed to delete BuildStep")
+        # save the serialized step data before deleting
+        step = self.blueprint_model.get_step(self.step_path)
+        if not step:
+            raise RuntimeError("BuildStep not found: {0}".format(self.step_path))
+        self.deleted_str_data = serialize_attr_value(step.serialize())
+        self.deleted_child_index = step.index_in_parent()
+        if not self.blueprint_model.delete_step(self.step_path):
+            raise RuntimeError("Failed to delete BuildStep")
 
     def undoIt(self):
-        blueprintModel = getBlueprintModel()
-        if blueprintModel and self.deletedStrData:
-            deletedData = deserialize_attr_value(self.deletedStrData)
-            parentPath = os.path.dirname(self.stepPath)
-            blueprintModel.create_step(
-                parentPath, self.deletedChildIndex, deletedData)
+        if self.deleted_str_data:
+            deleted_data = deserialize_attr_value(self.deleted_str_data)
+            parent_path = os.path.dirname(self.step_path)
+            self.blueprint_model.create_step(parent_path, self.deleted_child_index, deleted_data)
 
 
-CMD_CLASSES.append(PulseDeleteStepCmd)
+_CMD_CLASSES.append(PulseDeleteStepCmd)
 
 
 class PulseMoveStepCmd(PulseCmdBase):
@@ -181,49 +300,33 @@ class PulseMoveStepCmd(PulseCmdBase):
     Command to move or rename a Pulse BuildStep.
     """
 
-    cmdName = "pulseMoveStep"
+    source_path_arg = CmdArg(om.MSyntax.kString)
+    target_path_arg = CmdArg(om.MSyntax.kString)
 
-    sourceFlagType = om.MSyntax.kString
-    targetFlagType = om.MSyntax.kString
-    numArgs = 2
+    @classmethod
+    def get_args(cls) -> List[CmdArg]:
+        return [cls.source_path_arg, cls.target_path_arg]
 
-    @staticmethod
-    def createCmd():
-        return PulseMoveStepCmd()
-
-    @staticmethod
-    def createSyntax():
-        syntax = om.MSyntax()
-        syntax.addArg(PulseMoveStepCmd.sourceFlagType)
-        syntax.addArg(PulseMoveStepCmd.targetFlagType)
-        return syntax
+    def parse_arguments(self, args):
+        parser = self.get_arg_parser(args)
+        self.source_path: str = self.get_arg(self.source_path_arg, parser)
+        self.target_path: str = self.get_arg(self.target_path_arg, parser)
 
     def doIt(self, args):
-        self.parseArguments(args)
+        self.parse_arguments(args)
         self.redoIt()
 
-    def parseArguments(self, args):
-        argparser = self.getArgParser(args)
-        self.sourcePath = argparser.commandArgumentString(0)
-        self.targetPath = argparser.commandArgumentString(1)
-
     def redoIt(self):
-        blueprintModel = getBlueprintModel()
-        if blueprintModel:
-            # save the resolved path after performing the move
-            self.resolvedTargetPath = blueprintModel.move_step(
-                self.sourcePath, self.targetPath)
-            if self.resolvedTargetPath is None:
-                raise RuntimeError("Failed to move BuildStep")
+        # save the resolved path after performing the move
+        self.resolved_target_path = self.blueprint_model.move_step(self.source_path, self.target_path)
+        if self.resolved_target_path is None:
+            raise RuntimeError("Failed to move BuildStep")
 
     def undoIt(self):
-        blueprintModel = getBlueprintModel()
-        if blueprintModel:
-            blueprintModel.move_step(
-                self.resolvedTargetPath, self.sourcePath)
+        self.blueprint_model.move_step(self.resolved_target_path, self.source_path)
 
 
-CMD_CLASSES.append(PulseMoveStepCmd)
+_CMD_CLASSES.append(PulseMoveStepCmd)
 
 
 class PulseRenameStepCmd(PulseCmdBase):
@@ -231,51 +334,35 @@ class PulseRenameStepCmd(PulseCmdBase):
     Command to move or rename a Pulse BuildStep.
     """
 
-    cmdName = "pulseRenameStep"
+    step_path_arg = CmdArg(om.MSyntax.kString)
+    new_name_arg = CmdArg(om.MSyntax.kString)
 
-    pathFlagType = om.MSyntax.kString
-    nameFlagType = om.MSyntax.kString
-    numArgs = 2
+    @classmethod
+    def get_args(cls) -> List[CmdArg]:
+        return [cls.step_path_arg, cls.new_name_arg]
 
-    @staticmethod
-    def createCmd():
-        return PulseRenameStepCmd()
-
-    @staticmethod
-    def createSyntax():
-        syntax = om.MSyntax()
-        syntax.addArg(PulseRenameStepCmd.pathFlagType)
-        syntax.addArg(PulseRenameStepCmd.nameFlagType)
-        return syntax
+    def parse_arguments(self, args):
+        parser = self.get_arg_parser(args)
+        self.step_path: str = self.get_arg(self.step_path_arg, parser)
+        self.new_name: str = self.get_arg(self.new_name_arg, parser)
 
     def doIt(self, args):
-        self.parseArguments(args)
+        self.parse_arguments(args)
         self.redoIt()
 
-    def parseArguments(self, args):
-        argparser = self.getArgParser(args)
-        self.stepPath = argparser.commandArgumentString(0)
-        self.targetName = argparser.commandArgumentString(1)
-
     def redoIt(self):
-        blueprintModel = getBlueprintModel()
-        if blueprintModel:
-            # save the resolved path after performing the move
-            step = blueprintModel.get_step(self.stepPath)
-            self.oldName = step.name if step else ''
-            self.resolvedTargetPath = blueprintModel.rename_step(
-                self.stepPath, self.targetName)
-            if self.resolvedTargetPath is None:
-                raise RuntimeError("Failed to rename BuildStep")
+        # save the resolved path after performing the move
+        step = self.blueprint_model.get_step(self.step_path)
+        self.old_name = step.name if step else ""
+        self.resolved_target_path = self.blueprint_model.rename_step(self.step_path, self.new_name)
+        if self.resolved_target_path is None:
+            raise RuntimeError("Failed to rename BuildStep")
 
     def undoIt(self):
-        blueprintModel = getBlueprintModel()
-        if blueprintModel:
-            blueprintModel.rename_step(
-                self.resolvedTargetPath, self.oldName)
+        self.blueprint_model.rename_step(self.resolved_target_path, self.old_name)
 
 
-CMD_CLASSES.append(PulseRenameStepCmd)
+_CMD_CLASSES.append(PulseRenameStepCmd)
 
 
 class PulseSetActionAttrCmd(PulseCmdBase):
@@ -283,64 +370,48 @@ class PulseSetActionAttrCmd(PulseCmdBase):
     Command to modify the value of a Pulse BuildAction attribute.
     """
 
-    cmdName = "pulseSetActionAttr"
-
     # the full path to the attribute, e.g. 'My/Build/Step.myAttr'
-    attrPathArgType = om.MSyntax.kString
+    attr_path_arg = CmdArg(om.MSyntax.kString)
     # the serialized value of the attribute, e.g. '123'
-    valueArgType = om.MSyntax.kString
+    new_value_arg = CmdArg(om.MSyntax.kString)
     # the index of the variant to modify
-    variantFlag = CmdFlag('-v', '-variant', om.MSyntax.kLong)
-    numArgs = 2
+    variant_index_flag = CmdFlag("-v", "-variant", om.MSyntax.kLong, -1)
 
-    @staticmethod
-    def createCmd():
-        return PulseSetActionAttrCmd()
+    @classmethod
+    def get_args(cls) -> List[CmdArg]:
+        return [cls.attr_path_arg, cls.new_value_arg]
 
-    @staticmethod
-    def createSyntax():
-        syntax = om.MSyntax()
-        syntax.addArg(PulseSetActionAttrCmd.attrPathArgType)
-        syntax.addArg(PulseSetActionAttrCmd.valueArgType)
-        syntax.addFlag(*PulseSetActionAttrCmd.variantFlag)
-        return syntax
+    @classmethod
+    def get_flags(cls) -> List[CmdFlag]:
+        return [cls.variant_index_flag]
+
+    def parse_arguments(self, args):
+        parser = self.get_arg_parser(args)
+        self.attr_path: str = self.get_arg(self.attr_path_arg, parser)
+        self.new_value: str = self.get_arg(self.new_value_arg, parser)
+        self.variant_index: int = self.get_flag(self.variant_index_flag, parser)
 
     def doIt(self, args):
-        self.parseArguments(args)
+        self.parse_arguments(args)
         self.redoIt()
 
-    def parseArguments(self, args):
-        argparser = self.getArgParser(args)
-        self.attrPath = argparser.commandArgumentString(0)
-        self.newStrValue = argparser.commandArgumentString(1)
-        self.variantIndex = -1
-        if argparser.isFlagSet(PulseSetActionAttrCmd.variantFlag.flag):
-            self.variantIndex = argparser.flagArgumentInt(
-                PulseSetActionAttrCmd.variantFlag.flag, 0)
-
     def redoIt(self):
-        blueprintModel = getBlueprintModel()
-        if blueprintModel:
-            # store old value as str
-            self.oldStrValue = serialize_attr_value(
-                blueprintModel.get_action_attr(
-                    self.attrPath, self.variantIndex))
+        # store old value as str
+        self.old_str_value = serialize_attr_value(
+            self.blueprint_model.get_action_attr(self.attr_path, self.variant_index)
+        )
 
-            # deserialize str value into objects
-            value = deserialize_attr_value(self.newStrValue)
-            blueprintModel.set_action_attr(
-                self.attrPath, value, self.variantIndex)
+        # deserialize str value into objects
+        value = deserialize_attr_value(self.new_value)
+        self.blueprint_model.set_action_attr(self.attr_path, value, self.variant_index)
 
     def undoIt(self):
-        blueprintModel = getBlueprintModel()
-        if blueprintModel:
-            # deserialize str value into objects
-            value = deserialize_attr_value(self.oldStrValue)
-            blueprintModel.set_action_attr(
-                self.attrPath, value, self.variantIndex)
+        # deserialize str value into objects
+        value = deserialize_attr_value(self.old_str_value)
+        self.blueprint_model.set_action_attr(self.attr_path, value, self.variant_index)
 
 
-CMD_CLASSES.append(PulseSetActionAttrCmd)
+_CMD_CLASSES.append(PulseSetActionAttrCmd)
 
 
 class PulseSetIsVariantAttrCmd(PulseCmdBase):
@@ -349,57 +420,39 @@ class PulseSetIsVariantAttrCmd(PulseCmdBase):
     from being constant or variant.
     """
 
-    cmdName = "pulseSetIsVariantAttr"
-
     # the full path to the attribute, e.g. 'My/Build/Step.myAttr'
-    attrPathArgType = om.MSyntax.kString
+    attr_path_arg = CmdArg(om.MSyntax.kString)
     # whether the attribute should be variant
-    valueArgType = om.MSyntax.kBoolean
-    numArgs = 2
+    new_value_arg = CmdArg(om.MSyntax.kBoolean)
 
-    @staticmethod
-    def createCmd():
-        return PulseSetIsVariantAttrCmd()
+    @classmethod
+    def get_args(cls) -> List[CmdArg]:
+        return [cls.attr_path_arg, cls.new_value_arg]
 
-    @staticmethod
-    def createSyntax():
-        syntax = om.MSyntax()
-        syntax.addArg(PulseSetIsVariantAttrCmd.attrPathArgType)
-        syntax.addArg(PulseSetIsVariantAttrCmd.valueArgType)
-        return syntax
+    def parse_arguments(self, args):
+        parser = self.get_arg_parser(args)
+        self.attr_path: str = self.get_arg(self.attr_path_arg, parser)
+        self.new_value: bool = self.get_arg(self.new_value_arg, parser)
+        self.step_path: str = self.attr_path.split(".")[0]
 
     def doIt(self, args):
-        self.parseArguments(args)
+        self.parse_arguments(args)
         self.redoIt()
 
-    def parseArguments(self, args):
-        argparser = self.getArgParser(args)
-        self.attrPath = argparser.commandArgumentString(0)
-        self.stepPath = self.attrPath.split('.')[0]
-        self.newValue = argparser.commandArgumentBool(1)
-
     def redoIt(self):
-        blueprintModel = getBlueprintModel()
-        if blueprintModel:
-            # TODO: fail if not changing anything
+        # TODO: fail if not changing anything
 
-            # snapshot the whole action proxy, since it may change
-            # significantly when modifying variant attrs
-            self.oldStrData = serialize_attr_value(
-                blueprintModel.get_action_data(
-                    self.stepPath))
-            blueprintModel.set_is_action_attr_variant(
-                self.attrPath, self.newValue)
+        # snapshot the whole action proxy, since it may change
+        # significantly when modifying variant attrs
+        self.old_str_data = serialize_attr_value(self.blueprint_model.get_action_data(self.step_path))
+        self.blueprint_model.set_is_action_attr_variant(self.attr_path, self.new_value)
 
     def undoIt(self):
-        blueprintModel = getBlueprintModel()
-        if blueprintModel:
-            oldData = deserialize_attr_value(self.oldStrData)
-            blueprintModel.set_action_data(
-                self.stepPath, oldData)
+        old_data = deserialize_attr_value(self.old_str_data)
+        self.blueprint_model.set_action_data(self.step_path, old_data)
 
 
-CMD_CLASSES.append(PulseSetIsVariantAttrCmd)
+_CMD_CLASSES.append(PulseSetIsVariantAttrCmd)
 
 
 class PulseSetIsActionMirroredCmd(PulseCmdBase):
@@ -407,57 +460,31 @@ class PulseSetIsActionMirroredCmd(PulseCmdBase):
     Command to change whether a Pulse BuildAction is mirrored or not.
     """
 
-    cmdName = "pulseSetIsActionMirrored"
-
-    # the full path to the step, e.g. 'My/Build/Step'
-    stepPathArgType = om.MSyntax.kString
+    # the full path to the attribute, e.g. 'My/Build/Step.myAttr'
+    attr_path_arg = CmdArg(om.MSyntax.kString)
     # whether the action should be mirrored
-    valueArgType = om.MSyntax.kBoolean
-    numArgs = 2
+    new_value_arg = CmdArg(om.MSyntax.kBoolean)
 
-    @staticmethod
-    def createCmd():
-        return PulseSetIsActionMirroredCmd()
+    @classmethod
+    def get_args(cls) -> List[CmdArg]:
+        return [cls.attr_path_arg, cls.new_value_arg]
 
-    @staticmethod
-    def createSyntax():
-        syntax = om.MSyntax()
-        syntax.addArg(PulseSetIsActionMirroredCmd.stepPathArgType)
-        syntax.addArg(PulseSetIsActionMirroredCmd.valueArgType)
-        return syntax
+    def parse_arguments(self, args):
+        parser = self.get_arg_parser(args)
+        self.step_path: str = self.get_arg(self.attr_path_arg, parser)
+        self.new_value: bool = self.get_arg(self.new_value_arg, parser)
 
     def doIt(self, args):
-        self.parseArguments(args)
+        self.parse_arguments(args)
         self.redoIt()
 
-    def parseArguments(self, args):
-        argparser = self.getArgParser(args)
-        self.stepPath = argparser.commandArgumentString(0)
-        self.newValue = argparser.commandArgumentBool(1)
-
     def redoIt(self):
-        blueprintModel = getBlueprintModel()
-        if blueprintModel:
-            # TODO: fail if not changing anything
-            self.oldValue = blueprintModel.is_action_mirrored(self.stepPath)
-            blueprintModel.set_is_action_mirrored(self.stepPath, self.newValue)
+        # TODO: fail if not changing anything
+        self.old_value = self.blueprint_model.is_action_mirrored(self.step_path)
+        self.blueprint_model.set_is_action_mirrored(self.step_path, self.new_value)
 
     def undoIt(self):
-        blueprintModel = getBlueprintModel()
-        if blueprintModel:
-            blueprintModel.set_is_action_attr_variant(self.stepPath, self.oldValue)
+        self.blueprint_model.set_is_action_attr_variant(self.step_path, self.old_value)
 
 
-CMD_CLASSES.append(PulseSetIsActionMirroredCmd)
-
-
-def initializePlugin(plugin):
-    pluginFn = om.MFnPlugin(plugin)
-    for cmd in CMD_CLASSES:
-        pluginFn.registerCommand(cmd.cmdName, cmd.createCmd, cmd.createSyntax)
-
-
-def uninitializePlugin(plugin):
-    pluginFn = om.MFnPlugin(plugin)
-    for cmd in CMD_CLASSES:
-        pluginFn.deregisterCommand(cmd.cmdName)
+_CMD_CLASSES.append(PulseSetIsActionMirroredCmd)
