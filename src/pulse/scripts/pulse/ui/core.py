@@ -286,8 +286,8 @@ class BlueprintUIModel(QtCore.QObject):
     files which are paired with a maya scene file.
     """
 
-    # shared instances, mapped by name
-    _instances: Dict[str, "BlueprintUIModel"] = {}
+    # shared instance
+    _instance: Optional["BlueprintUIModel"] = None
 
     # automatically save the blueprint file when the maya scene is saved
     auto_save = option_var_property("pulse.editor.auto_save", True)
@@ -327,35 +327,29 @@ class BlueprintUIModel(QtCore.QObject):
     rig_exists_changed = QtCore.Signal()
 
     @classmethod
+    def get(cls) -> "BlueprintUIModel":
+        """
+        Return the shared model instance.
+        """
+        if cls._instance is None:
+            cls._instance = cls()
+        return cls._instance
+
+    @classmethod
+    def delete(cls):
+        """
+        Delete the shared model.
+        """
+        if cls._instance:
+            cls._instance.on_delete()
+            cls._instance = None
+
+    @classmethod
     def get_default_model(cls) -> "BlueprintUIModel":
         """
-        Return the default model instance used by editor views.
+        Deprecated: Use BlueprintUIModel.get() instead.
         """
-        return cls.get_shared_model(None)
-
-    @classmethod
-    def get_shared_model(cls, name) -> "BlueprintUIModel":
-        """
-        Return a shared UI model by name, creating a new
-        model if necessary. Will always return a valid
-        BlueprintUIModel.
-        """
-        if name not in cls._instances:
-            cls._instances[name] = cls(name)
-        return cls._instances[name]
-
-    @classmethod
-    def delete_shared_model(cls, name):
-        if name in cls._instances:
-            cls._instances[name].on_delete()
-            del cls._instances[name]
-
-    @classmethod
-    def delete_all_shared_models(cls):
-        instances = cls._instances.values()
-        for instance in instances:
-            instance.on_delete()
-        cls._instances.clear()
+        return cls.get()
 
     def __init__(self, parent=None):
         super(BlueprintUIModel, self).__init__(parent=parent)

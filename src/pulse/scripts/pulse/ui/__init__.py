@@ -70,4 +70,4 @@ def destroy_ui_model_instances():
     """
     from .core import BlueprintUIModel
 
-    BlueprintUIModel.delete_all_shared_models()
+    BlueprintUIModel.delete()
