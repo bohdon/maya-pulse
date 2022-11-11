@@ -7,7 +7,7 @@ from functools import partial
 
 import pymel.core as pm
 
-from ..vendor.Qt import QtCore, QtWidgets
+from ..vendor.Qt import QtWidgets
 from .. import names
 from .. import editor_utils
 from .core import PulseWindow, BlueprintUIModel
@@ -23,7 +23,7 @@ class QuickNameEditor(QtWidgets.QWidget):
     def __init__(self, parent=None):
         super(QuickNameEditor, self).__init__(parent=parent)
 
-        self.blueprint_model = BlueprintUIModel.getDefaultModel()
+        self.blueprint_model = BlueprintUIModel.get_default_model()
 
         # the blueprint config
         self.config = self.blueprint_model.blueprint.get_config()

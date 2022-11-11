@@ -35,7 +35,7 @@ class PythonActionForm(BuildActionProxyForm):
     See :class:`~pulse.source_editor.SourceEditorLauncher` for more info on launching an editor.
     """
 
-    def setupLayoutHeader(self, parent, layout):
+    def setup_layout_header(self, parent, layout):
         edit_btn = QtWidgets.QPushButton(parent)
         edit_btn.setText("Edit Script")
         edit_btn.clicked.connect(self.openScriptFileInEditor)
@@ -47,7 +47,7 @@ class PythonActionForm(BuildActionProxyForm):
             pm.warning('Save the Maya scene to enable script editing')
             return
 
-        actionProxy = self.getActionProxy()
+        actionProxy = self.get_action_proxy()
         functionName = actionProxy.get_attr('function').get_value()
         if not functionName:
             pm.warning('Set a function name first')

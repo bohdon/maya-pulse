@@ -4,7 +4,7 @@ UI model classes, and base classes for common widgets.
 
 import logging
 import os
-from typing import Optional, List
+from typing import Optional, List, cast, Dict
 
 import maya.OpenMaya as api
 import maya.OpenMayaUI as mui
@@ -20,7 +20,7 @@ from ..build_items import BuildStep, BuildAction
 from ..prefs import option_var_property
 from ..serializer import serialize_attr_value
 from .utils import CollapsibleFrame
-from .utils import dpiScale
+from .utils import dpi_scale
 
 LOG = logging.getLogger(__name__)
 LOG.level = logging.DEBUG
@@ -39,7 +39,7 @@ class PulsePanelWidget(QtWidgets.QWidget):
         # the main widget that will be shown and hidden when collapsing this container
         self._content_widget = None
 
-        self.setupUi(self)
+        self.setup_ui(self)
 
     def set_title_text(self, text: str):
         """
@@ -47,7 +47,7 @@ class PulsePanelWidget(QtWidgets.QWidget):
         """
         self.title_label.setText(text)
 
-    def setupUi(self, parent):
+    def setup_ui(self, parent):
         self.main_layout = QtWidgets.QVBoxLayout(parent)
         self.main_layout.setMargin(0)
         self.main_layout.setSpacing(3)
@@ -73,7 +73,7 @@ class PulsePanelWidget(QtWidgets.QWidget):
         """
         self._content_widget = widget
         if self._content_widget:
-            self._content_widget.setVisible(not self.header_frame.isCollapsed())
+            self._content_widget.setVisible(not self.header_frame.is_collapsed())
             self.main_layout.addWidget(self._content_widget)
 
     def _on_collapsed_changed(self, is_collapsed):
@@ -144,18 +144,18 @@ class PulseWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             cls.INSTANCE = cls()
 
         if restore:
-            mixinPtr = mui.MQtUtil.findControl(cls.INSTANCE.objectName())
-            mui.MQtUtil.addWidgetToMayaLayout(int(mixinPtr), int(parent))
+            mixin_ptr = mui.MQtUtil.findControl(cls.INSTANCE.objectName())
+            mui.MQtUtil.addWidgetToMayaLayout(int(mixin_ptr), int(parent))
         else:
-            uiScript = cls.UI_SCRIPT.format(module=cls.WINDOW_MODULE, cls=cls.__name__)
-            closeScript = cls.CLOSE_SCRIPT.format(module=cls.WINDOW_MODULE, cls=cls.__name__)
+            ui_script = cls.UI_SCRIPT.format(module=cls.WINDOW_MODULE, cls=cls.__name__)
+            close_script = cls.CLOSE_SCRIPT.format(module=cls.WINDOW_MODULE, cls=cls.__name__)
 
             cls.INSTANCE.show(
                 dockable=True,
                 floating=(cls.DEFAULT_DOCK_AREA is None),
                 area=cls.DEFAULT_DOCK_AREA,
-                uiScript=uiScript,
-                closeCallback=closeScript,
+                uiScript=ui_script,
+                closeCallback=close_script,
                 requiredPlugin=cls.REQUIRED_PLUGINS,
             )
 
@@ -227,7 +227,7 @@ class PulseWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.preferredSize = self.PREFERRED_SIZE
 
         if self.STARTING_SIZE:
-            self.resize(dpiScale(self.STARTING_SIZE))
+            self.resize(dpi_scale(self.STARTING_SIZE))
 
         self._apply_stylesheet()
 
@@ -287,75 +287,75 @@ class BlueprintUIModel(QtCore.QObject):
     """
 
     # shared instances, mapped by name
-    INSTANCES = {}
+    _instances: Dict[str, "BlueprintUIModel"] = {}
 
     # automatically save the blueprint file when the maya scene is saved
-    autoSave = option_var_property("pulse.editor.auto_save", True)
+    auto_save = option_var_property("pulse.editor.auto_save", True)
 
     # automatically load the blueprint file when a maya scene is opened
-    autoLoad = option_var_property("pulse.editor.auto_load", True)
+    auto_load = option_var_property("pulse.editor.auto_load", True)
 
     # automatically show the action editor when selecting an action in the tree
-    autoShowActionEditor = option_var_property("pulse.editor.auto_show_action_editor", True)
+    auto_show_action_editor = option_var_property("pulse.editor.auto_show_action_editor", True)
 
-    def setAutoSave(self, value):
-        self.autoSave = value
+    def set_auto_save(self, value):
+        self.auto_save = value
 
-    def setAutoLoad(self, value):
-        self.autoLoad = value
+    def set_auto_load(self, value):
+        self.auto_load = value
 
-    def setAutoShowActionEditor(self, value):
-        self.autoShowActionEditor = value
+    def set_auto_show_action_editor(self, value):
+        self.auto_show_action_editor = value
 
     # called after a scene change (new or opened) to allow ui to update
-    # if it was previously frozen while isChangingScenes is true
-    changeSceneFinished = QtCore.Signal()
+    # if it was previously frozen while is_changing_scenes is true
+    change_scene_finished = QtCore.Signal()
 
     # called when the current blueprint file has changed
-    fileChanged = QtCore.Signal()
+    file_changed = QtCore.Signal()
 
     # called when the modified status of the file has changed
-    isFileModifiedChanged = QtCore.Signal(bool)
+    is_file_modified_changed = QtCore.Signal(bool)
 
     # called when the read-only state of the blueprint has changed
-    readOnlyChanged = QtCore.Signal(bool)
+    read_only_changed = QtCore.Signal(bool)
 
     # called when a Blueprint setting has changed, passes the setting key and new value
-    settingChanged = QtCore.Signal(str, object)
+    setting_changed = QtCore.Signal(str, object)
 
     # called when the presence of a built rig has changed
-    rigExistsChanged = QtCore.Signal()
+    rig_exists_changed = QtCore.Signal()
 
     @classmethod
-    def getDefaultModel(cls) -> "BlueprintUIModel":
+    def get_default_model(cls) -> "BlueprintUIModel":
         """
         Return the default model instance used by editor views.
         """
-        return cls.getSharedModel(None)
+        return cls.get_shared_model(None)
 
     @classmethod
-    def getSharedModel(cls, name) -> "BlueprintUIModel":
+    def get_shared_model(cls, name) -> "BlueprintUIModel":
         """
         Return a shared UI model by name, creating a new
         model if necessary. Will always return a valid
         BlueprintUIModel.
         """
-        if name not in cls.INSTANCES:
-            cls.INSTANCES[name] = cls(name)
-        return cls.INSTANCES[name]
+        if name not in cls._instances:
+            cls._instances[name] = cls(name)
+        return cls._instances[name]
 
     @classmethod
-    def deleteSharedModel(cls, name):
-        if name in cls.INSTANCES:
-            cls.INSTANCES[name].onDelete()
-            del cls.INSTANCES[name]
+    def delete_shared_model(cls, name):
+        if name in cls._instances:
+            cls._instances[name].on_delete()
+            del cls._instances[name]
 
     @classmethod
-    def deleteAllSharedModels(cls):
-        instances = cls.INSTANCES.values()
+    def delete_all_shared_models(cls):
+        instances = cls._instances.values()
         for instance in instances:
-            instance.onDelete()
-        cls.INSTANCES.clear()
+            instance.on_delete()
+        cls._instances.clear()
 
     def __init__(self, parent=None):
         super(BlueprintUIModel, self).__init__(parent=parent)
@@ -364,40 +364,40 @@ class BlueprintUIModel(QtCore.QObject):
         loader.load_actions()
 
         # the currently open blueprint file
-        self._blueprintFile: Optional[BlueprintFile] = None
+        self._blueprint_file: Optional[BlueprintFile] = None
 
         # a null blueprint used when no blueprint file is opened to allow UI to still behave
-        self._nullBlueprint = Blueprint()
+        self._null_blueprint = Blueprint()
 
         # the tree item model and selection model for BuildSteps
-        self.buildStepTreeModel = BuildStepTreeModel(self.blueprint, self, self)
-        self.buildStepSelectionModel = BuildStepSelectionModel(self.buildStepTreeModel, self)
+        self.build_step_tree_model = BuildStepTreeModel(self.blueprint, self, self)
+        self.build_step_selection_model = BuildStepSelectionModel(self.build_step_tree_model, self)
 
         # the interactive builder that is currently running, if any
-        self.interactiveBuilder: Optional[BlueprintBuilder] = None
+        self.interactive_builder: Optional[BlueprintBuilder] = None
 
         # register maya scene callbacks that can be used for auto save and load
-        self.isChangingScenes = False
-        self._callbackIds = []
-        self._addSceneCallbacks()
+        self.is_changing_scenes = False
+        self._callback_ids = []
+        self._add_scene_callbacks()
 
         # keep track of whether a rig is currently in the scene to determine which mode we are in
-        self.doesRigExist = False
-        self.refreshRigExists()
+        self.does_rig_exist = False
+        self._refresh_rig_exists()
 
-        if self.autoLoad:
-            self.openFile()
+        if self.auto_load:
+            self.open_file()
 
-    def onDelete(self):
-        self._removeSceneCallbacks()
+    def on_delete(self):
+        self._remove_scene_callbacks()
 
     @property
-    def blueprintFile(self) -> BlueprintFile:
+    def blueprint_file(self) -> BlueprintFile:
         """
         The Blueprint File being edited.
         Will be None if no Blueprint is currently being edited.
         """
-        return self._blueprintFile
+        return self._blueprint_file
 
     @property
     def blueprint(self) -> Blueprint:
@@ -405,108 +405,108 @@ class BlueprintUIModel(QtCore.QObject):
         The Blueprint of the currently open Blueprint File.
         Always valid, even when no Blueprint file is open.
         """
-        if self._blueprintFile:
-            return self._blueprintFile.blueprint
-        return self._nullBlueprint
+        if self._blueprint_file:
+            return self._blueprint_file.blueprint
+        return self._null_blueprint
 
-    def isFileOpen(self) -> bool:
+    def is_file_open(self) -> bool:
         """
         Is a Blueprint File currently available?
         """
-        return self._blueprintFile is not None
+        return self._blueprint_file is not None
 
-    def isFileModified(self) -> bool:
+    def is_file_modified(self) -> bool:
         """
         Return whether modifications have been made to the open Blueprint File since it was last saved.
         """
-        return self.isFileOpen() and self._blueprintFile.is_modified()
+        return self.is_file_open() and self._blueprint_file.is_modified()
 
     def modify(self):
         """
         Mark the current blueprint file as modified.
         """
-        if self.isFileOpen() and not self.isReadOnly():
-            # TOOD: store modified state in blueprint so blueprintFile doesn't have to be updated
-            self._blueprintFile.modify()
-            self.isFileModifiedChanged.emit(self.isFileModified())
+        if self.is_file_open() and not self.is_read_only():
+            # TODO: store modified state in blueprint so blueprintFile doesn't have to be updated
+            self._blueprint_file.modify()
+            self.is_file_modified_changed.emit(self.is_file_modified())
 
-    def isReadOnly(self) -> bool:
+    def is_read_only(self) -> bool:
         """
         Return True if the modifications to the Blueprint are not allowed.
         """
-        if self.doesRigExist:
+        if self.does_rig_exist:
             # readonly whenever a rig is around
             return True
 
-        if not self.isFileOpen():
+        if not self.is_file_open():
             # no blueprint open to edit
             return True
 
-        return self._blueprintFile.is_read_only
+        return self._blueprint_file.is_read_only
 
-    def getBlueprintFilePath(self) -> Optional[str]:
+    def get_blueprint_file_path(self) -> Optional[str]:
         """
         Return the full path of the current Blueprint File.
         """
-        if self.isFileOpen():
-            return self._blueprintFile.file_path
+        if self.is_file_open():
+            return self._blueprint_file.file_path
 
-    def getBlueprintFileName(self) -> Optional[str]:
+    def get_blueprint_file_name(self) -> Optional[str]:
         """
         Return the base name of the current Blueprint File.
         """
-        if self.isFileOpen():
-            return self._blueprintFile.get_file_name()
+        if self.is_file_open():
+            return self._blueprint_file.get_file_name()
 
-    def canSave(self) -> bool:
+    def can_save(self) -> bool:
         """
         Can the blueprint file currently be saved?
         """
-        self.refreshRigExists()
-        return self.isFileOpen() and self._blueprintFile.can_save() and not self.doesRigExist
+        self._refresh_rig_exists()
+        return self.is_file_open() and self._blueprint_file.can_save() and not self.does_rig_exist
 
-    def canLoad(self) -> bool:
+    def can_load(self) -> bool:
         """
         Can the blueprint file currently be loaded?
         """
-        return self.isFileOpen() and self._blueprintFile.can_load()
+        return self.is_file_open() and self._blueprint_file.can_load()
 
-    def newFile(self):
+    def new_file(self):
         """
         Start a new Blueprint File.
         Does not write the file to disk.
         """
         # close first, prompting to save
-        if self.isFileOpen():
-            if not self.closeFile():
+        if self.is_file_open():
+            if not self.close_file():
                 return
 
-        self.buildStepTreeModel.beginResetModel()
+        self.build_step_tree_model.beginResetModel()
 
-        self._blueprintFile = BlueprintFile()
-        self._blueprintFile.resolve_file_path(allow_existing=False)
-        self._blueprintFile.blueprint.set_setting(BlueprintSettings.RIG_NAME, "untitled")
+        self._blueprint_file = BlueprintFile()
+        self._blueprint_file.resolve_file_path(allow_existing=False)
+        self._blueprint_file.blueprint.set_setting(BlueprintSettings.RIG_NAME, "untitled")
 
-        self.buildStepTreeModel.setBlueprint(self.blueprint)
-        self.buildStepTreeModel.endResetModel()
+        self.build_step_tree_model.set_blueprint(self.blueprint)
+        self.build_step_tree_model.endResetModel()
 
-        self.fileChanged.emit()
-        self.readOnlyChanged.emit(self.isReadOnly())
+        self.file_changed.emit()
+        self.read_only_changed.emit(self.is_read_only())
 
-    def openFile(self, filePath: Optional[str] = None):
+    def open_file(self, file_path: Optional[str] = None):
         """
         Open a Blueprint File.
 
         Args:
-            filePath: str
+            file_path: str
                 The path to a blueprint.
         """
         # close first, prompting to save
-        if self.isFileOpen():
-            if not self.closeFile():
+        if self.is_file_open():
+            if not self.close_file():
                 return
 
-        new_blueprint_file = BlueprintFile(file_path=filePath)
+        new_blueprint_file = BlueprintFile(file_path=file_path)
 
         if not new_blueprint_file.file_path:
             # resolve file path automatically from maya scene
@@ -516,106 +516,106 @@ class BlueprintUIModel(QtCore.QObject):
         if not new_blueprint_file.file_path or not os.path.isfile(new_blueprint_file.file_path):
             return
 
-        self.buildStepTreeModel.beginResetModel()
+        self.build_step_tree_model.beginResetModel()
 
-        self._blueprintFile = new_blueprint_file
-        self._blueprintFile.load()
+        self._blueprint_file = new_blueprint_file
+        self._blueprint_file.load()
 
-        self.buildStepTreeModel.setBlueprint(self.blueprint)
-        self.buildStepTreeModel.endResetModel()
+        self.build_step_tree_model.set_blueprint(self.blueprint)
+        self.build_step_tree_model.endResetModel()
 
-        self.fileChanged.emit()
-        self.readOnlyChanged.emit(self.isReadOnly())
+        self.file_changed.emit()
+        self.read_only_changed.emit(self.is_read_only())
 
-    def openFileWithPrompt(self):
+    def open_file_with_prompt(self):
         # default to opening from the directory of the maya scene
         kwargs = {}
-        sceneName = pm.sceneName()
-        if sceneName:
-            sceneDir = str(sceneName.parent)
-            kwargs["startingDirectory"] = sceneDir
+        scene_name = pm.sceneName()
+        if scene_name:
+            scene_dir = str(scene_name.parent)
+            kwargs["startingDirectory"] = scene_dir
 
         file_path_results = pm.fileDialog2(fileMode=1, fileFilter="Pulse Blueprint(*.yml)", **kwargs)
         if file_path_results:
             file_path = file_path_results[0]
-            self.openFile(file_path)
+            self.open_file(file_path)
 
-    def saveFile(self) -> bool:
+    def save_file(self) -> bool:
         """
         Save the current Blueprint File.
 
         Returns:
             True if the file was saved.
         """
-        if self.canSave():
-            success = self._blueprintFile.save()
-            self.isFileModifiedChanged.emit(self.isFileModified())
+        if self.can_save():
+            success = self._blueprint_file.save()
+            self.is_file_modified_changed.emit(self.is_file_modified())
             return success
         return False
 
-    def saveFileAs(self, filePath: str) -> bool:
+    def save_file_as(self, file_path: str) -> bool:
         """
         Save the current Blueprint File to a different file path.
 
         Returns:
             True if the file was saved.
         """
-        if self.isFileOpen():
-            self._blueprintFile.file_path = filePath
-            self.fileChanged.emit()
-            success = self._blueprintFile.save()
-            self.isFileModifiedChanged.emit(self.isFileModified())
+        if self.is_file_open():
+            self._blueprint_file.file_path = file_path
+            self.file_changed.emit()
+            success = self._blueprint_file.save()
+            self.is_file_modified_changed.emit(self.is_file_modified())
             return success
         return False
 
-    def _saveFileWithPrompt(self, forcePrompt=False) -> bool:
-        if not self.isFileOpen():
+    def _save_file_with_prompt(self, force_prompt=False) -> bool:
+        if not self.is_file_open():
             LOG.error("Nothing to save.")
             return False
 
-        if self.isReadOnly():
+        if self.is_read_only():
             LOG.error("Cannot save read-only Blueprint")
             return False
 
-        if forcePrompt or not self._blueprintFile.has_file_path():
+        if force_prompt or not self._blueprint_file.has_file_path():
             # prompt for file path
             file_path_results = pm.fileDialog2(cap="Save Blueprint", fileFilter="Pulse Blueprint (*.yml)")
             if not file_path_results:
                 return False
-            self._blueprintFile.file_path = file_path_results[0]
-            self.fileChanged.emit()
+            self._blueprint_file.file_path = file_path_results[0]
+            self.file_changed.emit()
 
-        self.saveFile()
+        self.save_file()
         return True
 
-    def saveFileWithPrompt(self) -> bool:
+    def save_file_with_prompt(self) -> bool:
         """
         Save the current Blueprint file, prompting for a file path if none is set.
 
         Returns:
             True if the file was saved.
         """
-        return self._saveFileWithPrompt()
+        return self._save_file_with_prompt()
 
-    def saveFileAsWithPrompt(self) -> bool:
+    def save_file_as_with_prompt(self) -> bool:
         """
         Save the current Blueprint file to a new path, prompting for the file path.
 
         Returns:
             True if the file was saved.
         """
-        return self._saveFileWithPrompt(forcePrompt=True)
+        return self._save_file_with_prompt(force_prompt=True)
 
-    def saveOrDiscardChangesWithPrompt(self) -> bool:
+    def save_or_discard_changes_with_prompt(self) -> bool:
         """
         Save or discard modifications to the current Blueprint File.
 
         Returns:
             True if the user chose to Save or Not Save, False if they chose to Cancel.
         """
-        filePath = self.getBlueprintFilePath()
-        if filePath:
-            message = f"Save changes to {filePath}?"
+        file_path = self.get_blueprint_file_path()
+        if file_path:
+            message = f"Save changes to {file_path}?"
         else:
             message = f"Save changes to unsaved Blueprint?"
         response = pm.confirmDialog(
@@ -625,176 +625,176 @@ class BlueprintUIModel(QtCore.QObject):
             dismissString="Cancel",
         )
         if response == "Save":
-            return self.saveFileWithPrompt()
+            return self.save_file_with_prompt()
         elif response == "Don't Save":
             return True
         else:
             return False
 
-    def reloadFile(self):
+    def reload_file(self):
         """
         Reload the current Blueprint File from disk.
         """
-        if self.canLoad():
+        if self.can_load():
 
-            if self.isFileModified():
+            if self.is_file_modified():
                 # confirm loss of changes
-                filePath = self.getBlueprintFilePath()
+                file_path = self.get_blueprint_file_path()
                 response = pm.confirmDialog(
                     title="Reload Blueprint",
-                    message=f"Are you sure you want to reload {filePath}? " "All changes will be lost.",
+                    message=f"Are you sure you want to reload {file_path}? " "All changes will be lost.",
                     button=["Reload", "Cancel"],
                     dismissString="Cancel",
                 )
                 if response != "Reload":
                     return
 
-            self.buildStepTreeModel.beginResetModel()
-            self._blueprintFile.load()
-            self.isFileModifiedChanged.emit(self.isFileModified())
-            self.buildStepTreeModel.endResetModel()
+            self.build_step_tree_model.beginResetModel()
+            self._blueprint_file.load()
+            self.is_file_modified_changed.emit(self.is_file_modified())
+            self.build_step_tree_model.endResetModel()
 
-    def closeFile(self, promptSaveChanges=True) -> bool:
+    def close_file(self, prompt_save_changes=True) -> bool:
         """
         Close the current Blueprint File.
         Returns true if the file was successfully closed, or false if canceled due to unsaved changes.
         """
-        if promptSaveChanges and self.isFileModified():
-            if not self.saveOrDiscardChangesWithPrompt():
-                return
+        if prompt_save_changes and self.is_file_modified():
+            if not self.save_or_discard_changes_with_prompt():
+                return False
 
-        self.buildStepTreeModel.beginResetModel()
+        self.build_step_tree_model.beginResetModel()
 
-        self._blueprintFile = None
+        self._blueprint_file = None
 
-        self.buildStepTreeModel.setBlueprint(self.blueprint)
-        self.buildStepTreeModel.endResetModel()
+        self.build_step_tree_model.set_blueprint(self.blueprint)
+        self.build_step_tree_model.endResetModel()
 
-        self.fileChanged.emit()
-        self.readOnlyChanged.emit(self.isReadOnly())
+        self.file_changed.emit()
+        self.read_only_changed.emit(self.is_read_only())
         return True
 
-    def getRigName(self):
+    def get_rig_name(self):
         """
         Helper to return the BlueprintSettings.RIG_NAME setting.
         """
-        return self.getSetting(BlueprintSettings.RIG_NAME)
+        return self.get_setting(BlueprintSettings.RIG_NAME)
 
-    def getSetting(self, key, default=None):
+    def get_setting(self, key, default=None):
         """
         Helper to return a Blueprint setting.
         """
         return self.blueprint.get_setting(key, default)
 
-    def setSetting(self, key, value):
+    def set_setting(self, key, value):
         """
         Set a Blueprint setting.
         """
-        if self.isReadOnly():
-            LOG.error("setSetting: Cannot edit readonly Blueprint")
+        if self.is_read_only():
+            LOG.error("set_setting: Cannot edit readonly Blueprint")
             return
 
-        oldValue = self.blueprint.get_setting(key)
-        if oldValue != value:
+        old_value = self.blueprint.get_setting(key)
+        if old_value != value:
             self.blueprint.set_setting(key, value)
             self.modify()
-            self.settingChanged.emit(key, value)
+            self.setting_changed.emit(key, value)
 
-    def refreshRigExists(self):
-        oldReadOnly = self.isReadOnly()
-        self.doesRigExist = len(rigs.get_all_rigs()) > 0
-        self.rigExistsChanged.emit()
+    def _refresh_rig_exists(self):
+        old_read_only = self.is_read_only()
+        self.does_rig_exist = len(rigs.get_all_rigs()) > 0
+        self.rig_exists_changed.emit()
 
-        if oldReadOnly != self.isReadOnly():
-            self.readOnlyChanged.emit(self.isReadOnly())
+        if old_read_only != self.is_read_only():
+            self.read_only_changed.emit(self.is_read_only())
 
-    def _addSceneCallbacks(self):
-        if not self._callbackIds:
-            saveId = api.MSceneMessage.addCallback(api.MSceneMessage.kBeforeSave, self._onBeforeSaveScene)
-            self._callbackIds.append(saveId)
-            beforeOpenId = api.MSceneMessage.addCallback(api.MSceneMessage.kBeforeOpen, self._onBeforeOpenScene)
-            self._callbackIds.append(beforeOpenId)
-            afterOpenId = api.MSceneMessage.addCallback(api.MSceneMessage.kAfterOpen, self._onAfterOpenScene)
-            self._callbackIds.append(afterOpenId)
-            beforeNewId = api.MSceneMessage.addCallback(api.MSceneMessage.kBeforeNew, self._onBeforeNewScene)
-            self._callbackIds.append(beforeNewId)
-            afterNewId = api.MSceneMessage.addCallback(api.MSceneMessage.kAfterNew, self._onAfterNewScene)
-            self._callbackIds.append(afterNewId)
+    def _add_scene_callbacks(self):
+        if not self._callback_ids:
+            save_id = api.MSceneMessage.addCallback(api.MSceneMessage.kBeforeSave, self._on_before_save_scene)
+            self._callback_ids.append(save_id)
+            before_open_id = api.MSceneMessage.addCallback(api.MSceneMessage.kBeforeOpen, self._on_before_open_scene)
+            self._callback_ids.append(before_open_id)
+            after_open_id = api.MSceneMessage.addCallback(api.MSceneMessage.kAfterOpen, self._on_after_open_scene)
+            self._callback_ids.append(after_open_id)
+            before_new_id = api.MSceneMessage.addCallback(api.MSceneMessage.kBeforeNew, self._on_before_new_scene)
+            self._callback_ids.append(before_new_id)
+            after_new_id = api.MSceneMessage.addCallback(api.MSceneMessage.kAfterNew, self._on_after_new_scene)
+            self._callback_ids.append(after_new_id)
 
-    def _removeSceneCallbacks(self):
-        if self._callbackIds:
-            while self._callbackIds:
-                callbackId = self._callbackIds.pop()
-                api.MMessage.removeCallback(callbackId)
+    def _remove_scene_callbacks(self):
+        if self._callback_ids:
+            while self._callback_ids:
+                callback_id = self._callback_ids.pop()
+                api.MMessage.removeCallback(callback_id)
 
-    def _onBeforeSaveScene(self, clientData=None):
-        if self._shouldAutoSave():
+    def _on_before_save_scene(self, client_data=None):
+        if self._should_auto_save():
             LOG.debug("Auto-saving Blueprint...")
 
             # automatically resolve file path if not yet set
-            if not self._blueprintFile.has_file_path():
+            if not self._blueprint_file.has_file_path():
                 # don't automatically save over existing blueprint
-                self._blueprintFile.resolve_file_path(allow_existing=False)
-                self.fileChanged.emit()
+                self._blueprint_file.resolve_file_path(allow_existing=False)
+                self.file_changed.emit()
 
-            self.saveFile()
+            self.save_file()
 
-    def _onBeforeOpenScene(self, clientData=None):
-        self.isChangingScenes = True
-        self.closeFile()
+    def _on_before_open_scene(self, client_data=None):
+        self.is_changing_scenes = True
+        self.close_file()
 
-    def _onAfterOpenScene(self, clientData=None):
-        self.isChangingScenes = False
-        self.refreshRigExists()
-        if self.autoLoad:
-            self.openFile()
-        self.changeSceneFinished.emit()
+    def _on_after_open_scene(self, client_data=None):
+        self.is_changing_scenes = False
+        self._refresh_rig_exists()
+        if self.auto_load:
+            self.open_file()
+        self.change_scene_finished.emit()
 
-    def _onBeforeNewScene(self, clientData=None):
-        self.isChangingScenes = True
-        self.closeFile()
+    def _on_before_new_scene(self, client_data=None):
+        self.is_changing_scenes = True
+        self.close_file()
 
-    def _onAfterNewScene(self, clientData=None):
-        self.isChangingScenes = False
-        self.refreshRigExists()
-        self.changeSceneFinished.emit()
+    def _on_after_new_scene(self, client_data=None):
+        self.is_changing_scenes = False
+        self._refresh_rig_exists()
+        self.change_scene_finished.emit()
 
-    def _shouldAutoSave(self):
-        return self.autoSave and self.isFileOpen()
+    def _should_auto_save(self):
+        return self.auto_save and self.is_file_open()
 
-    def addDefaultActions(self):
+    def add_default_actions(self):
         """
         Add the default actions to the current Blueprint.
         """
-        if self.isFileOpen() and not self.isReadOnly():
-            self.buildStepTreeModel.beginResetModel()
+        if self.is_file_open() and not self.is_read_only():
+            self.build_step_tree_model.beginResetModel()
             self.blueprint.add_default_actions()
-            self.buildStepTreeModel.endResetModel()
+            self.build_step_tree_model.endResetModel()
             self.modify()
 
-    def createStep(self, parentPath, childIndex, data) -> Optional[BuildStep]:
+    def create_step(self, parent_path, child_index, data) -> Optional[BuildStep]:
         """
         Create a new BuildStep
 
         Args:
-            parentPath (str): The path to the parent step
-            childIndex (int): The index at which to insert the new step
-            data (str): The serialized data for the BuildStep to create
+            parent_path (str): The path to the parent step
+            child_index (int): The index at which to insert the new step
+            data (dict): The serialized data for the BuildStep to create
 
         Returns:
             The newly created BuildStep, or None if the operation failed.
         """
-        if self.isReadOnly():
-            LOG.error("createStep: Cannot edit readonly Blueprint")
+        if self.is_read_only():
+            LOG.error("create_step: Cannot edit readonly Blueprint")
             return
 
-        parentStep = self.blueprint.get_step_by_path(parentPath)
-        if not parentStep:
-            LOG.error("createStep: failed to find parent step: %s", parentPath)
+        parent_step = self.blueprint.get_step_by_path(parent_path)
+        if not parent_step:
+            LOG.error("create_step: failed to find parent step: %s", parent_path)
             return
 
-        parentIndex = self.buildStepTreeModel.indexByStep(parentStep)
-        self.buildStepTreeModel.beginInsertRows(parentIndex, childIndex, childIndex)
+        parent_index = self.build_step_tree_model.index_by_step(parent_step)
+        self.build_step_tree_model.beginInsertRows(parent_index, child_index, child_index)
 
         try:
             step = BuildStep.from_data(data)
@@ -802,38 +802,38 @@ class BlueprintUIModel(QtCore.QObject):
             LOG.error("Failed to create build step: %s" % e, exc_info=True)
             return
 
-        parentStep.insert_child(childIndex, step)
+        parent_step.insert_child(child_index, step)
 
-        self.buildStepTreeModel.endInsertRows()
+        self.build_step_tree_model.endInsertRows()
         self.modify()
         return step
 
-    def deleteStep(self, stepPath):
+    def delete_step(self, step_path):
         """
         Delete a BuildStep
 
         Returns:
             True if the step was deleted successfully
         """
-        if self.isReadOnly():
-            LOG.error("deleteStep: Cannot edit readonly Blueprint")
+        if self.is_read_only():
+            LOG.error("delete_step: Cannot edit readonly Blueprint")
             return False
 
-        step = self.blueprint.get_step_by_path(stepPath)
+        step = self.blueprint.get_step_by_path(step_path)
         if not step:
-            LOG.error("deleteStep: failed to find step: %s", stepPath)
+            LOG.error("delete_step: failed to find step: %s", step_path)
             return False
 
-        stepIndex = self.buildStepTreeModel.indexByStep(step)
-        self.buildStepTreeModel.beginRemoveRows(stepIndex.parent(), stepIndex.row(), stepIndex.row())
+        step_index = self.build_step_tree_model.index_by_step(step)
+        self.build_step_tree_model.beginRemoveRows(step_index.parent(), step_index.row(), step_index.row())
 
         step.remove_from_parent()
 
-        self.buildStepTreeModel.endRemoveRows()
+        self.build_step_tree_model.endRemoveRows()
         self.modify()
         return True
 
-    def moveStep(self, sourcePath, targetPath):
+    def move_step(self, source_path, target_path):
         """
         Move a BuildStep from source path to target path.
 
@@ -841,297 +841,297 @@ class BlueprintUIModel(QtCore.QObject):
             The new path (str) of the build step, or None if
             the operation failed.
         """
-        if self.isReadOnly():
-            LOG.error("moveStep: Cannot edit readonly Blueprint")
+        if self.is_read_only():
+            LOG.error("move_step: Cannot edit readonly Blueprint")
             return
 
-        step = self.blueprint.get_step_by_path(sourcePath)
+        step = self.blueprint.get_step_by_path(source_path)
         if not step:
-            LOG.error("moveStep: failed to find step: %s", sourcePath)
+            LOG.error("move_step: failed to find step: %s", source_path)
             return
 
         if step == self.blueprint.rootStep:
-            LOG.error("moveStep: cannot move root step")
+            LOG.error("move_step: cannot move root step")
             return
 
-        self.buildStepTreeModel.layoutAboutToBeChanged.emit()
+        self.build_step_tree_model.layoutAboutToBeChanged.emit()
 
-        sourceParentPath = os.path.dirname(sourcePath)
-        targetParentPath = os.path.dirname(targetPath)
-        if sourceParentPath != targetParentPath:
-            step.set_parent(self.blueprint.get_step_by_path(targetParentPath))
-        targetName = os.path.basename(targetPath)
-        step.set_name(targetName)
+        source_parent_path = os.path.dirname(source_path)
+        target_parent_path = os.path.dirname(target_path)
+        if source_parent_path != target_parent_path:
+            step.set_parent(self.blueprint.get_step_by_path(target_parent_path))
+        target_name = os.path.basename(target_path)
+        step.set_name(target_name)
 
-        self.buildStepTreeModel.layoutChanged.emit()
+        self.build_step_tree_model.layoutChanged.emit()
         self.modify()
         return step.get_full_path()
 
-    def renameStep(self, stepPath, targetName):
-        if self.isReadOnly():
-            LOG.error("renameStep: Cannot edit readonly Blueprint")
+    def rename_step(self, step_path, target_name):
+        if self.is_read_only():
+            LOG.error("rename_step: Cannot edit readonly Blueprint")
             return
 
-        step = self.blueprint.get_step_by_path(stepPath)
+        step = self.blueprint.get_step_by_path(step_path)
         if not step:
-            LOG.error("moveStep: failed to find step: %s", stepPath)
+            LOG.error("move_step: failed to find step: %s", step_path)
             return
 
         if step == self.blueprint.rootStep:
-            LOG.error("moveStep: cannot rename root step")
+            LOG.error("move_step: cannot rename root step")
             return
 
-        oldName = step.name
-        step.set_name(targetName)
+        old_name = step.name
+        step.set_name(target_name)
 
-        if step.name != oldName:
+        if step.name != old_name:
             self._emit_step_changed(step)
 
         return step.get_full_path()
 
-    def createStepsForSelection(self, stepData: Optional[str] = None):
+    def create_steps_for_selection(self, step_data: Optional[str] = None):
         """
         Create new BuildSteps in the hierarchy at the current selection and return the new step paths.
 
         Args:
-            stepData: str
+            step_data: str
                 A string representation of serialized BuildStep data used to create the new steps.
         """
-        if self.isReadOnly():
+        if self.is_read_only():
             LOG.warning("cannot create steps, blueprint is read only")
             return
 
-        LOG.debug("creating new steps at selection: %s", stepData)
+        LOG.debug("creating new steps at selection: %s", step_data)
 
-        selIndexes = self.buildStepSelectionModel.selectedIndexes()
-        if not selIndexes:
-            selIndexes = [QtCore.QModelIndex()]
+        sel_indexes = self.build_step_selection_model.selectedIndexes()
+        if not sel_indexes:
+            sel_indexes = [QtCore.QModelIndex()]
 
-        model: BuildStepTreeModel = self.buildStepSelectionModel.model()
+        model: BuildStepTreeModel = self.build_step_selection_model.model()
 
-        def getParentAndInsertIndex(index) -> tuple[BuildStep, int]:
-            step = model.stepForIndex(index)
+        def _get_parent_and_insert_index(_index) -> tuple[BuildStep, int]:
+            step = model.step_for_index(_index)
             LOG.debug("step: %s", step)
             if step.can_have_children():
                 LOG.debug("inserting at num children: %d", step.num_children())
                 return step, step.num_children()
             else:
-                LOG.debug("inserting at selected + 1: %d", index.row() + 1)
-                return step.parent, index.row() + 1
+                LOG.debug("inserting at selected + 1: %d", _index.row() + 1)
+                return step.parent, _index.row() + 1
 
-        newPaths = []
-        for index in selIndexes:
-            parentStep, insertIndex = getParentAndInsertIndex(index)
-            parentPath = parentStep.get_full_path() if parentStep else None
-            if not parentPath:
-                parentPath = ""
-            if not stepData:
-                stepData = ""
-            newStepPath = cmds.pulseCreateStep(parentPath, insertIndex, stepData)
-            if newStepPath:
+        new_paths = []
+        for index in sel_indexes:
+            parent_step, insert_index = _get_parent_and_insert_index(index)
+            parent_path = parent_step.get_full_path() if parent_step else None
+            if not parent_path:
+                parent_path = ""
+            if not step_data:
+                step_data = ""
+            new_step_path = cmds.pulseCreateStep(parent_path, insert_index, step_data)
+            if new_step_path:
                 # TODO: remove this if/when plugin command only returns single string
-                newStepPath = newStepPath[0]
-                newPaths.append(newStepPath)
-            # if self.model.insertRows(insertIndex, 1, parentIndex):
-            #     newIndex = self.model.index(insertIndex, 0, parentIndex)
+                new_step_path = new_step_path[0]
+                new_paths.append(new_step_path)
+            # if self.model.insertRows(insertIndex, 1, parent_index):
+            #     newIndex = self.model.index(insertIndex, 0, parent_index)
             #     newPaths.append(newIndex)
 
         self.modify()
-        return newPaths
+        return new_paths
 
-    def createGroup(self):
-        if self.isReadOnly():
+    def create_group(self):
+        if self.is_read_only():
             LOG.warning("Cannot create group, blueprint is read-only")
             return
 
         LOG.debug("create_group")
-        newPaths = self.createStepsForSelection()
-        self.buildStepSelectionModel.setSelectedItemPaths(newPaths)
+        new_paths = self.create_steps_for_selection()
+        self.build_step_selection_model.set_selected_item_paths(new_paths)
 
-    def createAction(self, actionId: str):
-        if self.isReadOnly():
+    def create_action(self, action_id: str):
+        if self.is_read_only():
             LOG.warning("Cannot create action, blueprint is read-only")
             return
 
-        LOG.debug("create_action: %s", actionId)
-        stepData = "{'action':{'id':'%s'}}" % actionId
-        newPaths = self.createStepsForSelection(stepData=stepData)
-        self.buildStepSelectionModel.setSelectedItemPaths(newPaths)
+        LOG.debug("create_action: %s", action_id)
+        step_data = "{'action':{'id':'%s'}}" % action_id
+        new_paths = self.create_steps_for_selection(step_data=step_data)
+        self.build_step_selection_model.set_selected_item_paths(new_paths)
 
-    def getStep(self, stepPath: str) -> BuildStep:
+    def get_step(self, step_path: str) -> BuildStep:
         """
         Return the BuildStep at a path
         """
-        return self.blueprint.get_step_by_path(stepPath)
+        return self.blueprint.get_step_by_path(step_path)
 
-    def getStepData(self, stepPath: str):
+    def get_step_data(self, step_path: str):
         """
         Return the serialized data for a step at a path
         """
-        step = self.getStep(stepPath)
+        step = self.get_step(step_path)
         if step:
             return step.serialize()
 
-    def getActionData(self, stepPath: str):
+    def get_action_data(self, step_path: str):
         """
         Return serialized data for a BuildActionProxy
         """
-        step = self.getStep(stepPath)
+        step = self.get_step(step_path)
         if not step:
             return
 
         if not step.is_action():
-            LOG.error("getActionData: %s step is not an action", step)
+            LOG.error("get_action_data: %s step is not an action", step)
             return
 
         return step.action_proxy.serialize()
 
-    def setActionData(self, stepPath, data):
+    def set_action_data(self, step_path, data):
         """
         Replace all attribute values on a BuildActionProxy.
         """
-        step = self.getStep(stepPath)
+        step = self.get_step(step_path)
         if not step:
             return
 
         if not step.is_action():
-            LOG.error("setActionData: %s step is not an action", step)
+            LOG.error("set_action_data: %s step is not an action", step)
             return
 
         step.action_proxy.deserialize(data)
 
         self._emit_step_changed(step)
 
-    def getActionAttr(self, attrPath, variantIndex=-1):
+    def get_action_attr(self, attr_path, variant_index=-1):
         """
         Return the value of an attribute of a BuildAction
 
         Args:
-            attrPath (str): The full path to an action attribute, e.g. 'My/Action.myAttr'
-            variantIndex (int): The index of the variant to retrieve, if the action has variants
+            attr_path (str): The full path to an action attribute, e.g. 'My/Action.myAttr'
+            variant_index (int): The index of the variant to retrieve, if the action has variants
 
         Returns:
             The attribute value, of varying types
         """
-        stepPath, attrName = attrPath.split(".")
+        step_path, attr_name = attr_path.split(".")
 
-        step = self.getStep(stepPath)
+        step = self.get_step(step_path)
         if not step:
             return
 
         if not step.is_action():
-            LOG.error("getActionAttr: %s is not an action", step)
+            LOG.error("get_action_attr: %s is not an action", step)
             return
 
-        if variantIndex >= 0:
-            if step.action_proxy.num_variants() > variantIndex:
-                variant = step.action_proxy.get_variant(variantIndex)
-                variant_attr = variant.get_attr(attrName)
+        if variant_index >= 0:
+            if step.action_proxy.num_variants() > variant_index:
+                variant = step.action_proxy.get_variant(variant_index)
+                variant_attr = variant.get_attr(attr_name)
                 if variant_attr:
                     return variant_attr.get_value()
         else:
-            attr = step.action_proxy.get_attr(attrName)
+            attr = step.action_proxy.get_attr(attr_name)
             if attr:
                 return attr.get_value()
 
-    def setActionAttr(self, attrPath, value, variantIndex=-1):
+    def set_action_attr(self, attr_path, value, variant_index=-1):
         """
         Set the value for an attribute on the Blueprint
         """
-        if self.isReadOnly():
-            LOG.error("setActionAttr: Cannot edit readonly Blueprint")
+        if self.is_read_only():
+            LOG.error("set_action_attr: Cannot edit readonly Blueprint")
             return
 
-        stepPath, attrName = attrPath.split(".")
+        step_path, attr_name = attr_path.split(".")
 
-        step = self.getStep(stepPath)
+        step = self.get_step(step_path)
         if not step:
             return
 
         if not step.is_action():
-            LOG.error("setActionAttr: %s is not an action", step)
+            LOG.error("set_action_attr: %s is not an action", step)
             return
 
         # TODO: log errors for missing attributes
 
-        if variantIndex >= 0:
-            variant = step.action_proxy.get_or_create_variant(variantIndex)
-            variant_attr = variant.get_attr(attrName)
+        if variant_index >= 0:
+            variant = step.action_proxy.get_or_create_variant(variant_index)
+            variant_attr = variant.get_attr(attr_name)
             if variant_attr:
                 variant_attr.set_value(value)
         else:
-            attr = step.action_proxy.get_attr(attrName)
+            attr = step.action_proxy.get_attr(attr_name)
             if attr:
                 attr.set_value(value)
 
         self._emit_step_changed(step)
 
-    def isActionAttrVariant(self, attrPath):
-        stepPath, attrName = attrPath.split(".")
+    def is_action_attr_variant(self, attr_path):
+        step_path, attr_name = attr_path.split(".")
 
-        step = self.getStep(stepPath)
+        step = self.get_step(step_path)
         if not step.is_action():
-            LOG.error("isActionAttrVariant: {0} is not an action".format(step))
+            LOG.error("is_action_attr_variant: {0} is not an action".format(step))
             return
 
-        return step.action_proxy.is_variant_attr(attrName)
+        return step.action_proxy.is_variant_attr(attr_name)
 
-    def setIsActionAttrVariant(self, attrPath, isVariant):
+    def set_is_action_attr_variant(self, attr_path, is_variant):
         """ """
-        if self.isReadOnly():
-            LOG.error("setIsActionAttrVariant: Cannot edit readonly Blueprint")
+        if self.is_read_only():
+            LOG.error("set_is_action_attr_variant: Cannot edit readonly Blueprint")
             return
 
-        stepPath, attrName = attrPath.split(".")
+        step_path, attr_name = attr_path.split(".")
 
-        step = self.getStep(stepPath)
+        step = self.get_step(step_path)
         if not step:
             return
 
         if not step.is_action():
-            LOG.error("setIsActionAttrVariant: %s is not an action", step)
+            LOG.error("set_is_action_attr_variant: %s is not an action", step)
             return
 
-        if isVariant:
-            step.action_proxy.add_variant_attr(attrName)
+        if is_variant:
+            step.action_proxy.add_variant_attr(attr_name)
         else:
-            step.action_proxy.remove_variant_attr(attrName)
+            step.action_proxy.remove_variant_attr(attr_name)
 
         self._emit_step_changed(step)
 
-    def isActionMirrored(self, stepPath) -> bool:
+    def is_action_mirrored(self, step_path) -> bool:
         """Return whether a build action is mirrored."""
-        step = self.getStep(stepPath)
+        step = self.get_step(step_path)
         if not step:
             return False
 
         if not step.is_action():
-            LOG.error("setIsActionMirrored: %s is not an action", step)
+            LOG.error("set_is_action_mirrored: %s is not an action", step)
             return False
 
         return step.action_proxy.is_mirrored
 
-    def setIsActionMirrored(self, stepPath, isMirrored):
+    def set_is_action_mirrored(self, step_path, is_mirrored):
         """Set whether a build action is mirrored."""
-        if self.isReadOnly():
-            LOG.error("setIsActionMirrored: Cannot edit readonly Blueprint")
+        if self.is_read_only():
+            LOG.error("set_is_action_mirrored: Cannot edit readonly Blueprint")
             return
 
-        step = self.getStep(stepPath)
+        step = self.get_step(step_path)
         if not step:
             return
 
         if not step.is_action():
-            LOG.error("setIsActionMirrored: %s is not an action", step)
+            LOG.error("set_is_action_mirrored: %s is not an action", step)
             return
 
-        step.action_proxy.is_mirrored = isMirrored
+        step.action_proxy.is_mirrored = is_mirrored
 
         self._emit_step_changed(step)
 
     def _emit_step_changed(self, step: BuildStep):
-        index = self.buildStepTreeModel.indexByStep(step)
-        self.buildStepTreeModel.dataChanged.emit(index, index, [])
+        index = self.build_step_tree_model.index_by_step(step)
+        self.build_step_tree_model.dataChanged.emit(index, index, [])
         self.modify()
 
     def run_validation(self):
@@ -1145,7 +1145,7 @@ class BlueprintUIModel(QtCore.QObject):
             validator.start()
 
     def can_build(self) -> bool:
-        return not self.doesRigExist
+        return not self.does_rig_exist
 
     def run_build(self):
         """Build the current blueprint."""
@@ -1165,22 +1165,22 @@ class BlueprintUIModel(QtCore.QObject):
             return
 
         # save blueprint
-        if self.isFileModified():
-            if not self.saveFileWithPrompt():
+        if self.is_file_modified():
+            if not self.save_file_with_prompt():
                 return
 
         builder = BlueprintBuilder.from_current_scene(blueprint)
         builder.start()
 
         # TODO: add build events so this can be done by observer pattern
-        cmds.evalDeferred(self.refreshRigExists, low=True)
+        cmds.evalDeferred(self._refresh_rig_exists, low=True)
 
     def can_interactive_build(self) -> bool:
         return self.can_build()
 
     def is_interactive_building(self) -> bool:
         """Return true if an interactive build is currently active."""
-        return self.interactiveBuilder is not None
+        return self.interactive_builder is not None
 
     def run_interactive_build(self):
         if self.is_interactive_building() or not self.can_interactive_build():
@@ -1200,55 +1200,55 @@ class BlueprintUIModel(QtCore.QObject):
             return
 
         # save blueprint
-        if self.isFileModified():
-            if not self.saveFileWithPrompt():
+        if self.is_file_modified():
+            if not self.save_file_with_prompt():
                 return
 
-        self.interactiveBuilder = BlueprintBuilder.from_current_scene(blueprint)
-        self.interactiveBuilder.cancel_on_interrupt = False
-        self.interactiveBuilder.start(run=False)
+        self.interactive_builder = BlueprintBuilder.from_current_scene(blueprint)
+        self.interactive_builder.cancel_on_interrupt = False
+        self.interactive_builder.start(run=False)
 
         # auto run setup phase
         while True:
-            self.interactiveBuilder.next()
-            if self.interactiveBuilder.phase == "actions":
+            self.interactive_builder.next()
+            if self.interactive_builder.phase == "actions":
                 break
 
         # TODO: add build event to refresh ui
-        cmds.evalDeferred(self.refreshRigExists, low=True)
+        cmds.evalDeferred(self._refresh_rig_exists, low=True)
 
     def interactive_build_next_action(self):
         """Perform the next build action of an interactive build."""
-        if self.interactiveBuilder:
-            self.interactiveBuilder.next()
-            if self.interactiveBuilder.is_finished:
-                self.interactiveBuilder = None
+        if self.interactive_builder:
+            self.interactive_builder.next()
+            if self.interactive_builder.is_finished:
+                self.interactive_builder = None
             # TODO: add build event to refresh ui
-            cmds.evalDeferred(self.refreshRigExists, low=True)
+            cmds.evalDeferred(self._refresh_rig_exists, low=True)
 
     def interactive_build_next_step(self):
         """Skip to the next build step of an interactive build."""
-        if self.interactiveBuilder:
-            step = self.interactiveBuilder.current_build_step_path
-            while step == self.interactiveBuilder.current_build_step_path:
-                self.interactiveBuilder.next()
-                if self.interactiveBuilder.is_finished:
-                    self.interactiveBuilder = None
+        if self.interactive_builder:
+            step = self.interactive_builder.current_build_step_path
+            while step == self.interactive_builder.current_build_step_path:
+                self.interactive_builder.next()
+                if self.interactive_builder.is_finished:
+                    self.interactive_builder = None
                     break
                 # TODO: add build event to refresh ui
-                cmds.evalDeferred(self.refreshRigExists, low=True)
+                cmds.evalDeferred(self._refresh_rig_exists, low=True)
 
     def continue_interactive_build(self):
         """Resume running the current interactive build."""
-        if self.interactiveBuilder:
-            self.interactiveBuilder.run()
-            if self.interactiveBuilder.is_finished:
-                self.interactiveBuilder = None
+        if self.interactive_builder:
+            self.interactive_builder.run()
+            if self.interactive_builder.is_finished:
+                self.interactive_builder = None
 
     def cancel_interactive_build(self):
-        if self.interactiveBuilder:
-            self.interactiveBuilder.cancel()
-            self.interactiveBuilder = None
+        if self.interactive_builder:
+            self.interactive_builder.cancel()
+            self.interactive_builder = None
 
     def open_rig_blueprint(self):
         """Open the blueprint maya scene for the first rig in the scene."""
@@ -1266,50 +1266,54 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
     def __init__(self, blueprint: Blueprint = None, blueprint_model: BlueprintUIModel = None, parent=None):
         super(BuildStepTreeModel, self).__init__(parent=parent)
 
-        self._blueprint = blueprint
-
         self.blueprint_model = blueprint_model
+        # TODO: why a separate blueprint variable when we have a model?
+        self._blueprint = blueprint
 
         # used to keep track of drag move actions since
         # we don't have enough data within one function
         # to group undo chunks completely
-        self.isMoveActionOpen = False
+        self._is_move_action_open = False
 
         # hacky, but used to rename dragged steps back to their
         # original names since they will get new names due to
         # conflicts from both source and target steps existing
         # at the same time briefly
-        self.dragRenameQueue = []
+        self._drag_rename_queue = []
 
-    def setBlueprint(self, blueprint: Blueprint):
+    @property
+    def blueprint(self):
+        return self._blueprint
+
+    def set_blueprint(self, blueprint: Blueprint):
         self._blueprint = blueprint
 
-    def isReadOnly(self):
+    def is_read_only(self):
         if self.blueprint_model:
-            return self.blueprint_model.isReadOnly()
+            return self.blueprint_model.is_read_only()
         return False
 
-    def stepForIndex(self, index: QtCore.QModelIndex) -> Optional[BuildStep]:
+    def step_for_index(self, index: QtCore.QModelIndex) -> Optional[BuildStep]:
         """
         Return the BuildStep of a QModelIndex.
         """
         if index.isValid():
-            return index.internalPointer()
+            return cast(BuildStep, index.internalPointer())
         if self._blueprint:
             return self._blueprint.rootStep
 
-    def indexByStep(self, step: BuildStep):
+    def index_by_step(self, step: BuildStep):
         if step and step != self._blueprint.rootStep:
             return self.createIndex(step.index_in_parent(), 0, step)
         return QtCore.QModelIndex()
 
-    def indexByStepPath(self, path):
+    def index_by_step_path(self, path):
         """
         Return a QModelIndex for a step by path
         """
         if self._blueprint:
             step = self._blueprint.get_step_by_path(path)
-            return self.indexByStep(step)
+            return self.index_by_step(step)
         return QtCore.QModelIndex()
 
     def index(self, row, column, parent=QtCore.QModelIndex()):
@@ -1319,11 +1323,11 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
         if parent.isValid() and column != 0:
             return QtCore.QModelIndex()
 
-        parentStep = self.stepForIndex(parent)
-        if parentStep and parentStep.can_have_children():
-            childStep = parentStep.get_child_at(row)
-            if childStep:
-                return self.createIndex(row, column, childStep)
+        parent_step = self.step_for_index(parent)
+        if parent_step and parent_step.can_have_children():
+            child_step = parent_step.get_child_at(row)
+            if child_step:
+                return self.createIndex(row, column, child_step)
 
         return QtCore.QModelIndex()
 
@@ -1331,30 +1335,30 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
         if not index.isValid():
             return QtCore.QModelIndex()
 
-        childStep = self.stepForIndex(index)
-        if childStep:
-            parentStep = childStep.parent
+        child_step = self.step_for_index(index)
+        if child_step:
+            parent_step = child_step.parent
         else:
             return QtCore.QModelIndex()
 
-        if parentStep is None or parentStep == self._blueprint.rootStep:
+        if parent_step is None or parent_step == self._blueprint.rootStep:
             return QtCore.QModelIndex()
 
-        return self.createIndex(parentStep.index_in_parent(), 0, parentStep)
+        return self.createIndex(parent_step.index_in_parent(), 0, parent_step)
 
     def flags(self, index):
         if not index.isValid():
-            if not self.isReadOnly():
+            if not self.is_read_only():
                 return QtCore.Qt.ItemIsDropEnabled
             else:
                 return 0
 
         flags = QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
 
-        if not self.isReadOnly():
+        if not self.is_read_only():
             flags |= QtCore.Qt.ItemIsDragEnabled | QtCore.Qt.ItemIsEditable
 
-        step = self.stepForIndex(index)
+        step = self.step_for_index(index)
         if step and step.can_have_children():
             flags |= QtCore.Qt.ItemIsDropEnabled
 
@@ -1364,14 +1368,14 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
         return 1
 
     def rowCount(self, parent=QtCore.QModelIndex()):
-        step = self.stepForIndex(parent)
+        step = self.step_for_index(parent)
         return step.num_children() if step else 0
 
     def data(self, index, role=QtCore.Qt.DisplayRole):
         if not index.isValid():
             return
 
-        step = self.stepForIndex(index)
+        step = self.step_for_index(index)
         if not step:
             return
 
@@ -1380,7 +1384,7 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
 
         elif role == QtCore.Qt.FontRole:
             font = QtGui.QFont()
-            font.setItalic(self.isReadOnly())
+            font.setItalic(self.is_read_only())
             return font
 
         elif role == QtCore.Qt.EditRole:
@@ -1425,7 +1429,7 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
         elif role == QtCore.Qt.BackgroundRole:
             # highlight active step during interactive build
             if self.blueprint_model.is_interactive_building():
-                if self.blueprint_model.interactiveBuilder.current_build_step_path == step.get_full_path():
+                if self.blueprint_model.interactive_builder.current_build_step_path == step.get_full_path():
                     return QtGui.QColor(60, 120, 94, 128)
 
             # highlight steps with warnings
@@ -1433,46 +1437,46 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
                 return QtGui.QColor(255, 205, 110, 25)
 
     def setData(self, index, value, role=QtCore.Qt.EditRole):
-        if self.isReadOnly():
+        if self.is_read_only():
             return False
         if not index.isValid():
             return False
 
-        step = self.stepForIndex(index)
+        step = self.step_for_index(index)
 
         if role == QtCore.Qt.EditRole:
             if not value:
                 value = ""
-            stepPath = step.get_full_path()
-            cmds.pulseRenameStep(stepPath, value)
+            step_path = step.get_full_path()
+            cmds.pulseRenameStep(step_path, value)
             return True
 
         elif role == QtCore.Qt.CheckStateRole:
             step.isDisabled = True if value else False
             self.dataChanged.emit(index, index, [])
-            self._emitDataChangedOnAllChildren(index, [])
+            self._emit_data_changed_on_all_children(index, [])
             # emit data changed on all children
             return True
 
         return False
 
-    def _emitDataChangedOnAllChildren(self, parent=QtCore.QModelIndex(), roles=None):
+    def _emit_data_changed_on_all_children(self, parent=QtCore.QModelIndex(), roles=None):
         if not parent.isValid():
             return
-        rowCount = self.rowCount(parent)
-        if rowCount == 0:
+        row_count = self.rowCount(parent)
+        if row_count == 0:
             return
 
-        firstChild = self.index(0, 0, parent)
-        lastChild = self.index(rowCount - 1, 0, parent)
+        first_child = self.index(0, 0, parent)
+        last_child = self.index(row_count - 1, 0, parent)
 
         # emit one event for all child indexes of parent
-        self.dataChanged.emit(firstChild, lastChild, roles)
+        self.dataChanged.emit(first_child, last_child, roles)
 
         # recursively emit on all children
-        for i in range(rowCount):
-            childIndex = self.index(i, 0, parent)
-            self._emitDataChangedOnAllChildren(childIndex, roles)
+        for i in range(row_count):
+            child_index = self.index(i, 0, parent)
+            self._emit_data_changed_on_all_children(child_index, roles)
 
     def mimeTypes(self):
         return ["text/plain"]
@@ -1484,20 +1488,20 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
         #       used in deleting steps, need to consolidate
         steps = []
         for index in indexes:
-            step = self.stepForIndex(index)
+            step = self.step_for_index(index)
             if step:
                 steps.append(step)
         steps = BuildStep.get_topmost_steps(steps)
 
-        stepDataList = [step.serialize() for step in steps]
-        data_str = meta.encodeMetaData(stepDataList)
+        step_data_list = [step.serialize() for step in steps]
+        data_str = meta.encodeMetaData(step_data_list)
         result.setData("text/plain", data_str.encode())
         return result
 
     def supportedDropActions(self):
         return QtCore.Qt.CopyAction | QtCore.Qt.MoveAction
 
-    def getStepDataListFromMimeData(self, data: QtCore.QMimeData):
+    def _get_step_data_list_from_mime_data(self, data: QtCore.QMimeData):
         data_str = data.data("text/plain").data().decode()
         if data_str:
             try:
@@ -1506,73 +1510,71 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
                 LOG.debug(e)
                 return None
             else:
-                if self.isStepData(meta_data):
+                if self.is_step_data(meta_data):
                     return meta_data
         return None
 
-    def isStepData(self, decodedData):
+    def is_step_data(self, decoded_data):
         # TODO: implement to detect if the data is in a valid format
         return True
 
-    def canDropMimeData(self, data: QtCore.QMimeData, action, row, column, parentIndex):
+    def canDropMimeData(self, data: QtCore.QMimeData, action, row, column, parent_index):
         if action == QtCore.Qt.MoveAction or action == QtCore.Qt.CopyAction:
-            step_data = self.getStepDataListFromMimeData(data)
+            step_data = self._get_step_data_list_from_mime_data(data)
             return step_data is not None
 
         return False
 
-    def dropMimeData(self, data, action, row, column, parentIndex):
-        if not self.canDropMimeData(data, action, row, column, parentIndex):
+    def dropMimeData(self, data, action, row, column, parent_index):
+        if not self.canDropMimeData(data, action, row, column, parent_index):
             return False
 
         if action == QtCore.Qt.IgnoreAction:
             return True
 
-        step_data = self.getStepDataListFromMimeData(data)
+        step_data = self._get_step_data_list_from_mime_data(data)
         if step_data is None:
             # TODO: log error here, even though we shouldn't in canDropMimeData
             return False
 
-        print("dropData", step_data, data, action, row, column, parentIndex)
+        begin_row = 0
+        parent_path = None
 
-        beginRow = 0
-        parentPath = None
-
-        if parentIndex.isValid():
-            parentStep = self.stepForIndex(parentIndex)
-            if parentStep:
-                if parentStep.can_have_children():
+        if parent_index.isValid():
+            parent_step = self.step_for_index(parent_index)
+            if parent_step:
+                if parent_step.can_have_children():
                     # drop into step group
-                    beginRow = parentStep.num_children()
-                    parentPath = parentStep.get_full_path()
+                    begin_row = parent_step.num_children()
+                    parent_path = parent_step.get_full_path()
                 else:
                     # drop next to step
-                    beginRow = parentIndex.row()
-                    parentPath = os.path.dirname(parentStep.get_full_path())
+                    begin_row = parent_index.row()
+                    parent_path = os.path.dirname(parent_step.get_full_path())
 
-        if not parentPath:
-            parentPath = ""
-            beginRow = self.rowCount(QtCore.QModelIndex())
+        if not parent_path:
+            parent_path = ""
+            begin_row = self.rowCount(QtCore.QModelIndex())
         if row != -1:
-            beginRow = row
+            begin_row = row
 
         cmds.undoInfo(openChunk=True, chunkName="Drag Pulse Actions")
-        self.isMoveActionOpen = True
-        cmds.evalDeferred(self._deferredMoveUndoClose)
+        self._is_move_action_open = True
+        cmds.evalDeferred(self._deferred_move_undo_close)
 
         count = len(step_data)
         for i in range(count):
             step_data_str = serialize_attr_value(step_data[i])
-            newStepPath = cmds.pulseCreateStep(parentPath, beginRow + i, step_data_str)
-            if newStepPath:
-                newStepPath = newStepPath[0]
+            new_step_path = cmds.pulseCreateStep(parent_path, begin_row + i, step_data_str)
+            if new_step_path:
+                new_step_path = new_step_path[0]
 
             if action == QtCore.Qt.MoveAction:
                 # hacky, but because steps are removed after the new ones are created,
                 # we need to rename the steps back to their original names in case they
                 # were auto-renamed to avoid conflicts
-                targetName = step_data[i].get("name", "")
-                self.dragRenameQueue.append((newStepPath, targetName))
+                target_name = step_data[i].get("name", "")
+                self._drag_rename_queue.append((new_step_path, target_name))
 
         # always return false, since we don't need the item view to handle removing moved items
         return True
@@ -1586,7 +1588,7 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
         # TODO: provide better api for deleting groups of steps
         steps: List[BuildStep] = []
         for index in indexes:
-            step = self.stepForIndex(index)
+            step = self.step_for_index(index)
             if step:
                 steps.append(step)
         steps = BuildStep.get_topmost_steps(steps)
@@ -1597,27 +1599,27 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
             if path:
                 paths.append(path)
 
-        if not self.isMoveActionOpen:
+        if not self._is_move_action_open:
             cmds.undoInfo(openChunk=True, chunkName="Delete Pulse Actions")
 
         for path in paths:
             cmds.pulseDeleteStep(path)
 
-        if not self.isMoveActionOpen:
+        if not self._is_move_action_open:
             cmds.undoInfo(closeChunk=True)
 
-    def _deferredMoveUndoClose(self):
+    def _deferred_move_undo_close(self):
         """
         Called after a drag move operation has finished in order
         to capture all cmds into one undo chunk.
         """
-        if self.isMoveActionOpen:
-            self.isMoveActionOpen = False
+        if self._is_move_action_open:
+            self._is_move_action_open = False
 
             # rename dragged steps back to their original names
             # since they were changed due to conflicts during drop
-            while self.dragRenameQueue:
-                path, name = self.dragRenameQueue.pop()
+            while self._drag_rename_queue:
+                path, name = self._drag_rename_queue.pop()
                 cmds.pulseRenameStep(path, name)
 
             cmds.undoInfo(closeChunk=True)
@@ -1631,7 +1633,7 @@ class BuildStepSelectionModel(QtCore.QItemSelectionModel):
     the BlueprintUIModel for a specific Blueprint.
     """
 
-    def getSelectedItems(self) -> List[BuildStep]:
+    def get_selected_items(self) -> List[BuildStep]:
         """
         Return the currently selected BuildSteps
         """
@@ -1639,51 +1641,51 @@ class BuildStepSelectionModel(QtCore.QItemSelectionModel):
         items: List[BuildStep] = []
         for index in indexes:
             if index.isValid():
-                buildStep: BuildStep = self.model.stepForIndex(index)
+                build_step: BuildStep = cast(BuildStepTreeModel, self.model).step_for_index(index)
                 # buildStep = index.internalPointer()
-                if buildStep:
-                    items.append(buildStep)
+                if build_step:
+                    items.append(build_step)
         return list(set(items))
 
-    def getSelectedGroups(self):
+    def get_selected_groups(self):
         """
         Return indexes of the selected BuildSteps that can have children
         """
         indexes = self.selectedIndexes()
-        indeces = []
+        result = []
         for index in indexes:
             if index.isValid():
-                buildStep: BuildStep = self.model.stepForIndex(index)
+                build_step: BuildStep = cast(BuildStepTreeModel, self.model).step_for_index(index)
                 # buildStep = index.internalPointer()
-                if buildStep and buildStep.can_have_children():
-                    indeces.append(index)
+                if build_step and build_step.can_have_children():
+                    result.append(index)
                 # TODO: get parent until we have an item that supports children
-        return list(set(indeces))
+        return list(set(result))
 
-    def getSelectedAction(self):
+    def get_selected_action(self):
         """
         Return the currently selected BuildAction, if any.
         """
-        items = self.getSelectedItems()
+        items = self.get_selected_items()
         return [i for i in items if isinstance(i, BuildAction)]
 
-    def getSelectedItemPaths(self):
+    def get_selected_item_paths(self):
         """
         Return the full paths of the selected BuildSteps
         """
-        items = self.getSelectedItems()
+        items = self.get_selected_items()
         return [i.get_full_path() for i in items]
 
-    def setSelectedItemPaths(self, paths):
+    def set_selected_item_paths(self, paths):
         """
         Set the selection using BuildStep paths
         """
         if not self.model() or not hasattr(self.model(), "_blueprint"):
             return
 
-        blueprint = self.model()._blueprint
+        blueprint = cast(BuildStepTreeModel, self.model()).blueprint
         steps = [blueprint.get_step_by_path(p) for p in paths]
-        indexes = [self.model().indexByStep(s) for s in steps if s]
+        indexes = [cast(BuildStepTreeModel, self.model()).index_by_step(s) for s in steps if s]
         self.clearSelection()
         for index in indexes:
             if index.isValid():

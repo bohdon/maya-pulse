@@ -15,7 +15,7 @@ from ...vendor.Qt import QtCore, QtGui, QtWidgets
 from ...vendor.Qt.QtCore import QPoint, QPointF, QRect, QSize, QSizeF
 from ...vendor import pymetanode as meta
 from ..core import PulseWindow
-from ..utils import clearLayout
+from ..utils import clear_layout
 
 from ..gen.anim_picker import Ui_AnimPicker
 
@@ -1119,7 +1119,7 @@ class AnimPickerWidget(QtWidgets.QWidget):
     def clear_all_pickers(self):
         # TODO: prompt to save all
         self._pickers = []
-        clearLayout(self.ui.picker_list_layout)
+        clear_layout(self.ui.picker_list_layout)
 
     def add_picker(self, picker: AnimPickerModel):
         if picker in self._pickers:

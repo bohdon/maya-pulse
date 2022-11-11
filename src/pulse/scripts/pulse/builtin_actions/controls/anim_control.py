@@ -84,15 +84,15 @@ class AnimControlContextSubMenu(PulseNodeContextSubMenu):
     """
 
     @classmethod
-    def shouldBuildSubMenu(cls, menu) -> bool:
-        return cls.isNodeWithMetaClassSelected(ANIM_CTL_METACLASS)
+    def should_build_sub_menu(cls, menu) -> bool:
+        return cls.is_node_with_metaclass_selected(ANIM_CTL_METACLASS)
 
-    def buildMenuItems(self):
-        pm.menuItem(l='Reset', rp=self.getSafeRadialPosition('N'), c=pm.Callback(self.resetSelected))
+    def build_menu_items(self):
+        pm.menuItem(l='Reset', rp=self.get_safe_radial_position('N'), c=pm.Callback(self.resetSelected))
 
     def resetSelected(self):
         if resetter:
-            sel_ctls = self.getSelectedNodesWithMetaClass(ANIM_CTL_METACLASS)
+            sel_ctls = self.get_selected_nodes_with_meta_class(ANIM_CTL_METACLASS)
             if sel_ctls:
                 resetter.reset(sel_ctls)
 

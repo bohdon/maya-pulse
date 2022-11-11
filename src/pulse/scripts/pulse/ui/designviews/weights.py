@@ -1,6 +1,6 @@
 from ... import editor_utils
 from ...vendor.Qt import QtWidgets
-from ..utils import undoAndRepeatPartial as cmd
+from ..utils import undo_and_repeat_partial as cmd
 
 from ..gen.designpanel_weights import Ui_WeightsDesignPanel
 

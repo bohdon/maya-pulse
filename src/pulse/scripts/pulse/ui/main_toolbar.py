@@ -6,7 +6,7 @@ import logging
 
 import maya.cmds as cmds
 
-from ..vendor.Qt import QtCore, QtGui, QtWidgets
+from ..vendor.Qt import QtGui, QtWidgets
 from ..blueprints import BlueprintSettings
 from . import utils
 from .core import BlueprintUIModel
@@ -26,25 +26,25 @@ class MainToolbar(QtWidgets.QWidget):
         # used to cause a latent refresh after builds
         self._isStateDirty = False
 
-        self.blueprint_model = BlueprintUIModel.getDefaultModel()
+        self.blueprint_model = BlueprintUIModel.get_default_model()
 
         self.ui = Ui_MainToolbar()
         self.ui.setupUi(self)
         utils.set_custom_context_menu(self.ui.build_btn, self._show_build_context_menu)
 
-        self._cleanState()
-        self._updateMode()
-        self._updateRigName()
+        self._clean_state()
+        self._update_mode()
+        self._update_rig_name()
 
         # connect signals
-        self.blueprint_model.changeSceneFinished.connect(self._onChangeSceneFinished)
-        self.blueprint_model.fileChanged.connect(self._onFileChanged)
-        self.blueprint_model.isFileModifiedChanged.connect(self._onFileModifiedChanged)
-        self.blueprint_model.rigExistsChanged.connect(self._onRigExistsChanged)
-        self.blueprint_model.readOnlyChanged.connect(self._onReadOnlyChanged)
-        self.blueprint_model.settingChanged.connect(self._onSettingChanged)
+        self.blueprint_model.change_scene_finished.connect(self._on_change_scene_finished)
+        self.blueprint_model.file_changed.connect(self._on_file_changed)
+        self.blueprint_model.is_file_modified_changed.connect(self._on_file_modified_changed)
+        self.blueprint_model.rig_exists_changed.connect(self._on_rig_exists_changed)
+        self.blueprint_model.read_only_changed.connect(self._on_read_only_changed)
+        self.blueprint_model.setting_changed.connect(self._on_setting_changed)
 
-        self.ui.new_blueprint_btn.clicked.connect(self.blueprint_model.newFile)
+        self.ui.new_blueprint_btn.clicked.connect(self.blueprint_model.new_file)
         self.ui.validate_btn.clicked.connect(self.blueprint_model.run_validation)
         self.ui.build_btn.clicked.connect(self.blueprint_model.run_build)
         self.ui.interactive_next_btn.clicked.connect(self.blueprint_model.interactive_build_next_action)
@@ -67,81 +67,76 @@ class MainToolbar(QtWidgets.QWidget):
     def mousePressEvent(self, event: QtGui.QMouseEvent):
         super(MainToolbar, self).mousePressEvent(event)
 
-    def contextMenuEvent(self, event: QtGui.QContextMenuEvent):
-        print(f"contextMenuEvent({event})")
-        super(MainToolbar, self).contextMenuEvent(event)
-        self.setCursor()
-
-    def doesRigExist(self):
-        return self.blueprint_model.doesRigExist
+    def does_rig_exist(self):
+        return self.blueprint_model.does_rig_exist
 
     def showEvent(self, event):
         super(MainToolbar, self).showEvent(event)
-        self._onStateDirty()
+        self._on_state_dirty()
 
-    def _onChangeSceneFinished(self):
-        self._updateMode()
-        self._updateRigName()
+    def _on_change_scene_finished(self):
+        self._update_mode()
+        self._update_rig_name()
 
-    def _onFileChanged(self):
-        self._updateMode()
-        self._updateRigName()
+    def _on_file_changed(self):
+        self._update_mode()
+        self._update_rig_name()
 
-    def _onFileModifiedChanged(self, isModified):
-        self._updateRigName()
+    def _on_file_modified_changed(self, is_modified):
+        self._update_rig_name()
 
-    def _onSettingChanged(self, key: str, value: object):
+    def _on_setting_changed(self, key: str, value: object):
         if key == BlueprintSettings.RIG_NAME:
-            self._updateRigName()
+            self._update_rig_name()
 
-    def _updateRigName(self):
+    def _update_rig_name(self):
         # prevent updating rig and file name while changing scenes
-        if self.blueprint_model.isChangingScenes:
+        if self.blueprint_model.is_changing_scenes:
             return
 
-        fileName = self.blueprint_model.getBlueprintFileName()
-        if fileName is None:
-            fileName = "untitled"
-        if self.blueprint_model.isFileModified():
-            fileName += "*"
+        file_name = self.blueprint_model.get_blueprint_file_name()
+        if file_name is None:
+            file_name = "untitled"
+        if self.blueprint_model.is_file_modified():
+            file_name += "*"
 
-        self.ui.rig_name_label.setText(self.blueprint_model.getSetting(BlueprintSettings.RIG_NAME))
-        self.ui.blueprint_file_name_label.setText(fileName)
-        self.ui.blueprint_file_name_label.setToolTip(self.blueprint_model.getBlueprintFilePath())
+        self.ui.rig_name_label.setText(self.blueprint_model.get_setting(BlueprintSettings.RIG_NAME))
+        self.ui.blueprint_file_name_label.setText(file_name)
+        self.ui.blueprint_file_name_label.setToolTip(self.blueprint_model.get_blueprint_file_path())
 
-    def _onRigExistsChanged(self):
-        self._cleanState()
-        self._updateMode()
+    def _on_rig_exists_changed(self):
+        self._clean_state()
+        self._update_mode()
 
-    def _onReadOnlyChanged(self, isReadOnly):
+    def _on_read_only_changed(self, is_read_only):
         # TODO: represent read-only state somewhere
         pass
 
-    def _cleanState(self):
+    def _clean_state(self):
         self._isStateDirty = False
         self.setEnabled(True)  # TODO: True if isBuilding
 
-    def _onStateDirty(self):
+    def _on_state_dirty(self):
         if not self._isStateDirty:
             self._isStateDirty = True
             self.setEnabled(False)
-            cmds.evalDeferred(self._cleanState)
+            cmds.evalDeferred(self._clean_state)
 
-    def _updateMode(self):
+    def _update_mode(self):
         """
         Update the mode header and visible page, blueprint or rig.
         """
         # prevent mode changes while changing scenes to avoid flickering
         # since a file may be briefly closed before a new one is opened
-        if self.blueprint_model.isChangingScenes:
+        if self.blueprint_model.is_changing_scenes:
             return
 
-        if self.blueprint_model.isFileOpen():
+        if self.blueprint_model.is_file_open():
             self.ui.main_stack.setCurrentWidget(self.ui.opened_page)
         else:
             self.ui.main_stack.setCurrentWidget(self.ui.new_page)
 
-        if self.doesRigExist():
+        if self.does_rig_exist():
             # rig read-only mode
             self.ui.validate_btn.setEnabled(False)
             self.ui.build_btn.setEnabled(False)
@@ -165,10 +160,8 @@ class MainToolbar(QtWidgets.QWidget):
         if self.blueprint_model.is_interactive_building():
             # show button to step interactive build forward
             self.ui.interactive_build_frame.setVisible(True)
-            # self.ui.build_btn_stack.setCurrentWidget(self.ui.step_page)
         else:
             self.ui.interactive_build_frame.setVisible(False)
-            # self.ui.build_btn_stack.setCurrentWidget(self.ui.build_page)
 
         # refresh stylesheet for mode frame
         self.ui.mode_frame.setStyleSheet("")

@@ -131,12 +131,12 @@ class SpaceSwitchUtils(object):
 class SpaceSwitchContextSubMenu(PulseNodeContextSubMenu):
 
     @classmethod
-    def shouldBuildSubMenu(cls, menu) -> bool:
+    def should_build_sub_menu(cls, menu) -> bool:
         # TODO: support switching multiple nodes if they have overlapping spaces
-        return len(cls.getSelectedNodesWithMetaClass(spaces.SPACE_CONSTRAINT_METACLASS)) == 1
+        return len(cls.get_selected_nodes_with_meta_class(spaces.SPACE_CONSTRAINT_METACLASS)) == 1
 
-    def buildMenuItems(self):
-        ctl = self.getSelectedNodesWithMetaClass(spaces.SPACE_CONSTRAINT_METACLASS)[0]
+    def build_menu_items(self):
+        ctl = self.get_selected_nodes_with_meta_class(spaces.SPACE_CONSTRAINT_METACLASS)[0]
         meta_data = meta.getMetaData(ctl, spaces.SPACE_CONSTRAINT_METACLASS)
         all_spaces = meta_data.get('spaces', [])
         if all_spaces:

@@ -88,7 +88,7 @@ def get_editor_blueprint():
     """
     from .ui.core import BlueprintUIModel
 
-    return BlueprintUIModel.getDefaultModel().blueprint
+    return BlueprintUIModel.get_default_model().blueprint
 
 
 def get_selected_transforms(include_children=False):

@@ -21,15 +21,15 @@ class ActionPackagesList(QtWidgets.QWidget):
     def __init__(self, parent=None):
         super(ActionPackagesList, self).__init__(parent=parent)
 
-        self.setupUi(self)
-        self._updatePackageList()
+        self.setup_ui(self)
+        self._update_package_list()
 
-    def setupUi(self, parent):
+    def setup_ui(self, parent):
         self.layout = QtWidgets.QVBoxLayout(parent)
         self.layout.setMargin(0)
 
-    def _updatePackageList(self):
-        utils.clearLayout(self.layout)
+    def _update_package_list(self):
+        utils.clear_layout(self.layout)
 
         registry = BuildActionPackageRegistry.get()
 
@@ -37,16 +37,16 @@ class ActionPackagesList(QtWidgets.QWidget):
             label = QtWidgets.QLabel(self)
             label.setTextInteractionFlags(QtCore.Qt.LinksAccessibleByMouse | QtCore.Qt.TextSelectableByMouse)
             label.setProperty("cssClasses", "block")
-            label.setText(self.getPackageDisplayName(package))
+            label.setText(self.get_package_display_name(package))
             self.layout.addWidget(label)
 
-    def getPackageDisplayName(self, package):
+    def get_package_display_name(self, package):
         return f"{package.__name__} ({package.__path__[0]})"
 
     def showEvent(self, event: QtGui.QShowEvent):
         super(ActionPackagesList, self).showEvent(event)
 
-        self._updatePackageList()
+        self._update_package_list()
 
 
 class MainSettings(QtWidgets.QWidget):
@@ -57,8 +57,8 @@ class MainSettings(QtWidgets.QWidget):
     def __init__(self, parent=None):
         super(MainSettings, self).__init__(parent=parent)
 
-        self.blueprintModel = BlueprintUIModel.getDefaultModel()
-        self.model = self.blueprintModel.buildStepTreeModel
+        self.blueprintModel = BlueprintUIModel.get_default_model()
+        self.model = self.blueprintModel.build_step_tree_model
 
         self.ui = Ui_MainSettings()
         self.ui.setupUi(self)
@@ -66,55 +66,55 @@ class MainSettings(QtWidgets.QWidget):
         action_pkgs = ActionPackagesList(self)
         self.ui.action_pkgs_layout.addWidget(action_pkgs)
 
-        self.ui.file_path_text_label.setText(self._getSceneRelativeBlueprintFilePath())
-        self._updateAllSettingValues()
+        self.ui.file_path_text_label.setText(self._get_scene_relative_blueprint_file_path())
+        self._update_all_setting_values()
         self.ui.config_file_path_label.setText(self.blueprintModel.blueprint.config_file_path)
 
-        self.ui.rig_name_edit.textEdited.connect(self._onEditRigName)
-        self.ui.rig_node_fmt_edit.textEdited.connect(self._onEditRigNodeNameFormat)
-        self.ui.debug_build_check.stateChanged.connect(self._onEditDebugBuild)
+        self.ui.rig_name_edit.textEdited.connect(self._on_edit_rig_name)
+        self.ui.rig_node_fmt_edit.textEdited.connect(self._on_edit_rig_node_name_format)
+        self.ui.debug_build_check.stateChanged.connect(self._on_edit_debug_build)
 
-        self.blueprintModel.settingChanged.connect(self._onSettingChanged)
-        self.blueprintModel.fileChanged.connect(self._onFileChanged)
-        self.blueprintModel.readOnlyChanged.connect(self._onReadOnlyChanged)
+        self.blueprintModel.setting_changed.connect(self._on_setting_changed)
+        self.blueprintModel.file_changed.connect(self._on_file_changed)
+        self.blueprintModel.read_only_changed.connect(self._on_read_only_changed)
 
-        self._onReadOnlyChanged(self.blueprintModel.isReadOnly())
+        self._on_read_only_changed(self.blueprintModel.is_read_only())
 
-    def _updateAllSettingValues(self):
-        self.ui.rig_name_edit.setText(self.blueprintModel.getSetting(BlueprintSettings.RIG_NAME))
-        self.ui.rig_node_fmt_edit.setText(self.blueprintModel.getSetting(BlueprintSettings.RIG_NODE_NAME_FORMAT))
+    def _update_all_setting_values(self):
+        self.ui.rig_name_edit.setText(self.blueprintModel.get_setting(BlueprintSettings.RIG_NAME))
+        self.ui.rig_node_fmt_edit.setText(self.blueprintModel.get_setting(BlueprintSettings.RIG_NODE_NAME_FORMAT))
 
-    def _onFileChanged(self):
+    def _on_file_changed(self):
         """
         Called when a blueprint is created, opened, or saved to a new path.
         """
-        self.ui.file_path_text_label.setText(self._getSceneRelativeBlueprintFilePath())
+        self.ui.file_path_text_label.setText(self._get_scene_relative_blueprint_file_path())
         # if blueprint changed then all settings should be refreshed
-        self._updateAllSettingValues()
+        self._update_all_setting_values()
 
-    def _onEditRigName(self):
-        self.blueprintModel.setSetting(BlueprintSettings.RIG_NAME, self.ui.rig_name_edit.text())
+    def _on_edit_rig_name(self):
+        self.blueprintModel.set_setting(BlueprintSettings.RIG_NAME, self.ui.rig_name_edit.text())
 
-    def _onEditRigNodeNameFormat(self):
-        self.blueprintModel.setSetting(BlueprintSettings.RIG_NODE_NAME_FORMAT, self.ui.rig_node_fmt_edit.text())
+    def _on_edit_rig_node_name_format(self):
+        self.blueprintModel.set_setting(BlueprintSettings.RIG_NODE_NAME_FORMAT, self.ui.rig_node_fmt_edit.text())
 
-    def _onEditDebugBuild(self):
-        self.blueprintModel.setSetting(BlueprintSettings.DEBUG_BUILD, self.ui.debug_build_check.isChecked())
+    def _on_edit_debug_build(self):
+        self.blueprintModel.set_setting(BlueprintSettings.DEBUG_BUILD, self.ui.debug_build_check.isChecked())
 
-    def _onSettingChanged(self, key: str, value: object):
+    def _on_setting_changed(self, key: str, value: object):
         if key == BlueprintSettings.RIG_NAME:
             self.ui.rig_name_edit.setText(str(value))
         elif key == BlueprintSettings.RIG_NODE_NAME_FORMAT:
             self.ui.rig_node_fmt_edit.setText(str(value))
 
-    def _onReadOnlyChanged(self, isReadOnly):
-        self.ui.blueprint_tab.setEnabled(not isReadOnly)
+    def _on_read_only_changed(self, is_read_only):
+        self.ui.blueprint_tab.setEnabled(not is_read_only)
 
-    def _getSceneRelativeBlueprintFilePath(self):
-        return self._getSceneRelativeFilePath(self.blueprintModel.getBlueprintFilePath())
+    def _get_scene_relative_blueprint_file_path(self):
+        return self._get_scene_relative_file_path(self.blueprintModel.get_blueprint_file_path())
 
     @staticmethod
-    def _getSceneRelativeFilePath(file_path):
+    def _get_scene_relative_file_path(file_path):
         # get the file name relative to the current scene name
         return file_path
         scene_path = pm.sceneName()

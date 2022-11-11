@@ -3,7 +3,7 @@ Menus and utils for working with blueprints or rigs.
 Action context menus provides an extensible way to add features based
 on the metaclass of animation controls.
 """
-from typing import List, Type
+from typing import List, Type, Optional
 
 import pymel.core as pm
 
@@ -27,7 +27,7 @@ else:
 RMB_MENU_NAME = "pulseActionNodeContextMenu"
 
 
-def registerContextMenu(priority: int = 0):
+def register_context_menu(priority: int = 0):
     """
     Register pulse context menus with the right click menu.
     """
@@ -40,7 +40,7 @@ def registerContextMenu(priority: int = 0):
         rmbmenuhook.registerMenu(RMB_MENU_NAME, PulseNodeContextMenu, priority)
 
 
-def unregisterContextMenu():
+def unregister_context_menu():
     """
     Unregister the pulse context menu
     """
@@ -48,7 +48,7 @@ def unregisterContextMenu():
         rmbmenuhook.unregisterMenu(RMB_MENU_NAME)
 
 
-def canRegisterContextMenus() -> bool:
+def can_register_context_menus() -> bool:
     return has_rmbmenuhook
 
 
@@ -65,15 +65,15 @@ class PulseNodeContextMenu(rmbmenuhook.Menu):
 
         self.hitNode = pm.PyNode(self.object) if self.object else None
 
-        self.submenu_classes = self.getSubMenuClasses()
+        self.submenu_classes = self.get_sub_menu_classes()
 
-    def getSubMenuClasses(self) -> List[Type["PulseNodeContextSubMenu"]]:
+    def get_sub_menu_classes(self) -> List[Type["PulseNodeContextSubMenu"]]:
         """
         Return a list of BuildActionContextMenuItem classes available for a node
         """
         result = []
         for subclass in PulseNodeContextSubMenu.__subclasses__():
-            if subclass.shouldBuildSubMenu(self):
+            if subclass.should_build_sub_menu(self):
                 result.append(subclass)
         return result
 
@@ -86,38 +86,38 @@ class PulseNodeContextMenu(rmbmenuhook.Menu):
         num_submenus = len(self.submenu_classes)
         for submenu_class in self.submenu_classes:
             submenu = submenu_class(self, num_submenus == 1)
-            submenu.buildMenuItems()
+            submenu.build_menu_items()
 
-    def isRadialPositionOccupied(self, radialPosition: str):
+    def is_radial_position_occupied(self, radial_position: str):
         """
         Return true if a radial position is currently occupied by an existing menu item.
         """
-        if not radialPosition:
+        if not radial_position:
             return False
 
         menu_items = pm.menu(self.menu, q=True, itemArray=True)
         for menu_item in menu_items:
-            if pm.menuItem(menu_item, q=True, radialPosition=True) == radialPosition:
+            if pm.menuItem(menu_item, q=True, radialPosition=True) == radial_position:
                 return True
         return False
 
-    def getSafeRadialPosition(self, radialPosition: str) -> str:
+    def get_safe_radial_position(self, radial_position: str) -> Optional[str]:
         """
         Return the given radial position if it is not already occupied, or None if it is
         """
-        if self.isRadialPositionOccupied(radialPosition):
+        if self.is_radial_position_occupied(radial_position):
             return None
-        return radialPosition
+        return radial_position
 
 
 class PulseNodeContextSubMenu(object):
     """
     Base class for a subset of menu items to add to a context menu for a node.
-    Meta classes are used to determine which menu items are available.
+    Metaclasses are used to determine which menu items are available.
     """
 
     @classmethod
-    def shouldBuildSubMenu(cls, menu: PulseNodeContextMenu) -> bool:
+    def should_build_sub_menu(cls, menu: PulseNodeContextMenu) -> bool:
         """
         Return true if this submenu should be built for a node
 
@@ -126,64 +126,64 @@ class PulseNodeContextSubMenu(object):
         """
         return False
 
-    def __init__(self, menu: PulseNodeContextMenu, isOnlySubmenu: bool):
+    def __init__(self, menu: PulseNodeContextMenu, is_only_submenu: bool):
         """
         Args:
             menu: The context menu containing this submenu
-            isOnlySubmenu: If true, this is the only submenu being shown
+            is_only_submenu: If true, this is the only submenu being shown
         """
         self.menu = menu
-        self.isOnlySubmenu = isOnlySubmenu
+        self.isOnlySubmenu = is_only_submenu
 
     @property
     def node(self):
         return self.menu.hitNode
 
-    def buildMenuItems(self):
+    def build_menu_items(self):
         """
         Build the menu items for this utility
         """
         pass
 
-    def isRadialPositionOccupied(self, radialPosition: str):
+    def is_radial_position_occupied(self, radial_position: str):
         """
         Return true if a radial position is currently occupied by an existing menu item.
         """
-        return self.menu.isRadialPositionOccupied(radialPosition)
+        return self.menu.is_radial_position_occupied(radial_position)
 
-    def getSafeRadialPosition(self, radialPosition: str) -> str:
+    def get_safe_radial_position(self, radial_position: str) -> str:
         """
         Return the given radial position if it is not already occupied, or None if it is
         """
-        return self.menu.getSafeRadialPosition(radialPosition)
+        return self.menu.get_safe_radial_position(radial_position)
 
     @staticmethod
-    def isNodeWithMetaClassSelected(*metaClassNames: str) -> bool:
+    def is_node_with_metaclass_selected(*meta_class_names: str) -> bool:
         """
-        Return True if any node exists in the selection with one of the given meta classes
+        Return True if any node exists in the selection with one of the given metaclasses.
         """
 
-        def hasAnyMetaClass(node, metaClassNames):
-            for metaClassName in metaClassNames:
+        def _has_any_metaclass(node, metaclass_names):
+            for metaClassName in metaclass_names:
                 if meta.hasMetaClass(node, metaClassName):
                     return True
             return False
 
         for s in pm.selected(type="transform"):
-            if hasAnyMetaClass(s, metaClassNames):
+            if _has_any_metaclass(s, meta_class_names):
                 return True
         return False
 
     @staticmethod
-    def getSelectedNodesWithMetaClass(*metaClassNames: str) -> List[pm.PyNode]:
+    def get_selected_nodes_with_meta_class(*metaclass_names: str) -> List[pm.PyNode]:
         """
-        Return all selected nodes that have any of the given meta classes
+        Return all selected nodes that have any of the given metaclasses.
         """
 
-        def hasAnyMetaClass(node, metaClassNames):
-            for metaClassName in metaClassNames:
+        def has_any_metaclass(node, metaclass_names):
+            for metaClassName in metaclass_names:
                 if meta.hasMetaClass(node, metaClassName):
                     return True
             return False
 
-        return [s for s in pm.selected(type="transform") if hasAnyMetaClass(s, metaClassNames)]
+        return [s for s in pm.selected(type="transform") if has_any_metaclass(s, metaclass_names)]

@@ -18,7 +18,7 @@ def maya_useNewAPI():
 
 
 def getBlueprintModel():
-    model = BlueprintUIModel.getDefaultModel()
+    model = BlueprintUIModel.get_default_model()
     return model
 
 
@@ -107,7 +107,7 @@ class PulseCreateStepCmd(PulseCmdBase):
         blueprintModel = getBlueprintModel()
         if blueprintModel:
             stepData = deserialize_attr_value(self.stepStrData)
-            newStep = blueprintModel.createStep(self.stepPath, self.stepChildIndex, stepData)
+            newStep = blueprintModel.create_step(self.stepPath, self.stepChildIndex, stepData)
             if not newStep:
                 raise RuntimeError("Failed to create BuildStep")
             self.newStepPath = newStep.get_full_path()
@@ -117,7 +117,7 @@ class PulseCreateStepCmd(PulseCmdBase):
     def undoIt(self):
         blueprintModel = getBlueprintModel()
         if blueprintModel and self.newStepPath:
-            blueprintModel.deleteStep(self.newStepPath)
+            blueprintModel.delete_step(self.newStepPath)
 
 
 CMD_CLASSES.append(PulseCreateStepCmd)
@@ -155,13 +155,13 @@ class PulseDeleteStepCmd(PulseCmdBase):
         blueprintModel = getBlueprintModel()
         if blueprintModel:
             # save the serialized step data before deleting
-            step = blueprintModel.getStep(self.stepPath)
+            step = blueprintModel.get_step(self.stepPath)
             if not step:
                 raise RuntimeError(
                     "BuildStep not found: {0}".format(self.stepPath))
             self.deletedStrData = serialize_attr_value(step.serialize())
             self.deletedChildIndex = step.index_in_parent()
-            if not blueprintModel.deleteStep(self.stepPath):
+            if not blueprintModel.delete_step(self.stepPath):
                 raise RuntimeError("Failed to delete BuildStep")
 
     def undoIt(self):
@@ -169,7 +169,7 @@ class PulseDeleteStepCmd(PulseCmdBase):
         if blueprintModel and self.deletedStrData:
             deletedData = deserialize_attr_value(self.deletedStrData)
             parentPath = os.path.dirname(self.stepPath)
-            blueprintModel.createStep(
+            blueprintModel.create_step(
                 parentPath, self.deletedChildIndex, deletedData)
 
 
@@ -211,7 +211,7 @@ class PulseMoveStepCmd(PulseCmdBase):
         blueprintModel = getBlueprintModel()
         if blueprintModel:
             # save the resolved path after performing the move
-            self.resolvedTargetPath = blueprintModel.moveStep(
+            self.resolvedTargetPath = blueprintModel.move_step(
                 self.sourcePath, self.targetPath)
             if self.resolvedTargetPath is None:
                 raise RuntimeError("Failed to move BuildStep")
@@ -219,7 +219,7 @@ class PulseMoveStepCmd(PulseCmdBase):
     def undoIt(self):
         blueprintModel = getBlueprintModel()
         if blueprintModel:
-            blueprintModel.moveStep(
+            blueprintModel.move_step(
                 self.resolvedTargetPath, self.sourcePath)
 
 
@@ -261,9 +261,9 @@ class PulseRenameStepCmd(PulseCmdBase):
         blueprintModel = getBlueprintModel()
         if blueprintModel:
             # save the resolved path after performing the move
-            step = blueprintModel.getStep(self.stepPath)
+            step = blueprintModel.get_step(self.stepPath)
             self.oldName = step.name if step else ''
-            self.resolvedTargetPath = blueprintModel.renameStep(
+            self.resolvedTargetPath = blueprintModel.rename_step(
                 self.stepPath, self.targetName)
             if self.resolvedTargetPath is None:
                 raise RuntimeError("Failed to rename BuildStep")
@@ -271,7 +271,7 @@ class PulseRenameStepCmd(PulseCmdBase):
     def undoIt(self):
         blueprintModel = getBlueprintModel()
         if blueprintModel:
-            blueprintModel.renameStep(
+            blueprintModel.rename_step(
                 self.resolvedTargetPath, self.oldName)
 
 
@@ -323,12 +323,12 @@ class PulseSetActionAttrCmd(PulseCmdBase):
         if blueprintModel:
             # store old value as str
             self.oldStrValue = serialize_attr_value(
-                blueprintModel.getActionAttr(
+                blueprintModel.get_action_attr(
                     self.attrPath, self.variantIndex))
 
             # deserialize str value into objects
             value = deserialize_attr_value(self.newStrValue)
-            blueprintModel.setActionAttr(
+            blueprintModel.set_action_attr(
                 self.attrPath, value, self.variantIndex)
 
     def undoIt(self):
@@ -336,7 +336,7 @@ class PulseSetActionAttrCmd(PulseCmdBase):
         if blueprintModel:
             # deserialize str value into objects
             value = deserialize_attr_value(self.oldStrValue)
-            blueprintModel.setActionAttr(
+            blueprintModel.set_action_attr(
                 self.attrPath, value, self.variantIndex)
 
 
@@ -386,16 +386,16 @@ class PulseSetIsVariantAttrCmd(PulseCmdBase):
             # snapshot the whole action proxy, since it may change
             # significantly when modifying variant attrs
             self.oldStrData = serialize_attr_value(
-                blueprintModel.getActionData(
+                blueprintModel.get_action_data(
                     self.stepPath))
-            blueprintModel.setIsActionAttrVariant(
+            blueprintModel.set_is_action_attr_variant(
                 self.attrPath, self.newValue)
 
     def undoIt(self):
         blueprintModel = getBlueprintModel()
         if blueprintModel:
             oldData = deserialize_attr_value(self.oldStrData)
-            blueprintModel.setActionData(
+            blueprintModel.set_action_data(
                 self.stepPath, oldData)
 
 
@@ -439,13 +439,13 @@ class PulseSetIsActionMirroredCmd(PulseCmdBase):
         blueprintModel = getBlueprintModel()
         if blueprintModel:
             # TODO: fail if not changing anything
-            self.oldValue = blueprintModel.isActionMirrored(self.stepPath)
-            blueprintModel.setIsActionMirrored(self.stepPath, self.newValue)
+            self.oldValue = blueprintModel.is_action_mirrored(self.stepPath)
+            blueprintModel.set_is_action_mirrored(self.stepPath, self.newValue)
 
     def undoIt(self):
         blueprintModel = getBlueprintModel()
         if blueprintModel:
-            blueprintModel.setIsActionAttrVariant(self.stepPath, self.oldValue)
+            blueprintModel.set_is_action_attr_variant(self.stepPath, self.oldValue)
 
 
 CMD_CLASSES.append(PulseSetIsActionMirroredCmd)

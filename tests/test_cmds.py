@@ -14,7 +14,7 @@ class TestPulseCmds(unittest.TestCase):
         cmds.loadPlugin('pulse', quiet=True)
 
     def test_create_step(self):
-        blueprintModel = BlueprintUIModel.getDefaultModel()
+        blueprintModel = BlueprintUIModel.get_default_model()
         bp = blueprintModel.blueprint
 
         result = cmds.pulseCreateStep("", 0, "{'name':'StepA'}")

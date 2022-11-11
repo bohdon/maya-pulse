@@ -1,12 +1,12 @@
 import pymel.core as pm
 from maya import OpenMaya as api
 
-from ...vendor.Qt import QtWidgets, QtGui
+from ...vendor.Qt import QtWidgets
 from ... import editor_utils
 from ... import links
 from ..core import PulseWindow
 from .. import utils
-from ..utils import undoAndRepeatPartial as cmd
+from ..utils import undo_and_repeat_partial as cmd
 
 from ..gen.designpanel_layout import Ui_LayoutDesignPanel
 from ..gen.layout_link_editor import Ui_LayoutLinkEditor
@@ -54,7 +54,7 @@ class LayoutLinkEditorWidget(QtWidgets.QWidget):
         if self.selection_changed_cb is None:
             print("adding selection changed callback")
             self.selection_changed_cb = api.MEventMessage.addEventCallback(
-                "SelectionChanged", self.onSceneSelectionChanged
+                "SelectionChanged", self._on_scene_selection_changed
             )
         self.update_link_info()
 
@@ -65,7 +65,7 @@ class LayoutLinkEditorWidget(QtWidgets.QWidget):
             api.MMessage.removeCallback(self.selection_changed_cb)
             self.selection_changed_cb = None
 
-    def onSceneSelectionChanged(self, *args, **kwargs):
+    def _on_scene_selection_changed(self, *args, **kwargs):
         self.update_link_info()
 
     @property
@@ -77,17 +77,17 @@ class LayoutLinkEditorWidget(QtWidgets.QWidget):
 
         # get selected nodes and link data
         sel_nodes = pm.selected()
-        utils.clearLayout(self.ui.link_info_vbox)
+        utils.clear_layout(self.ui.link_info_vbox)
 
         for node in sel_nodes:
             if not links.is_linked(node):
                 continue
-            linkData = links.get_link_meta_data(node)
-            linkInfo = LinkInfoWidget(parent, node, linkData)
-            self.ui.link_info_vbox.addWidget(linkInfo)
+            link_data = links.get_link_meta_data(node)
+            link_info = LinkInfoWidget(parent, node, link_data)
+            self.ui.link_info_vbox.addWidget(link_info)
 
-    def link_selected(self, linkType):
-        editor_utils.link_selected(linkType, self.keep_offsets)
+    def link_selected(self, link_type):
+        editor_utils.link_selected(link_type, self.keep_offsets)
         self.update_link_info()
 
     def link_selected_weighted(self):
@@ -108,25 +108,25 @@ class LinkInfoWidget(QtWidgets.QWidget):
     Displays info about a linked node
     """
 
-    def __init__(self, parent, node, linkData):
+    def __init__(self, parent, node, link_data):
         super(LinkInfoWidget, self).__init__(parent=parent)
         if not node:
             raise ValueError("Node must be a valid PyNode")
 
-        if not isinstance(linkData, dict):
-            linkData = {}
+        if not isinstance(link_data, dict):
+            link_data = {}
 
         self.node = node
-        self.linkData = linkData
+        self.linkData = link_data
 
         self.ui = Ui_LayoutLinkInfoWidget()
         self.ui.setupUi(self)
 
-        self.setupMetadataUi(self)
+        self.setup_metadata_ui(self)
 
         self.ui.name_label.setText(self.node.name())
 
-    def setupMetadataUi(self, parent):
+    def setup_metadata_ui(self, parent):
         # get link data keys, sorted with `type` and `targetNodes` first
         keys = ["type", "targetNodes"]
         keys += [k for k in self.linkData.keys() if k not in keys]
@@ -134,15 +134,15 @@ class LinkInfoWidget(QtWidgets.QWidget):
         # create labels for each piece of data
         row = 0
         for key in keys:
-            nameLabel = QtWidgets.QLabel(parent)
-            nameLabel.setText(key)
+            name_label = QtWidgets.QLabel(parent)
+            name_label.setText(key)
 
-            valueLabel = QtWidgets.QLabel(parent)
-            valueLabel.setText(str(self.linkData.get(key)))
+            value_label = QtWidgets.QLabel(parent)
+            value_label.setText(str(self.linkData.get(key)))
 
             # add new items to list of pending grid items
-            self.ui.metadata_form.setWidget(row, QtWidgets.QFormLayout.LabelRole, nameLabel)
-            self.ui.metadata_form.setWidget(row, QtWidgets.QFormLayout.FieldRole, valueLabel)
+            self.ui.metadata_form.setWidget(row, QtWidgets.QFormLayout.LabelRole, name_label)
+            self.ui.metadata_form.setWidget(row, QtWidgets.QFormLayout.FieldRole, value_label)
             row += 1
 
 
@@ -165,6 +165,3 @@ class LayoutLinkEditorWindow(PulseWindow):
 
         widget = LayoutLinkEditorWidget(self)
         layout.addWidget(widget)
-
-    def onSelectionChanged(self):
-        pass

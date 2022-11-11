@@ -25,8 +25,8 @@ class MainEditor(QtWidgets.QWidget):
     def __init__(self, parent):
         super(MainEditor, self).__init__(parent)
 
-        self.blueprint_model = BlueprintUIModel.getDefaultModel()
-        self.selection_model = self.blueprint_model.buildStepSelectionModel
+        self.blueprint_model = BlueprintUIModel.get_default_model()
+        self.selection_model = self.blueprint_model.build_step_selection_model
         self.selection_model.selectionChanged.connect(self._on_action_selection_changed)
 
         self.ui = Ui_MainEditor()
@@ -40,37 +40,37 @@ class MainEditor(QtWidgets.QWidget):
         self.action_tree_widget = ActionTree(self)
         self.ui.action_tree_layout.addWidget(self.action_tree_widget)
 
-    def setupFileMenu(self, parent, menu_bar):
+    def setup_file_menu(self, parent, menu_bar):
         file_menu = menu_bar.addMenu("File")
 
         new_action = QtWidgets.QAction("New Blueprint", parent)
         new_action.setStatusTip("Start a new Blueprint.")
-        new_action.triggered.connect(self.blueprint_model.newFile)
+        new_action.triggered.connect(self.blueprint_model.new_file)
         file_menu.addAction(new_action)
 
         open_action = QtWidgets.QAction("Open Blueprint...", parent)
         open_action.setStatusTip("Open a Blueprint.")
-        open_action.triggered.connect(self.blueprint_model.openFileWithPrompt)
+        open_action.triggered.connect(self.blueprint_model.open_file_with_prompt)
         file_menu.addAction(open_action)
 
         save_action = QtWidgets.QAction("Save Blueprint", parent)
         save_action.setStatusTip("Save the current Blueprint.")
-        save_action.triggered.connect(self.blueprint_model.saveFileWithPrompt)
+        save_action.triggered.connect(self.blueprint_model.save_file_with_prompt)
         file_menu.addAction(save_action)
 
         save_as_action = QtWidgets.QAction("Save Blueprint As...", parent)
         save_as_action.setStatusTip("Save the current Blueprint.")
-        save_as_action.triggered.connect(self.blueprint_model.saveFileAsWithPrompt)
+        save_as_action.triggered.connect(self.blueprint_model.save_file_as_with_prompt)
         file_menu.addAction(save_as_action)
 
         reload_action = QtWidgets.QAction("Reload Blueprint", parent)
         reload_action.setStatusTip("Reload the current Blueprint from file.")
-        reload_action.triggered.connect(self.blueprint_model.reloadFile)
+        reload_action.triggered.connect(self.blueprint_model.reload_file)
         file_menu.addAction(reload_action)
 
         close_action = QtWidgets.QAction("Close Blueprint", parent)
         close_action.setStatusTip("Close the current Blueprint.")
-        close_action.triggered.connect(partial(self.blueprint_model.closeFile, True))
+        close_action.triggered.connect(partial(self.blueprint_model.close_file, True))
         file_menu.addAction(close_action)
 
         file_menu.addSeparator()
@@ -83,19 +83,19 @@ class MainEditor(QtWidgets.QWidget):
 
         autosave_check = QtWidgets.QAction("Auto Save", parent)
         autosave_check.setCheckable(True)
-        autosave_check.setChecked(self.blueprint_model.autoSave)
-        autosave_check.toggled.connect(self.blueprint_model.setAutoSave)
+        autosave_check.setChecked(self.blueprint_model.auto_save)
+        autosave_check.toggled.connect(self.blueprint_model.set_auto_save)
         autosave_check.setStatusTip("Automatically save Blueprint files when a scene is saved")
         file_menu.addAction(autosave_check)
 
         autoload_check = QtWidgets.QAction("Auto Load", parent)
         autoload_check.setCheckable(True)
-        autoload_check.setChecked(self.blueprint_model.autoLoad)
-        autoload_check.toggled.connect(self.blueprint_model.setAutoLoad)
+        autoload_check.setChecked(self.blueprint_model.auto_load)
+        autoload_check.toggled.connect(self.blueprint_model.set_auto_load)
         autoload_check.setStatusTip("Automatically load Blueprint files when a scene is opened")
         file_menu.addAction(autoload_check)
 
-    def setupWindowMenu(self, parent, menu_bar):
+    def setup_window_menu(self, parent, menu_bar):
         window_menu = menu_bar.addMenu("Window")
 
         design_toolkit = QtWidgets.QAction("Design Toolkit", parent)
@@ -122,22 +122,22 @@ class MainEditor(QtWidgets.QWidget):
 
         auto_show_editor = QtWidgets.QAction("Auto Focus Action Editor", parent)
         auto_show_editor.setCheckable(True)
-        auto_show_editor.setChecked(self.blueprint_model.autoShowActionEditor)
-        auto_show_editor.toggled.connect(self.blueprint_model.setAutoShowActionEditor)
+        auto_show_editor.setChecked(self.blueprint_model.auto_show_action_editor)
+        auto_show_editor.toggled.connect(self.blueprint_model.set_auto_show_action_editor)
         auto_show_editor.setStatusTip("Automatically show the Action Editor when selecting an Action in the tree.")
         window_menu.addAction(auto_show_editor)
 
-    def setupActionsMenu(self, parent, menu_bar):
-        self.action_tree_widget.setupActionsMenu(parent, menu_bar)
+    def setup_actions_menu(self, parent, menu_bar):
+        self.action_tree_widget.setup_actions_menu(parent, menu_bar)
 
     def debug_print_serialized(self):
         print(self.blueprint_model, self.blueprint_model.blueprint)
-        print(self.blueprint_model.getBlueprintFilePath())
+        print(self.blueprint_model.get_blueprint_file_path())
         print(self.blueprint_model.blueprint.dump_yaml())
 
     def _on_action_selection_changed(self, selected: QtCore.QItemSelection, deselected: QtCore.QItemSelection):
         if not selected.isEmpty():
-            if self.blueprint_model.autoShowActionEditor:
+            if self.blueprint_model.auto_show_action_editor:
                 ActionEditorWindow.showWindow()
 
 
@@ -159,6 +159,6 @@ class MainEditorWindow(PulseWindow):
         self.menu_bar = QtWidgets.QMenuBar(self)
         self.layout().setMenuBar(self.menu_bar)
 
-        self.main_widget.setupFileMenu(self, self.menu_bar)
-        self.main_widget.setupWindowMenu(self, self.menu_bar)
-        self.main_widget.setupActionsMenu(self, self.menu_bar)
+        self.main_widget.setup_file_menu(self, self.menu_bar)
+        self.main_widget.setup_window_menu(self, self.menu_bar)
+        self.main_widget.setup_actions_menu(self, self.menu_bar)

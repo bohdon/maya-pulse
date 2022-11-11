@@ -5,7 +5,7 @@ import pymel.core as pm
 from ...vendor.Qt import QtWidgets
 from ... import editor_utils
 from ...prefs import option_var_property
-from ..utils import undoAndRepeatPartial as cmd
+from ..utils import undo_and_repeat_partial as cmd
 
 from ..gen.designpanel_joints import Ui_JointsDesignPanel
 from ..gen.designpanel_joint_orients import Ui_JointOrientsDesignPanel

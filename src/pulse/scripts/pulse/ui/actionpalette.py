@@ -7,7 +7,7 @@ import os
 from functools import partial
 
 from ..colors import LinearColor
-from ..vendor.Qt import QtCore, QtWidgets
+from ..vendor.Qt import QtWidgets
 from ..build_items import BuildActionRegistry
 from .core import BlueprintUIModel, PulseWindow
 
@@ -28,66 +28,66 @@ class ActionPalette(QtWidgets.QWidget):
     def __init__(self, parent=None):
         super(ActionPalette, self).__init__(parent=parent)
 
-        self.blueprintModel = BlueprintUIModel.getDefaultModel()
-        self.blueprintModel.readOnlyChanged.connect(self._onReadOnlyChanged)
-        self.model = self.blueprintModel.buildStepTreeModel
-        self.selectionModel = self.blueprintModel.buildStepSelectionModel
+        self.blueprintModel = BlueprintUIModel.get_default_model()
+        self.blueprintModel.read_only_changed.connect(self._on_read_only_changed)
+        self.model = self.blueprintModel.build_step_tree_model
+        self.selectionModel = self.blueprintModel.build_step_selection_model
 
         self.ui = Ui_ActionPalette()
         self.ui.setupUi(self)
 
-        self.setupActionsUi(self.ui.scroll_area_widget, self.ui.actions_layout)
+        self.setup_actions_ui(self.ui.scroll_area_widget, self.ui.actions_layout)
 
-        self.ui.group_btn.clicked.connect(self.blueprintModel.createGroup)
+        self.ui.group_btn.clicked.connect(self.blueprintModel.create_group)
 
-        self._onReadOnlyChanged(self.blueprintModel.isReadOnly())
+        self._on_read_only_changed(self.blueprintModel.is_read_only())
 
-    def setupActionsUi(self, parent, layout):
+    def setup_actions_ui(self, parent, layout):
         """
         Build buttons for creating each action.
         """
 
-        allActionSpecs = BuildActionRegistry.get().get_all_actions()
+        all_action_specs = BuildActionRegistry.get().get_all_actions()
 
         # make button for each action
-        categories = [spec.category for spec in allActionSpecs]
+        categories = [spec.category for spec in all_action_specs]
         categories = list(set(categories))
-        categoryLayouts = {}
+        category_layouts = {}
 
         # create category layouts
         for cat in sorted(categories):
             # add category layout
-            catLay = QtWidgets.QVBoxLayout(parent)
-            catLay.setSpacing(2)
-            layout.addLayout(catLay)
-            categoryLayouts[cat] = catLay
+            cat_lay = QtWidgets.QVBoxLayout(parent)
+            cat_lay.setSpacing(2)
+            layout.addLayout(cat_lay)
+            category_layouts[cat] = cat_lay
             # add label
             label = QtWidgets.QLabel(parent)
             label.setText(cat)
             label.setProperty("cssClasses", "section-title")
-            catLay.addWidget(label)
+            cat_lay.addWidget(label)
 
-        for actionSpec in allActionSpecs:
-            actionId = actionSpec.id
-            actionCategory = actionSpec.category
+        for actionSpec in all_action_specs:
+            action_id = actionSpec.id
+            action_category = actionSpec.category
             color = LinearColor.from_seq(actionSpec.color)
             color.a = 0.12
             btn = QtWidgets.QPushButton(parent)
             btn.setText(actionSpec.display_name)
             btn.setStyleSheet(color.as_bg_style())
-            btn.clicked.connect(partial(self.blueprintModel.createAction, actionId))
-            categoryLayouts[actionCategory].addWidget(btn)
+            btn.clicked.connect(partial(self.blueprintModel.create_action, action_id))
+            category_layouts[action_category].addWidget(btn)
 
         spacer = QtWidgets.QSpacerItem(0, 0, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
 
         layout.addItem(spacer)
 
-    def _onReadOnlyChanged(self, isReadOnly):
-        self.ui.group_btn.setEnabled(not isReadOnly)
-        self.ui.scroll_area_widget.setEnabled(not isReadOnly)
+    def _on_read_only_changed(self, is_read_only):
+        self.ui.group_btn.setEnabled(not is_read_only)
+        self.ui.scroll_area_widget.setEnabled(not is_read_only)
 
-    def _onActionClicked(self, typeName):
-        self.clicked.emit(typeName)
+    def _on_action_clicked(self, type_name):
+        self.clicked.emit(type_name)
 
 
 class ActionPaletteWindow(PulseWindow):

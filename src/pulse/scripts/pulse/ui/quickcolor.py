@@ -2,11 +2,11 @@
 Widget for quickly editing the color of animation controls.
 """
 
-from ..vendor.Qt import QtCore, QtWidgets
+from ..vendor.Qt import QtWidgets
 from .. import editor_utils
 from ..colors import LinearColor
 from .core import PulseWindow, BlueprintUIModel
-from .utils import undoAndRepeatPartial as cmd
+from .utils import undo_and_repeat_partial as cmd
 from .gen.quick_color_editor import Ui_QuickColorEditor
 
 
@@ -18,7 +18,7 @@ class QuickColorEditor(QtWidgets.QWidget):
     def __init__(self, parent=None):
         super(QuickColorEditor, self).__init__(parent=parent)
 
-        self.blueprintModel = BlueprintUIModel.getDefaultModel()
+        self.blueprintModel = BlueprintUIModel.get_default_model()
 
         # the blueprint config
         self.config = self.blueprintModel.blueprint.get_config()
@@ -27,24 +27,24 @@ class QuickColorEditor(QtWidgets.QWidget):
 
         self.ui = Ui_QuickColorEditor()
         self.ui.setupUi(self)
-        self.setupColorButtonsUi(self)
+        self.setup_color_buttons_ui(self)
 
         self.ui.remove_btn.clicked.connect(cmd(editor_utils.disable_color_override_for_selected))
         self.ui.edit_config_btn.clicked.connect(editor_utils.open_blueprint_config_in_source_editor)
 
-    def setupColorButtonsUi(self, parent):
+    def setup_color_buttons_ui(self, parent):
         row, col = 0, 0
         num_cols = 5
         for name, hex_color in self.colors_config.items():
             color = LinearColor.from_hex(hex_color)
-            btn = self._createColorButton(name, color, parent)
+            btn = self._create_color_button(name, color, parent)
             self.ui.color_btns_layout.addWidget(btn, row, col)
             col += 1
             if col > num_cols:
                 col = 0
                 row += 1
 
-    def _createColorButton(self, name: str, color: LinearColor, parent):
+    def _create_color_button(self, name: str, color: LinearColor, parent):
         btn = QtWidgets.QToolButton(parent)
         btn.setSizePolicy(QtWidgets.QSizePolicy.MinimumExpanding, QtWidgets.QSizePolicy.Minimum)
         btn.setMinimumHeight(30)

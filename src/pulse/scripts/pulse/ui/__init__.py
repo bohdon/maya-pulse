@@ -11,11 +11,11 @@ def toggle_editor_ui():
 
 def show_editor_ui(enable_context_menus=True):
     from .main_editor import MainEditorWindow
-    from .contextmenus import registerContextMenu
+    from .contextmenus import register_context_menu
 
     MainEditorWindow.showWindow()
     if enable_context_menus:
-        registerContextMenu()
+        register_context_menu()
 
 
 def hide_editor_ui():
@@ -36,10 +36,10 @@ def tear_down_ui():
     Intended for development reloading purposes.
     """
     from .gen import icons_rc
-    from .contextmenus import unregisterContextMenu
+    from .contextmenus import unregister_context_menu
 
     close_all_editors()
-    unregisterContextMenu()
+    unregister_context_menu()
     icons_rc.qCleanupResources()
 
 
@@ -70,4 +70,4 @@ def destroy_ui_model_instances():
     """
     from .core import BlueprintUIModel
 
-    BlueprintUIModel.deleteAllSharedModels()
+    BlueprintUIModel.delete_all_shared_models()

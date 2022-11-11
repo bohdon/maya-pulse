@@ -19,7 +19,7 @@ LOG = logging.getLogger(__name__)
 ICON_DIR = os.path.join(os.path.dirname(__file__), "icons")
 
 # mel command that will execute the last repeatable func
-_REPEAT_COMMAND = 'python("{0}._repeatLastFunc()")'.format(__name__)
+_REPEAT_COMMAND = 'python("{0}._repeat_last_func()")'.format(__name__)
 # reference to the last repeatable func
 _REPEATABLE_FUNC = None
 
@@ -28,7 +28,7 @@ if hasattr(cmds, "mayaDpiSetting"):
     _DPI_SCALE = cmds.mayaDpiSetting(q=True, realScaleValue=True)
 
 
-def _repeatLastFunc():
+def _repeat_last_func():
     """
     Rerun the last repeatable function.
     """
@@ -36,7 +36,7 @@ def _repeatLastFunc():
         _REPEATABLE_FUNC()
 
 
-def _softUpdateWrapper(wrapper, wrapped):
+def _soft_update_wrapper(wrapper, wrapped):
     """
     Update a wrapper function to look like the wrapped function.
     Like functools.update_wrapper, but doesn't fail when attributes
@@ -49,11 +49,11 @@ def _softUpdateWrapper(wrapper, wrapped):
     return wrapper
 
 
-def _softWraps(wrapped):
+def _soft_wraps(wrapped):
     """
-    Decorator for calling _softUpdateWrapper for a wrapped function.
+    Decorator for calling _soft_update_wrapper for a wrapped function.
     """
-    return partial(_softUpdateWrapper, wrapped=wrapped)
+    return partial(_soft_update_wrapper, wrapped=wrapped)
 
 
 def repeatable(func):
@@ -62,7 +62,7 @@ def repeatable(func):
     been executed using Maya's repeatLast functionality.
     """
 
-    @_softWraps(func)
+    @_soft_wraps(func)
     def wrapper(*args, **kwargs):
         global _REPEATABLE_FUNC
         _REPEATABLE_FUNC = partial(func, *args, **kwargs)
@@ -79,7 +79,7 @@ def repeatable(func):
     return wrapper
 
 
-def repeatPartial(func, *args, **kwargs):
+def repeat_partial(func, *args, **kwargs):
     """
     Return a partial function wrapper that is repeatable.
     """
@@ -92,7 +92,7 @@ def undoable(func):
     as a single undo chunk.
     """
 
-    @_softWraps(func)
+    @_soft_wraps(func)
     def wrapper(*args, **kwargs):
         cmds.undoInfo(openChunk=True)
         try:
@@ -106,32 +106,32 @@ def undoable(func):
     return wrapper
 
 
-def undoPartial(func, *args, **kwargs):
+def undo_partial(func, *args, **kwargs):
     """
     Return a partial function wrapper that is undoable.
     """
     return partial(undoable(func), *args, **kwargs)
 
 
-def undoAndRepeatable(func):
+def undo_and_repeatable(func):
     """
     Decorator that makes a function both undoable and repeatable.
     """
     return repeatable(undoable(func))
 
 
-def undoAndRepeatPartial(func, *args, **kwargs):
+def undo_and_repeat_partial(func, *args, **kwargs):
     """
     Return a partial function wrapper that is undoable and repeatable.
     """
-    return partial(undoAndRepeatable(func), *args, **kwargs)
+    return partial(undo_and_repeatable(func), *args, **kwargs)
 
 
-def dpiScale(value):
+def dpi_scale(value):
     return value * _DPI_SCALE
 
 
-def getIconPath(filename):
+def get_icon_path(filename):
     """
     Return the full path to an icon by name
 
@@ -141,27 +141,27 @@ def getIconPath(filename):
     return os.path.join(ICON_DIR, filename)
 
 
-def getIconPixmap(filename):
+def get_icon_pixmap(filename):
     """
     Return a QPixmap for an icon by name
 
     Args:
         filename: A string representing the icon's file name
     """
-    return QtGui.QPixmap(getIconPath(filename))
+    return QtGui.QPixmap(get_icon_path(filename))
 
 
-def getIcon(filename):
+def get_icon(filename):
     """
     Return a QIcon for an icon by name
 
     Args:
         filename: A string representing the icon's file name
     """
-    return QtGui.QIcon(getIconPath(filename))
+    return QtGui.QIcon(get_icon_path(filename))
 
 
-def getMayaPixmap(name: str) -> Optional[QtGui.QPixmap]:
+def get_maya_pixmap(name: str) -> Optional[QtGui.QPixmap]:
     """
     Return a pixmap from Maya's internal resources using MQtUtil.
     """
@@ -191,7 +191,7 @@ def set_custom_context_menu(widget: QtWidgets.QWidget, callback: Callable):
     widget.installEventFilter(event_filter)
 
 
-def clearLayout(layout):
+def clear_layout(layout):
     if layout is None:
         return
     while layout.count():
@@ -199,18 +199,18 @@ def clearLayout(layout):
         if item.widget():
             item.widget().setParent(None)
         if item.layout():
-            clearLayout(item.layout())
+            clear_layout(item.layout())
 
 
-def createHSpacer(width=20, height=20):
+def create_h_spacer(width=20, height=20):
     return QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
 
 
-def createVSpacer(width=20, height=20):
+def create_v_spacer(width=20, height=20):
     return QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
 
 
-def addItemsToGrid(gridLayout, items):
+def add_items_to_grid(gridLayout, items):
     """
     Add a 2-dimensional array of items to a grid layout.
     Assumes the grid layout is empty.
@@ -232,12 +232,12 @@ def addItemsToGrid(gridLayout, items):
                     gridLayout.addLayout(item, row, col, 1, 1)
 
 
-def setRetainSizeWhenHidden(widget: QtWidgets.QWidget, retainSize: bool):
+def set_retain_size_when_hidden(widget: QtWidgets.QWidget, retain_size: bool):
     """
     Sets whether a widgets size should be retained even when it's hidden.
     """
     sp = widget.sizePolicy()
-    sp.setRetainSizeWhenHidden(retainSize)
+    sp.setRetainSizeWhenHidden(retain_size)
     widget.setSizePolicy(sp)
 
 
@@ -250,26 +250,26 @@ class CollapsibleFrame(QtWidgets.QFrame):
 
     def __init__(self, parent):
         super(CollapsibleFrame, self).__init__(parent)
-        self._isCollapsed = False
+        self._is_collapsed = False
 
     def mouseReleaseEvent(self, QMouseEvent):
         if QMouseEvent.button() == QtCore.Qt.MouseButton.LeftButton:
-            self.setIsCollapsed(not self._isCollapsed)
+            self.set_is_collapsed(not self._is_collapsed)
         else:
             return super(CollapsibleFrame, self).mouseReleaseEvent(QMouseEvent)
 
-    def setIsCollapsed(self, newCollapsed):
+    def set_is_collapsed(self, newCollapsed):
         """
         Set the collapsed state of this frame.
         """
-        self._isCollapsed = newCollapsed
-        self.collapsedChanged.emit(self._isCollapsed)
+        self._is_collapsed = newCollapsed
+        self.collapsedChanged.emit(self._is_collapsed)
 
-    def isCollapsed(self):
+    def is_collapsed(self):
         """
         Return True if the frame is currently collapsed.
         """
-        return self._isCollapsed
+        return self._is_collapsed
 
 
 class RightClickMenuOnPressEventFilter(QtCore.QObject):

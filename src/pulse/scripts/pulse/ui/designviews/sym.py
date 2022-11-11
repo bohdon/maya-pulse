@@ -1,7 +1,7 @@
 from ...vendor.Qt import QtWidgets
 from ...prefs import option_var_property
 from ... import editor_utils
-from ..utils import undoAndRepeatPartial as cmd
+from ..utils import undo_and_repeat_partial as cmd
 from ..gen.designpanel_symmetry import Ui_SymmetryDesignPanel
 
 

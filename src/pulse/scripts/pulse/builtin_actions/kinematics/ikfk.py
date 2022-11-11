@@ -272,19 +272,19 @@ class IKFKControlContextSubmenu(PulseNodeContextSubMenu):
     """
 
     @classmethod
-    def shouldBuildSubMenu(cls, menu) -> bool:
-        return cls.isNodeWithMetaClassSelected(IKFK_CONTROL_METACLASS)
+    def should_build_sub_menu(cls, menu) -> bool:
+        return cls.is_node_with_metaclass_selected(IKFK_CONTROL_METACLASS)
 
-    def buildMenuItems(self):
-        pm.menuItem('Switch To FK', rp=self.getSafeRadialPosition('NW'), c=pm.Callback(self.switch_to_fk_for_selected))
-        pm.menuItem('Switch To IK', rp=self.getSafeRadialPosition('SW'), c=pm.Callback(self.switch_to_ik_for_selected))
+    def build_menu_items(self):
+        pm.menuItem('Switch To FK', rp=self.get_safe_radial_position('NW'), c=pm.Callback(self.switch_to_fk_for_selected))
+        pm.menuItem('Switch To IK', rp=self.get_safe_radial_position('SW'), c=pm.Callback(self.switch_to_ik_for_selected))
 
     def switch_to_ik_for_selected(self):
-        sel_ctls = self.getSelectedNodesWithMetaClass(IKFK_CONTROL_METACLASS)
+        sel_ctls = self.get_selected_nodes_with_meta_class(IKFK_CONTROL_METACLASS)
         for ctl in sel_ctls:
             IKFKControlUtils.switch_to_ik(ctl)
 
     def switch_to_fk_for_selected(self):
-        sel_ctls = self.getSelectedNodesWithMetaClass(IKFK_CONTROL_METACLASS)
+        sel_ctls = self.get_selected_nodes_with_meta_class(IKFK_CONTROL_METACLASS)
         for ctl in sel_ctls:
             IKFKControlUtils.switch_to_fk(ctl)

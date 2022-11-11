@@ -2,7 +2,7 @@ import pymel.core as pm
 
 from ...vendor.Qt import QtWidgets
 from ... import editor_utils
-from ..utils import undoAndRepeatPartial as cmd
+from ..utils import undo_and_repeat_partial as cmd
 
 from ..gen.designpanel_general import Ui_GeneralDesignPanel
 

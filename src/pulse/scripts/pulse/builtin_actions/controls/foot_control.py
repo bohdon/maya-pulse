@@ -242,13 +242,13 @@ class FootControlContextSubMenu(PulseNodeContextSubMenu):
     """
 
     @classmethod
-    def shouldBuildSubMenu(cls, menu) -> bool:
-        return cls.isNodeWithMetaClassSelected(FOOT_CTL_METACLASSNAME)
+    def should_build_sub_menu(cls, menu) -> bool:
+        return cls.is_node_with_metaclass_selected(FOOT_CTL_METACLASSNAME)
 
-    def buildMenuItems(self):
-        pm.menuItem(l='Lift', rp=self.getSafeRadialPosition('NE'), c=pm.Callback(self.lift_foot_for_selected))
+    def build_menu_items(self):
+        pm.menuItem(l='Lift', rp=self.get_safe_radial_position('NE'), c=pm.Callback(self.lift_foot_for_selected))
 
     def lift_foot_for_selected(self):
-        sel_ctls = self.getSelectedNodesWithMetaClass(FOOT_CTL_METACLASSNAME)
+        sel_ctls = self.get_selected_nodes_with_meta_class(FOOT_CTL_METACLASSNAME)
         for ctl in sel_ctls:
             FootControlUtils.lift_foot(ctl)
