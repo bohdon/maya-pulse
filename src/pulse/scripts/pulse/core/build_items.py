@@ -1221,16 +1221,15 @@ class BuildAction(BuildActionData):
         return action
 
     def __init__(self):
+        import pymel.core as pm
+        from .builder import BlueprintBuilder
+
         # action id is hard coded for on all BuildAction subclasses, so use it to init super
         super(BuildAction, self).__init__(self.id)
-
-        import pymel.core as pm
 
         # logger is initialized the first time its accessed
         self._log = None
         # builder is only available during build
-        from .blueprints import BlueprintBuilder
-
         self.builder: Optional[BlueprintBuilder] = None
         # rig is only available during build
         self.rig: Optional[pm.nt.Transform] = None
