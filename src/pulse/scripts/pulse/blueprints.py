@@ -44,7 +44,7 @@ def _load_config(file_path) -> Optional[dict]:
         return
 
     with open(file_path, "r") as fp:
-        return yaml.load(fp)
+        return yaml.safe_load(fp)
 
 
 class BlueprintSettings(object):
@@ -168,7 +168,7 @@ class Blueprint(object):
         Load this Blueprint from a yaml string
         """
         try:
-            data = yaml.load(yaml_str)
+            data = yaml.load(yaml_str, Loader=PulseLoader)
         except Exception:
             return False
 

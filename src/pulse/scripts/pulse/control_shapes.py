@@ -130,7 +130,7 @@ def load_control_shapes_from_directory(start_dir, pattern="*_control.yaml"):
         if os.path.isfile(full_path):
             if fnmatch(path, pattern):
                 with open(full_path, "r") as fp:
-                    data = yaml.load(fp.read())
+                    data = yaml.safe_load(fp.read())
                 name = data.get("name")
                 if name:
                     result.append(data)
