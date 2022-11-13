@@ -1,10 +1,9 @@
 import logging
-
 from ...vendor.Qt import QtCore, QtWidgets
+
 from ..core import BlueprintUIModel
 from ..core import PulseWindow
 from .build_step_form import BuildStepForm
-
 from ..gen.action_editor import Ui_ActionEditor
 
 logger = logging.getLogger(__name__)

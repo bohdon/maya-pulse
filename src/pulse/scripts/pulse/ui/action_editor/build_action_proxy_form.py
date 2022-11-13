@@ -1,9 +1,9 @@
 import logging
 from functools import partial
 from typing import Optional, cast
+from ...vendor.Qt import QtCore, QtWidgets, QtGui
 
 from ...build_items import BuildActionProxy, BuildStep
-from ...vendor.Qt import QtCore, QtWidgets, QtGui
 from ..core import BuildStepTreeModel
 from .build_action_data_form import MainBuildActionDataForm, BuildActionDataForm
 
@@ -116,8 +116,8 @@ class BuildActionProxyForm(QtWidgets.QWidget):
 
     def create_variant_action_data_form(self, variant_index, parent):
         """
-        Create a widget that wraps a BuildActionDataForm widget
-        for use in the variants list. Adds a button to remove the variant.
+        Create a widget that wraps a BuildActionDataForm widget for use in the variants list.
+        The variant form will display a remove button that emits the `on_removed` signal.
         """
         data_form = BuildActionDataForm(self.index, variant_index, parent=parent)
         data_form.on_removed.connect(partial(self.remove_variant_at_index, variant_index))

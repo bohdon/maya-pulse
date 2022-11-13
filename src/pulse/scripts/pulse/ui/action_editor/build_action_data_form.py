@@ -1,49 +1,15 @@
 import logging
 from functools import partial
 from typing import cast, Dict
-
 from maya import cmds
+from ...vendor.Qt import QtCore, QtWidgets, QtGui
 
 from ...build_items import BuildActionProxy, BuildStep, BuildActionData, BuildActionAttribute
-from ...vendor.Qt import QtCore, QtWidgets, QtGui
 from ..actionattrform import ActionAttrForm, BatchAttrForm, ActionAttrFormBase
 from ..core import BuildStepTreeModel
+from ..gen.build_action_data_form import Ui_BuildActionDataForm
 
 logger = logging.getLogger(__name__)
-
-
-class Ui_BuildActionDataForm(object):
-    def setupUi(self, parent):
-        self.main_layout = QtWidgets.QHBoxLayout(parent)
-        self.main_layout.setMargin(0)
-
-        self.frame = QtWidgets.QFrame(parent)
-        self.frame.setProperty("cssClasses", "block")
-
-        self.h_layout = QtWidgets.QHBoxLayout(self.frame)
-        self.h_layout.setMargin(0)
-
-        self.attr_list_layout = QtWidgets.QVBoxLayout(self.frame)
-        self.attr_list_layout.setMargin(0)
-        self.attr_list_layout.setSpacing(0)
-        self.h_layout.addLayout(self.attr_list_layout)
-
-        self.main_layout.addWidget(self.frame)
-
-    def setup_remove_variant_ui(self, parent):
-        """
-        Add an X button for removing this variant.
-        """
-        self.remove_btn = QtWidgets.QToolButton(parent)
-        # button uses its own margin to get correct spacing on the left and right,
-        # so the real size is 20x20 after the margin of 4px
-        self.remove_btn.setFixedSize(QtCore.QSize(26, 26))
-        self.remove_btn.setStyleSheet("margin: 3px; padding: 3px")
-        self.remove_btn.setStatusTip("Remove this variant.")
-        self.remove_btn.setIcon(QtGui.QIcon(":/icon/xmark.svg"))
-
-        self.h_layout.insertWidget(0, self.remove_btn)
-        self.h_layout.setAlignment(self.remove_btn, QtCore.Qt.AlignTop)
 
 
 class BuildActionDataForm(QtWidgets.QWidget):
@@ -68,14 +34,14 @@ class BuildActionDataForm(QtWidgets.QWidget):
         self.ui.setupUi(self)
 
         # if variant, add a button to delete this variant
-        if variant_index >= 0:
-            self.ui.setup_remove_variant_ui(self)
-            self.ui.remove_btn.clicked.connect(self._on_remove_clicked)
+        if variant_index < 0:
+            self.ui.remove_btn.setVisible(False)
 
         # the map of all attr forms, indexed by attr name
         self._attr_forms: Dict[str, ActionAttrFormBase] = {}
         self.update_attr_form_list()
 
+        self.ui.remove_btn.clicked.connect(self._on_remove_clicked)
         self.index.model().dataChanged.connect(self.on_model_data_changed)
 
     def _on_remove_clicked(self):

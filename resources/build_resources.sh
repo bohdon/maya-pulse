@@ -36,6 +36,8 @@ echo "Building ui files..."
 build_ui action_editor
 build_ui action_palette
 build_ui action_tree
+build_ui build_action_data_form
+build_ui build_step_form
 build_ui design_toolkit
 build_ui designpanel_general
 build_ui designpanel_joint_orients
