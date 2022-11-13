@@ -10,7 +10,15 @@ import types
 from fnmatch import fnmatch
 from typing import List
 
-from .core import BuildAction, BuildActionSpec, BuildActionRegistry
+from .build_items import BuildAction, BuildActionSpec, BuildActionRegistry
+
+__all__ = [
+    "BuildActionLoader",
+    "BuildActionPackageRegistry",
+    "import_all_submodules",
+    "load_actions",
+    "reload_actions",
+]
 
 LOG = logging.getLogger(__name__)
 
@@ -102,7 +110,7 @@ class BuildActionPackageRegistry(object):
             self._add_builtin_actions()
 
     def _add_builtin_actions(self):
-        from . import builtin_actions
+        from .. import builtin_actions
 
         self.add_package(builtin_actions)
 

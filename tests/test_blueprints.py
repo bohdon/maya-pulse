@@ -3,7 +3,7 @@ import pymel.core as pm
 
 from pulse.core import Blueprint, BlueprintSettings, BlueprintBuilder
 from pulse.core import BuildStep
-import pulse.loader
+from pulse.core import load_actions
 import pulse.control_shapes
 import pulse.rigs
 
@@ -35,7 +35,7 @@ steps:
 
 class TestBlueprints(unittest.TestCase):
     def setUp(self) -> None:
-        pulse.loader.load_actions()
+        load_actions()
 
     def tearDown(self):
         pm.delete(pulse.rigs.get_all_rigs())

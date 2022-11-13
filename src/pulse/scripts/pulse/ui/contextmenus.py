@@ -32,9 +32,9 @@ def register_context_menu(priority: int = 0):
     Register pulse context menus with the right click menu.
     """
     # ensure actions are loaded, since they provide the context menu functionality
-    from .. import loader
+    from .. import core
 
-    loader.load_actions()
+    core.load_actions()
 
     if has_rmbmenuhook:
         rmbmenuhook.registerMenu(RMB_MENU_NAME, PulseNodeContextMenu, priority)

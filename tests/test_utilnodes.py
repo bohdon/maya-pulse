@@ -2,13 +2,13 @@ import unittest
 
 import pymel.core as pm
 
-import pulse.loader
+from pulse.core import load_actions
 from pulse import util_nodes
 
 
 class TestUtilNodes(unittest.TestCase):
     def setUp(self) -> None:
-        pulse.loader.load_actions()
+        load_actions()
 
     def test_createUtilityNode(self):
         node = util_nodes.create_utility_node("multiplyDivide")

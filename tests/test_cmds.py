@@ -1,7 +1,7 @@
 import unittest
 import maya.cmds as cmds
 
-import pulse.loader
+from pulse.core import load_actions
 from pulse.ui.core import BlueprintUIModel
 
 
@@ -12,7 +12,7 @@ class TestPulseCmds(unittest.TestCase):
 
     def setUp(self):
         cmds.loadPlugin("pulse", quiet=True)
-        pulse.loader.load_actions()
+        load_actions()
         self.blueprint_model = BlueprintUIModel.get_default_model()
         self.blueprint_model.new_file()
 

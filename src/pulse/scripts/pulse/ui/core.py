@@ -14,11 +14,12 @@ from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
 
 from ..vendor import pymetanode as meta
 from ..vendor.Qt import QtCore, QtWidgets, QtGui
-from .. import loader, rigs, editor_utils
+from .. import rigs, editor_utils
 from ..core import Blueprint, BlueprintFile, BlueprintSettings, BlueprintBuilder, BlueprintValidator
 from ..core import BuildStep, BuildAction
+from ..core import load_actions
+from ..core import serialize_attr_value
 from ..prefs import option_var_property
-from ..serializer import serialize_attr_value
 from .utils import CollapsibleFrame
 from .utils import dpi_scale
 
@@ -355,7 +356,7 @@ class BlueprintUIModel(QtCore.QObject):
         super(BlueprintUIModel, self).__init__(parent=parent)
 
         # load actions if they haven't been already
-        loader.load_actions()
+        load_actions()
 
         # the currently open blueprint file
         self._blueprint_file: Optional[BlueprintFile] = None

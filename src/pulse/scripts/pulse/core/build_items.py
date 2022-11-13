@@ -6,7 +6,7 @@ import maya.cmds as cmds
 from ..vendor import pymetanode as meta
 
 from ..rigs import RIG_METACLASS
-from ..serializer import UnsortableOrderedDict
+from .serializer import UnsortableOrderedDict
 from ..colors import LinearColor
 
 LOG = logging.getLogger(__name__)

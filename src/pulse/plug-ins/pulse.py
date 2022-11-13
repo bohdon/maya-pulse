@@ -4,7 +4,7 @@ from typing import List, Type
 from maya.api.OpenMaya import MFnPlugin, MSyntax
 
 from pulse.plugins import PulseCmdBase, CmdArg, CmdFlag
-from pulse.serializer import serialize_attr_value, deserialize_attr_value
+from pulse.core import serialize_attr_value, deserialize_attr_value
 
 # the list of all cmd classes in this plugin
 _CMD_CLASSES: List[Type[PulseCmdBase]] = []

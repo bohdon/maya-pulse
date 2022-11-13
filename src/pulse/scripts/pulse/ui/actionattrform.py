@@ -11,7 +11,7 @@ import pymel.core as pm
 
 from ..core import BuildStep, BuildActionProxy, BuildActionAttribute, BuildActionAttributeType
 from ..vendor import pymetanode as meta
-from ..serializer import serialize_attr_value
+from ..core import serialize_attr_value
 from ..vendor.Qt import QtCore, QtGui, QtWidgets
 from .. import names
 from .core import BuildStepTreeModel
