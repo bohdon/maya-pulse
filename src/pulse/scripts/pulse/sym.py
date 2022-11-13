@@ -5,16 +5,16 @@ from copy import copy
 from typing import List, Optional, Tuple
 
 import pymel.core as pm
+from .vendor import pymetanode as meta
+from .vendor.mayacoretools import preservedSelection
+from .vendor.overrides import overrides
 
 from .core import Blueprint
 from .core import BuildActionProxy, BuildActionAttribute, BuildActionAttributeType
-from .vendor import pymetanode as meta
 from . import editor_utils
 from . import joints
 from . import links
 from . import nodes
-from .vendor.mayacoretools import preservedSelection
-from .vendor.overrides import overrides
 
 LOG = logging.getLogger(__name__)
 
