@@ -1,6 +1,7 @@
 import logging
 
 from ..utils import clear_layout
+from ...prefs import option_var_property
 from ...vendor.Qt import QtCore, QtWidgets
 
 from ..core import BlueprintUIModel
@@ -18,6 +19,13 @@ class ActionEditor(QtWidgets.QWidget):
     Uses the shared action tree selection model to automatically
     display editors for the selected actions.
     """
+
+    show_descriptions = option_var_property("pulse.editor.actionEditor.showDescriptions", False)
+
+    def set_show_descriptions(self, value):
+        if self.show_descriptions != value:
+            self.show_descriptions = value
+            self.setup_items_ui_for_selection()
 
     def __init__(self, parent=None):
         super(ActionEditor, self).__init__(parent=parent)
@@ -65,9 +73,28 @@ class ActionEditor(QtWidgets.QWidget):
 
         self.setup_items_ui(self.selectionModel.selectedIndexes(), self.ui.scroll_area_widget)
 
+    def setup_view_menu(self, parent, menu_bar: QtWidgets.QMenuBar):
+        view_menu = menu_bar.addMenu("View")
+
+        show_desc_check = QtWidgets.QAction("Show Descriptions", parent)
+        show_desc_check.setCheckable(True)
+        show_desc_check.setChecked(self.show_descriptions)
+        show_desc_check.toggled.connect(self.set_show_descriptions)
+        show_desc_check.setStatusTip("Show action descriptions in the editor.")
+        view_menu.addAction(show_desc_check)
+
 
 class ActionEditorWindow(PulseWindow):
     OBJECT_NAME = "pulseActionEditorWindow"
     WINDOW_MODULE = "pulse.ui.action_editor"
     WINDOW_TITLE = "Pulse Action Editor"
     WIDGET_CLASS = ActionEditor
+
+    def __init__(self, parent=None):
+        super().__init__(parent=parent)
+
+        # setup menu bar
+        self.menu_bar = QtWidgets.QMenuBar(self)
+        self.layout().setMenuBar(self.menu_bar)
+
+        self.main_widget.setup_view_menu(self, self.menu_bar)

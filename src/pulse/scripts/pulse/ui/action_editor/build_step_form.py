@@ -4,6 +4,7 @@ The main form for editing any build step.
 
 import logging
 from typing import cast
+import pymel.core as pm
 from ...vendor.Qt import QtCore, QtWidgets
 
 from ... import source_editor
@@ -39,7 +40,10 @@ class BuildStepForm(QtWidgets.QWidget):
 
         # set title text and color
         self.ui.display_name_label.setText(self._get_step_display_name(step))
-        self.ui.description_label.setText(step.get_description())
+        if pm.optionVar.get("pulse.editor.action_editor.show_descriptions"):
+            self.ui.description_label.setText(step.get_description())
+        else:
+            self.ui.description_label.setVisible(False)
         self._apply_step_color(step.get_color())
 
         # show edit source button for actions
@@ -60,8 +64,6 @@ class BuildStepForm(QtWidgets.QWidget):
         desc_bg_color.a = 0.25
 
         self.ui.header_frame.setStyleSheet(f"QFrame#header_frame {{ {bg_color.as_bg_style()}; }}")
-        # self.ui.display_name_label.setStyleSheet(f"{color.as_fg_style()};{bg_color.as_bg_style()}")
-        # self.ui.description_label.setStyleSheet(f"{color.as_fg_style()};{desc_bg_color.as_bg_style()}")
 
     def _on_model_data_changed(self):
         self._update_name()
