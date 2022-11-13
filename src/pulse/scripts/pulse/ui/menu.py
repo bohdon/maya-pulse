@@ -36,7 +36,7 @@ def install_main_menu():
     """
     from .. import reload
     from . import toggle_editor_ui, close_all_editors
-    from .actioneditor import ActionEditorWindow
+    from .action_editor import ActionEditorWindow
     from .actionpalette import ActionPaletteWindow
     from .actiontree import ActionTreeWindow
     from .designtoolkit import DesignToolkitWindow

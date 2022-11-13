@@ -11,7 +11,7 @@ from ..blueprints import BlueprintSettings
 from . import utils
 from .core import BlueprintUIModel
 from .main_settings import MainSettingsWindow
-from .actioneditor import ActionEditorWindow
+from .action_editor import ActionEditorWindow
 from .designtoolkit import DesignToolkitWindow
 
 from .gen.main_toolbar import Ui_MainToolbar

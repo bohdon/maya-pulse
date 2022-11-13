@@ -8,7 +8,7 @@ import pymel.core as pm
 from pulse.build_items import BuildAction, BuildActionError
 from pulse.build_items import BuildActionAttributeType as AttrType
 from pulse.vendor.Qt import QtWidgets
-from pulse.ui.actioneditor import BuildActionProxyForm
+from pulse.ui.action_editor import BuildActionProxyForm
 from pulse import source_editor
 
 # template for a new script file

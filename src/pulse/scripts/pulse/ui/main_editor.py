@@ -6,7 +6,7 @@ from functools import partial
 
 from ..vendor.Qt import QtCore, QtWidgets
 
-from .actioneditor import ActionEditorWindow
+from .action_editor import ActionEditorWindow
 from .actiontree import ActionTree, ActionTreeWindow
 from .actionpalette import ActionPaletteWindow
 from .main_toolbar import MainToolbar
