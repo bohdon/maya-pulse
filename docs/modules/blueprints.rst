@@ -1,6 +1,6 @@
 Blueprints
 ==========
 
-.. automodule:: pulse.blueprints
+.. automodule:: pulse.core.blueprints
    :members:
    :show-inheritance:

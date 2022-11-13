@@ -1,6 +1,6 @@
 Rigs
 ====
 
-.. automodule:: pulse.rigs
+.. automodule:: pulse.core.rigs
    :members:
    :show-inheritance:

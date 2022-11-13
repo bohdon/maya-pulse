@@ -7,13 +7,13 @@ Adding custom actions is easy and essential to custom rigging functionality.
 Registering Action Packages
 ---------------------------
 
-Actions are found by recursively searching a python package for :py:class:`~pulse.build_items.BuildAction` subclasses.
-Beyond the default :py:mod:`pulse.builtin_actions`, you can add other action packages to search using the
+Actions are found by recursively searching a python package for :py:class:`~pulse.core.build_items.BuildAction`
+subclasses. Beyond the default :py:mod:`pulse.builtin_actions`, you can add other action packages to search using the
 :py:class:`BuildActionPackageRegistry`:
 
 .. code-block:: python
 
-    from pulse.loader import BuildActionPackageRegistry
+    from pulse.core import BuildActionPackageRegistry
     import my_pulse_actions
 
     BuildActionPackageRegistry.get().add_package(my_pulse_actions)
@@ -36,20 +36,20 @@ An example structure might include sub-packages for organization, and one module
 
 As long as all modules are at least imported in the package, they and all :py:class:`BuildAction` subclasses inside
 them will be found. You can import all actions recursively to the root of the package with
-:py:func:`~pulse.loader.import_all_submodules`. This allows any new actions to automatically be picked up without
+:py:func:`~pulse.core.loader.import_all_submodules`. This allows any new actions to automatically be picked up without
 having to individually import them:
 
 .. code-block:: python
 
     # my_pulse_actions/__init__.py
-    from pulse import loader
+    from pulse.core import import_all_submodules
 
     # equivalent to:
     #   import first_group.my_action_a
     #   import first_group.my_action_b
     #   import second_group.my_action_c
     #   import second_group.my_action_d
-    loader.import_all_submodules(__name__)
+    import_all_submodules(__name__)
 
 
 Implementing Actions
@@ -59,13 +59,13 @@ Actions are as simple as executing a single function when it's their turn. Each 
 as needed for the user to custom how individual action instances behave, such as what nodes to affect or which
 settings to use for an operation.
 
-Subclass :py:class:`~pulse.build_items.BuildAction`, set an ``id``, and implement the
-:py:func:`~pulse.build_items.BuildAction.run` method:
+Subclass :py:class:`~pulse.core.build_items.BuildAction`, set an ``id``, and implement the
+:py:func:`~pulse.core.build_items.BuildAction.run` method:
 
 .. code-block:: python
 
-    from pulse.build_items import BuildAction, BuildActionError
-    from pulse.build_items import BuildActionAttributeType as AttrType
+    from pulse.core import BuildAction, BuildActionError
+    from pulse.core import BuildActionAttributeType as AttrType
 
 
     class MyAction(BuildAction):

@@ -187,7 +187,7 @@ class BindSkinAction(BuildAction):
         roots = self.jointHierarchies
         for jnt in roots:
             result.add(jnt)
-            result.update(jnt.listRelatives(allDescendants=True, typ="joint"))
+            result.update(jnt.listRelatives(allDescendents=True, typ="joint"))
 
         # remove excluded joints
         exclude = self.excludeJoints

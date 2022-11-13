@@ -1,6 +1,6 @@
 Build Items
 ===========
 
-.. automodule:: pulse.build_items
+.. automodule:: pulse.core.build_items
    :members:
    :show-inheritance:

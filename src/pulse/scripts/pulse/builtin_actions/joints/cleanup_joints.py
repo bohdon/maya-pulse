@@ -44,6 +44,6 @@ class CleanupJointsAction(BuildAction):
             pm.delete(end_joints)
 
         if self.disableScaleCompensate:
-            all_joints = self.rootJoint.listRelatives(allDescendants=True, typ="joint")
+            all_joints = self.rootJoint.listRelatives(allDescendents=True, typ="joint")
             for joint in all_joints:
                 joint.segmentScaleCompensate.set(False)

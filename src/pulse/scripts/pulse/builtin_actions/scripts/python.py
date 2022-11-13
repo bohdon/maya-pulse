@@ -15,7 +15,7 @@ from pulse import source_editor
 SCRIPT_TEMPLATE = """\"""
 Script file for a python Pulse action.
 \"""
-from pulse.build_items import BuildAction
+from pulse.core import BuildAction
 """
 
 # template for a function added to the script file automatically
@@ -101,7 +101,7 @@ class PythonAction(BuildAction):
 
     .. code-block:: python
 
-        from pulse.build_items import BuildAction
+        from pulse.core import BuildAction
 
         def my_function(action: BuildAction):
             print(action.rig)
