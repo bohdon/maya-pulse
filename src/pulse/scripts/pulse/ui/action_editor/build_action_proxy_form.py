@@ -17,6 +17,9 @@ class BuildActionProxyForm(QtWidgets.QWidget):
     and provides UI for managing variants.
     """
 
+    # called when a variant is added or removed
+    on_variants_changed = QtCore.Signal()
+
     def __init__(self, index, parent=None):
         super(BuildActionProxyForm, self).__init__(parent=parent)
         self.variants_label = None
@@ -183,6 +186,7 @@ class BuildActionProxyForm(QtWidgets.QWidget):
 
         action_proxy.add_variant()
         self.update_variant_form_list()
+        self.on_variants_changed.emit()
 
     def remove_variant_at_index(self, index):
         action_proxy = self.get_action_proxy()
@@ -196,6 +200,7 @@ class BuildActionProxyForm(QtWidgets.QWidget):
 
         action_proxy.remove_variant_at(index)
         self.update_variant_form_list()
+        self.on_variants_changed.emit()
 
     def remove_variant_from_end(self):
         action_proxy = self.get_action_proxy()
@@ -204,3 +209,4 @@ class BuildActionProxyForm(QtWidgets.QWidget):
 
         action_proxy.remove_variant_at(-1)
         self.update_variant_form_list()
+        self.on_variants_changed.emit()

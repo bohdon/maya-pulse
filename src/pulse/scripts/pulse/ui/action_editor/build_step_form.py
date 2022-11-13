@@ -27,7 +27,6 @@ class BuildStepForm(QtWidgets.QWidget):
             index (QModelIndex): The index of the BuildStep
         """
         super(BuildStepForm, self).__init__(parent=parent)
-        self.display_name_label = None
         self.action_form = None
 
         self.index = QtCore.QPersistentModelIndex(index)
@@ -45,7 +44,11 @@ class BuildStepForm(QtWidgets.QWidget):
         # show edit source button for actions
         self.ui.edit_source_btn.clicked.connect(self._open_action_script_in_source_editor)
 
-        self.index.model().dataChanged.connect(self.on_model_data_changed)
+        self.index.model().dataChanged.connect(self._on_model_data_changed)
+
+    def _update_title(self):
+        step = self.get_step()
+        self.ui.display_name_label.setText(self._get_step_display_name(step))
 
     def _apply_title_color(self, color: LinearColor):
         color_str = color.as_style()
@@ -56,18 +59,12 @@ class BuildStepForm(QtWidgets.QWidget):
 
         self.ui.display_name_label.setStyleSheet(f"color: {color_str}; background-color: {bg_color_str}")
 
-    def on_model_data_changed(self):
-        # TODO: refresh displayed values
-        if not self.index.isValid():
-            self.hide()
-            return
+    def _on_model_data_changed(self):
+        self._update_title()
 
-        step = self.get_step()
-        if not step:
-            return
-
-        if self.display_name_label:
-            self.display_name_label.setText(self._get_step_display_name(step))
+    def _on_variants_changed(self):
+        # variant count is reflected in the title, so it needs to be updated
+        self._update_title()
 
     def get_step(self) -> BuildStep:
         """
@@ -97,6 +94,8 @@ class BuildStepForm(QtWidgets.QWidget):
                 # use default form
                 custom_form_cls = BuildActionProxyForm
             self.action_form = custom_form_cls(self.index, parent)
+            # TODO: this event should be coming from the model
+            self.action_form.on_variants_changed.connect(self._on_variants_changed)
             self.layout().addWidget(self.action_form)
 
     def _open_action_script_in_source_editor(self):
