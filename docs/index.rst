@@ -22,6 +22,13 @@ A rigging framework and toolkit built for Maya.
 
 .. toctree::
    :maxdepth: 1
+   :caption: Core Modules
+   :glob:
+
+   core_modules/*
+
+.. toctree::
+   :maxdepth: 1
    :caption: Modules
    :glob:
 
