@@ -1488,7 +1488,7 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
         steps = BuildStep.get_topmost_steps(steps)
 
         step_data_list = [step.serialize() for step in steps]
-        data_str = meta.encodeMetaData(step_data_list)
+        data_str = meta.encode_metadata(step_data_list)
         result.setData("text/plain", data_str.encode())
         return result
 
@@ -1499,7 +1499,7 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
         data_str = data.data("text/plain").data().decode()
         if data_str:
             try:
-                meta_data = meta.decodeMetaData(data_str)
+                meta_data = meta.decode_metadata(data_str)
             except Exception as e:
                 LOG.debug(e)
                 return None

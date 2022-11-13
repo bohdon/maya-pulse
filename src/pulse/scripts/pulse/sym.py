@@ -52,7 +52,7 @@ def get_all_mirror_nodes():
     """
     Return all nodes that have mirroring data
     """
-    return meta.findMetaNodes(MIRROR_METACLASS)
+    return meta.find_meta_nodes(MIRROR_METACLASS)
 
 
 def is_mirror_node(node):
@@ -62,7 +62,7 @@ def is_mirror_node(node):
     Args:
         node: A PyNode, MObject, or node name
     """
-    return meta.hasMetaClass(node, MIRROR_METACLASS)
+    return meta.has_metaclass(node, MIRROR_METACLASS)
 
 
 def validate_mirror_node(node):
@@ -75,17 +75,17 @@ def validate_mirror_node(node):
     """
     if not is_mirror_node(node):
         return False
-    data = meta.getMetaData(node, MIRROR_METACLASS)
+    data = meta.get_metadata(node, MIRROR_METACLASS)
     other_node = data["otherNode"]
     if other_node is None:
         LOG.debug("%s paired node not found, removing mirroring data", node)
-        meta.removeMetaData(node, MIRROR_METACLASS)
+        meta.remove_metadata(node, MIRROR_METACLASS)
         return False
     else:
         others_other = get_paired_node(other_node, False)
         if others_other != node:
             LOG.debug("%s pairing is not reciprocated, removing mirror data", node)
-            meta.removeMetaData(node, MIRROR_METACLASS)
+            meta.remove_metadata(node, MIRROR_METACLASS)
             return False
     return True
 
@@ -159,7 +159,7 @@ def set_mirroring_data(node, other_node):
     data = {
         "otherNode": other_node,
     }
-    meta.setMetaData(node, MIRROR_METACLASS, data, undoable=True)
+    meta.set_metadata(node, MIRROR_METACLASS, data, undoable=True)
 
 
 def get_paired_node(node, validate=True):
@@ -172,7 +172,7 @@ def get_paired_node(node, validate=True):
             reciprocated by the other node
     """
     if is_mirror_node(node):
-        data = meta.getMetaData(node, MIRROR_METACLASS)
+        data = meta.get_metadata(node, MIRROR_METACLASS)
         if validate:
             other_node = data["otherNode"]
             if other_node and validate:
@@ -194,7 +194,7 @@ def remove_mirroring_data(node):
     Args:
         node: A PyNode, MObject, or node name
     """
-    meta.removeMetaData(node, MIRROR_METACLASS)
+    meta.remove_metadata(node, MIRROR_METACLASS)
 
 
 def is_centered(node, axis=0):

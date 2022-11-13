@@ -46,7 +46,7 @@ class AnimControlAction(BuildAction):
     def run(self):
         # add metaclass to the control, making it
         # easy to search for by anim tools, etc
-        meta.setMetaData(self.controlNode, ANIM_CTL_METACLASS, {})
+        meta.set_metadata(self.controlNode, ANIM_CTL_METACLASS, {})
 
         if self.zeroOutMethod == 1:
             # freeze offset matrix

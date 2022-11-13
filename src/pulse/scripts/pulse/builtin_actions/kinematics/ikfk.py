@@ -149,7 +149,7 @@ class ThreeBoneIKFKAction(BuildAction):
         if self.extraControls:
             ikfk_ctls.update(self.extraControls)
         for ctl in ikfk_ctls:
-            meta.setMetaData(ctl, IKFK_CONTROL_METACLASS, ikfk_ctl_data)
+            meta.set_metadata(ctl, IKFK_CONTROL_METACLASS, ikfk_ctl_data)
 
 
 class IKFKControlUtils(object):
@@ -159,7 +159,7 @@ class IKFKControlUtils(object):
 
     @staticmethod
     def get_ikfk_data(ctl):
-        return meta.getMetaData(ctl, IKFK_CONTROL_METACLASS)
+        return meta.get_metadata(ctl, IKFK_CONTROL_METACLASS)
 
     @staticmethod
     def get_ikfk_joint_matrices(ikfk_data: dict):
@@ -241,7 +241,7 @@ class IKFKControlUtils(object):
 
     @staticmethod
     def get_delegate_control(node):
-        ctl_delegate_data = meta.getMetaData(node, 'pulse_ctl_delegate')
+        ctl_delegate_data = meta.get_metadata(node, 'pulse_ctl_delegate')
         if ctl_delegate_data:
             return ctl_delegate_data['delegate_ctl']
         return node

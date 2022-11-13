@@ -1,526 +1,529 @@
-
 import ast
 import re
+from typing import Optional, Any, List, Union
 
 import pymel.core as pm
-import maya.cmds as cmds
+from maya import cmds
 import maya.OpenMaya as api
 
 from . import utils
 
-
 __all__ = [
-    'decodeMetaData',
-    'decodeMetaDataValue',
-    'encodeMetaData',
-    'encodeMetaDataValue',
-    'findMetaNodes',
-    'getMetaClasses',
-    'getMetaData',
-    'hasMetaClass',
-    'isMetaNode',
-    'removeMetaData',
-    'setAllMetaData',
-    'setMetaData',
-    'updateMetaData',
+    "decode_metadata",
+    "decode_metadata_value",
+    "encode_metadata",
+    "encode_metadata_value",
+    "find_meta_nodes",
+    "get_metaclass_names",
+    "get_metadata",
+    "has_metaclass",
+    "is_meta_node",
+    "remove_metadata",
+    "set_all_metadata",
+    "set_metadata",
+    "update_metadata",
 ]
 
-
-METACLASS_ATTR_PREFIX = 'pyMetaClass_'
-METADATA_ATTR = 'pyMetaData'
-
-VALID_CLASSATTR = re.compile(r'^[_a-z0-9]*$', re.IGNORECASE)
+METACLASS_ATTR_PREFIX = "pyMetaClass_"
+METADATA_ATTR = "pyMetaData"
+VALID_CLASS_ATTR = re.compile(r"^[_a-z0-9]*$", re.IGNORECASE)
 
 
-def _getMetaDataPlug(mfnnode):
+def _get_metadata_plug(mfn_node: api.MFnDependencyNode) -> Optional[api.MPlug]:
     """
-    Return the MPlug for the meta data attribute on a node
+    Return the MPlug for the metadata attribute on a node.
 
     Args:
-        mfnnode: A MFnDependencyNode referencing the target node.
-    """
-    try:
-        return mfnnode.findPlug(METADATA_ATTR)
-    except RuntimeError:
-        pass
-
-
-def _getMetaClassPlug(mfnnode, className):
-    """
-    Return the MPlug for a meta class attribute on a node
-
-    Args:
-        mfnnode: A MFnDependencyNode referencing the target node.
-        className: A string name of the meta class type.
-    """
-    attrName = METACLASS_ATTR_PREFIX + className
-    try:
-        return mfnnode.findPlug(attrName)
-    except RuntimeError:
-        pass
-
-
-def _getUniqueNodeName(mfnnode):
-    """
-    Return the unique name of a Dependency node.
-    If the node is already unique, simply returns its
-    name, otherwise returns the unique path to the node.
-
-    Args:
-        mfnnode (MFnDependencyNode): A MFnDependencyNode with a node object
+        mfn_node: An MFnDependencyNode with a node.
 
     Returns:
-        The unique name or path (str) of the node.
-        E.g. 'node' or 'my|node'
+        The MPlug for the metadata attribute, or None if not found.
     """
-    if not mfnnode.hasUniqueName():
-        node = mfnnode.object()
+    try:
+        return mfn_node.findPlug(METADATA_ATTR)
+    except RuntimeError:
+        pass
+
+
+def _get_metaclass_plug(mfn_node: api.MFnDependencyNode, class_name: str) -> Optional[api.MPlug]:
+    """
+    Return the MPlug for a metaclass attribute on a node.
+
+    Args:
+        mfn_node: An MFnDependencyNode with a node.
+        class_name: The metaclass name for the plug to find.
+
+    Returns:
+        The MPlug for the metaclass attribute, or None if not found.
+    """
+    attr_name = METACLASS_ATTR_PREFIX + class_name
+    try:
+        return mfn_node.findPlug(attr_name)
+    except RuntimeError:
+        pass
+
+
+def _get_unique_node_name(mfn_node: api.MFnDependencyNode) -> str:
+    """
+    Return the unique name of a Dependency node.
+
+    If the node is already unique, simply returns its name, otherwise returns the unique path to the node.
+
+    Args:
+        mfn_node: An MFnDependencyNode with a node.
+
+    Returns:
+        The unique name or path (str) of the node. E.g. 'node' or 'my|node'
+    """
+    if not mfn_node.hasUniqueName():
+        node = mfn_node.object()
         if node.hasFn(api.MFn.kDagNode):
-            mfndag = api.MFnDagNode(mfnnode.object())
-            dagPath = api.MDagPath()
-            mfndag.getPath(dagPath)
-            return dagPath.partialPathName()
-    return mfnnode.name()
+            mfn_dag = api.MFnDagNode(mfn_node.object())
+            dag_path = api.MDagPath()
+            mfn_dag.getPath(dag_path)
+            return dag_path.partialPathName()
+    return mfn_node.name()
 
 
-def _getUniquePlugName(mfnnode, mplug):
+def _get_unique_plug_name(mfn_node: api.MFnDependencyNode, plug: api.MPlug) -> str:
     """
     Return the unique name of a MPlug, including its nodes name.
 
     Args:
-        mfnnode (MFnDependencyNode): A MFnDependencyNode with the node.
-            Provided for performance reasons, since it is common to have
-            both this and the MPlug when needing the plug name in this package.
-        mplug (MPlug): A MPlug of a node
+        mfn_node: An MFnDependencyNode with a node.
+            Provided for performance reasons, since it is common to have both this
+            and the MPlug when needing the plug name in this package.
+        plug: A MPlug of a node.
 
     Returns:
-        The unique name or path including attribute (str) of the plug.
-        E.g. 'my|node.myPlug'
+        The unique name or path including attribute (str) of the plug. E.g. 'my|node.myPlug'
     """
-    return _getUniqueNodeName(mfnnode) + '.' + mplug.partialName()
+    return _get_unique_node_name(mfn_node) + "." + plug.partialName()
 
 
-def _getOrCreateMetaDataPlug(mfnnode, undoable=True):
+def _get_or_create_metadata_plug(mfn_node: api.MFnDependencyNode, undoable=True) -> api.MPlug:
     """
-    Return the MPlug for the meta data attribute on a node,
-    adding the attribute if it does not already exist.
+    Return the MPlug for the metadata attribute on a node, adding the attribute if it does not already exist.
 
     Args:
-        mfnnode (MFnDependencyNode): The MFnDependencyNode of a node
-        undoable (bool): When True, the operation will be undoable
+        mfn_node: An MFnDependencyNode with a node.
+        undoable: Make the operation undoable by using cmds instead of the api.
 
     Returns:
-        The plug (MPlug) for the meta data attribute.
+        The MPlug for the metadata attribute.
     """
     try:
-        plug = mfnnode.findPlug(METADATA_ATTR)
-    except:
+        plug = mfn_node.findPlug(METADATA_ATTR)
+    except RuntimeError:
         if undoable:
-            name = _getUniqueNodeName(mfnnode)
-            cmds.addAttr(name, ln=METADATA_ATTR, dt='string')
+            name = _get_unique_node_name(mfn_node)
+            cmds.addAttr(name, longName=METADATA_ATTR, dataType="string")
         else:
-            mfnattr = api.MFnTypedAttribute()
-            attr = mfnattr.create(
-                METADATA_ATTR, METADATA_ATTR, api.MFnData.kString)
-            mfnnode.addAttribute(attr)
-        plug = mfnnode.findPlug(METADATA_ATTR)
+            mfn_attr = api.MFnTypedAttribute()
+            attr = mfn_attr.create(METADATA_ATTR, METADATA_ATTR, api.MFnData.kString)
+            mfn_node.addAttribute(attr)
+        plug = mfn_node.findPlug(METADATA_ATTR)
 
     return plug
 
 
-def _addMetaClassAttr(mfnnode, className, undoable=True):
+def _add_metaclass_attr(mfn_node: api.MFnDependencyNode, class_name: str, undoable=True) -> None:
     """
-    Add a meta class attribute to a node.
+    Add a metaclass attribute to a node.
+
     Does nothing if the attribute already exists.
 
     Args:
-        mfnnode (MFnDependencyNode): The MFnDependencyNode of a node
-        className (str): The meta data class name
-        undoable (bool): When True, the operation will be undoable
+        mfn_node: An MFnDependencyNode with a node.
+        class_name: The metadata class name.
+        undoable: Make the operation undoable by using cmds instead of the api.
+
+    Raises:
+        ValueError: The class_name was invalid.
     """
-    if not VALID_CLASSATTR.match(className):
-        raise ValueError('Invalid meta class name: ' + className)
-    classAttr = METACLASS_ATTR_PREFIX + className
+    if not VALID_CLASS_ATTR.match(class_name):
+        raise ValueError("Invalid metaclass name: " + class_name)
+
+    class_attr = METACLASS_ATTR_PREFIX + class_name
+
     try:
-        mfnnode.attribute(classAttr)
+        mfn_node.attribute(class_attr)
     except RuntimeError:
         if undoable:
-            name = _getUniqueNodeName(mfnnode)
-            cmds.addAttr(name, ln=classAttr, at='short')
+            name = _get_unique_node_name(mfn_node)
+            cmds.addAttr(name, longName=class_attr, attributeType="short")
         else:
-            mfnattr = api.MFnNumericAttribute()
-            attr = mfnattr.create(
-                classAttr, classAttr, api.MFnNumericData.kShort)
-            mfnnode.addAttribute(attr)
+            mfn_attr = api.MFnNumericAttribute()
+            attr = mfn_attr.create(class_attr, class_attr, api.MFnNumericData.kShort)
+            mfn_node.addAttribute(attr)
 
 
-def _removeMetaClassAttr(mfnnode, className, undoable=True):
+def _remove_metaclass_attr(mfn_node: api.MFnDependencyNode, class_name: str, undoable=True) -> bool:
     """
-    Remove a meta class attribute from a node.
+    Remove a metaclass attribute from a node.
+
     Does nothing if the attribute does not exist.
 
     Args:
-        mfnnode (MFnDependencyNode): The api MFnDependencyNode of a node
-        undoable (bool): When True, the operation will be undoable
+        mfn_node: An MFnDependencyNode with a node.
+        class_name: The metadata class name.
+        undoable: Make the operation undoable by using cmds instead of the api.
 
     Returns:
-        True if the attr was removed or didn't exist,
-        False if it couldn't be removed.
+        True if the attr was removed or didn't exist, False if it couldn't be removed.
     """
-    classPlug = _getMetaClassPlug(mfnnode, className)
-    if not classPlug:
+    class_plug = _get_metaclass_plug(mfn_node, class_name)
+    if not class_plug:
         return True
 
-    if classPlug.isLocked():
+    if class_plug.isLocked():
         return False
     else:
         if undoable:
-            plugName = _getUniquePlugName(mfnnode, classPlug)
-            cmds.deleteAttr(plugName)
+            plug_name = _get_unique_plug_name(mfn_node, class_plug)
+            cmds.deleteAttr(plug_name)
         else:
-            mfnnode.removeAttribute(classPlug.attribute())
+            mfn_node.removeAttribute(class_plug.attribute())
         return True
 
 
-def encodeMetaData(data):
+def encode_metadata(data: Any) -> str:
     """
-    Return the given meta data encoded into a string
+    Return the given metadata encoded into a string.
 
     Args:
-        data: A python dictionary-like object representing
-            the data to serialize.
+        data: The data to serialize.
     """
-    return repr(encodeMetaDataValue(data))
+    return repr(encode_metadata_value(data))
 
 
-def encodeMetaDataValue(value):
+def encode_metadata_value(value: Any) -> Any:
     """
-    Encode and return a meta data value. Handles special
-    data types like Maya nodes.
+    Return a metadata value, possibly encoding it into an alternate format that supports string serialization.
+
+    Handles special data types like Maya nodes.
 
     Args:
-        value: Any python value to be encoded
+        value: Any python value to be encoded.
+
+    Returns:
+        The encoded value, or the unchanged value if no encoding was necessary.
     """
+    # TODO (bsayre): add support for custom encoding/decoding rules
     if isinstance(value, dict):
         result = {}
         for k, v in value.items():
-            result[k] = encodeMetaDataValue(v)
+            result[k] = encode_metadata_value(v)
         return result
     elif isinstance(value, (list, tuple)):
-        return value.__class__([encodeMetaDataValue(v) for v in value])
+        return value.__class__([encode_metadata_value(v) for v in value])
     elif isinstance(value, pm.nt.DependNode):
-        return utils.getUUID(value)
+        return utils.get_uuid(value)
     else:
         return value
 
 
-def decodeMetaData(data, refNode=None):
+def decode_metadata(data: str, ref_node: str = None) -> Any:
     """
-    Parse the given meta data and return it as a valid
-    python object.
+    Parse the given metadata and return it as a valid python object.
 
     Args:
-        data: A string representing encoded meta data.
+        data: A string representing encoded metadata.
+        ref_node: The name of the reference node that contains any nodes in the metadata.
     """
     if not data:
         return {}
-    # convert from string to python object
+
     try:
-        data = ast.literal_eval(data.replace('\r', ''))
+        data = ast.literal_eval(data.replace("\r", ""))
     except Exception as e:
-        raise ValueError("Failed to decode meta data: {0}".format(e))
-    return decodeMetaDataValue(data, refNode)
+        raise ValueError(f"Failed to decode meta data: {e}")
+    return decode_metadata_value(data, ref_node)
 
 
-def decodeMetaDataValue(value, refNode):
+def decode_metadata_value(value: str, ref_node: str = None) -> Any:
     """
-    Parse string formatted meta data and return the
-    resulting python object.
+    Parse string formatted metadata and return the resulting python object.
 
     Args:
-        data: A str representing encoded meta data
+        value: A str representing encoded metadata.
+        ref_node: The name of the reference node that contains any nodes in the metadata.
     """
     if isinstance(value, dict):
         result = {}
         for k, v in value.items():
-            result[k] = decodeMetaDataValue(v, refNode)
+            result[k] = decode_metadata_value(v, ref_node)
         return result
     elif isinstance(value, (list, tuple)):
-        return value.__class__([decodeMetaDataValue(v, refNode) for v in value])
-    elif utils.isUUID(value):
-        return utils.findNodeByUUID(value, refNode)
+        return value.__class__([decode_metadata_value(v, ref_node) for v in value])
+    elif utils.is_uuid(value):
+        return utils.find_node_by_uuid(value, ref_node)
     else:
         return value
 
 
-def isMetaNode(node):
+def is_meta_node(node: Union[api.MObject, pm.nt.DependNode, str]) -> bool:
     """
-    Return True if the given node has any meta data
+    Return True if the given node has any metadata.
 
     Args:
-        node: A PyMel node or string node name
+        node: An MObject, PyNode, or string representing a node.
     """
-    return utils.hasAttr(node, METADATA_ATTR)
+    return utils.has_attr(node, METADATA_ATTR)
 
 
-def hasMetaClass(node, className):
+def has_metaclass(node: Union[api.MObject, pm.nt.DependNode, str], class_name: str) -> bool:
     """
-    Return True if the given node has data for the given meta class type
+    Return True if the given node has data for the given metaclass type
 
     Args:
-        node: A PyMel node or string node name
-        className: A string name of the meta class type.
-            If given, the node must be of this class type.
+        node: An MObject, PyNode, or string representing a node.
+        class_name: The metaclass name to check for.
     """
-    return utils.hasAttr(node, METACLASS_ATTR_PREFIX + className)
+    return utils.has_attr(node, METACLASS_ATTR_PREFIX + class_name)
 
 
-def findMetaNodes(className=None, asPyNodes=True):
+def find_meta_nodes(class_name: str = None, as_py_nodes=True) -> Union[List[pm.PyNode], List[api.MObject]]:
     """
-    Return a list of all meta nodes of the given class type.
-    If no class is given, all nodes with meta data are returned.
+    Return a list of all meta nodes of the given class type. If no class is given,
+    all nodes with metadata are returned.
 
     Args:
-        className: A string name of the meta class type.
-        asPyNodes: A bool, when True, returns a list of PyNodes,
-            otherwise returns a list of MObjects
+        class_name: The metaclass name to search for, or None to find all metadata nodes.
+        as_py_nodes: Return a list of PyNodes. If false, return a list of MObjects.
+
+    Returns:
+        A list of PyNodes or MObjects that have metadata.
     """
-    if className is not None:
-        plugName = METACLASS_ATTR_PREFIX + className
-    else:
-        plugName = METADATA_ATTR
-    objs = utils.getMObjectsByPlug(plugName)
-    if asPyNodes:
-        return [pm.PyNode(o) for o in objs]
+    plug_name = f"{METACLASS_ATTR_PREFIX}{class_name}" if class_name else METADATA_ATTR
+
+    objs = utils.get_m_objects_by_plug(plug_name)
+
+    if as_py_nodes:
+        return [pm.PyNode(obj) for obj in objs]
     else:
         return objs
 
 
-def setMetaData(node, className, data, undoable=True, replace=False):
+def set_metadata(node: Union[pm.nt.DependNode, str], class_name: str, data: Any, undoable=True, replace=False):
     """
-    Set the meta data for the a meta class type on a node.
+    Set the metadata for a metaclass type on a node.
 
-    The className must be a valid attribute name.
+    The class_name must be a valid attribute name.
 
     Args:
-        node (PyNode or str): The node on which to set data
-        className (str): The data's meta class type name
-        data (dict): The data to serialize and store on the node
-        undoable (bool): When True, the operation will be undoable
-        replace (bool): When True, will replace all data on the node
-            with the new meta data. This uses setAllMetaData and can
-            be much faster with large data sets.
+        node: The node on which to set data.
+        class_name: The data's metaclass type name.
+        data: The data to serialize and store on the node.
+        undoable: Make the operation undoable by using cmds instead of the api.
+        replace: Replace all metadata on the node with the new metadata.
+            This uses set_all_metadata and can be much faster with large data sets,
+            but will remove data for any other metaclass types.
     """
     if replace:
-        setAllMetaData(node, {className: data}, undoable)
+        set_all_metadata(node, {class_name: data}, undoable)
         return
 
-    mfnnode = utils.getMFnDependencyNode(node)
-    plug = _getOrCreateMetaDataPlug(mfnnode, undoable)
-    _addMetaClassAttr(mfnnode, className, undoable)
+    mfn_node = utils.get_mfn_dependency_node(node)
+    plug = _get_or_create_metadata_plug(mfn_node, undoable)
+    _add_metaclass_attr(mfn_node, class_name, undoable)
+
+    # determine the reference to use when decoding node data
+    ref_node = None
+    node_name = str(node)
+    if cmds.referenceQuery(node_name, isNodeReferenced=True):
+        ref_node = cmds.referenceQuery(node_name, referenceNode=True)
 
     # update meta data
-    refNode = None
-    if cmds.referenceQuery(str(node), isNodeReferenced=True):
-        refNode = cmds.referenceQuery(str(node), rfn=True)
-    fullData = decodeMetaData(plug.asString(), refNode)
-    fullData[className] = data
-    newValue = encodeMetaData(fullData)
+    full_data = decode_metadata(plug.asString(), ref_node)
+    full_data[class_name] = data
+    new_value = encode_metadata(full_data)
 
     if undoable:
-        plugName = _getUniquePlugName(mfnnode, plug)
-        cmds.setAttr(plugName, newValue, type='string')
+        plug_name = _get_unique_plug_name(mfn_node, plug)
+        cmds.setAttr(plug_name, new_value, type="string")
     else:
-        plug.setString(newValue)
+        plug.setString(new_value)
 
 
-def setAllMetaData(node, data, undoable=True):
+def set_all_metadata(node: Union[pm.nt.DependNode, str], data: dict, undoable=True):
     """
-    Set all meta data on a node. This is faster because the
-    existing data on the node is not retrieved first and then
-    modified. The data must be first indexed by strings that
-    are valid meta class names, otherwise errors may occur
-    when retrieving it later.
+    Set all metadata on a node. This is faster because the existing data
+    on the node is not retrieved first and then modified.
 
-    New meta class attributes will be added automatically,
-    but existing meta class attributes will not be removed.
-    If old meta class attributes on this node will no longer
-    be applicable, they should be removed with removeAllData
-    first.
+    The data must be of the form {"<metaclass>": <data>} otherwise errors
+    may occur when retrieving it later.
+
+    New metaclass attributes will be added automatically, but existing metaclass
+    attributes will not be removed. If old metaclass attributes on this node will
+    no longer be applicable, they should be removed with `remove_metadata` first.
 
     Args:
-        node (PyNode or str): The node on which to set data
-        data (dict): The data to serialize and store on the node
-        undoable (bool): When True, the operation will be undoable
+        node: The node on which to set data.
+        data: The data to serialize and store on the node.
+        undoable: Make the operation undoable by using cmds instead of the api.
     """
-    mfnnode = utils.getMFnDependencyNode(node)
-    plug = _getOrCreateMetaDataPlug(mfnnode, undoable)
+    mfn_node = utils.get_mfn_dependency_node(node)
+    plug = _get_or_create_metadata_plug(mfn_node, undoable)
 
     # add class attributes
     if data:
-        for className in data.keys():
-            _addMetaClassAttr(mfnnode, className, undoable)
+        for class_name in data.keys():
+            _add_metaclass_attr(mfn_node, class_name, undoable)
 
     # set meta data
-    newValue = encodeMetaData(data)
+    new_value = encode_metadata(data)
 
     if undoable:
-        plugName = _getUniquePlugName(mfnnode, plug)
-        cmds.setAttr(plugName, newValue, type='string')
+        plug_name = _get_unique_plug_name(mfn_node, plug)
+        cmds.setAttr(plug_name, new_value, type="string")
     else:
-        plug.setString(newValue)
+        plug.setString(new_value)
 
 
-def getMetaData(node, className=None):
+def get_metadata(node: Union[pm.nt.DependNode, str], class_name: str = None) -> Union[dict, Any]:
     """
-    Return meta data from a node. If `className` is given,
-    return only meta data for that meta class type.
+    Return the metadata on a node. If `class_name` is given, return only data for that metaclass.
 
     Args:
-        node: A PyMel node or string node name
-        className: A string name of the meta class type.
+        node: A PyNode or string node name.
+        class_name: The metaclass of the data to find and return.
 
     Returns:
-        A dict or python object representing the stored meta data
+        A dict if returning all metadata, or potentially any value if returning data for a specific class.
     """
-    mfnnode = utils.getMFnDependencyNode(node)
+    mfn_node = utils.get_mfn_dependency_node(node)
     try:
-        plug = mfnnode.findPlug(METADATA_ATTR)
+        plug = mfn_node.findPlug(METADATA_ATTR)
         datastr = plug.asString()
     except RuntimeError:
         return {}
     else:
-        refNode = None
-        if cmds.referenceQuery(str(node), isNodeReferenced=True):
-            refNode = cmds.referenceQuery(str(node), rfn=True)
-        data = decodeMetaData(datastr, refNode)
+        # determine the reference node to use when decoding node data
+        ref_node = None
+        node_name = str(node)
+        if cmds.referenceQuery(node_name, isNodeReferenced=True):
+            ref_node = cmds.referenceQuery(node_name, referenceNode=True)
+        data = decode_metadata(datastr, ref_node)
 
-        if className is not None:
-            return data.get(className, {})
+        if class_name is not None:
+            return data.get(class_name, {})
 
         return data
 
 
-def updateMetaData(node, className, data):
+def update_metadata(node: Union[pm.nt.DependNode, str], class_name: str, data: dict):
     """
-    Updates existing meta data on a node for a meta class type.
-    Only supports dict-type meta data
+    Update existing dict metadata on a node for a metaclass type.
 
     Args:
-        node: A PyMel node or string node name
-        className: A string name of the meta class type
-        data: A dict object containing meta data to add to the node
+        node: A PyNode or string node name.
+        class_name: A string name of the metaclass type.
+        data: A dict object containing metadata to add to the node.
+
+    Raises:
+        ValueError: The existing metadata on the node for the given metaclass was not a dict.
     """
-    fullData = getMetaData(node, className)
-    if not isinstance(fullData, dict):
-        raise ValueError(
-            "meta data for node '{0}' is not "
-            "a dict and cannot be updated".format(node))
-    fullData.update(data)
-    setMetaData(node, className, fullData)
+    full_data = get_metadata(node, class_name)
+
+    if not isinstance(full_data, dict):
+        raise ValueError(f"Expected dict metadata for '{class_name}', but got '{type(full_data)}' from node: '{node}'")
+
+    full_data.update(data)
+    set_metadata(node, class_name, full_data)
 
 
-def removeMetaData(node, className=None, undoable=True):
+def remove_metadata(node: Union[pm.nt.DependNode, str], class_name: str = None, undoable=True) -> bool:
     """
-    Remove meta data from a node. If no `className` is given
-    then all meta data is removed.
+    Remove metadata from a node. If no `class_name` is given
+    then all metadata is removed.
 
     Args:
-        node: A PyMel node or string node name
-        className: A string name of the meta class type.
-        undoable: A bool, when True the change will be undoable
+        node: A PyNode or string node name.
+        class_name: A string name of the metaclass type.
+        undoable: Make the operation undoable by using cmds instead of the api.
 
     Returns:
-        True if node is fully clean of relevant meta data.
+        True if node is fully clean of relevant metadata.
     """
-    if not isMetaNode(node):
+    if not is_meta_node(node):
         return True
 
-    mfnnode = utils.getMFnDependencyNode(node)
+    mfn_node = utils.get_mfn_dependency_node(node)
+
+    # make sure data attribute is unlocked
+    data_plug = _get_metadata_plug(mfn_node)
+    if data_plug and data_plug.isLocked():
+        return False
 
     # this may become true if we find there are no
-    # classes left after removing one
-    removeAllData = False
+    # classes left after removing the target one
+    remove_all_data = False
 
-    if className is not None:
-        # remove meta data for the given class only
-
-        # make sure data attribute is unlocked
-        dataPlug = _getMetaDataPlug(mfnnode)
-        if dataPlug and dataPlug.isLocked():
-            return False
-
+    if class_name:
         # attempt to remove class attribute
-        if not _removeMetaClassAttr(mfnnode, className, undoable):
+        if not _remove_metaclass_attr(mfn_node, class_name, undoable):
             return False
 
-        # remove class-specific data from all meta data
-        # TODO(bsayre): add a partialDecodeMetaData for uses like this
-        #   since we will only be modifying the core dict object and not
-        #   using any meta data values (like nodes)
-        data = decodeMetaData(dataPlug.asString())
-        if className in data:
-            del data[className]
-            newValue = encodeMetaData(data)
+        # remove just the data for this metaclass
+        # TODO(bsayre): add a `partial_decode_metadata` for uses like this since we will only be modifying
+        #   the core dict object and not using any meta data values (like nodes)
+        data = decode_metadata(data_plug.asString())
+        if class_name in data:
+            del data[class_name]
 
+            # set the new metadata
+            new_value = encode_metadata(data)
             if undoable:
-                plugName = _getUniquePlugName(mfnnode, dataPlug)
-                cmds.setAttr(plugName, newValue, type='string')
+                plug_name = _get_unique_plug_name(mfn_node, data_plug)
+                cmds.setAttr(plug_name, new_value, type="string")
             else:
-                dataPlug.setString(newValue)
+                data_plug.setString(new_value)
 
-        # check if any classes left
-        if len(data) == 0:
-            removeAllData = True
+            if not data:
+                # no data left, remove all metadata attributes
+                remove_all_data = True
 
     else:
-        # no className was given
-        removeAllData = True
+        # no class_name was given, remove everything
+        remove_all_data = True
 
-    if removeAllData:
-        # remove all meta data from the node
-
-        # make sure data attribute is unlocked
-        dataPlug = _getMetaDataPlug(mfnnode)
-        if dataPlug and dataPlug.isLocked():
-            return False
+    if remove_all_data:
+        class_plugs = [_get_metaclass_plug(mfn_node, c) for c in get_metaclass_names(node)]
+        class_plugs = [c for c in class_plugs if c]
 
         # make sure all class attributes are unlocked
-        classPlugs = [_getMetaClassPlug(mfnnode, c)
-                      for c in getMetaClasses(node)]
-        for cp in classPlugs:
-            if cp and cp.isLocked():
+        for class_plug in class_plugs:
+            if class_plug.isLocked():
                 return False
 
         # remove class attributes
-        for classPlug in classPlugs:
-            if classPlug:
-                if undoable:
-                    plugName = _getUniquePlugName(mfnnode, classPlug)
-                    cmds.deleteAttr(plugName)
-                else:
-                    mfnnode.removeAttribute(classPlug.attribute())
+        for classPlug in class_plugs:
+            if undoable:
+                plug_name = _get_unique_plug_name(mfn_node, classPlug)
+                cmds.deleteAttr(plug_name)
+            else:
+                mfn_node.removeAttribute(classPlug.attribute())
 
         # remove data attribute
-        if dataPlug:
+        if data_plug:
             if undoable:
-                plugName = _getUniquePlugName(mfnnode, dataPlug)
-                cmds.deleteAttr(plugName)
+                plug_name = _get_unique_plug_name(mfn_node, data_plug)
+                cmds.deleteAttr(plug_name)
             else:
-                mfnnode.removeAttribute(dataPlug.attribute())
+                mfn_node.removeAttribute(data_plug.attribute())
 
     return True
 
 
-def getMetaClasses(node):
+def get_metaclass_names(node: Union[pm.nt.DependNode, str]) -> List[str]:
     """
-    Return the name of the meta class types that the given
-    node has meta data for.
+    Return all metaclass names that a node has metadata for.
 
     Args:
-        node: A PyMel node or string node name
+        node: A PyNode, or string representing a node
     """
-    attrs = cmds.listAttr(str(node))
-    metaClassAttrs = [a for a in attrs if a.startswith(METACLASS_ATTR_PREFIX)]
-    classes = [a[len(METACLASS_ATTR_PREFIX):] for a in metaClassAttrs]
-    return classes
+    attrs: List[str] = cmds.listAttr(str(node))
+    metaclass_attrs = [a for a in attrs if a.startswith(METACLASS_ATTR_PREFIX)]
+    metaclass_names = [a[len(METACLASS_ATTR_PREFIX) :] for a in metaclass_attrs]
+    return metaclass_names

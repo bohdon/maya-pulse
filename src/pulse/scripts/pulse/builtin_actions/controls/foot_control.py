@@ -171,14 +171,14 @@ class FootControlAction(BuildAction):
         meta_nodes = {self.control, self.ballControl}
         meta_nodes.update(self.extraControls)
         for node in meta_nodes:
-            meta.setMetaData(node, FOOT_CTL_METACLASSNAME, foot_ctl_data)
+            meta.set_metadata(node, FOOT_CTL_METACLASSNAME, foot_ctl_data)
 
 
 class FootControlUtils(object):
 
     @staticmethod
     def get_foot_ctl_data(ctl):
-        return meta.getMetaData(ctl, FOOT_CTL_METACLASSNAME)
+        return meta.get_metadata(ctl, FOOT_CTL_METACLASSNAME)
 
     @staticmethod
     def get_foot_ctl(ctl: pm.PyNode):
@@ -188,8 +188,8 @@ class FootControlUtils(object):
         Args:
             ctl: A control with foot control metadata
         """
-        if meta.hasMetaClass(ctl, FOOT_CTL_METACLASSNAME):
-            return meta.getMetaData(ctl, FOOT_CTL_METACLASSNAME).get('foot_ctl')
+        if meta.has_metaclass(ctl, FOOT_CTL_METACLASSNAME):
+            return meta.get_metadata(ctl, FOOT_CTL_METACLASSNAME).get('foot_ctl')
 
     @staticmethod
     def lift_foot(ctl: pm.PyNode):

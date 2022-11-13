@@ -426,7 +426,7 @@ class DefaultAttrForm(ActionAttrForm):
         if isinstance(attr_value, str):
             self.text_edit.setText(repr(attr_value))
         else:
-            self.text_edit.setText(meta.encodeMetaData(attr_value))
+            self.text_edit.setText(meta.encode_metadata(attr_value))
 
     def _hasSyntaxErrors(self) -> bool:
         """
@@ -434,20 +434,20 @@ class DefaultAttrForm(ActionAttrForm):
         it from being able to decode.
         """
         try:
-            meta.decodeMetaData(self.text_edit.text())
+            meta.decode_metadata(self.text_edit.text())
             return True
         except:
             return False
 
     def _get_form_value(self):
         try:
-            return meta.decodeMetaData(self.text_edit.text())
+            return meta.decode_metadata(self.text_edit.text())
         except:
             return None
 
     def _is_form_value_valid(self):
         try:
-            meta.decodeMetaData(self.text_edit.text())
+            meta.decode_metadata(self.text_edit.text())
         except Exception as e:
             return False
         return super(DefaultAttrForm, self)._is_form_value_valid()
@@ -644,7 +644,7 @@ class NodeAttrForm(ActionAttrForm):
             pass
         if attr_value:
             item = QtWidgets.QListWidgetItem(attr_value.nodeName())
-            uuid = meta.getUUID(attr_value)
+            uuid = meta.get_uuid(attr_value)
             item.setData(QtCore.Qt.UserRole, uuid)
             self.list_widget.addItem(item)
 
@@ -668,7 +668,7 @@ class NodeAttrForm(ActionAttrForm):
         items = self.list_widget.selectedItems()
         nodes = []
         for item in items:
-            node = meta.findNodeByUUID(item.data(QtCore.Qt.UserRole))
+            node = meta.find_node_by_uuid(item.data(QtCore.Qt.UserRole))
             if node:
                 nodes.append(node)
         if nodes:
@@ -714,7 +714,7 @@ class NodeListAttrForm(ActionAttrForm):
         for node in attr_value:
             if node:
                 item = QtWidgets.QListWidgetItem(node.nodeName())
-                uuid = meta.getUUID(node)
+                uuid = meta.get_uuid(node)
                 item.setData(QtCore.Qt.UserRole, uuid)
                 self.list_widget.addItem(item)
             else:
@@ -730,7 +730,7 @@ class NodeListAttrForm(ActionAttrForm):
         items = self.list_widget.selectedItems()
         nodes = []
         for item in items:
-            node = meta.findNodeByUUID(item.data(QtCore.Qt.UserRole))
+            node = meta.find_node_by_uuid(item.data(QtCore.Qt.UserRole))
             if node:
                 nodes.append(node)
         if nodes:

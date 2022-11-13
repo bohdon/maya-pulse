@@ -18,14 +18,14 @@ def is_rig(node):
     Args:
         node: A PyNode or string node name
     """
-    return meta.hasMetaClass(node, RIG_METACLASS)
+    return meta.has_metaclass(node, RIG_METACLASS)
 
 
 def get_all_rigs():
     """
     Return a list of all rigs in the scene
     """
-    return meta.findMetaNodes(RIG_METACLASS)
+    return meta.find_meta_nodes(RIG_METACLASS)
 
 
 def get_all_rigs_by_name(names):
@@ -39,7 +39,7 @@ def get_all_rigs_by_name(names):
     rigs = get_all_rigs()
     matches = []
     for r in rigs:
-        data = meta.getMetaData(r, RIG_METACLASS)
+        data = meta.get_metadata(r, RIG_METACLASS)
         if data.get("name") in names:
             matches.append(r)
     return matches
@@ -83,7 +83,7 @@ def create_rig_node(name: str) -> pm.nt.Transform:
         node.attr(a).setLocked(True)
         node.attr(a).setKeyable(False)
     # set initial metadata for the rig
-    meta.setMetaData(node, RIG_METACLASS, {"name": name})
+    meta.set_metadata(node, RIG_METACLASS, {"name": name})
     return node
 
 
@@ -96,7 +96,7 @@ def open_rig_blueprint(rig):
         rig: A rig node
     """
 
-    rig_data = meta.getMetaData(rig, RIG_METACLASS)
+    rig_data = meta.get_metadata(rig, RIG_METACLASS)
     blueprint_file = rig_data.get("blueprintFile")
     if not blueprint_file:
         LOG.warning("No blueprintFile set on the rig")
@@ -130,7 +130,7 @@ class Rig(object):
     @property
     def meta_data(self):
         if self._metaData is None:
-            self._metaData = meta.getMetaData(self.node, RIG_METACLASS)
+            self._metaData = meta.get_metadata(self.node, RIG_METACLASS)
         return self._metaData if self._metaData else {}
 
     def get_meta_data_value(self, key, default=None):

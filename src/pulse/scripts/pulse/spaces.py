@@ -45,7 +45,7 @@ def get_all_spaces():
     """
     Return a list of all space nodes
     """
-    return meta.findMetaNodes(SPACE_METACLASS)
+    return meta.find_meta_nodes(SPACE_METACLASS)
 
 
 def get_all_spaces_indexed_by_name():
@@ -55,7 +55,7 @@ def get_all_spaces_indexed_by_name():
     all_space_nodes = get_all_spaces()
     result = {}
     for spaceNode in all_space_nodes:
-        space_data = meta.getMetaData(spaceNode, SPACE_METACLASS)
+        space_data = meta.get_metadata(spaceNode, SPACE_METACLASS)
         result[space_data["name"]] = spaceNode
     return result
 
@@ -67,14 +67,14 @@ def is_space(node):
     Args:
         node: A PyNode or string node name
     """
-    return meta.hasMetaClass(node, SPACE_METACLASS)
+    return meta.has_metaclass(node, SPACE_METACLASS)
 
 
 def get_all_space_constraints():
     """
     Return a list of all space constrained nodes
     """
-    return meta.findMetaNodes(SPACE_CONSTRAINT_METACLASS)
+    return meta.find_meta_nodes(SPACE_CONSTRAINT_METACLASS)
 
 
 def is_space_constraint(node):
@@ -84,7 +84,7 @@ def is_space_constraint(node):
     Args:
         node: A PyNode or string node name
     """
-    return meta.hasMetaClass(node, SPACE_CONSTRAINT_METACLASS)
+    return meta.has_metaclass(node, SPACE_CONSTRAINT_METACLASS)
 
 
 def create_space(node: Union[pm.PyNode, str], name: str):
@@ -98,7 +98,7 @@ def create_space(node: Union[pm.PyNode, str], name: str):
     data = {
         "name": name,
     }
-    meta.setMetaData(node, SPACE_METACLASS, data)
+    meta.set_metadata(node, SPACE_METACLASS, data)
 
 
 def setup_space_constraint(node, space_names, follower=None, use_offset_matrix=True):
@@ -194,7 +194,7 @@ def setup_space_constraint(node, space_names, follower=None, use_offset_matrix=T
         # decomp only exists when not using offset matrix
         data["decompose"] = decomp
 
-    meta.setMetaData(node, SPACE_CONSTRAINT_METACLASS, data)
+    meta.set_metadata(node, SPACE_CONSTRAINT_METACLASS, data)
 
 
 def _setup_space_constraint_attrs(node, space_names):
@@ -247,7 +247,7 @@ def _connect_space_constraint(node, space_nodes_by_name):
         space_nodes_by_name (dict): A dict of the space
             nodes index by name.
     """
-    data = meta.getMetaData(node, SPACE_CONSTRAINT_METACLASS)
+    data = meta.get_metadata(node, SPACE_CONSTRAINT_METACLASS)
     did_connect_any = False
     for spaceData in data["spaces"]:
         index = spaceData["index"]

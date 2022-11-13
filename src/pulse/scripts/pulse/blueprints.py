@@ -776,7 +776,7 @@ class BlueprintBuilder(object):
         self.rig = create_rig_node(rig_node_name)
 
         # add some additional meta data
-        meta.updateMetaData(
+        meta.update_metadata(
             self.rig,
             RIG_METACLASS,
             dict(

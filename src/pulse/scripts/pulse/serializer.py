@@ -91,12 +91,12 @@ class DagNodeTag(yaml.YAMLObject):
         if node.value == "null":
             return None
         else:
-            return meta.findNodeByUUID(node.value)
+            return meta.find_node_by_uuid(node.value)
 
     @classmethod
     def to_yaml(cls, dumper, data):
         if data:
-            uuid = str(meta.getUUID(data))
+            uuid = str(meta.get_uuid(data))
             return dumper.represent_scalar(cls.yaml_tag, uuid)
         else:
             return dumper.represent_scalar(cls.yaml_tag, "null")
@@ -107,8 +107,8 @@ PulseDumper.add_multi_representer(pm.nt.DagNode, DagNodeTag.to_yaml)
 
 
 def serialize_attr_value(value):
-    return meta.encodeMetaData(value)
+    return meta.encode_metadata(value)
 
 
 def deserialize_attr_value(value):
-    return meta.decodeMetaData(value)
+    return meta.decode_metadata(value)

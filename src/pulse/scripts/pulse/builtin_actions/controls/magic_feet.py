@@ -211,13 +211,13 @@ class MagicFeetAction(BuildAction):
             'plantedTarget': planted_tgt,
             'liftControl': self.liftControl,
         }
-        meta.setMetaData(
+        meta.set_metadata(
             self.control, MAGIC_FEET_CTL_METACLASSNAME, ctl_data, False)
 
         lift_ctl_data = {
             'control': self.control
         }
-        meta.setMetaData(
+        meta.set_metadata(
             self.liftControl, MAGIC_FEET_LIFT_CTL_METACLASSNAME, lift_ctl_data, False)
 
     def create_matrix_blend(self, mtx_a, mtx_b, blend_attr, name):

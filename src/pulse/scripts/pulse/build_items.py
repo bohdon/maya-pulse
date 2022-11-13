@@ -103,7 +103,7 @@ def _copy_data(data, ref_node=None):
     """
     Performs a deep copy of the given data using pymetanode to encode and decode the values.
     """
-    return meta.decodeMetaData(meta.encodeMetaData(data), ref_node)
+    return meta.decode_metadata(meta.encode_metadata(data), ref_node)
 
 
 class BuildActionRegistry(object):
@@ -1258,7 +1258,7 @@ class BuildAction(BuildActionData):
         if not self.rig:
             self.log.error("Cannot get rig meta data, no rig is set")
             return {}
-        return meta.getMetaData(self.rig, RIG_METACLASS)
+        return meta.get_metadata(self.rig, RIG_METACLASS)
 
     def update_rig_metadata(self, data):
         """
@@ -1270,7 +1270,7 @@ class BuildAction(BuildActionData):
         if not self.rig:
             self.log.error("Cannot update rig meta data, no rig is set")
             return
-        meta.updateMetaData(self.rig, RIG_METACLASS, data)
+        meta.update_metadata(self.rig, RIG_METACLASS, data)
 
     def extend_rig_metadata_list(self, key, data):
         """

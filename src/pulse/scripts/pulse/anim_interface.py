@@ -8,7 +8,7 @@ def get_all_anim_ctls():
     """
     Return all animation controls in the scene
     """
-    return meta.findMetaNodes(ANIM_CTL_METACLASS)
+    return meta.find_meta_nodes(ANIM_CTL_METACLASS)
 
 
 def get_rig_anim_interface(ctls, exclude_attrs=None):

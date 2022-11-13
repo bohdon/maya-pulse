@@ -33,7 +33,7 @@ def find_picker_nodes() -> List[pm.PyNode]:
     """
     Return all nodes in the scene that have picker metadata.
     """
-    return meta.findMetaNodes(PICKER_METACLASS)
+    return meta.find_meta_nodes(PICKER_METACLASS)
 
 
 class AnimPickerModel(object):
@@ -88,7 +88,7 @@ class AnimPickerFile(AnimPickerModel):
             return
 
         logger.info(f"Saving anim picker to file: {self.file_path}")
-        data_str = meta.encodeMetaData(self.picker_data)
+        data_str = meta.encode_metadata(self.picker_data)
         with open(self.file_path, "w") as fp:
             fp.write(data_str)
 
@@ -101,7 +101,7 @@ class AnimPickerFile(AnimPickerModel):
         logger.info(f"Loading anim picker from file: {self.file_path}")
         with open(self.file_path, "r") as fp:
             content = fp.read()
-        data = meta.decodeMetaData(content)
+        data = meta.decode_metadata(content)
         if not isinstance(data, dict):
             return
 
@@ -136,7 +136,7 @@ class AnimPickerNode(AnimPickerModel):
             return
 
         logger.info(f"Saving anim picker to node: {self.node}")
-        meta.setMetaData(self.node, PICKER_METACLASS, self.picker_data)
+        meta.set_metadata(self.node, PICKER_METACLASS, self.picker_data)
         self.clear_modified()
 
     def load(self):
@@ -144,12 +144,12 @@ class AnimPickerNode(AnimPickerModel):
             return
 
         logger.info(f"Loading anim picker from node: {self.node}")
-        if not meta.hasMetaClass(self.node, PICKER_METACLASS):
+        if not meta.has_metaclass(self.node, PICKER_METACLASS):
             # no picker data, important that we return in order to not
             # clear modified status on new nodes.
             return
 
-        self.picker_data = meta.getMetaData(self.node, PICKER_METACLASS)
+        self.picker_data = meta.get_metadata(self.node, PICKER_METACLASS)
         self.clear_modified()
 
     def revert_reference_edits(self):
@@ -1242,7 +1242,7 @@ class AnimPickerWidget(QtWidgets.QWidget):
         picker_nodes = find_picker_nodes()
 
         for node in picker_nodes:
-            if meta.hasMetaClass(node, PICKER_METACLASS):
+            if meta.has_metaclass(node, PICKER_METACLASS):
                 picker = AnimPickerNode(node)
                 self.add_picker(picker)
 

@@ -55,12 +55,12 @@ def unlink(node):
     """
     Remove a link from a node
     """
-    meta.removeMetaData(node, className=LINK_METACLASS)
+    meta.remove_metadata(node, className=LINK_METACLASS)
     LOG.info("Unlinked %s", node)
 
 
 def is_linked(node):
-    return meta.hasMetaClass(node, className=LINK_METACLASS)
+    return meta.has_metaclass(node, className=LINK_METACLASS)
 
 
 def get_linked_nodes(node):
@@ -76,7 +76,7 @@ def get_link_meta_data(node):
     """
     Return all link metadata for a node
     """
-    result = meta.getMetaData(node, className=LINK_METACLASS)
+    result = meta.get_metadata(node, className=LINK_METACLASS)
     if not result:
         return {}
 
@@ -100,21 +100,21 @@ def set_link_meta_data(node, link_data):
     """
     Set the metadata for a linked node
     """
-    meta.setMetaData(node, className=LINK_METACLASS, data=link_data)
+    meta.set_metadata(node, className=LINK_METACLASS, data=link_data)
 
 
 def get_all_linked_nodes():
     """
     Return all nodes in the scene that are linked
     """
-    return meta.findMetaNodes(className=LINK_METACLASS)
+    return meta.find_meta_nodes(className=LINK_METACLASS)
 
 
 def cleanup_links():
     """
     Cleanup all nodes in the scene that have broken links
     """
-    link_nodes = meta.findMetaNodes(className=LINK_METACLASS)
+    link_nodes = meta.find_meta_nodes(className=LINK_METACLASS)
     for node in link_nodes:
         if not get_linked_nodes(node):
             unlink(node)
@@ -150,7 +150,7 @@ class LinkPositioner(object):
         Set the metadata for a linked node
         """
         link_data["type"] = self.linkType
-        meta.setMetaData(node, className=LINK_METACLASS, data=link_data)
+        meta.set_metadata(node, className=LINK_METACLASS, data=link_data)
 
     def create_link(self, follower, target_nodes):
         """

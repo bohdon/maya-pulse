@@ -165,7 +165,7 @@ class PulseNodeContextSubMenu(object):
 
         def _has_any_metaclass(node, metaclass_names):
             for metaClassName in metaclass_names:
-                if meta.hasMetaClass(node, metaClassName):
+                if meta.has_metaclass(node, metaClassName):
                     return True
             return False
 
@@ -182,7 +182,7 @@ class PulseNodeContextSubMenu(object):
 
         def has_any_metaclass(node, metaclass_names):
             for metaClassName in metaclass_names:
-                if meta.hasMetaClass(node, metaClassName):
+                if meta.has_metaclass(node, metaClassName):
                     return True
             return False
 

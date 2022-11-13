@@ -116,7 +116,7 @@ class SpaceSwitchUtils(object):
         Returns:
             True if the space was changed, false otherwise
         """
-        meta_data = meta.getMetaData(ctl, spaces.SPACE_CONSTRAINT_METACLASS)
+        meta_data = meta.get_metadata(ctl, spaces.SPACE_CONSTRAINT_METACLASS)
         space_data = [s for s in meta_data.get('spaces', []) if s['name'] == space]
         if not space_data:
             return False
@@ -143,7 +143,7 @@ class SpaceSwitchContextSubMenu(PulseNodeContextSubMenu):
 
     def build_menu_items(self):
         ctl = self.get_selected_nodes_with_meta_class(spaces.SPACE_CONSTRAINT_METACLASS)[0]
-        meta_data = meta.getMetaData(ctl, spaces.SPACE_CONSTRAINT_METACLASS)
+        meta_data = meta.get_metadata(ctl, spaces.SPACE_CONSTRAINT_METACLASS)
         all_spaces = meta_data.get('spaces', [])
         if all_spaces:
             pm.menuItem(l="Spaces", enable=False)

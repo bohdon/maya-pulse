@@ -161,7 +161,7 @@ class RigLifecycleEvents(MayaCallbackEvents):
         Args:
             full_name: A string full name of a node that was added
         """
-        node = meta.getMObject(full_name)
+        node = meta.get_m_object(full_name)
         if node:
             if is_rig(node):
                 self.onRigCreated(pm.PyNode(node))

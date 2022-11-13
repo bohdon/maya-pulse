@@ -258,7 +258,7 @@ def save_skin_weights_to_file(file_path, *skins):
     skin_weights = get_skin_weights_map(*skins)
 
     pm.progressWindow(e=True, progress=80)
-    skin_weights_str = meta.encodeMetaData(skin_weights)
+    skin_weights_str = meta.encode_metadata(skin_weights)
 
     pm.progressWindow(e=True, progress=90)
     with open(file_path, "w") as fp:
@@ -280,5 +280,5 @@ def apply_skin_weights_from_file(file_path, *skins: List[pm.nt.SkinCluster]):
     with open(file_path, "r") as fp:
         content = fp.read()
 
-    skin_weights = meta.decodeMetaData(content)
+    skin_weights = meta.decode_metadata(content)
     apply_skin_weights_map(skin_weights, *skins)

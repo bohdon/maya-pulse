@@ -208,7 +208,7 @@ def create_control(shape_data, name=None, target_node=None, link=False, parent=N
     if parent:
         ctl.setParent(parent)
     # apply metadata to keep track of control shapes
-    meta.setMetaData(ctl, CONTROL_SHAPE_METACLASS, {})
+    meta.set_metadata(ctl, CONTROL_SHAPE_METACLASS, {})
     return ctl
 
 
@@ -227,7 +227,7 @@ def create_controls_for_selected(shape_data, link=True):
         result.append(ctl)
     else:
         for node in sel:
-            if meta.hasMetaClass(node, CONTROL_SHAPE_METACLASS):
+            if meta.has_metaclass(node, CONTROL_SHAPE_METACLASS):
                 # update shape
                 replace_shapes(node, shape_data)
                 result.append(node)
