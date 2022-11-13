@@ -1397,20 +1397,19 @@ class BuildStep(object):
     def name(self):
         return self._name
 
-    def set_name(self, new_name):
+    def set_name(self, new_name: Optional[str]):
         """
-        Set the name of the BuildStep, modifying it if necessary
-        to ensure that it is unique among siblings.
+        Set the name of the BuildStep, modifying it if necessary to ensure that it is unique among siblings.
 
         Args:
-            new_name (str): The new name of the step
+            new_name (str): The new name of the step, or None to reset the name to default.
         """
         new_name_clean = self.get_clean_name(new_name)
         if self._name != new_name_clean:
             self._name = new_name_clean
             self.ensure_unique_name()
 
-    def get_clean_name(self, name) -> str:
+    def get_clean_name(self, name: Optional[str]) -> str:
         """
         Return a name for the build step, ensuring one is set if it hasn't
         already been, and cleaning trailing spaces, etc.

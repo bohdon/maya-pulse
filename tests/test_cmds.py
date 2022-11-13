@@ -1,7 +1,7 @@
-
 import unittest
 import maya.cmds as cmds
 
+import pulse.loader
 from pulse.ui.core import BlueprintUIModel
 
 
@@ -11,50 +11,52 @@ class TestPulseCmds(unittest.TestCase):
     """
 
     def setUp(self):
-        cmds.loadPlugin('pulse', quiet=True)
+        cmds.loadPlugin("pulse", quiet=True)
+        pulse.loader.load_actions()
+        self.blueprint_model = BlueprintUIModel.get_default_model()
+        self.blueprint_model.new_file()
 
     def test_create_step(self):
-        blueprintModel = BlueprintUIModel.get_default_model()
-        bp = blueprintModel.blueprint
+        bp = self.blueprint_model.blueprint
 
         result = cmds.pulseCreateStep("", 0, "{'name':'StepA'}")
-        self.assertEqual(result, ['StepA'])
+        self.assertEqual(result, ["StepA"])
 
         result = cmds.pulseCreateStep("", 0, "{'name':'StepB'}")
-        self.assertEqual(result, ['StepB'])
+        self.assertEqual(result, ["StepB"])
 
         result = cmds.pulseCreateStep("", 0, "")
-        self.assertEqual(result, ['New Step'])
+        self.assertEqual(result, ["New Step"])
 
         self.assertTrue(bp.rootStep.num_children() == 3)
         cmds.undo()
         self.assertTrue(bp.rootStep.num_children() == 2)
 
-        cmds.pulseDeleteStep('StepA')
+        cmds.pulseDeleteStep("StepA")
         self.assertTrue(bp.rootStep.num_children() == 1)
         cmds.undo()
         self.assertTrue(bp.rootStep.num_children() == 2)
 
-        cmds.pulseMoveStep('StepB', 'StepA/StepBX')
-        stepB = bp.get_step_by_path('StepA/StepBX')
-        self.assertIsNotNone(stepB)
+        cmds.pulseMoveStep("StepB", "StepA/StepBX")
+        step_b = bp.get_step_by_path("StepA/StepBX")
+        self.assertIsNotNone(step_b)
 
         cmds.undo()
-        stepA = bp.get_step_by_path('StepA')
-        stepB = bp.get_step_by_path('StepB')
-        self.assertIsNotNone(stepB)
-        self.assertTrue(stepA.num_children() == 0)
+        step_a = bp.get_step_by_path("StepA")
+        step_b = bp.get_step_by_path("StepB")
+        self.assertIsNotNone(step_b)
+        self.assertTrue(step_a.num_children() == 0)
 
-        cmds.pulseMoveStep('StepB', 'StepBY')
-        stepB = bp.get_step_by_path('StepBY')
-        self.assertIsNotNone(stepB)
+        cmds.pulseMoveStep("StepB", "StepBY")
+        step_b = bp.get_step_by_path("StepBY")
+        self.assertIsNotNone(step_b)
 
         cmds.undo()
         cmds.redo()
-        stepB = bp.get_step_by_path('StepBY')
-        self.assertIsNotNone(stepB)
+        step_b = bp.get_step_by_path("StepBY")
+        self.assertIsNotNone(step_b)
 
-        cmds.pulseMoveStep('StepBY', 'StepA/StepBY')
-        cmds.pulseRenameStep('StepA/StepBY', 'StepBZ')
-        stepB = bp.get_step_by_path('StepA/StepBZ')
-        self.assertIsNotNone(stepB)
+        cmds.pulseMoveStep("StepBY", "StepA/StepBY")
+        cmds.pulseRenameStep("StepA/StepBY", "StepBZ")
+        step_b = bp.get_step_by_path("StepA/StepBZ")
+        self.assertIsNotNone(step_b)
