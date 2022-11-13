@@ -35,9 +35,12 @@ class CreateSpaceAction(BuildAction):
 
 
 class SpaceConstrainAction(BuildAction):
+    """
+    Creates a dynamic constraint to one or more defined spaces
+    """
+
     id = 'Pulse.SpaceConstrain'
     display_name = 'Space Constrain'
-    """Creates a dynamic constraint to one or more defined spaces"""
     color = (.4, .42, .8)
     category = 'Spaces'
     sort_order = 1
@@ -71,9 +74,12 @@ class SpaceConstrainAction(BuildAction):
 
 
 class ApplySpacesAction(BuildAction):
+    """
+    Resolves and connects all Space Constraints in the rig
+    """
+
     id = 'Pulse.ApplySpaces'
     display_name = 'Apply Spaces'
-    """Resolves and connects all Space Constraints in the rig"""
     color = (.4, .42, .8)
     category = 'Spaces'
     sort_order = 2

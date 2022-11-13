@@ -10,9 +10,12 @@ from pulse.build_items import BuildActionAttributeType as AttrType
 
 
 class BindSkinAction(BuildAction):
+    """
+    Binds a mesh to a joint hierarchy
+    """
+
     id = 'Pulse.BindSkin'
     display_name = 'Bind Skin'
-    """Binds a mesh to a joint hierarchy"""
     color = (1.0, .85, 0.5)
     category = 'Deformers'
 
