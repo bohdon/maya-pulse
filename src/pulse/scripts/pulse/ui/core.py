@@ -4,7 +4,7 @@ UI model classes, and base classes for common widgets.
 
 import logging
 import os
-from typing import Optional, List, cast, Dict
+from typing import Optional, List, cast
 
 import maya.OpenMaya as api
 import maya.OpenMayaUI as mui
@@ -15,7 +15,7 @@ from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
 from ..vendor import pymetanode as meta
 from ..vendor.Qt import QtCore, QtWidgets, QtGui
 from .. import loader, rigs, editor_utils
-from ..blueprints import Blueprint, BlueprintFile, BlueprintSettings, BlueprintBuilder, BlueprintValidator
+from ..core import Blueprint, BlueprintFile, BlueprintSettings, BlueprintBuilder, BlueprintValidator
 from ..build_items import BuildStep, BuildAction
 from ..prefs import option_var_property
 from ..serializer import serialize_attr_value

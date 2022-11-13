@@ -1,7 +1,7 @@
 import unittest
 import pymel.core as pm
 
-from pulse.blueprints import Blueprint, BlueprintSettings, BlueprintBuilder
+from pulse.core import Blueprint, BlueprintSettings, BlueprintBuilder
 import pulse.loader
 import pulse.build_items
 import pulse.control_shapes

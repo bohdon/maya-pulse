@@ -1216,7 +1216,7 @@ class BuildAction(BuildActionData):
         # logger is initialized the first time its accessed
         self._log = None
         # builder is only available during build
-        from pulse.blueprints import BlueprintBuilder
+        from .core import BlueprintBuilder
 
         self.builder: Optional[BlueprintBuilder] = None
         # rig is only available during build

@@ -7,7 +7,7 @@ import logging
 import maya.cmds as cmds
 
 from ..vendor.Qt import QtGui, QtWidgets
-from ..blueprints import BlueprintSettings
+from ..core import BlueprintSettings
 from . import utils
 from .core import BlueprintUIModel
 from .main_settings import MainSettingsWindow

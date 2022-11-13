@@ -6,7 +6,7 @@ import os
 import pymel.core as pm
 
 from pulse.vendor.Qt import QtCore, QtGui, QtWidgets
-from ..blueprints import BlueprintSettings
+from ..core import BlueprintSettings
 from ..loader import BuildActionPackageRegistry
 from . import utils
 from .core import BlueprintUIModel, PulseWindow
