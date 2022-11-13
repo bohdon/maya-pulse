@@ -5,8 +5,8 @@ from pulse.vendor import pymetanode as meta
 from pulse.build_items import BuildAction, BuildActionError
 from pulse.build_items import BuildActionAttributeType as AttrType
 
-MAGIC_FEET_CTL_METACLASSNAME = 'pulse_magicfeet_ctl'
-MAGIC_FEET_LIFT_CTL_METACLASSNAME = 'pulse_magicfeet_lift_ctl'
+MAGIC_FEET_CTL_METACLASSNAME = "pulse_magicfeet_ctl"
+MAGIC_FEET_LIFT_CTL_METACLASSNAME = "pulse_magicfeet_lift_ctl"
 
 
 class MagicFeetAction(BuildAction):
@@ -14,27 +14,53 @@ class MagicFeetAction(BuildAction):
     Allows controlling foot rotation, blending pivots between toe, heel and ankle.
     """
 
-    id = 'Pulse.MagicFeet'
-    display_name = 'Magic Feet'
-    color = (.85, .65, .4)
-    category = 'Controls'
+    id = "Pulse.MagicFeet"
+    display_name = "Magic Feet"
+    color = (0.85, 0.65, 0.4)
+    category = "Controls"
 
-    _offsetName = '{0}_magic'
+    _offsetName = "{0}_magic"
 
     attr_definitions = [
-        dict(name='follower', type=AttrType.NODE,
-             description="The control to drive with the final foot location."),
-        dict(name='toeFollower', type=AttrType.NODE,
-             description="The toe control to drive with the final toe location."),
-        dict(name='createFollowerOffset', type=AttrType.OPTION, value=1, options=['Always', 'Exclude Joints'],
-             description="Creates and constrains a parent transform for the follower node, "
-                         "instead of constraining the follower itself."),
-        dict(name='control', type=AttrType.NODE, description="The magic feet control."),
-        dict(name='liftControl', type=AttrType.NODE, description="The control to use when the foot is lifted."),
-        dict(name='toePivot', type=AttrType.NODE, description="Node where the ball should pivot."),
-        dict(name='plantedTarget', type=AttrType.NODE,
-             description="The transform to use as the planted target location, will be created if not given, "
-                         "allows creating a selectable node with custom shape."),
+        dict(
+            name="follower",
+            type=AttrType.NODE,
+            description="The control to drive with the final foot location.",
+        ),
+        dict(
+            name="toeFollower",
+            type=AttrType.NODE,
+            description="The toe control to drive with the final toe location.",
+        ),
+        dict(
+            name="createFollowerOffset",
+            type=AttrType.OPTION,
+            value=1,
+            options=["Always", "Exclude Joints"],
+            description="Creates and constrains a parent transform for the follower node, "
+            "instead of constraining the follower itself.",
+        ),
+        dict(
+            name="control",
+            type=AttrType.NODE,
+            description="The magic feet control.",
+        ),
+        dict(
+            name="liftControl",
+            type=AttrType.NODE,
+            description="The control to use when the foot is lifted.",
+        ),
+        dict(
+            name="toePivot",
+            type=AttrType.NODE,
+            description="Node where the ball should pivot.",
+        ),
+        dict(
+            name="plantedTarget",
+            type=AttrType.NODE,
+            description="The transform to use as the planted target location, will be created if not given, "
+            "allows creating a selectable node with custom shape.",
+        ),
     ]
 
     def validate(self):
@@ -58,7 +84,7 @@ class MagicFeetAction(BuildAction):
         if self.createFollowerOffset == 0:
             # Always
             should_create_offset = True
-        elif self.createFollowerOffset == 1 and self.follower.nodeType() != 'joint':
+        elif self.createFollowerOffset == 1 and self.follower.nodeType() != "joint":
             # Exclude Joints and the follower is not a joint
             should_create_offset = True
 
@@ -73,22 +99,26 @@ class MagicFeetAction(BuildAction):
 
         if use_custom_attrs:
             # create 'lift' and 'ballToe' blend attrs
-            self.control.addAttr(
-                "ballToe", min=0, max=1, at='double', defaultValue=0, keyable=1)
-            ball_toe_attr = self.control.attr('ballToe')
-            self.control.addAttr(
-                "lift", min=0, max=1, at='double', defaultValue=0, keyable=1)
-            lift_attr = self.control.attr('lift')
+            self.control.addAttr("ballToe", min=0, max=1, attributeType="double", defaultValue=0, keyable=1)
+            ball_toe_attr = self.control.attr("ballToe")
+            self.control.addAttr("lift", min=0, max=1, attributeType="double", defaultValue=0, keyable=1)
+            lift_attr = self.control.attr("lift")
 
-            locked_attrs = ['tx', 'ty', 'tz', 'sx', 'sy', 'sz']
+            locked_attrs = ["tx", "ty", "tz", "sx", "sy", "sz"]
         else:
             # use tx and tz to control ball toe and lift blend
             ball_toe_attr = self.control.tx
             lift_attr = self.control.tz
             # configure magic control
             # limit translate attrs and use them to drive blends
-            pm.transformLimits(self.control, tx=(0, 1), tz=(0, 1), etz=(True, True), etx=(True, True))
-            locked_attrs = ['ty', 'sx', 'sy', 'sz']
+            pm.transformLimits(
+                self.control,
+                translateX=(0, 1),
+                translateZ=(0, 1),
+                enableTranslationZ=(True, True),
+                enableTranslationX=(True, True),
+            )
+            locked_attrs = ["ty", "sx", "sy", "sz"]
 
         # lockup attributes on the magic control
         for attrName in locked_attrs:
@@ -102,26 +132,24 @@ class MagicFeetAction(BuildAction):
             planted_tgt = self.plantedTarget
         else:
             planted_tgt = pm.group(
-                em=True, p=self.control,
-                n='{0}_mf_anklePlanted_tgt'.format(self.follower.nodeName()))
+                empty=True, parent=self.control, name="{0}_mf_anklePlanted_tgt".format(self.follower.nodeName())
+            )
         # use liftControl directly as target
         lifted_tgt = self.liftControl
 
         # toe tgt is only used for the toe follower, not the main ankle follower
         # (keeps toe control fully locked when using ball pivot)
         toe_down_tgt = pm.group(
-            em=True, p=self.toePivot,
-            n='{0}_mf_toeDown_tgt'.format(self.toeFollower.nodeName()))
+            empty=True, parent=self.toePivot, name="{0}_mf_toeDown_tgt".format(self.toeFollower.nodeName())
+        )
         toe_up_tgt = pm.group(
-            em=True, p=_toeFollower.getParent(),
-            n='{0}_mf_toeUp_tgt'.format(self.toeFollower.nodeName()))
+            empty=True, parent=_toeFollower.getParent(), name="{0}_mf_toeUp_tgt".format(self.toeFollower.nodeName())
+        )
         # ball pivot will contain result of both toe and ball pivot
         ball_toe_tgt = pm.group(
-            em=True, p=self.ballPivot,
-            n='{0}_mf_ballToe_tgt'.format(self.follower.nodeName()))
-        heel_tgt = pm.group(
-            em=True, p=self.heelPivot,
-            n='{0}_mf_heel_tgt'.format(self.follower.nodeName()))
+            empty=True, parent=self.ballPivot, name="{0}_mf_ballToe_tgt".format(self.follower.nodeName())
+        )
+        heel_tgt = pm.group(empty=True, parent=self.heelPivot, name="{0}_mf_heel_tgt".format(self.follower.nodeName()))
 
         follower_mtx = nodes.get_world_matrix(self.follower)
         toe_follower_mtx = nodes.get_world_matrix(self.toeFollower)
@@ -178,8 +206,8 @@ class MagicFeetAction(BuildAction):
         # create matrix blend between planted and lifted targets
         # use lift attr to drive the blend (0 == planted, 1 == lifted)
         planted_lifted_blend_attr = self.create_matrix_blend(
-            planted_tgt.wm, lifted_tgt.wm, lift_attr,
-            '{0}_mf_plantedLiftedBlend'.format(self.follower.nodeName()))
+            planted_tgt.wm, lifted_tgt.wm, lift_attr, "{0}_mf_plantedLiftedBlend".format(self.follower.nodeName())
+        )
 
         # connect final matrix to follower
         # TODO(bsayre): this connect eliminates all transform inheritance, is
@@ -193,14 +221,16 @@ class MagicFeetAction(BuildAction):
         # reverse ballToeAttr, so that 1 == toe-down/ball
         ball_toe_reverse_attr = util_nodes.reverse(ball_toe_attr)
         # multiply by isToe to ensure ball not active while using heel pivot
-        is_toe_and_ball_attr = util_nodes.multiply(
-            ball_toe_reverse_attr, is_toe_roll_attr)
+        is_toe_and_ball_attr = util_nodes.multiply(ball_toe_reverse_attr, is_toe_roll_attr)
         # multiply by 1-liftAttr to ensure ball not active while lifting
         lift_reverse_attr = util_nodes.reverse(lift_attr)
         toe_up_down_blend_attr = util_nodes.multiply(is_toe_and_ball_attr, lift_reverse_attr)
         ball_toe_mtx_blend_attr = self.create_matrix_blend(
-            toe_up_tgt.wm, toe_down_tgt.wm, toe_up_down_blend_attr,
-            '{0}_mf_toeUpDownBlend'.format(self.toeFollower.nodeName()))
+            toe_up_tgt.wm,
+            toe_down_tgt.wm,
+            toe_up_down_blend_attr,
+            "{0}_mf_toeUpDownBlend".format(self.toeFollower.nodeName()),
+        )
 
         # connect final toe rotations to toeFollower
         # TODO(bsayre): parent both tgts to ankle somehow to prevent locking
@@ -208,17 +238,13 @@ class MagicFeetAction(BuildAction):
 
         # add meta data to controls
         ctl_data = {
-            'plantedTarget': planted_tgt,
-            'liftControl': self.liftControl,
+            "plantedTarget": planted_tgt,
+            "liftControl": self.liftControl,
         }
-        meta.set_metadata(
-            self.control, MAGIC_FEET_CTL_METACLASSNAME, ctl_data, False)
+        meta.set_metadata(self.control, MAGIC_FEET_CTL_METACLASSNAME, ctl_data, False)
 
-        lift_ctl_data = {
-            'control': self.control
-        }
-        meta.set_metadata(
-            self.liftControl, MAGIC_FEET_LIFT_CTL_METACLASSNAME, lift_ctl_data, False)
+        lift_ctl_data = {"control": self.control}
+        meta.set_metadata(self.liftControl, MAGIC_FEET_LIFT_CTL_METACLASSNAME, lift_ctl_data, False)
 
     def create_matrix_blend(self, mtx_a, mtx_b, blend_attr, name):
         """
@@ -233,7 +259,7 @@ class MagicFeetAction(BuildAction):
         Returns:
             The blended output attr of the node that was created
         """
-        blend_node = pm.createNode('wtAddMatrix', n=name)
+        blend_node = pm.createNode("wtAddMatrix", n=name)
 
         mtx_a >> blend_node.wtMatrix[0].matrixIn
         util_nodes.reverse(blend_attr) >> blend_node.wtMatrix[0].weightIn

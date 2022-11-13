@@ -10,32 +10,52 @@ class AddIKFKControlAction(BuildAction):
     Add a control to an existing IKFK switch, allowing it to have different parent spaces for IK and FK.
     """
 
-    id = 'Pulse.AddIKFKControl'
-    display_name = 'Add IKFK Control'
-    color = (.4, .6, .8)
-    category = 'Kinematics'
+    id = "Pulse.AddIKFKControl"
+    display_name = "Add IKFK Control"
+    color = (0.4, 0.6, 0.8)
+    category = "Kinematics"
 
     attr_definitions = [
-        dict(name='ikfkControl', type=AttrType.NODE, description="The control with the IKFK switch attribute"),
-        dict(name='follower', type=AttrType.NODE, description="The node that will switch between parent spaces"),
-        dict(name='ikLeader', type=AttrType.NODE, description="The leader node to use while in IK mode"),
-        dict(name='fkLeader', type=AttrType.NODE, description="The leader node to use while in FK mode"),
-        dict(name='preservePosition', type=AttrType.BOOL, value=True,
-             description="If true, preserve the followers world space position when the connections are made"),
+        dict(
+            name="ikfkControl",
+            type=AttrType.NODE,
+            description="The control with the IKFK switch attribute",
+        ),
+        dict(
+            name="follower",
+            type=AttrType.NODE,
+            description="The node that will switch between parent spaces",
+        ),
+        dict(
+            name="ikLeader",
+            type=AttrType.NODE,
+            description="The leader node to use while in IK mode",
+        ),
+        dict(
+            name="fkLeader",
+            type=AttrType.NODE,
+            description="The leader node to use while in FK mode",
+        ),
+        dict(
+            name="preservePosition",
+            type=AttrType.BOOL,
+            value=True,
+            description="If true, preserve the followers world space position when the connections are made",
+        ),
     ]
 
     def validate(self):
         if not self.ikfkControl:
-            raise BuildActionError('ikfkControl must be set')
+            raise BuildActionError("ikfkControl must be set")
         if not self.follower:
-            raise BuildActionError('follower must be set')
+            raise BuildActionError("follower must be set")
         if not self.ikLeader:
-            raise BuildActionError('ikLeader must be set')
+            raise BuildActionError("ikLeader must be set")
         if not self.fkLeader:
-            raise BuildActionError('fkLeader must be set')
+            raise BuildActionError("fkLeader must be set")
 
     def run(self):
-        ik_attr = self.ikfkControl.attr('ik')
+        ik_attr = self.ikfkControl.attr("ik")
         if not ik_attr:
             raise BuildActionError(f"ikfkControl has no IK attribute: {self.ikfkControl}")
 

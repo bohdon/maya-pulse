@@ -18,20 +18,35 @@ class AnimControlAction(BuildAction):
     Configure a node to be used as an animation control.
     """
 
-    id = 'Pulse.AnimControl'
-    display_name = 'Anim Control'
-    color = (.85, .65, .4)
-    category = 'Controls'
+    id = "Pulse.AnimControl"
+    display_name = "Anim Control"
+    color = (0.85, 0.65, 0.4)
+    category = "Controls"
     attr_definitions = [
-        dict(name='controlNode', type=AttrType.NODE, description="The control node to mark as an animation control"),
-        dict(name='zeroOutMethod', type=AttrType.OPTION, value=1, options=[
-            'None',
-            'Offset Matrix',
-            'Insert Transform',
-        ], description="Which method to use to ensure the control transform attributes are zeroed by"
-                       "default in the current possition"),
-        dict(name='keyableAttrs', type=AttrType.STRING_LIST, value=['t', 'r', 's'], canMirror=False,
-             description='Defines attributes that can be animated. All others will be locked.'),
+        dict(
+            name="controlNode",
+            type=AttrType.NODE,
+            description="The control node to mark as an animation control",
+        ),
+        dict(
+            name="zeroOutMethod",
+            type=AttrType.OPTION,
+            value=1,
+            options=[
+                "None",
+                "Offset Matrix",
+                "Insert Transform",
+            ],
+            description="Which method to use to ensure the control transform attributes are zeroed by"
+            "default in the current possition",
+        ),
+        dict(
+            name="keyableAttrs",
+            type=AttrType.STRING_LIST,
+            value=["t", "r", "s"],
+            canMirror=False,
+            description="Defines attributes that can be animated. All others will be locked.",
+        ),
     ]
 
     def get_min_api_version(self):
@@ -41,7 +56,7 @@ class AnimControlAction(BuildAction):
 
     def validate(self):
         if not self.controlNode:
-            raise BuildActionError('controlNode is not set')
+            raise BuildActionError("controlNode is not set")
 
     def run(self):
         # add metaclass to the control, making it
@@ -57,7 +72,7 @@ class AnimControlAction(BuildAction):
 
         # lockup attributes
         keyable_attrs = nodes.get_expanded_attr_names(self.keyableAttrs)
-        locked_attrs = nodes.get_expanded_attr_names(['t', 'r', 'rp', 's', 'sp', 'ra', 'sh', 'v'])
+        locked_attrs = nodes.get_expanded_attr_names(["t", "r", "rp", "s", "sp", "ra", "sh", "v"])
         locked_attrs = list(set(locked_attrs) - set(keyable_attrs))
 
         for attrName in keyable_attrs:
@@ -75,7 +90,7 @@ class AnimControlAction(BuildAction):
         self.controlNode.rotateOrder.showInChannelBox(True)
 
         # update rig meta data
-        self.extend_rig_metadata_list('animControls', [self.controlNode])
+        self.extend_rig_metadata_list("animControls", [self.controlNode])
 
 
 class AnimControlContextSubMenu(PulseNodeContextSubMenu):
@@ -88,7 +103,11 @@ class AnimControlContextSubMenu(PulseNodeContextSubMenu):
         return cls.is_node_with_metaclass_selected(ANIM_CTL_METACLASS)
 
     def build_menu_items(self):
-        pm.menuItem(l='Reset', rp=self.get_safe_radial_position('N'), c=pm.Callback(self.resetSelected))
+        pm.menuItem(
+            label="Reset",
+            radialPosition=self.get_safe_radial_position("N"),
+            command=pm.Callback(self.resetSelected),
+        )
 
     def resetSelected(self):
         if resetter:
@@ -103,18 +122,25 @@ class ShowAllControlsAction(BuildAction):
     Should be added after all Anim Control actions, and usually on the root control.
     """
 
-    id = 'Pulse.ShowAllControls'
-    display_name = 'Show All Controls'
-    category = 'Controls'
+    id = "Pulse.ShowAllControls"
+    display_name = "Show All Controls"
+    category = "Controls"
     attr_definitions = [
-        dict(name='node', type=AttrType.NODE,
-             description="The node to add the attribute to, usually the root control."),
-        dict(name='attrName', type=AttrType.STRING, value='showAllControls',
-             description="The name of the attribute"),
+        dict(
+            name="node",
+            type=AttrType.NODE,
+            description="The node to add the attribute to, usually the root control.",
+        ),
+        dict(
+            name="attrName",
+            type=AttrType.STRING,
+            value="showAllControls",
+            description="The name of the attribute",
+        ),
     ]
 
     def run(self):
-        self.node.addAttr(self.attrName, at='bool')
+        self.node.addAttr(self.attrName, attributeType="bool")
         attr = self.node.attr(self.attrName)
         attr.setKeyable(False)
         attr.showInChannelBox(True)

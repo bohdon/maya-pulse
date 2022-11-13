@@ -6,7 +6,7 @@ from pulse.build_items import BuildAction, BuildActionError
 from pulse.build_items import BuildActionAttributeType as AttrType
 from pulse.ui.contextmenus import PulseNodeContextSubMenu
 
-IKFK_CONTROL_METACLASS = 'pulse_ikfk_control'
+IKFK_CONTROL_METACLASS = "pulse_ikfk_control"
 
 
 class ThreeBoneIKFKAction(BuildAction):
@@ -14,39 +14,69 @@ class ThreeBoneIKFKAction(BuildAction):
     Create a 3-bone IK chain that can switch to FK.
     """
 
-    id = 'Pulse.ThreeBoneIKFK'
-    display_name = '3-Bone IK FK'
-    color = (.4, .6, .8)
-    category = 'Kinematics'
+    id = "Pulse.ThreeBoneIKFK"
+    display_name = "3-Bone IK FK"
+    color = (0.4, 0.6, 0.8)
+    category = "Kinematics"
 
     attr_definitions = [
-        dict(name='endJoint', type=AttrType.NODE,
-             description="The end joint of the IK chain. Mid and root joint are retrieved automatically"),
-        dict(name='rootCtl', type=AttrType.NODE, description="The root joint control"),
-        dict(name='midCtlIk', type=AttrType.NODE,
-             description="The mid joint control during IK (the pole vector control)"),
-        dict(name='midCtlFk', type=AttrType.NODE, description="The mid joint control during FK"),
-        dict(name='endCtlIk', type=AttrType.NODE, description="The end joint control during IK"),
-        dict(name='endCtlFk', type=AttrType.NODE, description="The end joint control during FK"),
-        dict(name='addPoleLine', type=AttrType.BOOL, value=True,
-             description="Add a curve shape to the mid FK control that draws a line to the bone"),
-        dict(name='extraControls', type=AttrType.NODE_LIST, optional=True,
-             description="Additional controls to add ikfk metadata to, so they can be used with ikfk switching utils"),
+        dict(
+            name="endJoint",
+            type=AttrType.NODE,
+            description="The end joint of the IK chain. Mid and root joint are retrieved automatically",
+        ),
+        dict(
+            name="rootCtl",
+            type=AttrType.NODE,
+            description="The root joint control",
+        ),
+        dict(
+            name="midCtlIk",
+            type=AttrType.NODE,
+            description="The mid joint control during IK (the pole vector control)",
+        ),
+        dict(
+            name="midCtlFk",
+            type=AttrType.NODE,
+            description="The mid joint control during FK",
+        ),
+        dict(
+            name="endCtlIk",
+            type=AttrType.NODE,
+            description="The end joint control during IK",
+        ),
+        dict(
+            name="endCtlFk",
+            type=AttrType.NODE,
+            description="The end joint control during FK",
+        ),
+        dict(
+            name="addPoleLine",
+            type=AttrType.BOOL,
+            value=True,
+            description="Add a curve shape to the mid FK control that draws a line to the bone",
+        ),
+        dict(
+            name="extraControls",
+            type=AttrType.NODE_LIST,
+            optional=True,
+            description="Additional controls to add ikfk metadata to, so they can be used with ikfk switching utils",
+        ),
     ]
 
     def validate(self):
         if not self.endJoint:
-            raise BuildActionError('endJoint must be set')
+            raise BuildActionError("endJoint must be set")
         if not self.rootCtl:
-            raise BuildActionError('rootCtl must be set')
+            raise BuildActionError("rootCtl must be set")
         if not self.midCtlIk:
-            raise BuildActionError('midCtlIk must be set')
+            raise BuildActionError("midCtlIk must be set")
         if not self.midCtlFk:
-            raise BuildActionError('midCtlFk must be set')
+            raise BuildActionError("midCtlFk must be set")
         if not self.endCtlIk:
-            raise BuildActionError('endCtlIk must be set')
+            raise BuildActionError("endCtlIk must be set")
         if not self.endCtlFk:
-            raise BuildActionError('endCtlFk must be set')
+            raise BuildActionError("endCtlFk must be set")
 
     def run(self):
         # retrieve mid and root joints
@@ -54,7 +84,7 @@ class ThreeBoneIKFKAction(BuildAction):
         root_joint = mid_joint.getParent()
 
         # duplicate joints for ik chain
-        ik_joint_name_fmt = '{0}_ik'
+        ik_joint_name_fmt = "{0}_ik"
         ik_jnts = nodes.duplicate_branch(root_joint, self.endJoint, name_fmt=ik_joint_name_fmt)
 
         for j in ik_jnts:
@@ -70,13 +100,14 @@ class ThreeBoneIKFKAction(BuildAction):
 
         # create ik and hook up pole object and controls
         handle, effector = pm.ikHandle(
-            name="{0}_ikHandle".format(end_ik_joint),
+            name=f"{end_ik_joint}_ikHandle",
             startJoint=root_ik_joint,
             endEffector=end_ik_joint,
-            solver="ikRPsolver")
+            solver="ikRPsolver",
+        )
 
         # add twist attr to end control
-        self.endCtlIk.addAttr('twist', at='double', k=1)
+        self.endCtlIk.addAttr("twist", at="double", k=1)
         self.endCtlIk.twist >> handle.twist
 
         # connect mid ik ctl (pole vector)
@@ -87,12 +118,11 @@ class ThreeBoneIKFKAction(BuildAction):
 
         # TODO: use pick matrix and mult matrix to combine location from ik system with rotation/scale of ctl
         # constraint end joint scale and rotation to end control
-        pm.orientConstraint(self.endCtlIk, end_ik_joint, mo=True)
-        pm.scaleConstraint(self.endCtlIk, end_ik_joint, mo=True)
+        pm.orientConstraint(self.endCtlIk, end_ik_joint, maintainOffset=True)
+        pm.scaleConstraint(self.endCtlIk, end_ik_joint, maintainOffset=True)
 
         # setup ikfk switch attr (integer, not blend)
-        self.rootCtl.addAttr("ik", min=0, max=1, at='short',
-                             defaultValue=1, keyable=1)
+        self.rootCtl.addAttr("ik", min=0, max=1, attributeType="short", defaultValue=1, keyable=1)
         ik_attr = self.rootCtl.attr("ik")
 
         # create choices for world matrix from ik and fk targets
@@ -136,13 +166,13 @@ class ThreeBoneIKFKAction(BuildAction):
 
         # add metadata to controls
         ikfk_ctl_data = {
-            'root_fk_ctl': self.rootCtl,
-            'mid_fk_ctl': self.midCtlFk,
-            'end_fk_ctl': self.endCtlFk,
-            'root_ik_ctl': self.rootCtl,
-            'mid_ik_ctl': self.midCtlIk,
-            'end_ik_ctl': self.endCtlIk,
-            'end_joint': self.endJoint,
+            "root_fk_ctl": self.rootCtl,
+            "mid_fk_ctl": self.midCtlFk,
+            "end_fk_ctl": self.endCtlFk,
+            "root_ik_ctl": self.rootCtl,
+            "mid_ik_ctl": self.midCtlIk,
+            "end_ik_ctl": self.endCtlIk,
+            "end_joint": self.endJoint,
         }
 
         ikfk_ctls = {self.rootCtl, self.midCtlIk, self.endCtlIk, self.midCtlFk, self.endCtlFk}
@@ -166,7 +196,7 @@ class IKFKControlUtils(object):
         """
         Return the list of matrices for the IKFK joint chain in the order (root, middle, end)
         """
-        end_joint = ikfk_data.get('end_joint')
+        end_joint = ikfk_data.get("end_joint")
         if not end_joint:
             pm.warning(f"IKFK data is missing end_joint: {ikfk_data}")
             return None, None, None
@@ -186,14 +216,14 @@ class IKFKControlUtils(object):
             return
 
         # get fk controls
-        root_fk_ctl = ikfk_data.get('root_fk_ctl')
-        mid_fk_ctl = ikfk_data.get('mid_fk_ctl')
-        end_fk_ctl = ikfk_data.get('end_fk_ctl')
+        root_fk_ctl = ikfk_data.get("root_fk_ctl")
+        mid_fk_ctl = ikfk_data.get("mid_fk_ctl")
+        end_fk_ctl = ikfk_data.get("end_fk_ctl")
         if not root_fk_ctl or not mid_fk_ctl or not end_fk_ctl:
             pm.warning(f"IKFK data has missing fk ctls: {ctl}")
             return
 
-        if root_fk_ctl.attr('ik').get() == 0:
+        if root_fk_ctl.attr("ik").get() == 0:
             # already in FK
             return
 
@@ -203,7 +233,7 @@ class IKFKControlUtils(object):
         nodes.set_world_matrix(mid_fk_ctl, mid_mtx)
         nodes.set_world_matrix(end_fk_ctl, end_mtx)
 
-        root_fk_ctl.attr('ik').set(0)
+        root_fk_ctl.attr("ik").set(0)
 
     @staticmethod
     def switch_to_ik(ctl):
@@ -215,14 +245,14 @@ class IKFKControlUtils(object):
             return
 
         # get ik controls
-        root_ik_ctl = ikfk_data.get('root_ik_ctl')
-        mid_ik_ctl = ikfk_data.get('mid_ik_ctl')
-        end_ik_ctl = ikfk_data.get('end_ik_ctl')
+        root_ik_ctl = ikfk_data.get("root_ik_ctl")
+        mid_ik_ctl = ikfk_data.get("mid_ik_ctl")
+        end_ik_ctl = ikfk_data.get("end_ik_ctl")
         if not root_ik_ctl or not mid_ik_ctl or not end_ik_ctl:
             pm.warning(f"IKFK data has missing ik ctls: {ctl}")
             return
 
-        if root_ik_ctl.attr('ik').get() == 1:
+        if root_ik_ctl.attr("ik").get() == 1:
             # already in IK
             return
 
@@ -234,16 +264,17 @@ class IKFKControlUtils(object):
 
         # move ik pole ctl
         new_pole_pos = IKFKControlUtils.calculate_ik_pole_ctl_location(
-            mid_ik_ctl, root_mtx.translate, mid_mtx.translate, end_mtx.translate)
-        mid_ik_ctl.setTranslation(new_pole_pos, space='world')
+            mid_ik_ctl, root_mtx.translate, mid_mtx.translate, end_mtx.translate
+        )
+        mid_ik_ctl.setTranslation(new_pole_pos, space="world")
 
-        root_ik_ctl.attr('ik').set(1)
+        root_ik_ctl.attr("ik").set(1)
 
     @staticmethod
     def get_delegate_control(node):
-        ctl_delegate_data = meta.get_metadata(node, 'pulse_ctl_delegate')
+        ctl_delegate_data = meta.get_metadata(node, "pulse_ctl_delegate")
         if ctl_delegate_data:
-            return ctl_delegate_data['delegate_ctl']
+            return ctl_delegate_data["delegate_ctl"]
         return node
 
     @staticmethod
@@ -256,7 +287,7 @@ class IKFKControlUtils(object):
         pole_vector, pole_mid = joints.get_ik_pole_vector_and_mid_point(root, mid, end)
 
         # calculate distance based on followers current location
-        current_dist = pole_vector.dot(ctl.getTranslation(space='world') - pole_mid)
+        current_dist = pole_vector.dot(ctl.getTranslation(space="world") - pole_mid)
 
         # keep pole vector in front, by at least 2x the distance from root to mid-joint
         min_dist = 2 * (pm.dt.Vector(root) - pm.dt.Vector(mid)).length()
@@ -276,8 +307,16 @@ class IKFKControlContextSubmenu(PulseNodeContextSubMenu):
         return cls.is_node_with_metaclass_selected(IKFK_CONTROL_METACLASS)
 
     def build_menu_items(self):
-        pm.menuItem('Switch To FK', rp=self.get_safe_radial_position('NW'), c=pm.Callback(self.switch_to_fk_for_selected))
-        pm.menuItem('Switch To IK', rp=self.get_safe_radial_position('SW'), c=pm.Callback(self.switch_to_ik_for_selected))
+        pm.menuItem(
+            label="Switch To FK",
+            radialPosition=self.get_safe_radial_position("NW"),
+            command=pm.Callback(self.switch_to_fk_for_selected),
+        )
+        pm.menuItem(
+            label="Switch To IK",
+            radialPosition=self.get_safe_radial_position("SW"),
+            command=pm.Callback(self.switch_to_ik_for_selected),
+        )
 
     def switch_to_ik_for_selected(self):
         sel_ctls = self.get_selected_nodes_with_meta_class(IKFK_CONTROL_METACLASS)

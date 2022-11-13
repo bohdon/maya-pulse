@@ -9,26 +9,66 @@ class MagicHandsAction(BuildAction):
     Controls all fingers of a hand using individual rotate axes for quick posing.
     """
 
-    id = 'Pulse.MagicHands'
-    display_name = 'Magic Hands'
-    color = (.85, .65, .4)
-    category = 'Controls'
+    id = "Pulse.MagicHands"
+    display_name = "Magic Hands"
+    color = (0.85, 0.65, 0.4)
+    category = "Controls"
 
     attr_definitions = [
-        dict(name='control', type=AttrType.NODE, description='The magic hands control'),
-        dict(name='fingerPosition', type=AttrType.FLOAT, value=0,
-             description='Position of the finger along the hand, 0..1, 0 = pointer, 1 = pinky'),
-        dict(name='metaRotateScale', type=AttrType.FLOAT, value=-10, min=-1000, max=1000,
-             description='Scale applied to translate values to create metacarpal rotate values'),
-        dict(name='splayScale', type=AttrType.FLOAT, value=15, min=-1000, max=1000,
-             description='Scale applied to scale values to create finger splay rotate values'),
-        dict(name='ctl1', type=AttrType.NODE, optional=True, description='The metacarpal ctl of the finger'),
-        dict(name='ctl2', type=AttrType.NODE, optional=True, description='The proximal ctl of the finger'),
-        dict(name='ctl3', type=AttrType.NODE, optional=True, description='The middle ctl of the finger'),
-        dict(name='ctl4', type=AttrType.NODE, optional=True, description='The distal ctl of the finger'),
+        dict(
+            name="control",
+            type=AttrType.NODE,
+            description="The magic hands control",
+        ),
+        dict(
+            name="fingerPosition",
+            type=AttrType.FLOAT,
+            value=0,
+            description="Position of the finger along the hand, 0..1, 0 = pointer, 1 = pinky",
+        ),
+        dict(
+            name="metaRotateScale",
+            type=AttrType.FLOAT,
+            value=-10,
+            min=-1000,
+            max=1000,
+            description="Scale applied to translate values to create metacarpal rotate values",
+        ),
+        dict(
+            name="splayScale",
+            type=AttrType.FLOAT,
+            value=15,
+            min=-1000,
+            max=1000,
+            description="Scale applied to scale values to create finger splay rotate values",
+        ),
+        dict(
+            name="ctl1",
+            type=AttrType.NODE,
+            optional=True,
+            description="The metacarpal ctl of the finger",
+        ),
+        dict(
+            name="ctl2",
+            type=AttrType.NODE,
+            optional=True,
+            description="The proximal ctl of the finger",
+        ),
+        dict(
+            name="ctl3",
+            type=AttrType.NODE,
+            optional=True,
+            description="The middle ctl of the finger",
+        ),
+        dict(
+            name="ctl4",
+            type=AttrType.NODE,
+            optional=True,
+            description="The distal ctl of the finger",
+        ),
     ]
 
-    _offsetName = '{0}_magic'
+    _offsetName = "{0}_magic"
 
     def validate(self):
         if not self.ctl1 and not self.ctl2 and not self.ctl3 and not self.ctl4:

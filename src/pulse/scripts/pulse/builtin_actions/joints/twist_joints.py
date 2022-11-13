@@ -10,35 +10,57 @@ class TwistJointsAction(BuildAction):
     Set up twist joints to solve deformation problems in areas like the arms and legs.
     """
 
-    id = 'Pulse.TwistJoints'
-    display_name = 'Twist Joints'
-    category = 'Joints'
+    id = "Pulse.TwistJoints"
+    display_name = "Twist Joints"
+    category = "Joints"
 
     attr_definitions = [
-        dict(name='twistJoint', type=AttrType.NODE,
-             description="The joint that should twist automatically based on other joints"),
-        dict(name='alignJoint', type=AttrType.NODE,
-             description="The joint that the twist joint should use to determine its twist, e.g. should for "
-                         "upper arm twist, or hand for lower arm twist"),
-        dict(name='forwardAxis', type=AttrType.VECTOR3, value=[1, 0, 0],
-             description="The forward axis of the joint that should be preserved"),
-        dict(name='alignAxis', type=AttrType.VECTOR3, value=[0, 0, 1],
-             description="The secondary axis used to align the twist joint with the align joint. "
-                         "Recommended to use up axis for shoulders, and left axis for hands."),
-        dict(name='alignToRestPose', type=AttrType.BOOL, value=False,
-             description="When true, align to the the un-rotated or resting position of the align joint. "
-                         "This is useful for making a twist joint that un-twists rotates from a parent align "
-                         "joint, such as in the upper arm."),
-        dict(name='twistControls', type=AttrType.NODE_LIST, optional=True,
-             description="List of anim controls to add the twist attribute to, "
-                         "which is used for blending how much twist to apply."),
+        dict(
+            name="twistJoint",
+            type=AttrType.NODE,
+            description="The joint that should twist automatically based on other joints",
+        ),
+        dict(
+            name="alignJoint",
+            type=AttrType.NODE,
+            description="The joint that the twist joint should use to determine its twist, e.g. should for "
+            "upper arm twist, or hand for lower arm twist",
+        ),
+        dict(
+            name="forwardAxis",
+            type=AttrType.VECTOR3,
+            value=[1, 0, 0],
+            description="The forward axis of the joint that should be preserved",
+        ),
+        dict(
+            name="alignAxis",
+            type=AttrType.VECTOR3,
+            value=[0, 0, 1],
+            description="The secondary axis used to align the twist joint with the align joint. "
+            "Recommended to use up axis for shoulders, and left axis for hands.",
+        ),
+        dict(
+            name="alignToRestPose",
+            type=AttrType.BOOL,
+            value=False,
+            description="When true, align to the the un-rotated or resting position of the align joint. "
+            "This is useful for making a twist joint that un-twists rotates from a parent align "
+            "joint, such as in the upper arm.",
+        ),
+        dict(
+            name="twistControls",
+            type=AttrType.NODE_LIST,
+            optional=True,
+            description="List of anim controls to add the twist attribute to, "
+            "which is used for blending how much twist to apply.",
+        ),
     ]
 
     def validate(self):
         if not self.twistJoint:
-            raise BuildActionError('twistJoint must be set')
+            raise BuildActionError("twistJoint must be set")
         if not self.alignJoint:
-            raise BuildActionError('alignJoint must be set')
+            raise BuildActionError("alignJoint must be set")
 
     def run(self):
         twist_blend = None
@@ -46,14 +68,14 @@ class TwistJointsAction(BuildAction):
             # add attr to first control, then add proxy to the rest
             for twist_ctl in self.twistControls:
                 if twist_blend is None:
-                    twist_ctl.addAttr('twistBlend', at='double', min=0, max=1, keyable=True, defaultValue=1)
-                    twist_blend = twist_ctl.attr('twistBlend')
+                    twist_ctl.addAttr("twistBlend", attributeType="double", min=0, max=1, keyable=True, defaultValue=1)
+                    twist_blend = twist_ctl.attr("twistBlend")
                 else:
-                    twist_ctl.addAttr('twistBlend', proxy=twist_blend)
+                    twist_ctl.addAttr("twistBlend", proxy=twist_blend)
         else:
             # add attr directly to joint, not usually desired because this can export with the joints as a curve
-            self.twistJoint.addAttr('twistBlend', at='double', min=0, max=1, keyable=True, defaultValue=1)
-            twist_blend = self.twistJoint.attr('twistBlend')
+            self.twistJoint.addAttr("twistBlend", attributeType="double", min=0, max=1, keyable=True, defaultValue=1)
+            twist_blend = self.twistJoint.attr("twistBlend")
 
         # get parent world matrix
         parent_mtx = self._get_parent_matrix(self.twistJoint)
@@ -78,8 +100,9 @@ class TwistJointsAction(BuildAction):
             align_tgt_mtx = self.alignJoint.wm
 
         # create aligned version of the parent matrix
-        aligned_pm = util_nodes.align_matrix_to_direction(parent_mtx, self.forwardAxis, self.alignAxis,
-                                                          self.alignAxis, align_tgt_mtx)
+        aligned_pm = util_nodes.align_matrix_to_direction(
+            parent_mtx, self.forwardAxis, self.alignAxis, self.alignAxis, align_tgt_mtx
+        )
 
         # blend aligned matrix with default parent matrix
         blend_mtx = util_nodes.blend_matrix(parent_mtx, aligned_pm, twist_blend)
@@ -96,8 +119,10 @@ class TwistJointsAction(BuildAction):
         offset_mtx_inputs = node.offsetParentMatrix.inputs(plugs=True)
         if offset_mtx_inputs:
             if node.inheritsTransform.get():
-                raise BuildActionError(f"{node} cannot have an offsetParentMatrix connection "
-                                       "while also having inheritsTransform set to True")
+                raise BuildActionError(
+                    f"{node} cannot have an offsetParentMatrix connection "
+                    "while also having inheritsTransform set to True"
+                )
             return offset_mtx_inputs[0]
 
         # get matrix from parent node

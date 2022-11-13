@@ -7,13 +7,19 @@ class ParentAction(BuildAction):
     Parent a node to another node.
     """
 
-    id = 'Pulse.ParentAction'
-    display_name = 'Parent'
-    color = [.4, .6, .8]
-    category = 'Constraints'
+    id = "Pulse.ParentAction"
+    display_name = "Parent"
+    color = [0.4, 0.6, 0.8]
+    category = "Constraints"
     attr_definitions = [
-        dict(name='parent', type=AttrType.NODE),
-        dict(name='child', type=AttrType.NODE),
+        dict(
+            name="parent",
+            type=AttrType.NODE,
+        ),
+        dict(
+            name="child",
+            type=AttrType.NODE,
+        ),
     ]
 
     def validate(self):

@@ -1,7 +1,6 @@
 import pymel.core as pm
 
 from pulse.build_items import BuildAction
-from pulse.build_items import BuildActionAttributeType as AttrType
 
 
 class OptimizeSceneAction(BuildAction):
@@ -11,16 +10,24 @@ class OptimizeSceneAction(BuildAction):
     There is currently no way to control which optimizations are run.
     """
 
-    id = 'Pulse.OptimizeScene'
-    display_name = 'Optimize Scene'
-    category = 'Core'
+    id = "Pulse.OptimizeScene"
+    display_name = "Optimize Scene"
+    category = "Core"
 
     def run(self):
-        pm.mel.source('cleanUpScene')
+        pm.mel.source("cleanUpScene")
         pm.mel.cleanUp_EnableProgressReporting(True)
         pm.mel.deleteInvalidNurbs(0)
         pm.mel.deleteUnusedCommon_Multi(
-            ("stitchSrf", "rebuildSurface", "insertKnotSurface", "avgNurbsSurfacePoints"), 0, "")
+            (
+                "stitchSrf",
+                "rebuildSurface",
+                "insertKnotSurface",
+                "avgNurbsSurfacePoints",
+            ),
+            0,
+            "",
+        )
         # pm.mel.deleteUnusedInUnusedHierarchy("nurbsCurve", 0, "")
         pm.mel.deleteUnusedLocators()
         pm.mel.deleteUnusedConstraints()
@@ -32,7 +39,14 @@ class OptimizeSceneAction(BuildAction):
         pm.mel.deleteUnusedCommon("animCurve", 0, "")
         pm.mel.deleteUnusedCommon("snapshot", 1, "")
         pm.mel.deleteUnusedCommon_Multi(
-            ("unitConversion", "timeToUnitConversion", "unitToTimeConversion"), 1, "")
+            (
+                "unitConversion",
+                "timeToUnitConversion",
+                "unitToTimeConversion",
+            ),
+            1,
+            "",
+        )
         pm.mel.MLdeleteUnused()
         pm.clearCache(allNodes=True)
         # pm.mel.deleteEmptyGroups()

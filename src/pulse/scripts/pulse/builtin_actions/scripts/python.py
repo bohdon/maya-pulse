@@ -21,7 +21,7 @@ from pulse.build_items import BuildAction
 # template for a function added to the script file automatically
 FUNCTION_TEMPLATE = """
 
-def {functionName}(action: BuildAction):
+def {function_name}(action: BuildAction):
     print(action.rig)
     print(action.nodes)
 """
@@ -38,55 +38,55 @@ class PythonActionForm(BuildActionProxyForm):
     def setup_layout_header(self, parent, layout):
         edit_btn = QtWidgets.QPushButton(parent)
         edit_btn.setText("Edit Script")
-        edit_btn.clicked.connect(self.openScriptFileInEditor)
+        edit_btn.clicked.connect(self._open_script_file_in_editor)
         layout.addWidget(edit_btn)
 
-    def openScriptFileInEditor(self):
-        sceneName = pm.sceneName()
-        if not sceneName:
-            pm.warning('Save the Maya scene to enable script editing')
+    def _open_script_file_in_editor(self):
+        scene_name = pm.sceneName()
+        if not scene_name:
+            pm.warning("Save the Maya scene to enable script editing")
             return
 
-        actionProxy = self.get_action_proxy()
-        functionName = actionProxy.get_attr('function').get_value()
-        if not functionName:
-            pm.warning('Set a function name first')
+        action_proxy = self.get_action_proxy()
+        function_name = action_proxy.get_attr("function").get_value()
+        if not function_name:
+            pm.warning("Set a function name first")
 
-        filePath = os.path.splitext(sceneName)[0] + '_scripts.py'
+        file_path = os.path.splitext(scene_name)[0] + "_scripts.py"
 
         # create file if it doesn't exist with the function stubbed in for convenience
-        if not os.path.isfile(filePath):
-            self.createScriptFile(filePath, functionName)
+        if not os.path.isfile(file_path):
+            self._create_script_file(file_path, function_name)
 
         # add function to the script automatically if it doesn't exist
-        self.addFunctionToScriptFile(filePath, functionName)
+        self._add_function_to_script_file(file_path, function_name)
 
-        source_editor.open_file(filePath)
+        source_editor.open_file(file_path)
 
-    def createScriptFile(self, filePath: str, functionName: str):
+    def _create_script_file(self, file_path: str, function_name: str):
         """
         Create the scripts file and add some boilerplate code.
         """
-        content = SCRIPT_TEMPLATE.format(functionName=functionName)
+        content = SCRIPT_TEMPLATE.format(function_name=function_name)
 
-        with open(filePath, 'w') as fp:
+        with open(file_path, "w") as fp:
             fp.write(content)
 
-    def addFunctionToScriptFile(self, filePath: str, functionName: str):
+    def _add_function_to_script_file(self, file_path: str, function_name: str):
         """
         Add a function to the script file automatically. Does nothing if the function already exists.
         """
-        with open(filePath, 'r') as fp:
+        with open(file_path, "r") as fp:
             content = fp.read()
 
-        func_pattern = re.compile(fr'^def {functionName}\(.*$', re.M)
+        func_pattern = re.compile(rf"^def {function_name}\(.*$", re.M)
         if func_pattern.search(content):
             # function already exists
             return
 
         # append function to end of file
-        new_content = FUNCTION_TEMPLATE.format(functionName=functionName)
-        with open(filePath, 'a') as fp:
+        new_content = FUNCTION_TEMPLATE.format(function_name=function_name)
+        with open(file_path, "a") as fp:
             fp.write(new_content)
 
 
@@ -108,16 +108,24 @@ class PythonAction(BuildAction):
             print(action.nodes)
     """
 
-    id = 'Pulse.Python'
-    display_name = 'Python'
-    category = 'Scripts'
+    id = "Pulse.Python"
+    display_name = "Python"
+    category = "Scripts"
     editor_form_class = PythonActionForm
     attr_definitions = [
-        dict(name='function', type=AttrType.STRING, value='my_function',
-             description="The name of the function to run. Should accept a single argument for the"
-                         "BuildAction being run."),
-        dict(name='nodes', type=AttrType.NODE_LIST, optional=True,
-             description="An optional list of nodes to pass in as arguments to the script.")
+        dict(
+            name="function",
+            type=AttrType.STRING,
+            value="my_function",
+            description="The name of the function to run. Should accept a single argument for the"
+            "BuildAction being run.",
+        ),
+        dict(
+            name="nodes",
+            type=AttrType.NODE_LIST,
+            optional=True,
+            description="An optional list of nodes to pass in as arguments to the script.",
+        ),
     ]
 
     def validate(self):
@@ -129,15 +137,14 @@ class PythonAction(BuildAction):
         if not scene_file_name:
             raise BuildActionError("File is not saved, could not determine scripts file path")
 
-        module_filepath = os.path.splitext(scene_file_name)[0] + '_scripts.py'
+        module_filepath = os.path.splitext(scene_file_name)[0] + "_scripts.py"
 
         if not os.path.isfile(module_filepath):
             raise BuildActionError(f"Scripts file does not exist: {module_filepath}")
 
-        func = self.import_function(self.function, module_filepath)
+        func = self._import_function(self.function, module_filepath)
         if func is None:
-            raise BuildActionError(
-                "function '%s' was not found in scripts file: %s" % (self.function, module_filepath))
+            raise BuildActionError("function '%s' was not found in scripts file: %s" % (self.function, module_filepath))
 
     def run(self):
         # TODO: use actual blueprint file, not maya scene
@@ -145,11 +152,11 @@ class PythonAction(BuildAction):
         if not scene_file_path:
             raise BuildActionError("Failed to get blueprint file name from builder")
 
-        module_file_path = os.path.splitext(scene_file_path)[0] + '_scripts.py'
-        func = self.import_function(self.function, module_file_path)
+        module_file_path = os.path.splitext(scene_file_path)[0] + "_scripts.py"
+        func = self._import_function(self.function, module_file_path)
         func(self)
 
-    def import_function(self, function_name, module_file_path):
+    def _import_function(self, function_name, module_file_path):
         """
         Import a module by full path, and return a function from the loaded module by name
         """

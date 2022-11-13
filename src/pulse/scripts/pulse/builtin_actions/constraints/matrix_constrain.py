@@ -11,23 +11,35 @@ class MatrixConstrainAction(BuildAction):
     a combination parent and scale constraint.
     """
 
-    id = 'Pulse.MatrixConstrain'
-    display_name = 'Matrix Constrain'
-    category = 'Constraints'
-    color = (.4, .6, .8)
+    id = "Pulse.MatrixConstrain"
+    display_name = "Matrix Constrain"
+    category = "Constraints"
+    color = (0.4, 0.6, 0.8)
     attr_definitions = [
-        dict(name='leader', type=AttrType.NODE),
-        dict(name='follower', type=AttrType.NODE),
-        dict(name='method', type=AttrType.OPTION, value=1, options=[
-            'Connect Only',
-            'Snap',
-            'Keep World',
-            'Create Offset',
-        ], description="The method to use for connecting the matrix. Connect Only: only connect the offset parent"
-                       "matrix, keep all other attributes the same. Snap: zero out all relative transform values once"
-                       "connected. Keep World: restore the previous world position once connected, modifying relative"
-                       "transform values if necessary. Create Offset: create an offset to preserve the current world"
-                       "position, as well as the current relative transform values"),
+        dict(
+            name="leader",
+            type=AttrType.NODE,
+        ),
+        dict(
+            name="follower",
+            type=AttrType.NODE,
+        ),
+        dict(
+            name="method",
+            type=AttrType.OPTION,
+            value=1,
+            options=[
+                "Connect Only",
+                "Snap",
+                "Keep World",
+                "Create Offset",
+            ],
+            description="The method to use for connecting the matrix. Connect Only: only connect the offset parent"
+            "matrix, keep all other attributes the same. Snap: zero out all relative transform values once"
+            "connected. Keep World: restore the previous world position once connected, modifying relative"
+            "transform values if necessary. Create Offset: create an offset to preserve the current world"
+            "position, as well as the current relative transform values",
+        ),
     ]
 
     def get_min_api_version(self):
