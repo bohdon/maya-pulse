@@ -14,11 +14,12 @@ from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
 
 from ..vendor import pymetanode as meta
 from ..vendor.Qt import QtCore, QtWidgets, QtGui
-from .. import rigs, editor_utils
+from .. import editor_utils
 from ..core import Blueprint, BlueprintFile, BlueprintSettings, BlueprintBuilder, BlueprintValidator
 from ..core import BuildStep, BuildAction
 from ..core import load_actions
 from ..core import serialize_attr_value
+from ..core import get_all_rigs, open_first_rig_blueprint
 from ..prefs import option_var_property
 from .utils import CollapsibleFrame
 from .utils import dpi_scale
@@ -697,7 +698,7 @@ class BlueprintUIModel(QtCore.QObject):
 
     def _refresh_rig_exists(self):
         old_read_only = self.is_read_only()
-        self.does_rig_exist = len(rigs.get_all_rigs()) > 0
+        self.does_rig_exist = len(get_all_rigs()) > 0
         self.rig_exists_changed.emit()
 
         if old_read_only != self.is_read_only():
@@ -1249,7 +1250,7 @@ class BlueprintUIModel(QtCore.QObject):
         """Open the blueprint maya scene for the first rig in the scene."""
         # TODO: don't need this stub, just listen for pre-close maya scene callback to clear interactive build
         self.cancel_interactive_build()
-        rigs.open_first_rig_blueprint()
+        open_first_rig_blueprint()
 
 
 class BuildStepTreeModel(QtCore.QAbstractItemModel):

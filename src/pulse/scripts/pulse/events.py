@@ -6,7 +6,7 @@ import maya.cmds as cmds
 import pymel.core as pm
 
 from .vendor import pymetanode as meta
-from .rigs import is_rig
+from .core import is_rig
 
 LOG = logging.getLogger(__name__)
 
@@ -162,9 +162,8 @@ class RigLifecycleEvents(MayaCallbackEvents):
             full_name: A string full name of a node that was added
         """
         node = meta.get_m_object(full_name)
-        if node:
-            if is_rig(node):
-                self.onRigCreated(pm.PyNode(node))
+        if node and is_rig(node):
+            self.onRigCreated(pm.PyNode(node))
 
     def _on_node_removed(self, node, *args):
         """

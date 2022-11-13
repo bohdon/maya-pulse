@@ -3,9 +3,7 @@ import pymel.core as pm
 
 from pulse.core import Blueprint, BlueprintSettings, BlueprintBuilder
 from pulse.core import BuildStep
-from pulse.core import load_actions
-import pulse.control_shapes
-import pulse.rigs
+from pulse.core import load_actions, get_all_rigs
 
 EXAMPLE_BLUEPRINT_A = """
 version: 1.0.0
@@ -38,7 +36,7 @@ class TestBlueprints(unittest.TestCase):
         load_actions()
 
     def tearDown(self):
-        pm.delete(pulse.rigs.get_all_rigs())
+        pm.delete(get_all_rigs())
 
     def test_build(self):
         bp = Blueprint()
