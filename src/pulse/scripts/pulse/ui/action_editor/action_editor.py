@@ -1,4 +1,6 @@
 import logging
+
+from ..utils import clear_layout
 from ...vendor.Qt import QtCore, QtWidgets
 
 from ..core import BlueprintUIModel
@@ -24,10 +26,10 @@ class ActionEditor(QtWidgets.QWidget):
         self.ui.setupUi(self)
 
         self.blueprintModel = BlueprintUIModel.get_default_model()
-        self.blueprintModel.read_only_changed.connect(self.on_read_only_changed)
+        self.blueprintModel.read_only_changed.connect(self._on_read_only_changed)
         self.model = self.blueprintModel.build_step_tree_model
-        self.model.dataChanged.connect(self.on_model_data_changed)
-        self.model.modelReset.connect(self.on_model_reset)
+        self.model.dataChanged.connect(self._on_model_data_changed)
+        self.model.modelReset.connect(self._on_model_reset)
         self.selectionModel = self.blueprintModel.build_step_selection_model
         self.selectionModel.selectionChanged.connect(self._on_selection_changed)
 
@@ -38,29 +40,18 @@ class ActionEditor(QtWidgets.QWidget):
     def _on_selection_changed(self, selected: QtCore.QItemSelection, deselected: QtCore.QItemSelection):
         self.setup_items_ui_for_selection()
 
-    def on_model_data_changed(self):
+    def _on_model_data_changed(self):
         # TODO: refresh displayed build step forms if applicable
         pass
 
-    def on_model_reset(self):
+    def _on_model_reset(self):
         self.setup_items_ui_for_selection()
 
-    def on_read_only_changed(self, is_read_only):
+    def _on_read_only_changed(self, is_read_only):
         self.setEnabled(not is_read_only)
 
-    def clear_items_ui(self):
-        while True:
-            item = self.ui.items_layout.takeAt(0)
-            if item:
-                widget = item.widget()
-                if widget:
-                    widget.setParent(None)
-                    widget.deleteLater()
-            else:
-                break
-
     def setup_items_ui(self, item_indexes, parent):
-        self.clear_items_ui()
+        clear_layout(self.ui.items_layout)
 
         for index in item_indexes:
             item_widget = BuildStepForm(index, parent=parent)
