@@ -9,7 +9,7 @@ from typing import Optional, Iterable, List
 import pymel.core as pm
 
 from ..vendor import pymetanode as meta
-from .blueprints import Blueprint, BlueprintSettings
+from .blueprint import Blueprint, BlueprintSettings
 from .rigs import RIG_METACLASS, create_rig_node
 from .build_items import BuildStep, BuildAction, BuildActionData
 
