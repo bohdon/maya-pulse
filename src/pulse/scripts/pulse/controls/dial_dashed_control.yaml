@@ -3,7 +3,6 @@ icon: dialDashed.png
 sort: 3
 curves:
   - degree: 1
-    periodic: false
     knot: [ 0.0, 1.0, 2.0 ]
     point:
       - [ 0.0662, 0.0, 0.5709 ]

@@ -1,8 +1,8 @@
 import pymel.core as pm
 
 from pulse import nodes, util_nodes
-from pulse.build_items import BuildAction, BuildActionError
-from pulse.build_items import BuildActionAttributeType as AttrType
+from pulse.core import BuildAction, BuildActionError
+from pulse.core import BuildActionAttributeType as AttrType
 
 
 class AddIKFKControlAction(BuildAction):

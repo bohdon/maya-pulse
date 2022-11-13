@@ -8,7 +8,7 @@ import pymel.core as pm
 from ...vendor.Qt import QtCore, QtWidgets
 
 from ... import source_editor
-from ...build_items import BuildStep
+from ...core import BuildStep
 from ...colors import LinearColor
 from ..core import BuildStepTreeModel
 from .build_action_proxy_form import BuildActionProxyForm

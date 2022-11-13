@@ -8,7 +8,7 @@ from functools import partial
 
 from ..colors import LinearColor
 from ..vendor.Qt import QtWidgets
-from ..build_items import BuildActionRegistry
+from ..core import BuildActionRegistry
 from .core import BlueprintUIModel, PulseWindow
 
 from .gen.action_palette import Ui_ActionPalette

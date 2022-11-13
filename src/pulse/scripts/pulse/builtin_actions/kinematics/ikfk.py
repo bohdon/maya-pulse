@@ -2,8 +2,8 @@ import pymel.core as pm
 
 from pulse import nodes, util_nodes, joints, control_shapes
 from pulse.vendor import pymetanode as meta
-from pulse.build_items import BuildAction, BuildActionError
-from pulse.build_items import BuildActionAttributeType as AttrType
+from pulse.core import BuildAction, BuildActionError
+from pulse.core import BuildActionAttributeType as AttrType
 from pulse.ui.contextmenus import PulseNodeContextSubMenu
 
 IKFK_CONTROL_METACLASS = "pulse_ikfk_control"

@@ -16,7 +16,7 @@ from ..vendor import pymetanode as meta
 from ..vendor.Qt import QtCore, QtWidgets, QtGui
 from .. import loader, rigs, editor_utils
 from ..core import Blueprint, BlueprintFile, BlueprintSettings, BlueprintBuilder, BlueprintValidator
-from ..build_items import BuildStep, BuildAction
+from ..core import BuildStep, BuildAction
 from ..prefs import option_var_property
 from ..serializer import serialize_attr_value
 from .utils import CollapsibleFrame

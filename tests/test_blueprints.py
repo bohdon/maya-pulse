@@ -2,8 +2,8 @@ import unittest
 import pymel.core as pm
 
 from pulse.core import Blueprint, BlueprintSettings, BlueprintBuilder
+from pulse.core import BuildStep
 import pulse.loader
-import pulse.build_items
 import pulse.control_shapes
 import pulse.rigs
 
@@ -49,7 +49,7 @@ class TestBlueprints(unittest.TestCase):
 
         ctl_node = pm.polyCube(n="my_ctl")[0]
 
-        ctl_step = pulse.build_items.BuildStep(action_id="Pulse.AnimControl")
+        ctl_step = BuildStep(action_id="Pulse.AnimControl")
         ctl_step.action_proxy.get_attr("controlNode").set_value(ctl_node)
         main_step.add_child(ctl_step)
 
@@ -77,12 +77,12 @@ class TestBlueprints(unittest.TestCase):
     def test_build_steps(self):
         bp = Blueprint()
 
-        step_a = pulse.build_items.BuildStep("StepFirst")
-        step_b = pulse.build_items.BuildStep("StepB")
-        step_c = pulse.build_items.BuildStep("StepC")
-        step_x = pulse.build_items.BuildStep("StepX")
-        step_y = pulse.build_items.BuildStep("StepY")
-        step_z = pulse.build_items.BuildStep("StepZ")
+        step_a = BuildStep("StepFirst")
+        step_b = BuildStep("StepB")
+        step_c = BuildStep("StepC")
+        step_x = BuildStep("StepX")
+        step_y = BuildStep("StepY")
+        step_z = BuildStep("StepZ")
 
         self.assertEqual(step_a.get_display_name(), "StepFirst (0)")
         step_a.set_name(None)

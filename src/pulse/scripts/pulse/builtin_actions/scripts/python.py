@@ -5,8 +5,8 @@ from importlib.machinery import SourceFileLoader
 
 import pymel.core as pm
 
-from pulse.build_items import BuildAction, BuildActionError
-from pulse.build_items import BuildActionAttributeType as AttrType
+from pulse.core import BuildAction, BuildActionError
+from pulse.core import BuildActionAttributeType as AttrType
 from pulse.vendor.Qt import QtWidgets
 from pulse.ui.action_editor import BuildActionProxyForm
 from pulse import source_editor

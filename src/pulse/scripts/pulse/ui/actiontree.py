@@ -9,7 +9,7 @@ from typing import Optional, Dict, List, cast
 import maya.cmds as cmds
 
 from ..vendor.Qt import QtCore, QtWidgets, QtGui
-from ..build_items import BuildStep, BuildActionRegistry, BuildActionSpec
+from ..core import BuildStep, BuildActionRegistry, BuildActionSpec
 from .core import BlueprintUIModel, BuildStepTreeModel
 from .core import PulseWindow
 from .gen.action_tree import Ui_ActionTree

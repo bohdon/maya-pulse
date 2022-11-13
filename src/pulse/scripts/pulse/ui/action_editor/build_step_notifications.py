@@ -3,7 +3,7 @@ import traceback
 from typing import Optional
 from ...vendor.Qt import QtCore, QtWidgets
 
-from ...build_items import BuildStep
+from ...core import BuildStep
 from ..utils import clear_layout
 
 logger = logging.getLogger(__name__)

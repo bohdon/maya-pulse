@@ -9,12 +9,12 @@ from typing import Optional, cast
 import maya.cmds as cmds
 import pymel.core as pm
 
-from .core import BuildStepTreeModel
-from ..build_items import BuildStep, BuildActionProxy, BuildActionAttribute, BuildActionAttributeType
+from ..core import BuildStep, BuildActionProxy, BuildActionAttribute, BuildActionAttributeType
 from ..vendor import pymetanode as meta
 from ..serializer import serialize_attr_value
 from ..vendor.Qt import QtCore, QtGui, QtWidgets
 from .. import names
+from .core import BuildStepTreeModel
 from . import utils
 
 LOG = logging.getLogger(__name__)

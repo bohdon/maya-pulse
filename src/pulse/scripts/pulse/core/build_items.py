@@ -3,15 +3,28 @@ import re
 from typing import List, Iterable, Optional, Any
 
 import maya.cmds as cmds
+from ..vendor import pymetanode as meta
 
-from .vendor import pymetanode as meta
-from .rigs import RIG_METACLASS
-from .serializer import UnsortableOrderedDict
-from .colors import LinearColor
+from ..rigs import RIG_METACLASS
+from ..serializer import UnsortableOrderedDict
+from ..colors import LinearColor
 
 LOG = logging.getLogger(__name__)
 
 BUILD_ACTION_MAP = {}
+
+__all__ = [
+    "BuildAction",
+    "BuildActionAttribute",
+    "BuildActionAttributeType",
+    "BuildActionData",
+    "BuildActionDataVariant",
+    "BuildActionError",
+    "BuildActionProxy",
+    "BuildActionRegistry",
+    "BuildActionSpec",
+    "BuildStep",
+]
 
 
 class BuildActionSpec(object):
@@ -1100,7 +1113,7 @@ class BuildActionProxy(BuildActionData):
         Args:
             config: The blueprint config.
         """
-        from . import sym
+        from .. import sym
 
         if not self.is_action_id_valid():
             raise Exception(f"BuildActionProxy has no action id: {self}")
@@ -1216,7 +1229,7 @@ class BuildAction(BuildActionData):
         # logger is initialized the first time its accessed
         self._log = None
         # builder is only available during build
-        from .core import BlueprintBuilder
+        from .blueprints import BlueprintBuilder
 
         self.builder: Optional[BlueprintBuilder] = None
         # rig is only available during build

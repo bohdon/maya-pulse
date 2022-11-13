@@ -5,8 +5,8 @@ import pymel.core as pm
 from maya import cmds
 
 from pulse import skins
-from pulse.build_items import BuildAction, BuildActionError
-from pulse.build_items import BuildActionAttributeType as AttrType
+from pulse.core import BuildAction, BuildActionError
+from pulse.core import BuildActionAttributeType as AttrType
 
 
 class BindSkinAction(BuildAction):

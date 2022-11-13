@@ -3,7 +3,7 @@ from functools import partial
 from typing import Optional, cast
 from ...vendor.Qt import QtCore, QtWidgets, QtGui
 
-from ...build_items import BuildActionProxy, BuildStep
+from ...core import BuildActionProxy, BuildStep
 from ..core import BuildStepTreeModel
 from .build_action_data_form import MainBuildActionDataForm, BuildActionDataForm
 

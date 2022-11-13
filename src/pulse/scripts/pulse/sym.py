@@ -7,7 +7,7 @@ from typing import List, Optional, Tuple
 import pymel.core as pm
 
 from .core import Blueprint
-from .build_items import BuildActionProxy, BuildActionAttribute, BuildActionAttributeType
+from .core import BuildActionProxy, BuildActionAttribute, BuildActionAttributeType
 from .vendor import pymetanode as meta
 from . import editor_utils
 from . import joints

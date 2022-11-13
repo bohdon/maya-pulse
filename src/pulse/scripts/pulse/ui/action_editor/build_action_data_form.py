@@ -4,7 +4,7 @@ from typing import cast, Dict
 from maya import cmds
 from ...vendor.Qt import QtCore, QtWidgets, QtGui
 
-from ...build_items import BuildActionProxy, BuildStep, BuildActionData, BuildActionAttribute
+from ...core import BuildActionProxy, BuildStep, BuildActionData, BuildActionAttribute
 from ..actionattrform import ActionAttrForm, BatchAttrForm, ActionAttrFormBase
 from ..core import BuildStepTreeModel
 from ..gen.build_action_data_form import Ui_BuildActionDataForm
