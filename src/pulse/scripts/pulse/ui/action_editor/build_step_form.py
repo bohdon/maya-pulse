@@ -40,7 +40,7 @@ class BuildStepForm(QtWidgets.QWidget):
 
         # set title text and color
         self.ui.display_name_label.setText(self._get_step_display_name(step))
-        if pm.optionVar.get("pulse.editor.action_editor.show_descriptions"):
+        if pm.optionVar.get("pulse.editor.actionEditor.showDescriptions"):
             self.ui.description_label.setText(step.get_description())
         else:
             self.ui.description_label.setVisible(False)
