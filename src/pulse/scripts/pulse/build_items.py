@@ -1520,6 +1520,14 @@ class BuildStep(object):
         else:
             return f"{self._name} ({self.num_children()})"
 
+    def get_description(self) -> str:
+        """
+        Return the description of this step's action.
+        """
+        if self._action_proxy and self._action_proxy.spec:
+            return self._action_proxy.spec.description
+        return "A group containing other actions."
+
     def get_color(self) -> LinearColor:
         """
         Return the color of this BuildStep when represented in the UI

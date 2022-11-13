@@ -39,32 +39,36 @@ class BuildStepForm(QtWidgets.QWidget):
 
         # set title text and color
         self.ui.display_name_label.setText(self._get_step_display_name(step))
-        self._apply_title_color(step.get_color())
+        self.ui.description_label.setText(step.get_description())
+        self._apply_step_color(step.get_color())
 
         # show edit source button for actions
         self.ui.edit_source_btn.clicked.connect(self._open_action_script_in_source_editor)
+        if not step.is_action():
+            self.ui.edit_source_btn.setVisible(False)
 
         self.index.model().dataChanged.connect(self._on_model_data_changed)
 
-    def _update_title(self):
+    def _update_name(self):
         step = self.get_step()
         self.ui.display_name_label.setText(self._get_step_display_name(step))
 
-    def _apply_title_color(self, color: LinearColor):
-        color_str = color.as_style()
-
+    def _apply_step_color(self, color: LinearColor):
         bg_color = color * 0.15
         bg_color.a = 0.5
-        bg_color_str = bg_color.as_style()
+        desc_bg_color = LinearColor(*bg_color)
+        desc_bg_color.a = 0.25
 
-        self.ui.display_name_label.setStyleSheet(f"color: {color_str}; background-color: {bg_color_str}")
+        self.ui.header_frame.setStyleSheet(f"QFrame#header_frame {{ {bg_color.as_bg_style()}; }}")
+        # self.ui.display_name_label.setStyleSheet(f"{color.as_fg_style()};{bg_color.as_bg_style()}")
+        # self.ui.description_label.setStyleSheet(f"{color.as_fg_style()};{desc_bg_color.as_bg_style()}")
 
     def _on_model_data_changed(self):
-        self._update_title()
+        self._update_name()
 
     def _on_variants_changed(self):
         # variant count is reflected in the title, so it needs to be updated
-        self._update_title()
+        self._update_name()
 
     def get_step(self) -> BuildStep:
         """
