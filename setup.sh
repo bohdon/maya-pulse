@@ -1,5 +1,6 @@
 #! /bin/bash
 
+PROJECT_NAME="maya-pulse"
 PACKAGE_NAME="pulse"
 
 
@@ -17,37 +18,42 @@ fi
 
 
 build() {
+    echo "Building..."
     mkdir -p build
     cp -R src/$PACKAGE_NAME build/
     cp -R src/$PACKAGE_NAME.mod build/
 }
 
 clean() {
+    echo "Cleaning..."
     rm -Rf build
 }
 
 dev() {
     uninstall
     clean
+    echo "Installing for development..."
     link `pwd`/src/$PACKAGE_NAME.mod $MAYA_MODULES_INSTALL_PATH/$PACKAGE_NAME.mod
     link `pwd`/src/$PACKAGE_NAME $MAYA_MODULES_INSTALL_PATH/$PACKAGE_NAME
 }
 
 test() {
-    docker build -t maya-pulse-2018 --build-arg maya_version=2018 .
-    docker rm maya-pulse-2018 || true
-    docker run --name maya-pulse-2018 maya-pulse-2018 mayapy tests
+    build
+    echo "Running tests..."
+    mayapy tests build/$PACKAGE_NAME
 }
 
 install() {
     uninstall
     clean
     build
+    echo "Installing..."
     cp -v build/$PACKAGE_NAME.mod $MAYA_MODULES_INSTALL_PATH/$PACKAGE_NAME.mod
     cp -R build/$PACKAGE_NAME $MAYA_MODULES_INSTALL_PATH/$PACKAGE_NAME
 }
 
 uninstall() {
+    echo "Uninstalling..."
     rm -v $MAYA_MODULES_INSTALL_PATH/$PACKAGE_NAME.mod || true
     rm -R $MAYA_MODULES_INSTALL_PATH/$PACKAGE_NAME || true
 }
