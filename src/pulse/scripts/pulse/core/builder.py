@@ -11,7 +11,7 @@ import pymel.core as pm
 from ..vendor import pymetanode as meta
 from .blueprint import Blueprint, BlueprintSettings
 from .rigs import RIG_METACLASS, create_rig_node
-from .build_items import BuildStep, BuildAction, BuildActionData
+from .actions import BuildStep, BuildAction, BuildActionData
 
 __all__ = [
     "BlueprintBuilder",

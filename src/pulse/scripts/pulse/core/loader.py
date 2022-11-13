@@ -10,7 +10,7 @@ import types
 from fnmatch import fnmatch
 from typing import List
 
-from .build_items import BuildAction, BuildActionSpec, BuildActionRegistry
+from .actions import BuildAction, BuildActionSpec, BuildActionRegistry
 
 __all__ = [
     "BuildActionLoader",

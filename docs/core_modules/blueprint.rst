@@ -1,5 +1,5 @@
-Blueprints
-==========
+Blueprint
+=========
 
 .. automodule:: pulse.core.blueprint
    :members:
