@@ -44,16 +44,6 @@ class AddIKFKControlAction(BuildAction):
         ),
     ]
 
-    def validate(self):
-        if not self.ikfkControl:
-            raise BuildActionError("ikfkControl must be set")
-        if not self.follower:
-            raise BuildActionError("follower must be set")
-        if not self.ikLeader:
-            raise BuildActionError("ikLeader must be set")
-        if not self.fkLeader:
-            raise BuildActionError("fkLeader must be set")
-
     def run(self):
         ik_attr = self.ikfkControl.attr("ik")
         if not ik_attr:

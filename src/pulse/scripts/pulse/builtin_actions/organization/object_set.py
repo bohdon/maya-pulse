@@ -27,10 +27,6 @@ class ObjectSetAction(BuildAction):
         ),
     ]
 
-    def validate(self):
-        if not len(self.name):
-            raise BuildActionError("name cannot be empty")
-
     def run(self):
         object_set = pm.ls(self.name)
         if len(object_set) and isinstance(object_set[0], pm.nt.ObjectSet):

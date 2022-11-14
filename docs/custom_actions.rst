@@ -84,9 +84,9 @@ Subclass :py:class:`~pulse.core.build_items.BuildAction`, set an ``id``, and imp
         ]
 
         def run(self):
-            self.log.info(f'My Name: {self.myName}')
-            self.log.info(f'My Node: {self.myNode}')
-            self.log.info(f'My Option: {self.myOption}')
+            self.logger.info(f'My Name: {self.myName}')
+            self.logger.info(f'My Node: {self.myNode}')
+            self.logger.info(f'My Option: {self.myOption}')
 
 
 

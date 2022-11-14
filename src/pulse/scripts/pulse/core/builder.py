@@ -9,9 +9,10 @@ from typing import Optional, Iterable, List, Type, Set, Tuple
 import pymel.core as pm
 
 from ..vendor import pymetanode as meta
+from .. import names
 from .blueprint import Blueprint, BlueprintSettings
 from .rigs import RIG_METACLASS, create_rig_node
-from .actions import BuildStep, BuildAction, BuildActionData
+from .actions import BuildStep, BuildAction
 
 __all__ = [
     "BlueprintBuilder",
@@ -20,6 +21,20 @@ __all__ = [
 ]
 
 LOG = logging.getLogger(__name__)
+
+
+class BlueprintBuildLogHandler(logging.Handler):
+    """
+    Handler that sends logs to the blueprint builder so that it can track warnings and errors.
+    """
+
+    def __init__(self, builder: "BlueprintBuilder"):
+        super().__init__()
+        self.builder = builder
+
+    def emit(self, record: logging.LogRecord):
+        if self.builder:
+            self.builder.notify_log(record)
 
 
 class BlueprintBuilder(object):
@@ -79,23 +94,30 @@ class BlueprintBuilder(object):
         # the name of this builder object, used in logs
         self.builder_name = "Builder"
 
-        self.errors = []
-        self.generator: Optional[Iterable[dict]] = None
         self.is_started = False
         self.is_finished = False
         self.is_running = False
         self.is_canceled = False
         # if true, mark the build as cancelled when interrupted, instead of just pausing
         self.cancel_on_interrupt = True
-        # the current phase of building, 'setup', 'actions', or 'finished'
-        self.phase: Optional[str] = None
-        # the current build step path
-        self.current_build_step_path: Optional[str] = None
         self.start_time = 0.0
         self.end_time = 0.0
         self.elapsed_time = 0.0
         self.show_progress_ui = True
         self.progress_title = "Building Blueprint"
+        # the current context that should be associated with any warnings or errors that occur.
+        # includes the current 'step' and 'action' when fully populated.
+        self._log_context = {}
+        # warnings that occurred during build
+        self.warnings = []
+        # errors that occurred during build
+        self.errors = []
+
+        self.generator: Optional[Iterable[dict]] = None
+        # the current phase of building, 'setup', 'actions', or 'finished'
+        self.phase: Optional[str] = None
+        # the current build step path
+        self.current_build_step_path: Optional[str] = None
         # the results of the last iteration that was performed
         self._iter_result = {}
 
@@ -112,13 +134,40 @@ class BlueprintBuilder(object):
 
         self.rig_name: str = self.blueprint.get_setting(BlueprintSettings.RIG_NAME)
 
-        # create a logger, and setup a file handler
-        self.log = logging.getLogger("pulse.build")
-        self.log.setLevel(logging.DEBUG if self.debug else logging.INFO)
-        self.file_handler: Optional[logging.FileHandler] = None
-        self.setup_file_logger(self.log, log_dir)
+        # create a logger for this build and setup handlers
+        self.logger = logging.getLogger("pulse.build")
+        self.logger.setLevel(logging.DEBUG if self.debug else logging.INFO)
+        # reset handlers in case any are leftover
+        self.logger.handlers = []
 
-    def setup_file_logger(self, logger: logging.Logger, log_dir: str):
+        # add filter to intercept logs and track warnings and errors
+        self.build_log_handler = BlueprintBuildLogHandler(self)
+        self.logger.addHandler(self.build_log_handler)
+
+        self.file_handler: Optional[logging.FileHandler] = None
+        self.setup_file_logger(log_dir)
+
+    def has_errors(self) -> bool:
+        return bool(self.errors)
+
+    def get_error_summary(self) -> str:
+        """
+        Return a string representing the number of warnings or errors.
+
+        Returns:
+            "no errors" if no warnings or errors occurred.
+            "{count} warnings" if only warnings occurred.
+            "{count} errors" if any errors occurred.
+        """
+        if self.errors:
+            count = len(self.errors)
+            return f"{count} error{'s' if count > 1 else ''}"
+        elif self.warnings:
+            count = len(self.warnings)
+            return f"{count} warning{'s' if count > 1 else ''}"
+        return "no errors"
+
+    def setup_file_logger(self, log_dir: str):
         """
         Create a file handler for the logger of this builder.
         """
@@ -137,10 +186,56 @@ class BlueprintBuilder(object):
         log_formatter = logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s")
         self.file_handler.setFormatter(log_formatter)
 
-        logger.handlers = [self.file_handler]
+        self.logger.addHandler(self.file_handler)
 
     def close_file_logger(self):
         self.file_handler.close()
+
+    def remove_log_handlers(self):
+        self.logger.handlers = []
+
+    def notify_log(self, record: logging.LogRecord):
+        """
+        Called when logging from this builders logger.
+        Track warnings and errors and parse extra information to be able to present it
+        in the build results.
+        """
+        if not self.is_started or self.is_finished or self.is_canceled:
+            return
+
+        if record.levelno == logging.WARNING:
+            self.warnings.append(record)
+        elif record.levelno == logging.ERROR:
+            self._update_log_with_context(record)
+            self.errors.append(record)
+            # add the log to the current step
+            step = self._get_log_step()
+            if step:
+                step.add_validate_error(record)
+
+    def _update_log_with_context(self, record: logging.LogRecord):
+        """
+        Update a warning or error log with the current context.
+        """
+        extra = {}
+
+        step: BuildStep = self._log_context.get("step")
+        if step:
+            extra["step_path"] = step.get_full_path()
+
+        action: BuildAction = self._log_context.get("action")
+        if action:
+            extra["action_data"] = action.serialize()
+
+        record.__dict__.update(extra)
+
+    def _get_log_step(self) -> Optional[BuildStep]:
+        """
+        Return the current Build Step that should be associated with any warnings or errors.
+        """
+        if "step" in self._log_context:
+            return self._log_context["step"]
+        return self.blueprint.rootStep
 
     def start(self, run=True) -> bool:
         """
@@ -154,13 +249,13 @@ class BlueprintBuilder(object):
             True if the build was started.
         """
         if self.is_started:
-            self.log.warning("Builder has already been started.")
+            self.logger.warning("Builder has already been started.")
             return False
         if self.is_finished:
-            self.log.error("Cannot re-start a builder that has already finished, make a new builder instead.")
+            self.logger.error("Cannot re-start a builder that has already finished, make a new builder instead.")
             return False
         if self.is_canceled:
-            self.log.warning("Builder was cancelled, create a new instance to build again.")
+            self.logger.warning("Builder was cancelled, create a new instance to build again.")
             return False
 
         self.is_started = True
@@ -182,15 +277,15 @@ class BlueprintBuilder(object):
         before this can be called
         """
         if self.is_running:
-            self.log.error("Builder is already running.")
+            self.logger.error("Builder is already running.")
             return
 
         if not self.is_started:
-            self.log.error("Builder has not been started yet.")
+            self.logger.error("Builder has not been started yet.")
             return
 
         if self.is_finished:
-            self.log.error("Builder has already finished.")
+            self.logger.error("Builder has already finished.")
             return
 
         self.is_running = True
@@ -268,30 +363,26 @@ class BlueprintBuilder(object):
         # log start of build
         start_msg = self.get_start_build_log_message()
         if start_msg:
-            self.log.info(start_msg)
+            self.logger.info(start_msg)
 
     def get_start_build_log_message(self) -> str:
         return f"Started building rig: {self.rig_name} (debug={self.debug})"
 
     def get_finish_build_log_message(self) -> str:
-        error_count = len(self.errors)
-        return f"Built Rig '{self.rig_name}' with {error_count} error(s) ({self.elapsed_time:.3f}s)"
+        return f"Built Rig '{self.rig_name}' with {self.get_error_summary()} ({self.elapsed_time:.3f}s)"
 
     def get_finish_build_in_view_message(self) -> str:
-        error_count = len(self.errors)
-        if error_count > 0:
-            return f"Build Finished with {error_count} error(s)"
+        if self.has_errors():
+            return f"Build Finished with {self.get_error_summary()}"
         else:
             return "Build Successful"
 
     def get_cancel_log_message(self) -> str:
-        error_count = len(self.errors)
-        return f"Cancelled build of rig '{self.rig_name}' with {error_count} error(s) ({self.elapsed_time:.3f}s)"
+        return f"Cancelled build of rig '{self.rig_name}' with {self.get_error_summary()} ({self.elapsed_time:.3f}s)"
 
     def get_cancel_build_in_view_message(self) -> str:
-        error_count = len(self.errors)
-        if error_count > 0:
-            return f"Build Cancelled with {error_count} error(s)"
+        if self.has_errors():
+            return f"Build Cancelled with {self.get_error_summary()}"
         else:
             return "Build Cancelled"
 
@@ -310,16 +401,16 @@ class BlueprintBuilder(object):
 
         # log results
         finish_msg = self.get_finish_build_log_message()
-        had_errors = bool(self.errors)
-        lvl = logging.WARNING if had_errors else logging.INFO
-        self.log.log(lvl, finish_msg)
+        lvl = logging.WARNING if self.has_errors() else logging.INFO
+        self.logger.log(lvl, finish_msg)
 
         self.close_file_logger()
+        self.remove_log_handlers()
 
         # show results with in-view message
         in_view_msg = self.get_finish_build_in_view_message()
         in_view_kwargs = {}
-        if had_errors:
+        if self.has_errors():
             in_view_kwargs = dict(
                 backColor=0xAA8336,
                 fadeStayTime=3000,
@@ -334,49 +425,21 @@ class BlueprintBuilder(object):
 
         # log results
         cancel_msg = self.get_cancel_log_message()
-        had_errors = bool(self.errors)
-        lvl = logging.WARNING if had_errors else logging.INFO
-        self.log.log(lvl, cancel_msg)
+        lvl = logging.WARNING if self.has_errors() else logging.INFO
+        self.logger.log(lvl, cancel_msg)
 
         self.close_file_logger()
+        self.remove_log_handlers()
 
         # show cancellation with in-view message
         in_view_msg = self.get_cancel_build_in_view_message()
         in_view_kwargs = {}
-        if had_errors:
+        if self.has_errors():
             in_view_kwargs = dict(
                 backColor=0xAA8336,
                 fadeStayTime=3000,
             )
         pm.inViewMessage(assistMessage=in_view_msg, position="topCenter", fade=True, **in_view_kwargs)
-
-    def on_error(self, error: Exception):
-        """
-        Called when a generic error occurs while running
-
-        Args:
-            error: Exception:
-                The exception that occurred.
-        """
-        self.errors.append(error)
-        self.log.error(error, exc_info=self.debug)
-
-    def on_step_error(self, step: BuildStep, action: BuildActionData, exc: Exception):
-        """
-        Called when an error occurs while running a BuildAction
-
-        Args:
-            step: BuildStep
-                The step on which the error occurred.
-            action: BuildActionData
-                The action or proxy for which the error occurred.
-            exc: Exception
-                The exception that occurred.
-        """
-        step.add_validate_error(exc)
-
-        self.errors.append(exc)
-        self.log.error("/%s (%s): %s", step.get_full_path(), action.action_id, exc, exc_info=self.debug)
 
     def action_iterator(self) -> Iterable[Tuple[BuildStep, BuildAction]]:
         """
@@ -387,20 +450,22 @@ class BlueprintBuilder(object):
             for every action in the Blueprint.
         """
         for step in self.blueprint.rootStep.child_iterator():
+            self._log_context = dict(step=step)
             # try-catch each step, so we can stumble over
             # problematic steps without crashing the whole build
             try:
                 for action in step.action_iterator(self.blueprint.get_config()):
                     yield step, action
             except Exception as exc:
-                self.on_step_error(step, step.action_proxy, exc=exc)
+                self.logger.error(str(exc), exc_info=True)
+
+        self._log_context = {}
 
     def build_generator(self) -> Iterable[dict]:
         """
         This is the main iterator for performing all build operations.
         It runs all BuildSteps and BuildActions in order.
         """
-
         self.clear_validate_results()
 
         yield dict(index=0, total=100, phase="setup", status="Create Rig Structure")
@@ -413,16 +478,17 @@ class BlueprintBuilder(object):
         self._on_actions_generated(all_actions)
 
         for index, (step, action) in enumerate(all_actions):
-            # TODO: include more data somehow so we can track variant action indexes
+            self.current_build_step_path = step.get_full_path()
 
             # return progress for the action that is about to run
-            self.current_build_step_path = step.get_full_path()
             yield dict(index=index, total=action_count, phase="actions", status=self.current_build_step_path)
 
             # run the action
             action.builder = self
             action.rig = self.rig
+            self._log_context = dict(step=step, action=action)
             self.run_build_action(step, action, index, action_count)
+            self._log_context = {}
 
         yield dict(index=action_count, total=action_count, phase="finished", status="Finished")
 
@@ -452,7 +518,7 @@ class BlueprintBuilder(object):
                 blueprintFile=self.scene_file_path,
             ),
         )
-        self.log.info("Created rig structure: %s", self.rig.nodeName())
+        self.logger.info("Created rig structure: %s", self.rig.nodeName())
 
     def _generate_all_actions(self) -> List[Tuple[BuildStep, BuildAction]]:
         """
@@ -464,7 +530,7 @@ class BlueprintBuilder(object):
 
         end_time = time.time()
         duration = end_time - start_time
-        self.log.info("Generated %s actions (%.03fs)", len(result), duration)
+        self.logger.info("Generated %s actions (%.03fs)", len(result), duration)
         return result
 
     def _on_actions_generated(self, all_actions: List[Tuple[BuildStep, BuildAction]]):
@@ -479,14 +545,14 @@ class BlueprintBuilder(object):
 
         try:
             action.run()
-        except Exception as error:
-            self.on_step_error(step, action, error)
+        except Exception as exc:
+            action.logger.error(str(exc), exc_info=True)
 
         end_time = time.time()
         duration = end_time - start_time
 
         path = step.get_full_path()
-        self.log.info("[%s/%s] %s (%.03fs)", index + 1, action_count, path, duration)
+        self.logger.info("[%s/%s] %s (%.03fs)", index + 1, action_count, path, duration)
 
 
 class BlueprintGlobalValidateStep(object):
@@ -518,13 +584,13 @@ class BlueprintValidator(BlueprintBuilder):
     Runs `validate` for all BuildActions in a Blueprint.
     """
 
-    def __init__(self, *args, **kwargs):
-        super(BlueprintValidator, self).__init__(*args, **kwargs)
+    def __init__(self, blueprint: Blueprint, scene_file_path: Optional[str] = None, debug=None, log_dir=None):
+        super(BlueprintValidator, self).__init__(blueprint, scene_file_path, debug, log_dir)
         self.builder_name = "Validator"
         self.progress_title = "Validating Blueprint"
         self.show_progress_ui = False
 
-    def setup_file_logger(self, logger: logging.Logger, log_dir: str):
+    def setup_file_logger(self, log_dir: str):
         # no file logging for validation
         pass
 
@@ -539,12 +605,10 @@ class BlueprintValidator(BlueprintBuilder):
         return f"Started validating blueprint: {self.rig_name} (debug={self.debug})"
 
     def get_finish_build_log_message(self):
-        error_count = len(self.errors)
-        return f"Validated rig '{self.rig_name}' with {error_count} error(s) ({self.elapsed_time:.3f}s)"
+        return f"Validated rig '{self.rig_name}' with {self.get_error_summary()} ({self.elapsed_time:.3f}s)"
 
     def get_finish_build_in_view_message(self):
-        error_count = len(self.errors)
-        return f"Validate Finished with {error_count} error(s)"
+        return f"Validate Finished with {self.get_error_summary()}"
 
     def _on_actions_generated(self, all_actions: List[Tuple[BuildStep, BuildAction]]):
         self.run_global_validates(all_actions)
@@ -560,15 +624,26 @@ class BlueprintValidator(BlueprintBuilder):
                 for cls in action.global_validates:
                     validate_classes.add(cls)
 
-        self.log.debug(f"Running {len(validate_classes)} global validations.")
+        self.logger.debug(f"Running {len(validate_classes)} global validations.")
 
         # run all validates
         for cls in validate_classes:
-            validator = cls(self.blueprint, all_actions, self.log)
+            validator = cls(self.blueprint, all_actions, self.logger)
             validator.validate()
 
     def run_build_action(self, step: BuildStep, action: BuildAction, index: int, action_count: int):
+        # validate attributes
+        for attr_name, attr in action.get_attrs().items():
+            attr.validate()
+            if not attr.is_value_valid():
+                reason = attr.get_invalid_reason()
+                if reason == "required":
+                    action.logger.error(f"{names.to_title(attr_name)} is not set.")
+                else:
+                    action.logger.error(f"{names.to_title(attr_name)} is not valid: {reason}")
+
+        # run custom action validation
         try:
             action.run_validate()
-        except Exception as error:
-            self.on_step_error(step, action, error)
+        except Exception as exc:
+            action.logger.error(str(exc), exc_info=True)

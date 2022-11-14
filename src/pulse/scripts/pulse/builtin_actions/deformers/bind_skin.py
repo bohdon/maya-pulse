@@ -122,16 +122,14 @@ class BindSkinAction(BuildAction):
     ]
 
     def validate(self):
-        if not len(self.meshes):
-            raise BuildActionError("meshes must have at least one value")
         bind_jnts = self._get_bind_joints()
         if not len(bind_jnts):
-            raise BuildActionError("no bind joints were set")
+            self.logger.error("No bind joints were set.")
         # if weights file is set, ensure it exists
         if self.weightsFile:
             weights_file_path = self._resolve_file_path(self.weightsFile)
             if not os.path.isfile(weights_file_path):
-                raise BuildActionError(f"File not found: {weights_file_path}")
+                self.logger.error(f"Weights file not found: {weights_file_path}")
 
     def run(self):
         bind_jnts = self._get_bind_joints()

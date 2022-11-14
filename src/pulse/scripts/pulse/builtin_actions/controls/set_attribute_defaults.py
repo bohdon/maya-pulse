@@ -50,7 +50,7 @@ class SetAttributeDefaultsAction(BuildAction):
 
     def validate(self):
         if not resetter:
-            raise BuildActionError("'resetter' module not found")
+            self.logger.error("'resetter' module not found")
 
     def run(self):
         all_nodes = set(self.nodes)

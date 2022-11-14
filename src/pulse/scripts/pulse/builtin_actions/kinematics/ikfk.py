@@ -64,20 +64,6 @@ class ThreeBoneIKFKAction(BuildAction):
         ),
     ]
 
-    def validate(self):
-        if not self.endJoint:
-            raise BuildActionError("endJoint must be set")
-        if not self.rootCtl:
-            raise BuildActionError("rootCtl must be set")
-        if not self.midCtlIk:
-            raise BuildActionError("midCtlIk must be set")
-        if not self.midCtlFk:
-            raise BuildActionError("midCtlFk must be set")
-        if not self.endCtlIk:
-            raise BuildActionError("endCtlIk must be set")
-        if not self.endCtlFk:
-            raise BuildActionError("endCtlFk must be set")
-
     def run(self):
         # retrieve mid and root joints
         mid_joint = self.endJoint.getParent()

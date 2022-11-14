@@ -41,12 +41,6 @@ class CreateSpaceAction(BuildAction):
         ),
     ]
 
-    def validate(self):
-        if not self.node:
-            raise BuildActionError("node must be set")
-        if not self.name:
-            raise BuildActionError("name cannot be empty")
-
     def run(self):
         spaces.create_space(self.node, self.name)
         self.update_rig_metadata_dict("spaces", {self.name: self.node})
@@ -71,6 +65,7 @@ class SpaceConstrainAction(BuildAction):
         ),
         dict(
             name="spaces",
+            optional=False,
             type=AttrType.STRING_LIST,
         ),
         dict(
@@ -86,12 +81,6 @@ class SpaceConstrainAction(BuildAction):
         if self.useOffsetMatrix:
             return 20200000
         return 0
-
-    def validate(self):
-        if not self.node:
-            raise BuildActionError("node must be set")
-        if not self.spaces:
-            raise BuildActionError("spaces must have at least one value")
 
     def run(self):
         follower = None
@@ -121,9 +110,6 @@ class ApplySpacesAction(BuildAction):
             description="Automatically create a 'world' space node.",
         )
     ]
-
-    def validate(self):
-        pass
 
     def run(self):
         if self.createWorldSpace:

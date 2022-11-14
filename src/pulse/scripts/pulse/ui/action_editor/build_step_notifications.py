@@ -1,7 +1,8 @@
 import logging
-import traceback
 from typing import Optional
+
 from ...vendor.Qt import QtCore, QtWidgets
+from ... import names
 
 from ...core import BuildStep
 from ..utils import clear_layout
@@ -35,17 +36,34 @@ class BuildStepNotifications(QtWidgets.QWidget):
             return
 
         has_notifications = False
-        for validate_result in self.step.get_validate_results():
+        for record in self.step.get_validate_results():
             label = QtWidgets.QLabel(self)
             label.setProperty("cssClasses", "notification error")
             label.setTextInteractionFlags(QtCore.Qt.LinksAccessibleByMouse | QtCore.Qt.TextSelectableByMouse)
-            label.setText(str(validate_result))
-            label.setToolTip(self.format_error_text(validate_result))
+            label.setText(record.getMessage())
+            label.setToolTip(self._format_record_tooltip(record))
             self.layout.addWidget(label)
             has_notifications = True
 
         self.setVisible(has_notifications)
 
-    def format_error_text(self, exc: Exception):
-        lines = traceback.format_exception(type(exc), exc, exc.__traceback__)
-        return "".join(lines).strip()
+    def _format_record_tooltip(self, record: logging.LogRecord) -> str:
+        # build list of results, then combine them
+        results = []
+
+        # include action data if it's available
+        if hasattr(record, "action_data"):
+            results.append(self._format_action_data(record.action_data))
+
+        # add call stack
+        if record.exc_text:
+            results.append(record.exc_text)
+
+        return "\n\n".join(results)
+
+    def _format_action_data(self, action_data: dict) -> str:
+        data_items = action_data.items()
+        action_data_msg = "Action Data:\n"
+        action_data_lines = [f"    {names.to_title(key)}: {value}" for key, value in data_items]
+        action_data_msg += "\n".join(action_data_lines)
+        return action_data_msg

@@ -87,24 +87,6 @@ class FootControlAction(BuildAction):
         ),
     ]
 
-    def validate(self):
-        if not self.ankleFollower:
-            raise BuildActionError("ankleFollower is not set")
-        if not self.toeFollower:
-            raise BuildActionError("toeFollower is not set")
-        if not self.control:
-            raise BuildActionError("control is not set")
-        if not self.toePivot:
-            raise BuildActionError("toePivot is not set")
-        if not self.ballPivot:
-            raise BuildActionError("ballPivot is not set")
-        if not self.outerTiltPivot:
-            raise BuildActionError("outerTiltPivot is not set")
-        if not self.innerTiltPivot:
-            raise BuildActionError("innerTiltPivot is not set")
-        if not self.heelPivot:
-            raise BuildActionError("heelPivot is not set")
-
     def run(self):
         # add attrs
         # ---------

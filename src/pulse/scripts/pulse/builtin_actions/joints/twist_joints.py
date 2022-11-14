@@ -56,12 +56,6 @@ class TwistJointsAction(BuildAction):
         ),
     ]
 
-    def validate(self):
-        if not self.twistJoint:
-            raise BuildActionError("twistJoint must be set")
-        if not self.alignJoint:
-            raise BuildActionError("alignJoint must be set")
-
     def run(self):
         twist_blend = None
         if self.twistControls:

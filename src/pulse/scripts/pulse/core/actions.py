@@ -525,6 +525,17 @@ class BuildActionStringListAttribute(BuildActionAttribute):
     def is_acceptable_value(self, new_value):
         return isinstance(new_value, list) and all([isinstance(v, str) for v in new_value])
 
+    def validate(self):
+        value = self.get_value()
+        # string list defaults to optional
+        is_optional = self.config.get("optional", True)
+        if not is_optional and not value:
+            self._invalid_reason = "required"
+            self._is_valid = False
+        else:
+            self._invalid_reason = None
+            self._is_valid = True
+
 
 class BuildActionOptionAttribute(BuildActionAttribute):
     """
@@ -1236,7 +1247,7 @@ class BuildAction(BuildActionData):
         super(BuildAction, self).__init__(self.id)
 
         # logger is initialized the first time its accessed
-        self._log = None
+        self._logger = None
         # builder is only available during build
         self.builder: Optional[BlueprintBuilder] = None
         # rig is only available during build
@@ -1254,15 +1265,15 @@ class BuildAction(BuildActionData):
 
     def get_logger_name(self):
         """
-        Return the name of the logger for this BuildAction
+        Return the name of the logger for this BuildAction.
         """
-        return f"pulse.action.{self.action_id}"
+        return f"pulse.build.action.{self.action_id}"
 
     @property
-    def log(self):
-        if not self._log:
-            self._log = logging.getLogger(self.get_logger_name())
-        return self._log
+    def logger(self):
+        if not self._logger:
+            self._logger = logging.getLogger(self.get_logger_name())
+        return self._logger
 
     def get_min_api_version(self):
         """
@@ -1276,7 +1287,7 @@ class BuildAction(BuildActionData):
         Return all metadata on the rig being built
         """
         if not self.rig:
-            self.log.error("Cannot get rig meta data, no rig is set")
+            self.logger.error("Cannot get rig meta data, no rig is set")
             return {}
         return meta.get_metadata(self.rig, RIG_METACLASS)
 
@@ -1288,7 +1299,7 @@ class BuildAction(BuildActionData):
             data: A dict containing metadata to update on the rig
         """
         if not self.rig:
-            self.log.error("Cannot update rig meta data, no rig is set")
+            self.logger.error("Cannot update rig meta data, no rig is set")
             return
         meta.update_metadata(self.rig, RIG_METACLASS, data)
 
@@ -1404,7 +1415,7 @@ class BuildStep(object):
         # is this build step currently disabled?
         self.isDisabled = False
         # the last known results of a build validation for this step
-        self._validate_results: List[Exception] = []
+        self._validate_results: List[logging.LogRecord] = []
 
         # auto-create a basic BuildActionProxy if an action_id was given
         if action_id:
@@ -1751,7 +1762,7 @@ class BuildStep(object):
             for elem in self._action_proxy.action_iterator(config):
                 yield elem
 
-    def get_validate_results(self):
+    def get_validate_results(self) -> List[logging.LogRecord]:
         return self._validate_results
 
     def clear_validate_results(self):
@@ -1760,11 +1771,11 @@ class BuildStep(object):
         """
         self._validate_results = []
 
-    def add_validate_error(self, exc: Exception):
+    def add_validate_error(self, record: logging.LogRecord):
         """
         Add a validation exception that was encountered when running a build validator.
         """
-        self._validate_results.append(exc)
+        self._validate_results.append(record)
 
     def has_validation_errors(self) -> bool:
         return bool(self._validate_results)

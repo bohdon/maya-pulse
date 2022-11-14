@@ -41,14 +41,7 @@ class SimpleConstrainAction(BuildAction):
         ),
     ]
 
-    def validate(self):
-        if not self.leader:
-            raise BuildActionError("leader must be set")
-        if not self.follower:
-            raise BuildActionError("follower must be set")
-
     def run(self):
-
         should_create_offset = False
         if self.createFollowerOffset == 0:
             # Always

@@ -72,7 +72,7 @@ class MagicHandsAction(BuildAction):
 
     def validate(self):
         if not self.ctl1 and not self.ctl2 and not self.ctl3 and not self.ctl4:
-            raise BuildActionError("No controls were given")
+            self.logger.error("At least 1 finger control must be set.")
 
     def run(self):
         finger_ctls = [self.ctl2, self.ctl3, self.ctl4]

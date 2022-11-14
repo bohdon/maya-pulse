@@ -53,10 +53,6 @@ class DisplayLayerAction(BuildAction):
         ),
     ]
 
-    def validate(self):
-        if not len(self.name):
-            raise BuildActionError("name cannot be empty")
-
     def run(self):
         layer = pm.ls(self.name)
         if len(layer) and isinstance(layer[0], pm.nt.DisplayLayer):

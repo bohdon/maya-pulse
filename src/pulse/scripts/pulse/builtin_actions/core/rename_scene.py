@@ -23,10 +23,6 @@ class RenameSceneAction(BuildAction):
         )
     ]
 
-    def validate(self):
-        if not self.filename:
-            raise BuildActionError("Filename cannot be empty")
-
     def run(self):
         scene_name = pm.sceneName()
         rig_data = self.get_rig_metadata()

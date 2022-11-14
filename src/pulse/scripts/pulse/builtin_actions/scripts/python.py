@@ -129,22 +129,20 @@ class PythonAction(BuildAction):
     ]
 
     def validate(self):
-        # TODO: remove since required attributes should be handled generally instead of in each actions validate()
-        if not self.function:
-            raise BuildActionError("function name is required")
-
         scene_file_name = pm.sceneName()
         if not scene_file_name:
-            raise BuildActionError("File is not saved, could not determine scripts file path")
+            self.logger.error("File is not saved, could not determine script file path.")
+            return
 
         module_filepath = os.path.splitext(scene_file_name)[0] + "_scripts.py"
 
         if not os.path.isfile(module_filepath):
-            raise BuildActionError(f"Scripts file does not exist: {module_filepath}")
+            self.logger.error(f"Script file does not exist: {module_filepath}.")
+            return
 
         func = self._import_function(self.function, module_filepath)
         if func is None:
-            raise BuildActionError("function '%s' was not found in scripts file: %s" % (self.function, module_filepath))
+            self.logger.error("Function '%s' was not found.", self.function)
 
     def run(self):
         # TODO: use actual blueprint file, not maya scene

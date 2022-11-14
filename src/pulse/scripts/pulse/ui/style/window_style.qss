@@ -133,7 +133,7 @@ QFrame[cssClasses~="toolbar-rig"] {
 /* Notifications */
 QLabel[cssClasses~="notification"] {
     background-color: rgba(0, 0, 0, 10%);
-    padding: 16px;
+    padding: 12px;
     border-radius: 2px;
 }
 

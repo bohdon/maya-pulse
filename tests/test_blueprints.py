@@ -57,7 +57,7 @@ class TestBlueprints(unittest.TestCase):
         builder.start()
 
         self.assertTrue(builder.is_finished)
-        self.assertTrue(len(builder.errors) == 0)
+        self.assertFalse(builder.has_errors())
 
         rig_node = pm.ls("test_rig")
         self.assertTrue(len(rig_node) == 1)

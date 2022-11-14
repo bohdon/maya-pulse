@@ -54,10 +54,6 @@ class AnimControlAction(BuildAction):
             return 20200000
         return 0
 
-    def validate(self):
-        if not self.controlNode:
-            raise BuildActionError("controlNode is not set")
-
     def run(self):
         # add metaclass to the control, making it
         # easy to search for by anim tools, etc
@@ -144,7 +140,7 @@ class ShowAllControlsAction(BuildAction):
         attr = self.node.attr(self.attrName)
         attr.setKeyable(False)
         attr.showInChannelBox(True)
-        self.log.debug(f"Added attr '{self.attrName}' to {self.node}")
+        self.logger.debug(f"Added attr '{self.attrName}' to {self.node}")
 
         all_ctls = get_all_anim_ctls()
         for ctl in all_ctls:
@@ -163,4 +159,4 @@ class ShowAllControlsAction(BuildAction):
                 if is_locked:
                     ctl.visibility.setLocked(True)
 
-                self.log.debug(f"Connected '{self.node}.{attr}' visibility override to '{ctl}.visibility'")
+                self.logger.debug(f"Connected '{self.node}.{attr}' visibility override to '{ctl}.visibility'")

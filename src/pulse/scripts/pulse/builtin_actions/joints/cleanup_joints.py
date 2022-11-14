@@ -34,10 +34,6 @@ class CleanupJointsAction(BuildAction):
         ),
     ]
 
-    def validate(self):
-        if not self.rootJoint:
-            raise BuildActionError("rootJoint must be set")
-
     def run(self):
         if self.removeEndJoints:
             end_joints = joints.get_end_joints(self.rootJoint)
