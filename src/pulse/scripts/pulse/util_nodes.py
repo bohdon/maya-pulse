@@ -9,6 +9,7 @@ LOG = logging.getLogger(__name__)
 
 IS_MATRIX_PLUGIN_LOADED = False
 IS_QUAT_PLUGIN_LOADED = False
+IS_LOOKDEV_KIT_PLUGIN_LOADED = False
 
 # Map of utility node types to default output attribute names.
 # Used to determine which attribute to return by default when creating utility nodes.
@@ -106,6 +107,16 @@ def load_quat_plugin():
         try:
             pm.loadPlugin("quatNodes", quiet=True)
             IS_QUAT_PLUGIN_LOADED = True
+        except:
+            pass
+
+
+def load_lookdev_kit_plugin():
+    global IS_LOOKDEV_KIT_PLUGIN_LOADED
+    if not IS_LOOKDEV_KIT_PLUGIN_LOADED:
+        try:
+            pm.loadPlugin("lookdevKit", quiet=True)
+            IS_LOOKDEV_KIT_PLUGIN_LOADED = True
         except:
             pass
 
@@ -397,6 +408,7 @@ def min_float(a, b):
     Return an attribute that represents min(a, b).
     Only supports float values.
     """
+    load_lookdev_kit_plugin()
     return _create_utility_and_return_output("floatMath", floatA=a, floatB=b, operation=FloatMathOperation.MIN)
 
 
@@ -405,6 +417,7 @@ def max_float(a, b):
     Return an attribute that represents max(a, b).
     Only supports float values.
     """
+    load_lookdev_kit_plugin()
     return _create_utility_and_return_output("floatMath", floatA=a, floatB=b, operation=FloatMathOperation.MAX)
 
 
