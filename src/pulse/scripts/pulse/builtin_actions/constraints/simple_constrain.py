@@ -1,19 +1,21 @@
 import pymel.core as pm
 
 import pulse.nodes
-from pulse.core import BuildAction, BuildActionError
+from pulse.core import BuildAction
 from pulse.core import BuildActionAttributeType as AttrType
+
+from . import COLOR, CATEGORY
 
 
 class SimpleConstrainAction(BuildAction):
     """
-    Create a simple full constraint between nodes.
+    Create a full constraint between nodes using the legacy parent and scale constraints.
     """
 
     id = "Pulse.SimpleConstrain"
-    display_name = "Simple Constrain"
-    color = [0.4, 0.6, 0.8]
-    category = "Constraints"
+    display_name = "Legacy Constrain"
+    color = COLOR
+    category = CATEGORY
 
     attr_definitions = [
         dict(

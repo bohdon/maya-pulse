@@ -1,5 +1,7 @@
-from pulse.core import BuildAction, BuildActionError
+from pulse.core import BuildAction
 from pulse.core import BuildActionAttributeType as AttrType
+
+from . import COLOR, CATEGORY
 
 
 class ParentAction(BuildAction):
@@ -9,8 +11,8 @@ class ParentAction(BuildAction):
 
     id = "Pulse.ParentAction"
     display_name = "Parent"
-    color = [0.4, 0.6, 0.8]
-    category = "Constraints"
+    color = COLOR
+    category = CATEGORY
     attr_definitions = [
         dict(
             name="parent",

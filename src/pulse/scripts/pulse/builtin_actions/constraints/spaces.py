@@ -2,9 +2,11 @@ import pymel.core as pm
 
 from pulse import names, nodes, spaces
 from pulse.vendor import pymetanode as meta
-from pulse.core import BuildAction, BuildActionError, BlueprintGlobalValidateStep
+from pulse.core import BuildAction, BlueprintGlobalValidateStep
 from pulse.core import BuildActionAttributeType as AttrType
 from pulse.ui.contextmenus import PulseNodeContextSubMenu
+
+from . import COLOR, CATEGORY
 
 
 class SpacesGlobalValidateStep(BlueprintGlobalValidateStep):
@@ -26,8 +28,8 @@ class CreateSpaceAction(BuildAction):
 
     id = "Pulse.CreateSpace"
     display_name = "Create Space"
-    color = (0.4, 0.42, 0.8)
-    category = "Spaces"
+    color = COLOR
+    category = CATEGORY
     sort_order = 0
 
     attr_definitions = [
@@ -53,8 +55,8 @@ class SpaceConstrainAction(BuildAction):
 
     id = "Pulse.SpaceConstrain"
     display_name = "Space Constrain"
-    color = (0.4, 0.42, 0.8)
-    category = "Spaces"
+    color = COLOR
+    category = CATEGORY
     sort_order = 1
     global_validates = [SpacesGlobalValidateStep]
 
@@ -98,8 +100,8 @@ class ApplySpacesAction(BuildAction):
 
     id = "Pulse.ApplySpaces"
     display_name = "Apply Spaces"
-    color = (0.4, 0.42, 0.8)
-    category = "Spaces"
+    color = COLOR
+    category = CATEGORY
     sort_order = 2
 
     attr_definitions = [

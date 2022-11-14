@@ -1,20 +1,19 @@
 import pulse.nodes
-from pulse.core import BuildAction, BuildActionError
+from pulse.core import BuildAction
 from pulse.core import BuildActionAttributeType as AttrType
+
+from . import COLOR, CATEGORY
 
 
 class MatrixConstrainAction(BuildAction):
     """
-    Constrain nodes using `offsetParentMatrix` connections.
-
-    This provides a simple and more versatile constraint than using
-    a combination parent and scale constraint.
+    Constrain nodes using offset parent matrix connections.
     """
 
     id = "Pulse.MatrixConstrain"
     display_name = "Matrix Constrain"
-    category = "Constraints"
-    color = (0.4, 0.6, 0.8)
+    color = COLOR
+    category = CATEGORY
     attr_definitions = [
         dict(
             name="leader",

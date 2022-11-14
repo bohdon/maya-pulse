@@ -2,8 +2,10 @@ import pymel.core as pm
 
 import pulse.nodes
 import pulse.util_nodes
-from pulse.core import BuildAction, BuildActionError
+from pulse.core import BuildAction
 from pulse.core import BuildActionAttributeType as AttrType
+
+from . import COLOR, CATEGORY
 
 
 class AimConstrainAction(BuildAction):
@@ -13,8 +15,8 @@ class AimConstrainAction(BuildAction):
 
     id = "Pulse.AimConstrain"
     display_name = "Aim Constrain"
-    color = (0.4, 0.6, 0.8)
-    category = "Constraints"
+    color = COLOR
+    category = CATEGORY
 
     attr_definitions = [
         dict(
