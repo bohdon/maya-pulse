@@ -4,6 +4,8 @@ from pulse import nodes
 from pulse.core import BuildAction
 from pulse.core import BuildActionAttributeType as AttrType
 
+from . import COLOR, CATEGORY
+
 
 class BuildCoreHierarchyAction(BuildAction):
     """
@@ -14,8 +16,9 @@ class BuildCoreHierarchyAction(BuildAction):
     """
 
     id = "Pulse.BuildCoreHierarchy"
-    display_name = "Build Core Hierarchy"
-    category = "Core"
+    display_name = "Create Hierarchy"
+    color = COLOR
+    category = CATEGORY
     attr_definitions = [
         dict(
             name="groupName",

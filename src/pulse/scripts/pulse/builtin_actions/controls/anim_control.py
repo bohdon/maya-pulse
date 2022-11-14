@@ -2,10 +2,12 @@ import pymel.core as pm
 
 from pulse import nodes, util_nodes
 from pulse.vendor import pymetanode as meta
-from pulse.core import BuildAction, BuildActionError
+from pulse.core import BuildAction
 from pulse.core import BuildActionAttributeType as AttrType
 from pulse.anim_interface import ANIM_CTL_METACLASS, get_all_anim_ctls
 from pulse.ui.contextmenus import PulseNodeContextSubMenu
+
+from . import COLOR, CATEGORY
 
 try:
     import resetter
@@ -20,8 +22,8 @@ class AnimControlAction(BuildAction):
 
     id = "Pulse.AnimControl"
     display_name = "Anim Control"
-    color = (0.85, 0.65, 0.4)
-    category = "Controls"
+    color = COLOR
+    category = CATEGORY
     attr_definitions = [
         dict(
             name="controlNode",
@@ -120,6 +122,7 @@ class ShowAllControlsAction(BuildAction):
 
     id = "Pulse.ShowAllControls"
     display_name = "Show All Controls"
+    color = COLOR
     category = "Controls"
     attr_definitions = [
         dict(

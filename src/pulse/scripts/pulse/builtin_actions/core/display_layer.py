@@ -1,7 +1,9 @@
 import pymel.core as pm
 
-from pulse.core import BuildAction, BuildActionError
+from pulse.core import BuildAction
 from pulse.core import BuildActionAttributeType as AttrType
+
+from . import COLOR, CATEGORY
 
 
 class DisplayLayerAction(BuildAction):
@@ -11,7 +13,8 @@ class DisplayLayerAction(BuildAction):
 
     id = "Pulse.DisplayLayer"
     display_name = "Display Layer"
-    category = "Organization"
+    color = COLOR
+    category = CATEGORY
 
     attr_definitions = [
         dict(

@@ -1,7 +1,9 @@
 import pymel.core as pm
 
-from pulse.core import BuildAction, BuildActionError
+from pulse.core import BuildAction
 from pulse.core import BuildActionAttributeType as AttrType
+
+from . import COLOR, CATEGORY
 
 
 class ObjectSetAction(BuildAction):
@@ -11,8 +13,8 @@ class ObjectSetAction(BuildAction):
 
     id = "Pulse.ObjectSet"
     display_name = "Object Set"
-    color = (1.0, 1.0, 1.0)
-    category = "Organization"
+    color = COLOR
+    category = CATEGORY
 
     attr_definitions = [
         dict(

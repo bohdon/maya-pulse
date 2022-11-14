@@ -5,6 +5,8 @@ import pymel.core as pm
 from pulse.core import BuildAction, BuildActionError, BlueprintSettings
 from pulse.core import BuildActionAttributeType as AttributeType
 
+from . import COLOR, CATEGORY
+
 
 class RenameSceneAction(BuildAction):
     """
@@ -17,7 +19,8 @@ class RenameSceneAction(BuildAction):
 
     id = "Pulse.RenameScene"
     display_name = "Rename Scene"
-    category = "Core"
+    color = COLOR
+    category = CATEGORY
     attr_definitions = [
         dict(
             name="filename",

@@ -1,8 +1,10 @@
 import pymel.core as pm
 
 from pulse import joints
-from pulse.core import BuildAction, BuildActionError
+from pulse.core import BuildAction
 from pulse.core import BuildActionAttributeType as AttrType
+
+from . import COLOR, CATEGORY
 
 
 class CleanupJointsAction(BuildAction):
@@ -12,7 +14,8 @@ class CleanupJointsAction(BuildAction):
 
     id = "Pulse.CleanupJoints"
     display_name = "Cleanup Joints"
-    category = "Joints"
+    color = COLOR
+    category = CATEGORY
 
     attr_definitions = [
         dict(

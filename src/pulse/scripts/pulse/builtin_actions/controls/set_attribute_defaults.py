@@ -1,5 +1,7 @@
-from pulse.core import BuildAction, BuildActionError
+from pulse.core import BuildAction
 from pulse.core import BuildActionAttributeType as AttrType
+
+from . import COLOR, CATEGORY
 
 try:
     import resetter
@@ -16,8 +18,8 @@ class SetAttributeDefaultsAction(BuildAction):
 
     id = "Pulse.SetAttributeDefaults"
     display_name = "Set Attribute Defaults"
-    color = (0.85, 0.65, 0.4)
-    category = "Controls"
+    color = COLOR
+    category = CATEGORY
 
     attr_definitions = [
         dict(

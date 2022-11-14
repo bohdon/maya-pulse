@@ -1,6 +1,8 @@
 from pulse.core import BuildAction, BlueprintSettings, create_rig_node, RIG_METACLASS
 from pulse.vendor import pymetanode as meta
 
+from . import COLOR, CATEGORY
+
 
 class CreateRigAction(BuildAction):
     """
@@ -9,7 +11,8 @@ class CreateRigAction(BuildAction):
 
     id = "Pulse.CreateRig"
     display_name = "Create Rig"
-    category = "Core"
+    color = COLOR
+    category = CATEGORY
 
     def should_abort_on_error(self) -> bool:
         # many actions will fail without a rig node

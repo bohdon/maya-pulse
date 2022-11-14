@@ -5,8 +5,10 @@ import pymel.core as pm
 from maya import cmds
 
 from pulse import skins
-from pulse.core import BuildAction, BuildActionError
+from pulse.core import BuildAction
 from pulse.core import BuildActionAttributeType as AttrType
+
+from . import COLOR, CATEGORY
 
 
 class BindSkinAction(BuildAction):
@@ -16,8 +18,8 @@ class BindSkinAction(BuildAction):
 
     id = "Pulse.BindSkin"
     display_name = "Bind Skin"
-    color = (1.0, 0.85, 0.5)
-    category = "Deformers"
+    color = COLOR
+    category = CATEGORY
 
     attr_definitions = [
         dict(

@@ -2,6 +2,8 @@ from pulse import references
 from pulse.core import BuildAction
 from pulse.core import BuildActionAttributeType as AttrType
 
+from . import COLOR, CATEGORY
+
 
 class ImportReferencesAction(BuildAction):
     """
@@ -10,7 +12,8 @@ class ImportReferencesAction(BuildAction):
 
     id = "Pulse.ImportReferences"
     display_name = "Import References"
-    category = "Core"
+    color = COLOR
+    category = CATEGORY
     attr_definitions = [
         dict(
             name="loadUnloaded",

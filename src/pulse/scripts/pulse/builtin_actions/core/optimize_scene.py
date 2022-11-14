@@ -2,6 +2,8 @@ import pymel.core as pm
 
 from pulse.core import BuildAction
 
+from . import COLOR, CATEGORY
+
 
 class OptimizeSceneAction(BuildAction):
     """
@@ -12,7 +14,8 @@ class OptimizeSceneAction(BuildAction):
 
     id = "Pulse.OptimizeScene"
     display_name = "Optimize Scene"
-    category = "Core"
+    color = COLOR
+    category = CATEGORY
 
     def run(self):
         pm.mel.source("cleanUpScene")

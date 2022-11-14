@@ -1,7 +1,9 @@
 from pulse import nodes
 from pulse import util_nodes
-from pulse.core import BuildAction, BuildActionError
+from pulse.core import BuildAction
 from pulse.core import BuildActionAttributeType as AttrType
+
+from . import COLOR, CATEGORY
 
 
 class MagicHandsAction(BuildAction):
@@ -11,8 +13,8 @@ class MagicHandsAction(BuildAction):
 
     id = "Pulse.MagicHands"
     display_name = "Magic Hands"
-    color = (0.85, 0.65, 0.4)
-    category = "Controls"
+    color = COLOR
+    category = CATEGORY
 
     attr_definitions = [
         dict(

@@ -2,9 +2,11 @@ import pymel.core as pm
 
 from pulse.vendor import pymetanode as meta
 from pulse import util_nodes, nodes
-from pulse.core import BuildAction, BuildActionError
+from pulse.core import BuildAction
 from pulse.core import BuildActionAttributeType as AttrType
 from pulse.ui.contextmenus import PulseNodeContextSubMenu
+
+from . import COLOR, CATEGORY
 
 FOOT_CTL_METACLASSNAME = "pulse_foot_ctl"
 
@@ -16,8 +18,8 @@ class FootControlAction(BuildAction):
 
     id = "Pulse.FootControl"
     display_name = "Foot Control"
-    color = (0.85, 0.65, 0.4)
-    category = "Controls"
+    color = COLOR
+    category = CATEGORY
 
     attr_definitions = [
         dict(

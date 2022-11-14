@@ -11,6 +11,8 @@ from pulse.vendor.Qt import QtWidgets
 from pulse.ui.action_editor import BuildActionProxyForm
 from pulse import source_editor
 
+from . import COLOR, CATEGORY
+
 # template for a new script file
 SCRIPT_TEMPLATE = """\"""
 Script file for a python Pulse action.
@@ -110,7 +112,8 @@ class PythonAction(BuildAction):
 
     id = "Pulse.Python"
     display_name = "Python"
-    category = "Scripts"
+    color = COLOR
+    category = CATEGORY
     editor_form_class = PythonActionForm
     attr_definitions = [
         dict(

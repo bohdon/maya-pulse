@@ -4,6 +4,8 @@ from pulse import nodes, util_nodes
 from pulse.core import BuildAction, BuildActionError
 from pulse.core import BuildActionAttributeType as AttrType
 
+from . import COLOR, CATEGORY
+
 
 class TwistJointsAction(BuildAction):
     """
@@ -12,7 +14,8 @@ class TwistJointsAction(BuildAction):
 
     id = "Pulse.TwistJoints"
     display_name = "Twist Joints"
-    category = "Joints"
+    color = COLOR
+    category = CATEGORY
 
     attr_definitions = [
         dict(

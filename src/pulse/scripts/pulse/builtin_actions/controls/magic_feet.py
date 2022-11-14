@@ -2,8 +2,10 @@ import pymel.core as pm
 
 from pulse import nodes, util_nodes
 from pulse.vendor import pymetanode as meta
-from pulse.core import BuildAction, BuildActionError
+from pulse.core import BuildAction
 from pulse.core import BuildActionAttributeType as AttrType
+
+from . import COLOR, CATEGORY
 
 MAGIC_FEET_CTL_METACLASSNAME = "pulse_magicfeet_ctl"
 MAGIC_FEET_LIFT_CTL_METACLASSNAME = "pulse_magicfeet_lift_ctl"
@@ -16,8 +18,8 @@ class MagicFeetAction(BuildAction):
 
     id = "Pulse.MagicFeet"
     display_name = "Magic Feet"
-    color = (0.85, 0.65, 0.4)
-    category = "Controls"
+    color = COLOR
+    category = CATEGORY
 
     _offsetName = "{0}_magic"
 
