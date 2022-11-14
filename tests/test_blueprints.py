@@ -41,7 +41,7 @@ class TestBlueprints(unittest.TestCase):
     def test_build(self):
         bp = Blueprint()
         bp.set_setting(BlueprintSettings.RIG_NAME, "test")
-        bp.add_default_actions()
+        bp.reset_to_default()
 
         main_step = bp.get_step_by_path("/Main")
 

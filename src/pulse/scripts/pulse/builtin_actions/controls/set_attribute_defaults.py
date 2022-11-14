@@ -11,7 +11,7 @@ from pulse import anim_interface
 
 class SetAttributeDefaultsAction(BuildAction):
     """
-    Set the default attribute values for use with Resetter.
+    Set the default attribute values on animation controls, so they can be reset easily using Resetter.
     """
 
     id = "Pulse.SetAttributeDefaults"

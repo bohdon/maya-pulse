@@ -209,27 +209,12 @@ class Blueprint(object):
             else:
                 LOG.warning("Could not find BuildStep: %s", path)
 
-    def add_default_actions(self):
+    def reset_to_default(self):
         """
-        Add a set of core BuildActions to the blueprint.
+        Reset the Blueprint to the default set of actions.
         """
-        rename_action = BuildStep(action_id="Pulse.RenameScene")
-        import_action = BuildStep(action_id="Pulse.ImportReferences")
-        create_rig_action = BuildStep(action_id="Pulse.CreateRig")
-        hierarchy_action = BuildStep(action_id="Pulse.BuildCoreHierarchy")
-        hierarchy_attr = hierarchy_action.action_proxy.get_attr("allNodes")
-        if hierarchy_attr:
-            hierarchy_attr.set_value(True)
-        main_group = BuildStep("Main")
-        self.root_step.add_children(
-            [
-                rename_action,
-                import_action,
-                create_rig_action,
-                hierarchy_action,
-                main_group,
-            ]
-        )
+        default_data = self.get_config().get("default_blueprint", {})
+        self.deserialize(default_data)
 
     def get_config(self) -> dict:
         """

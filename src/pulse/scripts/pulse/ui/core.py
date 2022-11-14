@@ -486,6 +486,7 @@ class BlueprintUIModel(QtCore.QObject):
         self._blueprint_file = BlueprintFile()
         self._blueprint_file.resolve_file_path(allow_existing=False)
         self._blueprint_file.blueprint.set_setting(BlueprintSettings.RIG_NAME, "untitled")
+        self._blueprint_file.blueprint.reset_to_default()
 
         self.build_step_tree_model.set_blueprint(self.blueprint)
         self.build_step_tree_model.endResetModel()
@@ -762,13 +763,25 @@ class BlueprintUIModel(QtCore.QObject):
     def _should_auto_save(self):
         return self.auto_save and self.is_file_open()
 
-    def add_default_actions(self):
+    def reset_to_default_with_prompt(self):
         """
-        Add the default actions to the current Blueprint.
+        Reset the Blueprint to the default set of actions.
         """
         if self.is_file_open() and not self.is_read_only():
+            response = pm.confirmDialog(
+                title="Reset Blueprint",
+                message="Are you sure you want to reset the Blueprint? This action is not undoable.",
+                button=["Reset", "Cancel"],
+                defaultButton="Cancel",
+                dismissString="Cancel",
+                cancelButton="Cancel",
+            )
+
+            if response != "Reset":
+                return
+
             self.build_step_tree_model.beginResetModel()
-            self.blueprint.add_default_actions()
+            self.blueprint.reset_to_default()
             self.build_step_tree_model.endResetModel()
             self.modify()
 

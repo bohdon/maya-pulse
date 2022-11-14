@@ -197,9 +197,9 @@ class ActionTree(QtWidgets.QWidget):
         """
         actions_menu = menu_bar.addMenu("Actions")
 
-        add_defaults_action = QtWidgets.QAction("Add Default Actions", parent)
-        add_defaults_action.setStatusTip("Add the default set of actions.")
-        add_defaults_action.triggered.connect(self.blueprint_model.add_default_actions)
+        add_defaults_action = QtWidgets.QAction("Reset To Default", parent)
+        add_defaults_action.setStatusTip("Reset the Blueprint to the default set of actions.")
+        add_defaults_action.triggered.connect(self.blueprint_model.reset_to_default_with_prompt)
         actions_menu.addAction(add_defaults_action)
 
         actions_menu.addSeparator()
