@@ -33,15 +33,12 @@ class ActionEditor(QtWidgets.QWidget):
         self.ui = Ui_ActionEditor()
         self.ui.setupUi(self)
 
-        self.blueprintModel = BlueprintUIModel.get_default_model()
-        self.blueprintModel.read_only_changed.connect(self._on_read_only_changed)
-        self.model = self.blueprintModel.build_step_tree_model
+        self.blueprint_model = BlueprintUIModel.get_default_model()
+        self.model = self.blueprint_model.build_step_tree_model
         self.model.dataChanged.connect(self._on_model_data_changed)
         self.model.modelReset.connect(self._on_model_reset)
-        self.selectionModel = self.blueprintModel.build_step_selection_model
-        self.selectionModel.selectionChanged.connect(self._on_selection_changed)
-
-        self.setEnabled(not self.blueprintModel.is_read_only())
+        self.selection_model = self.blueprint_model.build_step_selection_model
+        self.selection_model.selectionChanged.connect(self._on_selection_changed)
 
         self.setup_items_ui_for_selection()
 
@@ -55,9 +52,6 @@ class ActionEditor(QtWidgets.QWidget):
     def _on_model_reset(self):
         self.setup_items_ui_for_selection()
 
-    def _on_read_only_changed(self, is_read_only):
-        self.setEnabled(not is_read_only)
-
     def setup_items_ui(self, item_indexes, parent):
         clear_layout(self.ui.items_layout)
 
@@ -66,12 +60,12 @@ class ActionEditor(QtWidgets.QWidget):
             self.ui.items_layout.addWidget(item_widget)
 
     def setup_items_ui_for_selection(self):
-        if self.selectionModel.hasSelection():
+        if self.selection_model.hasSelection():
             self.ui.main_stack.setCurrentWidget(self.ui.content_page)
         else:
             self.ui.main_stack.setCurrentWidget(self.ui.help_page)
 
-        self.setup_items_ui(self.selectionModel.selectedIndexes(), self.ui.scroll_area_widget)
+        self.setup_items_ui(self.selection_model.selectedIndexes(), self.ui.scroll_area_widget)
 
     def setup_view_menu(self, parent, menu_bar: QtWidgets.QMenuBar):
         view_menu = menu_bar.addMenu("View")

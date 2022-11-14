@@ -4,7 +4,7 @@ from typing import Optional, cast
 from ...vendor.Qt import QtCore, QtWidgets, QtGui
 
 from ...core import BuildActionProxy, BuildStep
-from ..core import BuildStepTreeModel
+from ..core import BuildStepTreeModel, BlueprintUIModel
 from .build_action_data_form import MainBuildActionDataForm, BuildActionDataForm
 
 logger = logging.getLogger(__name__)
@@ -24,22 +24,28 @@ class BuildActionProxyForm(QtWidgets.QWidget):
         super(BuildActionProxyForm, self).__init__(parent=parent)
         self.variants_label = None
         self.variant_list_layout = None
-
         self.index = QtCore.QPersistentModelIndex(index)
         self.has_variants_ui = False
+        self.blueprint_model = BlueprintUIModel.get()
 
         self.setup_ui(self)
         self.update_variant_form_list()
 
-        self.index.model().dataChanged.connect(self.on_model_data_changed)
+        self.setEnabled(not self.blueprint_model.is_read_only())
 
-    def on_model_data_changed(self):
+        self.blueprint_model.read_only_changed.connect(self._on_read_only_changed)
+        self.index.model().dataChanged.connect(self._on_model_data_changed)
+
+    def _on_model_data_changed(self):
         if not self.index.isValid():
             self.hide()
             return
 
         # TODO: get specific changes necessary to insert or remove indeces
         self.update_variant_form_list()
+
+    def _on_read_only_changed(self, is_read_only):
+        self.setEnabled(not is_read_only)
 
     def get_step(self) -> Optional[BuildStep]:
         """
