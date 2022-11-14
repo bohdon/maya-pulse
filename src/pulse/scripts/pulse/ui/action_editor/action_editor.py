@@ -20,7 +20,7 @@ class ActionEditor(QtWidgets.QWidget):
     display editors for the selected actions.
     """
 
-    show_descriptions = option_var_property("pulse.editor.actionEditor.showDescriptions", False)
+    show_descriptions = option_var_property("pulse.editor.actionEditor.showDescriptions", True)
 
     def set_show_descriptions(self, value):
         if self.show_descriptions != value:
