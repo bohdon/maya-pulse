@@ -2,9 +2,21 @@ import pymel.core as pm
 
 from pulse import names, nodes, spaces
 from pulse.vendor import pymetanode as meta
-from pulse.core import BuildAction, BuildActionError
+from pulse.core import BuildAction, BuildActionError, BlueprintGlobalValidateStep
 from pulse.core import BuildActionAttributeType as AttrType
 from pulse.ui.contextmenus import PulseNodeContextSubMenu
+
+
+class SpacesGlobalValidateStep(BlueprintGlobalValidateStep):
+    def validate(self):
+        # check for exactly 1 Apply Spaces action
+        num_applies = 0
+        for step, action in self.all_actions:
+            if action.id == ApplySpacesAction.id:
+                num_applies += 1
+
+        if num_applies == 0:
+            self.logger.error("Missing required Apply Spaces action, space constraints will not work.")
 
 
 class CreateSpaceAction(BuildAction):
@@ -50,6 +62,7 @@ class SpaceConstrainAction(BuildAction):
     color = (0.4, 0.42, 0.8)
     category = "Spaces"
     sort_order = 1
+    global_validates = [SpacesGlobalValidateStep]
 
     attr_definitions = [
         dict(

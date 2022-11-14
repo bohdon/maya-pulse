@@ -1,6 +1,8 @@
+from __future__ import annotations
+
 import logging
 import re
-from typing import List, Iterable, Optional, Any
+from typing import List, Iterable, Optional, Any, TYPE_CHECKING, Type
 
 import maya.cmds as cmds
 from ..vendor import pymetanode as meta
@@ -8,6 +10,9 @@ from ..vendor import pymetanode as meta
 from .rigs import RIG_METACLASS
 from .serializer import UnsortableOrderedDict
 from ..colors import LinearColor
+
+if TYPE_CHECKING:
+    from .builder import BlueprintGlobalValidateStep
 
 LOG = logging.getLogger(__name__)
 
@@ -1183,6 +1188,9 @@ class BuildAction(BuildActionData):
 
     # the custom form widget class to display in the action editor for this action
     editor_form_class: Optional[type] = None
+
+    # list of global validators to run when this action is present in the Blueprint
+    global_validates: List[Type[BlueprintGlobalValidateStep]] = []
 
     @staticmethod
     def from_action_id(action_id: str) -> Optional["BuildAction"]:

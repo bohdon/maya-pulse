@@ -3,7 +3,7 @@ import os
 import tempfile
 import time
 from datetime import datetime
-from typing import Optional, Iterable, List
+from typing import Optional, Iterable, List, Type, Set, Tuple
 
 # TODO: remove maya dependencies from this core module, add BlueprintBuilder subclass that uses maya progress bars
 import pymel.core as pm
@@ -15,6 +15,7 @@ from .actions import BuildStep, BuildAction, BuildActionData
 
 __all__ = [
     "BlueprintBuilder",
+    "BlueprintGlobalValidateStep",
     "BlueprintValidator",
 ]
 
@@ -377,7 +378,7 @@ class BlueprintBuilder(object):
         self.errors.append(exc)
         self.log.error("/%s (%s): %s", step.get_full_path(), action.action_id, exc, exc_info=self.debug)
 
-    def action_iterator(self) -> Iterable[tuple[BuildStep, BuildAction]]:
+    def action_iterator(self) -> Iterable[Tuple[BuildStep, BuildAction]]:
         """
         Return a generator that yields all BuildActions in the Blueprint.
 
@@ -408,6 +409,8 @@ class BlueprintBuilder(object):
         yield dict(index=1, total=100, phase="setup", status="Retrieve Actions")
         all_actions = self._generate_all_actions()
         action_count = len(all_actions)
+
+        self._on_actions_generated(all_actions)
 
         for index, (step, action) in enumerate(all_actions):
             # TODO: include more data somehow so we can track variant action indexes
@@ -451,7 +454,7 @@ class BlueprintBuilder(object):
         )
         self.log.info("Created rig structure: %s", self.rig.nodeName())
 
-    def _generate_all_actions(self) -> List[BuildAction]:
+    def _generate_all_actions(self) -> List[Tuple[BuildStep, BuildAction]]:
         """
         Expand all build actions to perform from all build steps and their variants.
         """
@@ -463,6 +466,13 @@ class BlueprintBuilder(object):
         duration = end_time - start_time
         self.log.info("Generated %s actions (%.03fs)", len(result), duration)
         return result
+
+    def _on_actions_generated(self, all_actions: List[Tuple[BuildStep, BuildAction]]):
+        """
+        Called after all actions have been generated from variants and symmetry etc.
+        Intended for use by subclasses that may need to post process or validate the actions.
+        """
+        pass
 
     def run_build_action(self, step: BuildStep, action: BuildAction, index: int, action_count: int):
         start_time = time.time()
@@ -477,6 +487,30 @@ class BlueprintBuilder(object):
 
         path = step.get_full_path()
         self.log.info("[%s/%s] %s (%.03fs)", index + 1, action_count, path, duration)
+
+
+class BlueprintGlobalValidateStep(object):
+    """
+    Base class for a global validation step.
+
+    Build actions can define their own global validate steps if they want to be
+    able to validate the entire Blueprint holistically, e.g. to determine if there
+    is a conflict between multiple actions or other high-level issues.
+    """
+
+    def __init__(self, blueprint: Blueprint, all_actions: List[Tuple[BuildStep, BuildAction]], logger: logging.Logger):
+        # the blueprint being validated
+        self.blueprint = blueprint
+        # the list of expanded actions, coupled with the steps that generated them
+        self.all_actions = all_actions
+        # the logger to use for reporting errors
+        self.logger = logger
+
+    def validate(self):
+        """
+        Validate the blueprint, using `self.logger` to log any errors that were encountered.
+        """
+        raise NotImplementedError
 
 
 class BlueprintValidator(BlueprintBuilder):
@@ -511,6 +545,27 @@ class BlueprintValidator(BlueprintBuilder):
     def get_finish_build_in_view_message(self):
         error_count = len(self.errors)
         return f"Validate Finished with {error_count} error(s)"
+
+    def _on_actions_generated(self, all_actions: List[Tuple[BuildStep, BuildAction]]):
+        self.run_global_validates(all_actions)
+
+    def run_global_validates(self, all_actions: List[Tuple[BuildStep, BuildAction]]):
+        # gather list of validates to run
+        validate_classes: Set[Type[BlueprintGlobalValidateStep]] = set()
+        # action ids that have been gathered from, used to skip gathering more than once per type
+        checked_action_ids: Set[str] = set()
+        for step, action in all_actions:
+            if action.id not in checked_action_ids:
+                checked_action_ids.add(action.id)
+                for cls in action.global_validates:
+                    validate_classes.add(cls)
+
+        self.log.debug(f"Running {len(validate_classes)} global validations.")
+
+        # run all validates
+        for cls in validate_classes:
+            validator = cls(self.blueprint, all_actions, self.log)
+            validator.validate()
 
     def run_build_action(self, step: BuildStep, action: BuildAction, index: int, action_count: int):
         try:
