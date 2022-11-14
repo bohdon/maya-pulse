@@ -328,6 +328,9 @@ class BlueprintUIModel(QtCore.QObject):
     # called when the presence of a built rig has changed
     rig_exists_changed = QtCore.Signal()
 
+    # called when validation results have changed
+    on_validate_event = QtCore.Signal()
+
     @classmethod
     def get(cls) -> "BlueprintUIModel":
         """
@@ -1139,6 +1142,8 @@ class BlueprintUIModel(QtCore.QObject):
 
             validator = BlueprintValidator(blueprint)
             validator.start()
+
+            self.on_validate_event.emit()
 
     def can_build(self) -> bool:
         return not self.does_rig_exist

@@ -496,6 +496,7 @@ class BlueprintBuilder(object):
         """
         Clear the results of any previous validation or build.
         """
+        self.blueprint.root_step.clear_validate_results()
         for step in self.blueprint.root_step.child_iterator():
             step.clear_validate_results()
 

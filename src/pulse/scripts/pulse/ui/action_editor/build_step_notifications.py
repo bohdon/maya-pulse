@@ -2,9 +2,9 @@ import logging
 from typing import Optional
 
 from ...vendor.Qt import QtCore, QtWidgets
-from ... import names
-
 from ...core import BuildStep
+from ... import names
+from ..core import BlueprintUIModel
 from ..utils import clear_layout
 
 logger = logging.getLogger(__name__)
@@ -18,8 +18,12 @@ class BuildStepNotifications(QtWidgets.QWidget):
     def __init__(self, parent=None):
         super(BuildStepNotifications, self).__init__(parent=parent)
 
+        self.blueprint_model: Optional[BlueprintUIModel] = BlueprintUIModel.get()
+
         self.step: Optional[BuildStep] = None
         self.setup_ui(self)
+
+        self.blueprint_model.on_validate_event.connect(self._refresh)
 
     def set_step(self, step):
         self.step = step
@@ -40,6 +44,7 @@ class BuildStepNotifications(QtWidgets.QWidget):
             label = QtWidgets.QLabel(self)
             label.setProperty("cssClasses", "notification error")
             label.setTextInteractionFlags(QtCore.Qt.LinksAccessibleByMouse | QtCore.Qt.TextSelectableByMouse)
+            label.setWordWrap(True)
             label.setText(record.getMessage())
             label.setToolTip(self._format_record_tooltip(record))
             self.layout.addWidget(label)
