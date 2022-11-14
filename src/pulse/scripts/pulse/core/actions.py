@@ -7,7 +7,6 @@ from typing import List, Iterable, Optional, Any, TYPE_CHECKING, Type
 import maya.cmds as cmds
 from ..vendor import pymetanode as meta
 
-from .rigs import RIG_METACLASS
 from .serializer import UnsortableOrderedDict
 from ..colors import LinearColor
 
@@ -1294,26 +1293,11 @@ class BuildAction(BuildActionData):
         """
         return 0
 
-    def get_rig_metadata(self):
+    def get_rig_metadata(self) -> dict:
         """
         Return all metadata on the rig being built
         """
-        if not self.rig:
-            self.logger.error("Cannot get rig meta data, no rig is set")
-            return {}
-        return meta.get_metadata(self.rig, RIG_METACLASS)
-
-    def update_rig_metadata(self, data):
-        """
-        Add some metadata to the rig being built
-
-        Args:
-            data: A dict containing metadata to update on the rig
-        """
-        if not self.rig:
-            self.logger.error("Cannot update rig meta data, no rig is set")
-            return
-        meta.update_metadata(self.rig, RIG_METACLASS, data)
+        return self.builder.rig_metadata
 
     def extend_rig_metadata_list(self, key, data):
         """
@@ -1323,13 +1307,11 @@ class BuildAction(BuildActionData):
             key (str): The metadata key for the list
             data (list): A list of any basic python object to add to the metadata list value
         """
-        # get current value for the meta data key
-        rig_data = self.get_rig_metadata()
-        current_value = rig_data.get(key, [])
+        current_value = self.builder.rig_metadata.get(key, [])
         # append or extend the new data
         new_value = list(set(current_value + data))
         # update meta data
-        self.update_rig_metadata({key: new_value})
+        self.builder.rig_metadata.update({key: new_value})
 
     def update_rig_metadata_dict(self, key, data):
         """
@@ -1339,13 +1321,11 @@ class BuildAction(BuildActionData):
             key (str): The metadata key for the list
             data (dict): A dict of any basic python objects to update the metadata value with
         """
-        # get current value for the meta data key
-        rig_data = self.get_rig_metadata()
-        value = rig_data.get(key, {})
+        value = self.builder.rig_metadata.get(key, {})
         # update dict value with the new data
         value.update(data)
         # update meta data
-        self.update_rig_metadata({key: value})
+        self.builder.rig_metadata.update({key: value})
 
     def validate_api_version(self):
         """

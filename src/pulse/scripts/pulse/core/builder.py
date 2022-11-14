@@ -7,10 +7,12 @@ from typing import Optional, Iterable, List, Type, Set, Tuple
 
 # TODO: remove maya dependencies from this core module, add BlueprintBuilder subclass that uses maya progress bars
 import pymel.core as pm
+from ..vendor import pymetanode as meta
 
 from .. import names
 from .blueprint import Blueprint, BlueprintSettings, BlueprintFile
 from .actions import BuildStep, BuildAction
+from .rigs import RIG_METACLASS
 
 __all__ = [
     "BlueprintBuilder",
@@ -107,7 +109,10 @@ class BlueprintBuilder(object):
         self._iter_result = {}
 
         # the rig root node, set by the Create Rig action.
-        self.rig: Optional[pm.nt.Transform] = None
+        self._rig: Optional[pm.nt.Transform] = None
+        # metadata that will be set on the rig. only applied to the node
+        # after the build is finished, but can be accessed via BuildAction methods during build.
+        self.rig_metadata = {}
 
         self._rig_name: str = self.blueprint.get_setting(BlueprintSettings.RIG_NAME)
 
@@ -127,6 +132,25 @@ class BlueprintBuilder(object):
     @property
     def blueprint(self) -> Blueprint:
         return self.blueprint_file.blueprint
+
+    @property
+    def rig(self) -> pm.PyNode:
+        return self._rig
+
+    def set_rig(self, rig):
+        self._rig = rig
+        # load metadata
+        if self._rig:
+            self.rig_metadata = meta.get_metadata(self._rig, RIG_METACLASS)
+
+    def apply_rig_metadata(self):
+        """
+        Apply the pending rig metadata.
+        This is only called after the build as an optimization, but the pending
+        metadata can be accessed at anytime from this builder.
+        """
+        if self._rig:
+            meta.set_metadata(self._rig, RIG_METACLASS, self.rig_metadata, undoable=False)
 
     def has_errors(self) -> bool:
         return bool(self.errors)
@@ -371,6 +395,8 @@ class BlueprintBuilder(object):
             return "Build Cancelled"
 
     def _on_build_end(self):
+        self.apply_rig_metadata()
+
         pm.select(clear=True)
 
         # record time

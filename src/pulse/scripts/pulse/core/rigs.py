@@ -78,21 +78,30 @@ def get_selected_rigs():
     return rigs
 
 
-def create_rig_node(name: str) -> pm.nt.Transform:
+def create_rig_node(name: str, extra_data: dict = None) -> pm.nt.Transform:
     """
     Create and return a new Rig node
 
     Args:
-        name: A str name of the rig
+        name: A str name of the rig.
+        extra_data: Extra metadata to add to the rig on creation.
     """
+    if not extra_data:
+        extra_data = {}
+
     if cmds.objExists(name):
         raise ValueError(f"Cannot create rig, node already exists: {name}")
+
     node = pm.group(name=name, empty=True)
+
     for a in ("tx", "ty", "tz", "rx", "ry", "rz", "sx", "sy", "sz"):
-        node.attr(a).setLocked(True)
-        node.attr(a).setKeyable(False)
+        cmds.setAttr(f"{node}.{a}", edit=True, lock=True, keyable=False)
+
     # set initial metadata for the rig
-    meta.set_metadata(node, RIG_METACLASS, {"name": name})
+    data = {"name": name}
+    data.update(extra_data)
+    meta.set_metadata(node, RIG_METACLASS, data, undoable=False)
+
     return node
 
 

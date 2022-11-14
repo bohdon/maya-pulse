@@ -1,3 +1,4 @@
+from maya import cmds
 import pymel.core as pm
 
 from pulse import nodes, util_nodes
@@ -59,7 +60,7 @@ class AnimControlAction(BuildAction):
     def run(self):
         # add metaclass to the control, making it
         # easy to search for by anim tools, etc
-        meta.set_metadata(self.controlNode, ANIM_CTL_METACLASS, {})
+        meta.set_metadata(self.controlNode, ANIM_CTL_METACLASS, {}, undoable=False)
 
         if self.zeroOutMethod == 1:
             # freeze offset matrix
@@ -74,18 +75,13 @@ class AnimControlAction(BuildAction):
         locked_attrs = list(set(locked_attrs) - set(keyable_attrs))
 
         for attrName in keyable_attrs:
-            attr = self.controlNode.attr(attrName)
-            attr.setKeyable(True)
+            cmds.setAttr(f"{self.controlNode}.{attrName}", edit=True, keyable=True)
 
         for attrName in locked_attrs:
-            attr = self.controlNode.attr(attrName)
-            attr.setKeyable(False)
-            attr.showInChannelBox(False)
-            attr.setLocked(True)
+            cmds.setAttr(f"{self.controlNode}.{attrName}", edit=True, keyable=False, channelBox=False, lock=True)
 
         # show rotate order in channel box
-        self.controlNode.rotateOrder.setLocked(True)
-        self.controlNode.rotateOrder.showInChannelBox(True)
+        cmds.setAttr(f"{self.controlNode}.rotateOrder", edit=True, lock=True, channelBox=True)
 
         # update rig meta data
         self.extend_rig_metadata_list("animControls", [self.controlNode])
