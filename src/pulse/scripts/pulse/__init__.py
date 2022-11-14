@@ -29,6 +29,9 @@ def reload():
     except:
         pass
 
+    # flush any pulse commands that may be in the undo queue
+    pm.flushUndo()
+    # unload the pulse commands plugin
     pm.unloadPlugin("pulse", force=True)
 
     try:
