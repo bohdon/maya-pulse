@@ -441,12 +441,12 @@ class BlueprintBuilder(object):
             )
         pm.inViewMessage(assistMessage=in_view_msg, position="topCenter", fade=True, **in_view_kwargs)
 
-    def action_iterator(self) -> Iterable[Tuple[BuildStep, BuildAction]]:
+    def action_iterator(self) -> Iterable[Tuple[BuildStep, BuildAction, int]]:
         """
         Return a generator that yields all BuildActions in the Blueprint.
 
         Returns:
-            A generator that yields a tuple of (BuildStep, BuildAction)
+            A generator that yields a tuple of (BuildStep, BuildAction, <variant or sym index>)
             for every action in the Blueprint.
         """
         for step in self.blueprint.root_step.child_iterator():
@@ -454,8 +454,10 @@ class BlueprintBuilder(object):
             # try-catch each step, so we can stumble over
             # problematic steps without crashing the whole build
             try:
+                index = 0
                 for action in step.action_iterator(self.blueprint.get_config()):
-                    yield step, action
+                    yield step, action, index
+                    index += 1
             except Exception as exc:
                 self.logger.error(str(exc), exc_info=True)
 
@@ -477,7 +479,7 @@ class BlueprintBuilder(object):
 
         self._on_actions_generated(all_actions)
 
-        for index, (step, action) in enumerate(all_actions):
+        for index, (step, action, action_index) in enumerate(all_actions):
             self.current_build_step_path = step.get_full_path()
 
             # return progress for the action that is about to run
@@ -486,8 +488,8 @@ class BlueprintBuilder(object):
             # run the action
             action.builder = self
             action.rig = self.rig
-            self._log_context = dict(step=step, action=action)
-            self.run_build_action(step, action, index, action_count)
+            self._log_context = dict(step=step, action=action, action_index=action_index)
+            self.run_build_action(step, action, action_index, index, action_count)
             self._log_context = {}
 
         yield dict(index=action_count, total=action_count, phase="finished", status="Finished")
@@ -521,7 +523,7 @@ class BlueprintBuilder(object):
         )
         self.logger.info("Created rig structure: %s", self.rig.nodeName())
 
-    def _generate_all_actions(self) -> List[Tuple[BuildStep, BuildAction]]:
+    def _generate_all_actions(self) -> List[Tuple[BuildStep, BuildAction, int]]:
         """
         Expand all build actions to perform from all build steps and their variants.
         """
@@ -534,14 +536,14 @@ class BlueprintBuilder(object):
         self.logger.info("Generated %s actions (%.03fs)", len(result), duration)
         return result
 
-    def _on_actions_generated(self, all_actions: List[Tuple[BuildStep, BuildAction]]):
+    def _on_actions_generated(self, all_actions: List[Tuple[BuildStep, BuildAction, int]]):
         """
         Called after all actions have been generated from variants and symmetry etc.
         Intended for use by subclasses that may need to post process or validate the actions.
         """
         pass
 
-    def run_build_action(self, step: BuildStep, action: BuildAction, index: int, action_count: int):
+    def run_build_action(self, step: BuildStep, action: BuildAction, action_index: int, index: int, action_count: int):
         start_time = time.time()
 
         try:
@@ -553,7 +555,7 @@ class BlueprintBuilder(object):
         duration = end_time - start_time
 
         path = step.get_full_path()
-        self.logger.info("[%s/%s] %s (%.03fs)", index + 1, action_count, path, duration)
+        self.logger.info("[%s/%s] %s[%d] (%.03fs)", index + 1, action_count, path, action_index, duration)
 
 
 class BlueprintGlobalValidateStep(object):
@@ -565,10 +567,12 @@ class BlueprintGlobalValidateStep(object):
     is a conflict between multiple actions or other high-level issues.
     """
 
-    def __init__(self, blueprint: Blueprint, all_actions: List[Tuple[BuildStep, BuildAction]], logger: logging.Logger):
+    def __init__(
+        self, blueprint: Blueprint, all_actions: List[Tuple[BuildStep, BuildAction, int]], logger: logging.Logger
+    ):
         # the blueprint being validated
         self.blueprint = blueprint
-        # the list of expanded actions, coupled with the steps that generated them
+        # the list of (step, action, action_index) for all expanded actions in the blueprint
         self.all_actions = all_actions
         # the logger to use for reporting errors
         self.logger = logger
@@ -611,15 +615,15 @@ class BlueprintValidator(BlueprintBuilder):
     def get_finish_build_in_view_message(self):
         return f"Validate Finished with {self.get_error_summary()}"
 
-    def _on_actions_generated(self, all_actions: List[Tuple[BuildStep, BuildAction]]):
+    def _on_actions_generated(self, all_actions: List[Tuple[BuildStep, BuildAction, int]]):
         self.run_global_validates(all_actions)
 
-    def run_global_validates(self, all_actions: List[Tuple[BuildStep, BuildAction]]):
+    def run_global_validates(self, all_actions: List[Tuple[BuildStep, BuildAction, int]]):
         # gather list of validates to run
         validate_classes: Set[Type[BlueprintGlobalValidateStep]] = set()
         # action ids that have been gathered from, used to skip gathering more than once per type
         checked_action_ids: Set[str] = set()
-        for step, action in all_actions:
+        for step, action, _ in all_actions:
             if action.id not in checked_action_ids:
                 checked_action_ids.add(action.id)
                 for cls in action.global_validates:
@@ -632,7 +636,7 @@ class BlueprintValidator(BlueprintBuilder):
             validator = cls(self.blueprint, all_actions, self.logger)
             validator.validate()
 
-    def run_build_action(self, step: BuildStep, action: BuildAction, index: int, action_count: int):
+    def run_build_action(self, step: BuildStep, action: BuildAction, action_index: int, index: int, action_count: int):
         # validate attributes
         for attr_name, attr in action.get_attrs().items():
             attr.validate()

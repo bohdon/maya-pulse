@@ -11,7 +11,7 @@ class SpacesGlobalValidateStep(BlueprintGlobalValidateStep):
     def validate(self):
         # check for exactly 1 Apply Spaces action
         num_applies = 0
-        for step, action in self.all_actions:
+        for step, action, _ in self.all_actions:
             if action.id == ApplySpacesAction.id:
                 num_applies += 1
 
