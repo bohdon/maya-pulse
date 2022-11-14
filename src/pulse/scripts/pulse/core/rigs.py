@@ -4,7 +4,6 @@ import pymel.core as pm
 from maya import cmds
 
 from ..vendor import pymetanode as meta
-from ..cameras import save_cameras, restore_cameras
 
 __all__ = [
     "RIG_METACLASS",
@@ -14,8 +13,6 @@ __all__ = [
     "get_rig_from_node",
     "get_selected_rigs",
     "is_rig",
-    "open_first_rig_blueprint",
-    "open_rig_blueprint",
 ]
 
 LOG = logging.getLogger(__name__)
@@ -90,42 +87,13 @@ def create_rig_node(name: str) -> pm.nt.Transform:
     """
     if cmds.objExists(name):
         raise ValueError(f"Cannot create rig, node already exists: {name}")
-    node = pm.group(name=name, em=True)
+    node = pm.group(name=name, empty=True)
     for a in ("tx", "ty", "tz", "rx", "ry", "rz", "sx", "sy", "sz"):
         node.attr(a).setLocked(True)
         node.attr(a).setKeyable(False)
     # set initial metadata for the rig
     meta.set_metadata(node, RIG_METACLASS, {"name": name})
     return node
-
-
-def open_rig_blueprint(rig):
-    """
-    Open the Blueprint source file that was used
-    to build a rig.
-
-    Args:
-        rig: A rig node
-    """
-
-    rig_data = meta.get_metadata(rig, RIG_METACLASS)
-    blueprint_file = rig_data.get("blueprintFile")
-    if not blueprint_file:
-        LOG.warning("No blueprintFile set on the rig")
-        return
-
-    LOG.info("Opening blueprint: %s", blueprint_file)
-    save_cameras()
-    pm.openFile(blueprint_file, f=True)
-    restore_cameras()
-
-
-def open_first_rig_blueprint():
-    rigs = get_all_rigs()
-    if not rigs:
-        LOG.warning("No rig in the scene")
-        return
-    open_rig_blueprint(rigs[0])
 
 
 class Rig(object):

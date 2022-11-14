@@ -8,10 +8,8 @@ from typing import Optional, Iterable, List, Type, Set, Tuple
 # TODO: remove maya dependencies from this core module, add BlueprintBuilder subclass that uses maya progress bars
 import pymel.core as pm
 
-from ..vendor import pymetanode as meta
 from .. import names
-from .blueprint import Blueprint, BlueprintSettings
-from .rigs import RIG_METACLASS, create_rig_node
+from .blueprint import Blueprint, BlueprintSettings, BlueprintFile
 from .actions import BuildStep, BuildAction
 
 __all__ = [
@@ -45,51 +43,38 @@ class BlueprintBuilder(object):
     """
 
     @classmethod
-    def pre_build_validate(cls, blueprint: Blueprint) -> bool:
+    def pre_build_validate(cls, blueprint_file: BlueprintFile) -> bool:
         """
         Perform a quick pre-build validation on a Blueprint
         to ensure that building can at least be started.
         """
-        if not blueprint:
+        if not blueprint_file or not blueprint_file.blueprint:
             LOG.error("No Blueprint was provided")
             return False
 
-        if not blueprint.get_setting(BlueprintSettings.RIG_NAME):
+        if not blueprint_file.blueprint.get_setting(BlueprintSettings.RIG_NAME):
             LOG.error("Rig name is not set")
             return False
 
-        if not blueprint.root_step.has_any_children():
+        if not blueprint_file.blueprint.root_step.has_any_children():
             LOG.error("Blueprint has no actions. Create new actions to begin.")
             return False
 
         return True
 
-    @classmethod
-    def from_current_scene(cls, blueprint: Blueprint) -> "BlueprintBuilder":
-        """
-        Create and return a new BlueprintBuilder instance
-        using a blueprint and the current scene.
-        """
-        # TODO: embed scene path in Blueprint settings when created and use it instead of guess-associating here
-        scene_file_path = str(pm.sceneName())
-        builder = cls(blueprint, scene_file_path=scene_file_path)
-        return builder
-
-    def __init__(self, blueprint: Blueprint, scene_file_path: Optional[str] = None, debug=None, log_dir=None):
+    def __init__(self, blueprint_file: BlueprintFile, debug: Optional[bool] = None, log_dir=None):
         """
         Initialize a BlueprintBuilder
 
         Args:
-            blueprint: Blueprint
-                A Blueprint to be built.
-            scene_file_path: Optional[str]
-                An optional string path to the maya file that contains the blueprint for the built rig.
-                This path is stored in the built rig for convenience.
-            log_dir: Optional[str]
-                The directory where logs should be written.
+            blueprint_file: The BlueprintFile with the Blueprint to build.
+            log_dir: The directory where logs should be written.
         """
-        if not blueprint.get_setting(BlueprintSettings.RIG_NAME):
-            raise ValueError("Blueprint 'rigName' setting is not set.")
+        self.blueprint_file = blueprint_file
+
+        if debug is None:
+            debug = self.blueprint.get_setting(BlueprintSettings.DEBUG_BUILD)
+        self.debug = debug
 
         # the name of this builder object, used in logs
         self.builder_name = "Builder"
@@ -121,18 +106,10 @@ class BlueprintBuilder(object):
         # the results of the last iteration that was performed
         self._iter_result = {}
 
-        # the rig root node, available after the builder starts,
-        # and create_rig_structure has been called
+        # the rig root node, set by the Create Rig action.
         self.rig: Optional[pm.nt.Transform] = None
 
-        self.blueprint = blueprint
-        self.scene_file_path = scene_file_path
-
-        if debug is None:
-            debug = self.blueprint.get_setting(BlueprintSettings.DEBUG_BUILD)
-        self.debug = debug
-
-        self.rig_name: str = self.blueprint.get_setting(BlueprintSettings.RIG_NAME)
+        self._rig_name: str = self.blueprint.get_setting(BlueprintSettings.RIG_NAME)
 
         # create a logger for this build and setup handlers
         self.logger = logging.getLogger("pulse.build")
@@ -146,6 +123,10 @@ class BlueprintBuilder(object):
 
         self.file_handler: Optional[logging.FileHandler] = None
         self.setup_file_logger(log_dir)
+
+    @property
+    def blueprint(self) -> Blueprint:
+        return self.blueprint_file.blueprint
 
     def has_errors(self) -> bool:
         return bool(self.errors)
@@ -304,7 +285,10 @@ class BlueprintBuilder(object):
                     status=self._iter_result["status"],
                 )
 
-            if not self.is_running or self.should_interrupt():
+            if not self.is_running:
+                break
+
+            if self.should_interrupt():
                 if self.cancel_on_interrupt:
                     self.cancel()
                 break
@@ -366,10 +350,10 @@ class BlueprintBuilder(object):
             self.logger.info(start_msg)
 
     def get_start_build_log_message(self) -> str:
-        return f"Started building rig: {self.rig_name} (debug={self.debug})"
+        return f"Started building rig: {self._rig_name} (debug={self.debug})"
 
     def get_finish_build_log_message(self) -> str:
-        return f"Built Rig '{self.rig_name}' with {self.get_error_summary()} ({self.elapsed_time:.3f}s)"
+        return f"Built Rig '{self._rig_name}' with {self.get_error_summary()} ({self.elapsed_time:.3f}s)"
 
     def get_finish_build_in_view_message(self) -> str:
         if self.has_errors():
@@ -378,7 +362,7 @@ class BlueprintBuilder(object):
             return "Build Successful"
 
     def get_cancel_log_message(self) -> str:
-        return f"Cancelled build of rig '{self.rig_name}' with {self.get_error_summary()} ({self.elapsed_time:.3f}s)"
+        return f"Cancelled build of rig '{self._rig_name}' with {self.get_error_summary()} ({self.elapsed_time:.3f}s)"
 
     def get_cancel_build_in_view_message(self) -> str:
         if self.has_errors():
@@ -470,9 +454,6 @@ class BlueprintBuilder(object):
         """
         self.clear_validate_results()
 
-        yield dict(index=0, total=100, phase="setup", status="Create Rig Structure")
-        self.create_rig_structure()
-
         yield dict(index=1, total=100, phase="setup", status="Retrieve Actions")
         all_actions = self._generate_all_actions()
         action_count = len(all_actions)
@@ -487,6 +468,7 @@ class BlueprintBuilder(object):
 
             # run the action
             action.builder = self
+            # note that the rig will not exist until a Create Rig action has run
             action.rig = self.rig
             self._log_context = dict(step=step, action=action, action_index=action_index)
             self.run_build_action(step, action, action_index, index, action_count)
@@ -501,27 +483,6 @@ class BlueprintBuilder(object):
         self.blueprint.root_step.clear_validate_results()
         for step in self.blueprint.root_step.child_iterator():
             step.clear_validate_results()
-
-    def create_rig_structure(self):
-        """
-        Create the top level rig node that will contain the entire rig.
-        """
-        node_name_format = self.blueprint.get_setting(BlueprintSettings.RIG_NODE_NAME_FORMAT)
-        rig_node_name = node_name_format.format(**self.blueprint.settings)
-        self.rig = create_rig_node(rig_node_name)
-
-        # add some additional meta data
-        meta.update_metadata(
-            self.rig,
-            RIG_METACLASS,
-            dict(
-                # TODO: update blueprint version when loaded,
-                #       when saved and built it should be using the current version
-                version=self.blueprint.version,
-                blueprintFile=self.scene_file_path,
-            ),
-        )
-        self.logger.info("Created rig structure: %s", self.rig.nodeName())
 
     def _generate_all_actions(self) -> List[Tuple[BuildStep, BuildAction, int]]:
         """
@@ -550,6 +511,14 @@ class BlueprintBuilder(object):
             action.run()
         except Exception as exc:
             action.logger.error(str(exc), exc_info=True)
+            if action.should_abort_on_error():
+                # abort the build
+                self.logger.error(
+                    "An error occurred, and this action returned True from `should_abort_on_error`, "
+                    "cancelling build...",
+                )
+                self.cancel()
+                return
 
         end_time = time.time()
         duration = end_time - start_time
@@ -589,8 +558,8 @@ class BlueprintValidator(BlueprintBuilder):
     Runs `validate` for all BuildActions in a Blueprint.
     """
 
-    def __init__(self, blueprint: Blueprint, scene_file_path: Optional[str] = None, debug=None, log_dir=None):
-        super(BlueprintValidator, self).__init__(blueprint, scene_file_path, debug, log_dir)
+    def __init__(self, blueprint_file: BlueprintFile, debug: Optional[bool] = None, log_dir=None):
+        super(BlueprintValidator, self).__init__(blueprint_file, debug, log_dir)
         self.builder_name = "Validator"
         self.progress_title = "Validating Blueprint"
         self.show_progress_ui = False
@@ -602,15 +571,11 @@ class BlueprintValidator(BlueprintBuilder):
     def close_file_logger(self):
         pass
 
-    def create_rig_structure(self):
-        # do nothing, only validating
-        pass
-
     def get_start_build_log_message(self):
-        return f"Started validating blueprint: {self.rig_name} (debug={self.debug})"
+        return f"Started validating blueprint: {self._rig_name} (debug={self.debug})"
 
     def get_finish_build_log_message(self):
-        return f"Validated rig '{self.rig_name}' with {self.get_error_summary()} ({self.elapsed_time:.3f}s)"
+        return f"Validated rig '{self._rig_name}' with {self.get_error_summary()} ({self.elapsed_time:.3f}s)"
 
     def get_finish_build_in_view_message(self):
         return f"Validate Finished with {self.get_error_summary()}"

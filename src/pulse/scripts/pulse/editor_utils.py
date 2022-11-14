@@ -19,6 +19,7 @@ from . import shapes
 from . import skins
 from . import sym
 from . import source_editor
+from .cameras import save_cameras, restore_cameras
 from .colors import LinearColor
 from .vendor.mayacoretools import preservedSelection
 
@@ -89,6 +90,24 @@ def get_editor_blueprint():
     from .ui.core import BlueprintUIModel
 
     return BlueprintUIModel.get_default_model().blueprint
+
+
+def open_blueprint_scene():
+    """
+    Open the Maya scene associated with the currently open Blueprint.
+    """
+    blueprint = get_editor_blueprint()
+    if not blueprint:
+        return
+
+    if not blueprint.scene_path:
+        LOG.warning("No scene path associated with the opened Blueprint.")
+        return
+
+    LOG.info("Opening blueprint: %s", blueprint.scene_path)
+    save_cameras()
+    pm.openFile(blueprint.scene_path, force=True)
+    restore_cameras()
 
 
 def get_selected_transforms(include_children=False):

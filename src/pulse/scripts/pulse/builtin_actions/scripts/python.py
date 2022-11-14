@@ -129,28 +129,27 @@ class PythonAction(BuildAction):
     ]
 
     def validate(self):
-        scene_file_name = pm.sceneName()
-        if not scene_file_name:
-            self.logger.error("File is not saved, could not determine script file path.")
+        blueprint_file_path = self.builder.blueprint_file.file_path
+        if not blueprint_file_path:
+            self.logger.error("Blueprint is not saved, could not determine script file path.")
             return
 
-        module_filepath = os.path.splitext(scene_file_name)[0] + "_scripts.py"
+        module_file_path = os.path.splitext(blueprint_file_path)[0] + "_scripts.py"
 
-        if not os.path.isfile(module_filepath):
-            self.logger.error(f"Script file does not exist: {module_filepath}.")
+        if not os.path.isfile(module_file_path):
+            self.logger.error(f"Script file does not exist: {module_file_path}.")
             return
 
-        func = self._import_function(self.function, module_filepath)
+        func = self._import_function(self.function, module_file_path)
         if func is None:
             self.logger.error("Function '%s' was not found.", self.function)
 
     def run(self):
-        # TODO: use actual blueprint file, not maya scene
-        scene_file_path = self.builder.scene_file_path
-        if not scene_file_path:
-            raise BuildActionError("Failed to get blueprint file name from builder")
+        blueprint_file_path = self.builder.blueprint_file.file_path
+        if not blueprint_file_path:
+            raise BuildActionError("Failed to get blueprint file path from builder.")
 
-        module_file_path = os.path.splitext(scene_file_path)[0] + "_scripts.py"
+        module_file_path = os.path.splitext(blueprint_file_path)[0] + "_scripts.py"
         func = self._import_function(self.function, module_file_path)
         func(self)
 

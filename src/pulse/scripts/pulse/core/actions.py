@@ -12,6 +12,7 @@ from .serializer import UnsortableOrderedDict
 from ..colors import LinearColor
 
 if TYPE_CHECKING:
+    from .blueprint import Blueprint
     from .builder import BlueprintGlobalValidateStep
 
 LOG = logging.getLogger(__name__)
@@ -253,7 +254,7 @@ class BuildActionAttribute(object):
     class_attr_type: Optional[str] = BuildActionAttributeType.UNKNOWN
 
     # cached map of attribute types to BuildActionAttribute classes for faster lookup
-    _attr_class_map: dict[Optional[str] : type["BuildActionAttribute"]] = {}
+    _attr_class_map: dict[Optional[str], type["BuildActionAttribute"]] = {}
 
     @classmethod
     def from_spec(cls, name: str, action_spec: BuildActionSpec = None, action_id: str = None) -> "BuildActionAttribute":
@@ -1271,9 +1272,20 @@ class BuildAction(BuildActionData):
 
     @property
     def logger(self):
+        """
+        Return the logger to use for logging from this action.
+        Warnings and errors will be tracked and associated with the action in the editor for visibility.
+        """
         if not self._logger:
             self._logger = logging.getLogger(self.get_logger_name())
         return self._logger
+
+    @property
+    def blueprint(self) -> Blueprint:
+        """
+        Return the Blueprint being built.
+        """
+        return self.builder.blueprint
 
     def get_min_api_version(self):
         """
@@ -1376,6 +1388,12 @@ class BuildAction(BuildActionData):
         Attribute values can be accessed using `self.myAttr`.
         """
         raise NotImplementedError
+
+    def should_abort_on_error(self) -> bool:
+        """
+        Should the build be aborted if an error occurs while this action is running?
+        """
+        return False
 
 
 class BuildStep(object):

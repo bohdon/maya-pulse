@@ -11,6 +11,7 @@ import maya.OpenMayaUI as mui
 import maya.cmds as cmds
 import pymel.core as pm
 from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
+from ..editor_utils import open_blueprint_scene
 
 from ..vendor import pymetanode as meta
 from ..vendor.Qt import QtCore, QtWidgets, QtGui
@@ -19,7 +20,7 @@ from ..core import Blueprint, BlueprintFile, BlueprintSettings, BlueprintBuilder
 from ..core import BuildStep, BuildAction
 from ..core import load_actions
 from ..core import serialize_attr_value
-from ..core import get_all_rigs, open_first_rig_blueprint
+from ..core import get_all_rigs
 from ..prefs import option_var_property
 from .utils import CollapsibleFrame
 from .utils import dpi_scale
@@ -1135,29 +1136,26 @@ class BlueprintUIModel(QtCore.QObject):
 
     def run_validation(self):
         """Run a Blueprint Validator for the current blueprint."""
-        blueprint = self.blueprint
-        if blueprint is not None:
-            if not BlueprintBuilder.pre_build_validate(blueprint):
-                return
+        if not self.is_file_open():
+            return
 
-            validator = BlueprintValidator(blueprint)
-            validator.start()
+        if not BlueprintBuilder.pre_build_validate(self.blueprint_file):
+            return
 
-            self.on_validate_event.emit()
+        validator = BlueprintValidator(self.blueprint_file)
+        validator.start()
+
+        self.on_validate_event.emit()
 
     def can_build(self) -> bool:
-        return not self.does_rig_exist
+        return self.is_file_open() and not self.does_rig_exist
 
     def run_build(self):
         """Build the current blueprint."""
         if not self.can_build():
             return False
 
-        blueprint = self.blueprint
-        if blueprint is None:
-            return
-
-        if not BlueprintBuilder.pre_build_validate(blueprint):
+        if not BlueprintBuilder.pre_build_validate(self.blueprint_file):
             return
 
         # save maya scene
@@ -1165,12 +1163,15 @@ class BlueprintUIModel(QtCore.QObject):
         if not editor_utils.save_scene_if_dirty(prompt=False):
             return
 
+        # update scene path, so we can re-open the current maya scene later
+        self.blueprint.update_scene_path()
+
         # save blueprint
         if self.is_file_modified():
             if not self.save_file_with_prompt():
                 return
 
-        builder = BlueprintBuilder.from_current_scene(blueprint)
+        builder = BlueprintBuilder(self.blueprint_file)
         builder.start()
 
         # TODO: add build events so this can be done by observer pattern
@@ -1188,11 +1189,7 @@ class BlueprintUIModel(QtCore.QObject):
             # already running
             return
 
-        blueprint = self.blueprint
-        if blueprint is None:
-            return
-
-        if not BlueprintBuilder.pre_build_validate(blueprint):
+        if not BlueprintBuilder.pre_build_validate(self.blueprint_file):
             return
 
         # save maya scene
@@ -1200,12 +1197,15 @@ class BlueprintUIModel(QtCore.QObject):
         if not editor_utils.save_scene_if_dirty(prompt=False):
             return
 
+        # update scene path, so we can re-open the current maya scene later
+        self.blueprint.update_scene_path()
+
         # save blueprint
         if self.is_file_modified():
             if not self.save_file_with_prompt():
                 return
 
-        self.interactive_builder = BlueprintBuilder.from_current_scene(blueprint)
+        self.interactive_builder = BlueprintBuilder(self.blueprint_file)
         self.interactive_builder.cancel_on_interrupt = False
         self.interactive_builder.start(run=False)
 
@@ -1251,11 +1251,11 @@ class BlueprintUIModel(QtCore.QObject):
             self.interactive_builder.cancel()
             self.interactive_builder = None
 
-    def open_rig_blueprint(self):
+    def open_blueprint_scene(self):
         """Open the blueprint maya scene for the first rig in the scene."""
         # TODO: don't need this stub, just listen for pre-close maya scene callback to clear interactive build
         self.cancel_interactive_build()
-        open_first_rig_blueprint()
+        open_blueprint_scene()
 
 
 class BuildStepTreeModel(QtCore.QAbstractItemModel):

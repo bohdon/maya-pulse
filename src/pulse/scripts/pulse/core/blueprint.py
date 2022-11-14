@@ -88,6 +88,9 @@ class Blueprint(object):
         self.config_file_path: str = get_default_config_file()
         # the config, automatically loaded when calling `get_config`
         self._config: Optional[dict] = None
+        # the maya scene path associated with this blueprint
+        self.scene_path: str = ""
+        self.update_scene_path()
 
     def add_missing_settings(self):
         """
@@ -112,11 +115,19 @@ class Blueprint(object):
         """
         self.settings[key] = value
 
+    def update_scene_path(self):
+        """
+        Update the associated scene path to the currently open Maya scene.
+        """
+        self.scene_path = str(pm.sceneName())
+
     def serialize(self) -> UnsortableOrderedDict:
+        self.update_scene_path()
         data = UnsortableOrderedDict()
         data["version"] = self.version
         data["settings"] = self.settings
         data["steps"] = self.root_step.serialize()
+        data["scene_path"] = self.scene_path
         return data
 
     def deserialize(self, data: dict) -> bool:
@@ -124,11 +135,13 @@ class Blueprint(object):
         Returns:
             True if the data was deserialized successfully
         """
+        # TODO: update blueprint version when loaded, and system for upgrading data
         self.version = data.get("version", None)
         self.settings = data.get("settings", {})
         self.root_step.deserialize(data.get("steps", {"name": "Root"}))
         # inject new or missing settings
         self.add_missing_settings()
+        self.scene_path = data.get("scene_path", "")
         return True
 
     def load_from_file(self, file_path: str) -> bool:
@@ -202,6 +215,7 @@ class Blueprint(object):
         """
         rename_action = BuildStep(action_id="Pulse.RenameScene")
         import_action = BuildStep(action_id="Pulse.ImportReferences")
+        create_rig_action = BuildStep(action_id="Pulse.CreateRig")
         hierarchy_action = BuildStep(action_id="Pulse.BuildCoreHierarchy")
         hierarchy_attr = hierarchy_action.action_proxy.get_attr("allNodes")
         if hierarchy_attr:
@@ -211,6 +225,7 @@ class Blueprint(object):
             [
                 rename_action,
                 import_action,
+                create_rig_action,
                 hierarchy_action,
                 main_group,
             ]

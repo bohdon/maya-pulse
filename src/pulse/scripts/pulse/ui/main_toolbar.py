@@ -50,7 +50,7 @@ class MainToolbar(QtWidgets.QWidget):
         self.ui.interactive_next_btn.clicked.connect(self.blueprint_model.interactive_build_next_action)
         self.ui.interactive_next_step_btn.clicked.connect(self.blueprint_model.interactive_build_next_step)
         self.ui.interactive_continue_btn.clicked.connect(self.blueprint_model.continue_interactive_build)
-        self.ui.open_blueprint_btn.clicked.connect(self.blueprint_model.open_rig_blueprint)
+        self.ui.open_blueprint_btn.clicked.connect(self.blueprint_model.open_blueprint_scene)
 
         self.ui.settings_btn.clicked.connect(MainSettingsWindow.toggleWindow)
         self.ui.design_toolkit_btn.clicked.connect(DesignToolkitWindow.toggleWindow)
