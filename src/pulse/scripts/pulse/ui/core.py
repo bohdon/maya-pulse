@@ -846,7 +846,7 @@ class BlueprintUIModel(QtCore.QObject):
             LOG.error("move_step: failed to find step: %s", source_path)
             return
 
-        if step == self.blueprint.rootStep:
+        if step.is_root():
             LOG.error("move_step: cannot move root step")
             return
 
@@ -873,7 +873,7 @@ class BlueprintUIModel(QtCore.QObject):
             LOG.error("move_step: failed to find step: %s", step_path)
             return
 
-        if step == self.blueprint.rootStep:
+        if step.is_root():
             LOG.error("move_step: cannot rename root step")
             return
 
@@ -1313,7 +1313,7 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
                 if child_step:
                     return self.createIndex(row, column, child_step)
         elif row == 0:
-            return self.createIndex(row, column, self.blueprint.rootStep)
+            return self.createIndex(row, column, self.blueprint.root_step)
 
         return QtCore.QModelIndex()
 
@@ -1341,7 +1341,7 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
         if not self.is_read_only():
             step = self.step_for_index(index)
             if step:
-                if step != self.blueprint.rootStep:
+                if not step.is_root():
                     flags |= QtCore.Qt.ItemIsDragEnabled | QtCore.Qt.ItemIsEditable
 
                 if step.can_have_children():
@@ -1443,7 +1443,7 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
             return True
 
         elif role == QtCore.Qt.CheckStateRole:
-            if step == self.blueprint.rootStep:
+            if step.is_root():
                 return False
             step.isDisabled = True if value else False
             self.dataChanged.emit(index, index, [])

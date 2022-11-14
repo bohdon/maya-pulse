@@ -1491,6 +1491,12 @@ class BuildStep(object):
 
         self._action_proxy = action_proxy
 
+    def is_root(self) -> bool:
+        """
+        Return True if this is the root build step.
+        """
+        return not self.parent
+
     def can_have_children(self) -> bool:
         return not self.is_action()
 
@@ -1545,10 +1551,11 @@ class BuildStep(object):
         if self._action_proxy:
             if self._action_proxy.is_variant_action():
                 return f"{self._name} (x{self._action_proxy.num_variants()})"
-            else:
-                return f"{self._name}"
-        else:
+
+        if self.can_have_children() and not self.is_root():
             return f"{self._name} ({self.num_children()})"
+
+        return f"{self._name}"
 
     def get_description(self) -> str:
         """
@@ -1566,30 +1573,17 @@ class BuildStep(object):
             return self._action_proxy.get_color()
         return LinearColor(1.0, 1.0, 1.0)
 
-    def get_full_path(self):
+    def get_full_path(self) -> str:
         """
         Return the full path to this BuildStep.
 
         Returns:
-            A string path to the step
-            e.g. 'MyGroupA/MyGroupB/MyBuildStep'
+            A string path to the step e.g. '/MyGroupA/MyGroupB/MyBuildStep'
         """
         if self._parent:
-            parent_path = self._parent.get_full_path()
-            if parent_path:
-                return f"{parent_path}/{self._name}"
-            else:
-                return self._name
-        else:
-            # a root step, or step without a parent has no path
-            return None
-
-    def get_parent_path(self):
-        """
-        Return the full path to this BuildStep's parent
-        """
-        if self._parent:
-            return self._parent.get_full_path()
+            parent_path = self._parent.get_full_path().rstrip("/")
+            return f"{parent_path}/{self._name}"
+        return "/"
 
     def index_in_parent(self):
         """
@@ -1729,6 +1723,9 @@ class BuildStep(object):
         """
         if not self.can_have_children():
             return
+
+        # strip leading slash
+        path = path.lstrip("/")
 
         if "/" in path:
             child_name, grand_child_path = path.split("/", 1)

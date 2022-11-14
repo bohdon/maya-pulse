@@ -41,6 +41,7 @@ class ActionTreeView(QtWidgets.QTreeView):
         self.setHeaderHidden(True)
         self.setAcceptDrops(True)
         self.setRootIsDecorated(False)
+        self.setExpandsOnDoubleClick(False)
         self.setDefaultDropAction(QtCore.Qt.MoveAction)
         self.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.ExtendedSelection)
         self.setIndentation(14)
@@ -87,17 +88,15 @@ class ActionTreeView(QtWidgets.QTreeView):
         steps: List[BuildStep] = []
         for index in indexes:
             step: BuildStep = cast(BuildStepTreeModel, self.model()).step_for_index(index)
-            if step:
+            if step and not step.is_root():
                 steps.append(step)
+        if not steps:
+            return
+
         steps = BuildStep.get_topmost_steps(steps)
+        paths = [step.get_full_path() for step in steps]
 
-        paths = []
-        for step in steps:
-            path = step.get_full_path()
-            print(step, path)
-            if path:
-                paths.append(path)
-
+        LOG.info(f"Deleting {paths}")
         cmds.undoInfo(openChunk=True, chunkName="Delete Pulse Actions")
         for path in paths:
             cmds.pulseDeleteStep(path)

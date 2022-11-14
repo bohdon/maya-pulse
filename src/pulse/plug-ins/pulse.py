@@ -96,7 +96,7 @@ class PulseDeleteStepCmd(PulseCmdBase):
         # save the serialized step data before deleting
         step = self.blueprint_model.get_step(self.step_path)
         if not step:
-            raise RuntimeError("BuildStep not found: {0}".format(self.step_path))
+            raise RuntimeError(f"BuildStep not found: '{self.step_path}'")
         self.deleted_str_data = serialize_attr_value(step.serialize())
         self.deleted_child_index = step.index_in_parent()
         if not self.blueprint_model.delete_step(self.step_path):

@@ -58,7 +58,7 @@ class BlueprintBuilder(object):
             LOG.error("Rig name is not set")
             return False
 
-        if not blueprint.rootStep.has_any_children():
+        if not blueprint.root_step.has_any_children():
             LOG.error("Blueprint has no actions. Create new actions to begin.")
             return False
 
@@ -235,7 +235,7 @@ class BlueprintBuilder(object):
         """
         if "step" in self._log_context:
             return self._log_context["step"]
-        return self.blueprint.rootStep
+        return self.blueprint.root_step
 
     def start(self, run=True) -> bool:
         """
@@ -449,7 +449,7 @@ class BlueprintBuilder(object):
             A generator that yields a tuple of (BuildStep, BuildAction)
             for every action in the Blueprint.
         """
-        for step in self.blueprint.rootStep.child_iterator():
+        for step in self.blueprint.root_step.child_iterator():
             self._log_context = dict(step=step)
             # try-catch each step, so we can stumble over
             # problematic steps without crashing the whole build
@@ -496,7 +496,7 @@ class BlueprintBuilder(object):
         """
         Clear the results of any previous validation or build.
         """
-        for step in self.blueprint.rootStep.child_iterator():
+        for step in self.blueprint.root_step.child_iterator():
             step.clear_validate_results()
 
     def create_rig_structure(self):

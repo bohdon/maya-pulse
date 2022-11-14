@@ -39,7 +39,7 @@ class BuildStepForm(QtWidgets.QWidget):
         self.setup_content_ui(self, step)
 
         # set title text and color
-        self.ui.display_name_label.setText(self._get_step_display_name(step))
+        self.ui.display_name_label.setText(step.get_full_path())
         if pm.optionVar.get("pulse.editor.actionEditor.showDescriptions"):
             self.ui.description_label.setText(step.get_description())
         else:
@@ -55,7 +55,7 @@ class BuildStepForm(QtWidgets.QWidget):
 
     def _update_name(self):
         step = self.get_step()
-        self.ui.display_name_label.setText(self._get_step_display_name(step))
+        self.ui.display_name_label.setText(step.get_full_path())
 
     def _apply_step_color(self, color: LinearColor):
         bg_color = color * 0.15
@@ -79,21 +79,13 @@ class BuildStepForm(QtWidgets.QWidget):
         if self.index.isValid():
             return cast(BuildStepTreeModel, self.index.model()).step_for_index(self.index)
 
-    def _get_step_display_name(self, step: BuildStep):
-        parent_path = step.get_parent_path()
-        if parent_path:
-            return f"{step.get_parent_path()}/{step.get_display_name()}".replace("/", " / ")
-        else:
-            return step.get_display_name()
-
-    def setup_content_ui(self, parent, step):
+    def setup_content_ui(self, parent, step: BuildStep):
         """
         Build the body UI for this build step.
 
         If this step is an action, create a BuildActionProxyForm widget, possibly using the custom
         `editor_form_cls` defined on the action.
         """
-        step = self.get_step()
         if step.is_action() and step.action_proxy.is_valid():
             custom_form_cls = step.action_proxy.spec.editor_form_cls
             if not custom_form_cls:

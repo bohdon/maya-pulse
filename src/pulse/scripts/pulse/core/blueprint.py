@@ -83,7 +83,7 @@ class Blueprint(object):
         # the version of this blueprint
         self.version: str = BLUEPRINT_VERSION
         # the root step of this blueprint
-        self.rootStep: BuildStep = BuildStep("Root")
+        self.root_step: BuildStep = BuildStep("Root")
         # the config file to use when designing this Blueprint
         self.config_file_path: str = get_default_config_file()
         # the config, automatically loaded when calling `get_config`
@@ -116,7 +116,7 @@ class Blueprint(object):
         data = UnsortableOrderedDict()
         data["version"] = self.version
         data["settings"] = self.settings
-        data["steps"] = self.rootStep.serialize()
+        data["steps"] = self.root_step.serialize()
         return data
 
     def deserialize(self, data: dict) -> bool:
@@ -126,7 +126,7 @@ class Blueprint(object):
         """
         self.version = data.get("version", None)
         self.settings = data.get("settings", {})
-        self.rootStep.deserialize(data.get("steps", {"name": "Root"}))
+        self.root_step.deserialize(data.get("steps", {"name": "Root"}))
         # inject new or missing settings
         self.add_missing_settings()
         return True
@@ -185,16 +185,16 @@ class Blueprint(object):
         Return a BuildStep from the Blueprint by path
 
         Args:
-            path: str
-                A path pointing to a BuildStep, e.g. 'My/Build/Step'
+            path: A path pointing to a BuildStep, e.g. '/My/Build/Step'
         """
-        if not path:
-            return self.rootStep
+        if not path or path == "/":
+            return self.root_step
         else:
-            step = self.rootStep.get_child_by_path(path)
-            if not step:
+            step = self.root_step.get_child_by_path(path)
+            if step:
+                return step
+            else:
                 LOG.warning("Could not find BuildStep: %s", path)
-            return step
 
     def add_default_actions(self):
         """
@@ -207,7 +207,7 @@ class Blueprint(object):
         if hierarchy_attr:
             hierarchy_attr.set_value(True)
         main_group = BuildStep("Main")
-        self.rootStep.add_children(
+        self.root_step.add_children(
             [
                 rename_action,
                 import_action,
