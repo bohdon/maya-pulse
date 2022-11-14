@@ -107,13 +107,10 @@ default_blueprint:
     children:
       - action:
           id: Pulse.RenameScene
-        name: Rename Scene
       - action:
           id: Pulse.ImportReferences
-        name: Import References
       - action:
           id: Pulse.CreateRig
-        name: Create Rig
       - action:
           id: Pulse.BuildCoreHierarchy
           variantAttrs:
@@ -124,14 +121,7 @@ default_blueprint:
             - groupName: core
             - allNodes: true
               groupName: ctls
-        name: Build Core Hierarchy
       - name: Main
       - action:
           id: Pulse.SetAttributeDefaults
-        name: Set Attribute Defaults
-      - action:
-          displayType: 2
-          id: Pulse.DisplayLayer
-          name: meshes_lyr
-        name: Display Layer
     name: Root
