@@ -1255,8 +1255,7 @@ class BlueprintUIModel(QtCore.QObject):
 
 class BuildStepTreeModel(QtCore.QAbstractItemModel):
     """
-    A Qt tree model for viewing and modifying the BuildStep
-    hierarchy of a Blueprint.
+    A Qt tree model for viewing and modifying the BuildStep hierarchy of a Blueprint.
     """
 
     def __init__(self, blueprint: Blueprint = None, blueprint_model: BlueprintUIModel = None, parent=None):
@@ -1266,25 +1265,22 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
         # TODO: why a separate blueprint variable when we have a model?
         self._blueprint = blueprint
 
-        # used to keep track of drag move actions since
-        # we don't have enough data within one function
-        # to group undo chunks completely
+        # used to keep track of drag move actions since we don't have enough data
+        # within one function to group undo chunks completely
         self._is_move_action_open = False
 
-        # hacky, but used to rename dragged steps back to their
-        # original names since they will get new names due to
-        # conflicts from both source and target steps existing
-        # at the same time briefly
+        # hacky, but used to rename dragged steps back to their original names since they will get
+        # new names due to conflicts from both source and target steps existing at the same time briefly
         self._drag_rename_queue = []
 
     @property
-    def blueprint(self):
+    def blueprint(self) -> Blueprint:
         return self._blueprint
 
     def set_blueprint(self, blueprint: Blueprint):
         self._blueprint = blueprint
 
-    def is_read_only(self):
+    def is_read_only(self) -> bool:
         if self.blueprint_model:
             return self.blueprint_model.is_read_only()
         return False
@@ -1295,39 +1291,33 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
         """
         if index.isValid():
             return cast(BuildStep, index.internalPointer())
-        if self._blueprint:
-            return self._blueprint.rootStep
 
-    def index_by_step(self, step: BuildStep):
-        if step and step != self._blueprint.rootStep:
-            return self.createIndex(step.index_in_parent(), 0, step)
+    def index_by_step(self, step: BuildStep) -> QtCore.QModelIndex:
+        if step:
+            index_in_parent = step.index_in_parent()
+            if index_in_parent >= 0:
+                return self.createIndex(index_in_parent, 0, step)
         return QtCore.QModelIndex()
 
-    def index_by_step_path(self, path):
-        """
-        Return a QModelIndex for a step by path
-        """
-        if self._blueprint:
-            step = self._blueprint.get_step_by_path(path)
-            return self.index_by_step(step)
-        return QtCore.QModelIndex()
-
-    def index(self, row, column, parent=QtCore.QModelIndex()):
+    def index(self, row: int, column: int, parent=QtCore.QModelIndex()) -> QtCore.QModelIndex:
         """
         Create a QModelIndex for a row, column, and parent index
         """
-        if parent.isValid() and column != 0:
+        if column != 0:
             return QtCore.QModelIndex()
 
-        parent_step = self.step_for_index(parent)
-        if parent_step and parent_step.can_have_children():
-            child_step = parent_step.get_child_at(row)
-            if child_step:
-                return self.createIndex(row, column, child_step)
+        if parent.isValid():
+            parent_step = self.step_for_index(parent)
+            if parent_step and parent_step.can_have_children():
+                child_step = parent_step.get_child_at(row)
+                if child_step:
+                    return self.createIndex(row, column, child_step)
+        elif row == 0:
+            return self.createIndex(row, column, self.blueprint.rootStep)
 
         return QtCore.QModelIndex()
 
-    def parent(self, index):
+    def parent(self, index: QtCore.QModelIndex) -> QtCore.QModelIndex:
         if not index.isValid():
             return QtCore.QModelIndex()
 
@@ -1337,26 +1327,25 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
         else:
             return QtCore.QModelIndex()
 
-        if parent_step is None or parent_step == self._blueprint.rootStep:
-            return QtCore.QModelIndex()
+        if parent_step:
+            return self.index_by_step(parent_step)
 
-        return self.createIndex(parent_step.index_in_parent(), 0, parent_step)
+        return QtCore.QModelIndex()
 
-    def flags(self, index):
+    def flags(self, index: QtCore.QModelIndex):
         if not index.isValid():
-            if not self.is_read_only():
-                return QtCore.Qt.ItemIsDropEnabled
-            else:
-                return 0
+            return 0
 
         flags = QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
 
         if not self.is_read_only():
-            flags |= QtCore.Qt.ItemIsDragEnabled | QtCore.Qt.ItemIsEditable
+            step = self.step_for_index(index)
+            if step:
+                if step != self.blueprint.rootStep:
+                    flags |= QtCore.Qt.ItemIsDragEnabled | QtCore.Qt.ItemIsEditable
 
-        step = self.step_for_index(index)
-        if step and step.can_have_children():
-            flags |= QtCore.Qt.ItemIsDropEnabled
+                if step.can_have_children():
+                    flags |= QtCore.Qt.ItemIsDropEnabled
 
         return flags
 
@@ -1364,6 +1353,10 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
         return 1
 
     def rowCount(self, parent=QtCore.QModelIndex()):
+        if not parent.isValid():
+            # first level has only the root step
+            return 1
+
         step = self.step_for_index(parent)
         return step.num_children() if step else 0
 
@@ -1391,6 +1384,8 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
             if not step.is_action():
                 if step.is_disabled_in_hierarchy():
                     icon_name = "step_group_disabled"
+                elif step.has_warnings():
+                    icon_name = "warning"
                 else:
                     icon_name = "step_group"
             else:
@@ -1448,6 +1443,8 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
             return True
 
         elif role == QtCore.Qt.CheckStateRole:
+            if step == self.blueprint.rootStep:
+                return False
             step.isDisabled = True if value else False
             self.dataChanged.emit(index, index, [])
             self._emit_data_changed_on_all_children(index, [])
@@ -1474,22 +1471,20 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
             child_index = self.index(i, 0, parent)
             self._emit_data_changed_on_all_children(child_index, roles)
 
+    def _get_topmost_steps(self, indexes: List[QtCore.QModelIndex]) -> List[BuildStep]:
+        steps = [self.step_for_index(index) for index in indexes]
+        steps = [step for step in steps if step]
+        steps = BuildStep.get_topmost_steps(steps)
+        return steps
+
     def mimeTypes(self):
         return ["text/plain"]
 
     def mimeData(self, indexes):
         result = QtCore.QMimeData()
 
-        # TODO: this block of getting topmost steps is redundantly
-        #       used in deleting steps, need to consolidate
-        steps = []
-        for index in indexes:
-            step = self.step_for_index(index)
-            if step:
-                steps.append(step)
-        steps = BuildStep.get_topmost_steps(steps)
-
-        step_data_list = [step.serialize() for step in steps]
+        top_steps = self._get_topmost_steps(indexes)
+        step_data_list = [step.serialize() for step in top_steps]
         data_str = meta.encode_metadata(step_data_list)
         result.setData("text/plain", data_str.encode())
         return result
@@ -1582,15 +1577,10 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
             indexes.append(index)
 
         # TODO: provide better api for deleting groups of steps
-        steps: List[BuildStep] = []
-        for index in indexes:
-            step = self.step_for_index(index)
-            if step:
-                steps.append(step)
-        steps = BuildStep.get_topmost_steps(steps)
+        top_steps = self._get_topmost_steps(indexes)
 
         paths = []
-        for step in steps:
+        for step in top_steps:
             path = step.get_full_path()
             if path:
                 paths.append(path)

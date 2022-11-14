@@ -40,6 +40,7 @@ class ActionTreeView(QtWidgets.QTreeView):
         self.setItemDelegate(ActionTreeStyledItemDelegate(parent))
         self.setHeaderHidden(True)
         self.setAcceptDrops(True)
+        self.setRootIsDecorated(False)
         self.setDefaultDropAction(QtCore.Qt.MoveAction)
         self.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.ExtendedSelection)
         self.setIndentation(14)
@@ -118,7 +119,8 @@ class ActionTreeView(QtWidgets.QTreeView):
             if step:
                 steps.append((index, step))
 
-        all_disabled = all([s.isDisabled for i, s in steps])
+        # only include steps with parents to ignore the root step, which can't be disabled
+        all_disabled = all([s.isDisabled for i, s in steps if s.parent])
         new_disabled = False if all_disabled else True
         for index, step in steps:
             self.model().setData(index, new_disabled, QtCore.Qt.CheckStateRole)
