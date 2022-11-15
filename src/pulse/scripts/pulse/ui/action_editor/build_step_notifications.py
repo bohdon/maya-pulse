@@ -42,7 +42,8 @@ class BuildStepNotifications(QtWidgets.QWidget):
         has_notifications = False
         for record in self.step.get_validate_results():
             label = QtWidgets.QLabel(self)
-            label.setProperty("cssClasses", "notification error")
+            severity = record.levelname.lower()
+            label.setProperty("cssClasses", f"notification {severity}")
             label.setTextInteractionFlags(QtCore.Qt.LinksAccessibleByMouse | QtCore.Qt.TextSelectableByMouse)
             label.setWordWrap(True)
             label.setText(record.getMessage())

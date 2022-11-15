@@ -208,9 +208,7 @@ class BlueprintBuilder(object):
         if not self.is_started or self.is_finished or self.is_canceled:
             return
 
-        if record.levelno == logging.WARNING:
-            self.warnings.append(record)
-        elif record.levelno == logging.ERROR:
+        if record.levelno >= logging.WARNING:
             self._update_log_with_context(record)
             self.errors.append(record)
             # add the log to the current step

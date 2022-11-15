@@ -1,91 +1,34 @@
 names:
-  numberFormat: "_{num:02}"
+  # the required naming convention for animation controls, can be null
+  anim_ctl_pattern: "{name}_ctl"
+  # the format for sequential control naming
+  number_format: "_{num:02}"
   keywords:
-    general:
-      - world
-      - root
-      - main
-      - pelvis
-      - spine
-      - torso
-      - chest
-    arms:
-      - clavicle
-      - shoulder
-      - elbow
-      - upperarm
-      - lowerarm
-      - hand
-      - wrist
-      - index
-      - middle
-      - ring
-      - pinky
-      - thumb
-    legs:
-      - hip
-      - leg
-      - knee
-      - thigh
-      - calf
-      - foot
-      - ankle
-      - heel
-      - ball
-      - toe
-      - toes
-    head:
-      - head
-      - eye
-      - eyes
-      - ear
-      - nose
-      - mouth
-      - hair
-      - jaw
-      - teeth
-      - tongue
-      - cheek
+    general: [ world, root, main, pelvis, spine, torso, chest ]
+    arms: [ clavicle, shoulder, elbow, upperarm, lowerarm, hand, wrist, index, middle, ring, pinky, thumb ]
+    legs: [ hip, leg, knee, thigh, calf, foot, ankle, heel, ball, toe, toes ]
+    head: [ head, eye, eyes, ear, nose, mouth, hair, jaw, teeth, tongue, cheek ]
   prefixes: [ ]
   suffixes:
-    - name: ik
-      sort: 7
-    - name: twist
-      sort: 8
-    - name: sub
-      sort: 9
-    - name: base
-      sort: 10
-    - name: lift
-      sort: 11
-    - name: space
-      sort: 50
-    - name: pivot
-      sort: 51
-    - name: mid
-      sort: 100
-    - name: end
-      sort: 101
-    - name: top
-      sort: 102
-    - name: bot
-      sort: 103
-    - name: f
-      sort: 104
-    - name: b
-      sort: 105
-    - name: c
-      sort: 106
-    - name: l
-      sort: 107
-    - name: r
-      sort: 108
-    - name: jnt
-      sort: 200
-    - name: ctl
-      sort: 201
-    - name: grp
-      sort: 202
+    - { name: ik, sort: 7 }
+    - { name: twist, sort: 8 }
+    - { name: sub, sort: 9 }
+    - { name: base, sort: 10 }
+    - { name: lift, sort: 11 }
+    - { name: space, sort: 50 }
+    - { name: pivot, sort: 51 }
+    - { name: mid, sort: 100 }
+    - { name: end, sort: 101 }
+    - { name: top, sort: 102 }
+    - { name: bot, sort: 103 }
+    - { name: f, sort: 104 }
+    - { name: b, sort: 105 }
+    - { name: c, sort: 106 }
+    - { name: l, sort: 107 }
+    - { name: r, sort: 108 }
+    - { name: jnt, sort: 200 }
+    - { name: ctl, sort: 201 }
+    - { name: grp, sort: 202 }
 colors:
   root: "#f6bd15"
   main_c: "#f6bd15"
@@ -94,14 +37,10 @@ colors:
   main_r: "#832121"
 symmetry:
   pairs:
-    - left: l
-      right: r
-    - left: L
-      right: R
-    - left: left
-      right: right
-    - left: Left
-      right: Right
+    - { left: l, right: r }
+    - { left: L, right: R }
+    - { left: left, right: right }
+    - { left: Left, right: Right }
 default_blueprint:
   steps:
     children:
