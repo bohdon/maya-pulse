@@ -87,7 +87,7 @@ class AnimControlAction(BuildAction):
         unfrozen_ctls = []
         for ctl in control_nodes:
             scale = ctl.scale.get()
-            if scale != pm.dt.Vector.one:
+            if not scale.isEquivalent(pm.dt.Vector.one):
                 unfrozen_ctls.append(ctl)
         if unfrozen_ctls:
             self.logger.error(f"{len(unfrozen_ctls)} controls have unfrozen scales.")
