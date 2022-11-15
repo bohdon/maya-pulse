@@ -7,12 +7,12 @@ from fnmatch import fnmatch
 import pymel.core as pm
 
 __all__ = [
-    'deleteModules',
-    'preservedSelection',
+    "delete_modules",
+    "preserved_selection",
 ]
 
 
-def deleteModules(pattern, verbose=True):
+def delete_modules(pattern, verbose=True):
     """
     Delete all existing python modules that match
     the given pattern.
@@ -29,7 +29,7 @@ def deleteModules(pattern, verbose=True):
         print(f"Deleted {len(matching_mods)} sys module(s) matching {pattern}")
 
 
-class preservedSelection(object):
+class preserved_selection(object):
     """
     Keeps the current selection for the scope of the given 'with' statement.
     """

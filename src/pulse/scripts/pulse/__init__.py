@@ -40,7 +40,7 @@ def reload():
         pass
 
     # delete all pulse modules from sys
-    mayacoretools.deleteModules("pulse*")
+    mayacoretools.delete_modules("pulse*")
 
     from .ui import show_editor_ui, menu
 

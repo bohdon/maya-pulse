@@ -21,7 +21,7 @@ from . import sym
 from . import source_editor
 from .cameras import save_cameras, restore_cameras
 from .colors import LinearColor
-from .vendor.mayacoretools import preservedSelection
+from .vendor.mayacoretools import preserved_selection
 
 LOG = logging.getLogger(__name__)
 
@@ -174,7 +174,7 @@ def freeze_scales_for_selected_hierarchies(skip_joints=True):
         skip_joints (bool): If true, don't attempt to freeze joint hierarchies. Does not prevent
             freezing joints if they are a child of one of the selected transforms.
     """
-    with preservedSelection() as sel:
+    with preserved_selection() as sel:
         top_nodes = nodes.get_parent_nodes(sel[:])
         for topNode in top_nodes:
             if not skip_joints or topNode.nodeType() != "joint":
@@ -182,19 +182,19 @@ def freeze_scales_for_selected_hierarchies(skip_joints=True):
 
 
 def freeze_pivots_for_selected_hierarchies():
-    with preservedSelection() as sel:
+    with preserved_selection() as sel:
         for s in sel:
             nodes.freeze_pivots_for_hierarchy(s)
 
 
 def freeze_offset_matrices_for_selected_hierarchies():
-    with preservedSelection() as sel:
+    with preserved_selection() as sel:
         for s in sel:
             nodes.freeze_offset_matrix_for_hierarchy(s)
 
 
 def unfreeze_offset_matrices_for_selected_hierarchies():
-    with preservedSelection() as sel:
+    with preserved_selection() as sel:
         for s in sel:
             nodes.unfreeze_offset_matrix_for_hierarchy(s)
 
@@ -203,7 +203,7 @@ def freeze_joints_for_selected_hierarchies():
     """
     Freeze rotates and scales on the selected joint hierarchies.
     """
-    with preservedSelection() as sel:
+    with preserved_selection() as sel:
         top_nodes = nodes.get_parent_nodes(sel[:])
         for topNode in top_nodes:
             if topNode.nodeType() == "joint":
@@ -229,7 +229,7 @@ def parent_selected_in_order():
     Parent the selected nodes to each other in order.
     Select from top of hierarchy downward, eg. [A, B, C] -> A|B|C
     """
-    with preservedSelection() as sel:
+    with preserved_selection() as sel:
         nodes.parent_in_order(sel[:])
 
 

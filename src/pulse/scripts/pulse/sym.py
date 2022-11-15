@@ -6,7 +6,7 @@ from typing import List, Optional, Tuple
 
 import pymel.core as pm
 from .vendor import pymetanode as meta
-from .vendor.mayacoretools import preservedSelection
+from .vendor.mayacoretools import preserved_selection
 from .vendor.overrides import overrides
 
 from .core import Blueprint
@@ -135,7 +135,7 @@ def duplicate_and_pair_node(source_node):
     Returns:
         The newly created node.
     """
-    with preservedSelection():
+    with preserved_selection():
         dest_node = pm.duplicate([source_node] + source_node.getChildren(s=True), po=True)[0]
         # handle bug in recent maya versions where extra empty
         # transforms will be included in the duplicate
@@ -320,7 +320,7 @@ class MirrorParenting(MirrorOperation):
         parents along an axis, as well as connecting inverse scales
         so that segment scale compensate still works.
         """
-        with preservedSelection():
+        with preserved_selection():
             # get parent of source node
             if self.findCenteredJoints and isinstance(source_node, pm.nt.Joint):
                 src_parent = get_mirrored_or_centered_parent(source_node, self.axis)
