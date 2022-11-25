@@ -214,6 +214,7 @@ class AnimPickerButton(QtWidgets.QPushButton):
         self.select_color = LinearColor(1, 1, 1, 1)
         self._is_selected = False
 
+        self.setAttribute(QtCore.Qt.WA_TransparentForMouseEvents)
         self.setProperty("cssClasses", "anim-picker-btn")
 
         self.clicked.connect(self.select)
