@@ -376,6 +376,8 @@ class AnimPickerButton(QtWidgets.QPushButton):
             node_color = nodes.get_override_color(pynode)
             if node_color:
                 self.color = node_color
+                # apply gamma correction to match the viewport more closely
+                self.color.apply_gamma(1 / 1.8)
                 # dim the color a bit to make white selection stand out
                 self.color.a = self.base_color_alpha
 

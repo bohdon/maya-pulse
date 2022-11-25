@@ -92,6 +92,10 @@ class LinearColor(list):
                 result[i] *= other
         return result
 
+    def apply_gamma(self, gamma: float):
+        for i in range(3):
+            self[i] = pow(self[i], gamma)
+
     def as_8bit(self) -> tuple:
         """
         Return this linear color (0..1) as an 8 bit color (0..255).
