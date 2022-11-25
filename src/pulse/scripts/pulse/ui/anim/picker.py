@@ -203,8 +203,8 @@ class AnimPickerButton(QtWidgets.QPushButton):
             size = self.default_size
 
         # the geometry of this button at 1x zoom
-        self._location = location
-        self._size = size
+        self._base_location = location
+        self._base_size = size
         # the node this button selects
         self._node = node
         self.namespace = namespace
@@ -223,37 +223,41 @@ class AnimPickerButton(QtWidgets.QPushButton):
 
     def serialize(self) -> dict:
         data = {
-            "location": self._location.toTuple(),
-            "size": self._size.toTuple(),
+            "location": self._base_location.toTuple(),
+            "size": self._base_size.toTuple(),
             "node": self._node,
         }
+        if self.text():
+            data["label"] = self.text()
         return data
 
     def deserialize(self, data: dict):
-        self._location = QPointF(*data.get("location", (0.0, 0.0)))
+        self._base_location = QPointF(*data.get("location", (0.0, 0.0)))
         if "size" in data:
-            self._size = QSize(*data["size"])
+            self._base_size = QSize(*data["size"])
         if "node" in data:
             self._node = data["node"]
             self._update_node_info()
             self._update_style()
+        if "label" in data:
+            self.setText(data["label"])
 
     @property
-    def location(self):
-        return self._location
+    def base_location(self):
+        return self._base_location
 
-    def set_location(self, pos: Union[QPointF, QPoint]):
+    def set_base_location(self, pos: Union[QPointF, QPoint]):
         """Set the center location of the button."""
         # ensure its a floating point
-        self._location = QPointF(pos)
+        self._base_location = QPointF(pos)
 
     @property
-    def size(self):
-        return self._size
+    def base_size(self) -> QSize:
+        return self._base_size
 
-    def set_size(self, size: QSize):
+    def set_base_size(self, size: QSize):
         """Set the size of the button. Enforces minimum sizes."""
-        self._size = QSize(max(size.width(), 20), max(size.height(), 20))
+        self._base_size = QSize(max(size.width(), 20), max(size.height(), 20))
 
     @property
     def node(self):
@@ -423,6 +427,8 @@ class AnimPickerPanel(QtWidgets.QWidget):
         self.view_scale = 1.0
         self.view_scale_min = 0.25
         self.view_scale_max = 3.0
+        self.item_margin = 2
+        self.item_margin_min = 1
         self.wheel_zoom_sensitivity = 0.001
         self.drag_zoom_sensitivity = 0.002
         self.drag_resize_sensitivity = 0.75
@@ -701,7 +707,7 @@ class AnimPickerPanel(QtWidgets.QWidget):
         if self.placement_btn:
             # placing a new button
             location = self.inverse_transform_pos(event.pos())
-            self.placement_btn.set_location(location)
+            self.placement_btn.set_base_location(location)
             self._update_btn_geometry(self.placement_btn)
             pass
 
@@ -728,7 +734,7 @@ class AnimPickerPanel(QtWidgets.QWidget):
             for btn in self.buttons:
                 if btn.is_selected():
                     # add offset
-                    btn.set_location(btn.location + (drag_delta * (1.0 / self.view_scale)))
+                    btn.set_base_location(btn.base_location + (drag_delta * (1.0 / self.view_scale)))
                     self._update_btn_geometry(btn)
 
         elif btns == QtCore.Qt.RightButton and not self.is_locked:
@@ -737,14 +743,14 @@ class AnimPickerPanel(QtWidgets.QWidget):
                 if btn.is_selected():
                     # negate Y so that dragging up is increase, down is decrease
                     delta_size = (QSizeF(drag_delta.x(), -drag_delta.y()) * self.drag_resize_sensitivity).toSize()
-                    btn.set_size(btn.size + delta_size)
+                    btn.set_base_size(btn.base_size + delta_size)
                     self._update_btn_geometry(btn)
 
     def mouseReleaseEvent(self, event: QtGui.QMouseEvent):
         mods = event.modifiers()
         if self.placement_btn:
             # commit snapping to grid
-            self.placement_btn.set_location(self._snap_pos_to_grid(self.placement_btn.location))
+            self.placement_btn.set_base_location(self._snap_pos_to_grid(self.placement_btn.base_location))
             self.modify()
             self._update_btn_geometry(self.placement_btn)
             self.placement_btn = None
@@ -759,7 +765,7 @@ class AnimPickerPanel(QtWidgets.QWidget):
             # drag moved buttons, commit snapping to location grid
             for btn in self.buttons:
                 if btn.is_selected():
-                    btn.set_location(self._snap_pos_to_grid(btn.location))
+                    btn.set_base_location(self._snap_pos_to_grid(btn.base_location))
                     self.modify()
                     self._update_btn_geometry(btn)
 
@@ -767,7 +773,7 @@ class AnimPickerPanel(QtWidgets.QWidget):
             # drag resized buttons, commit snapping size to grid
             for btn in self.buttons:
                 if btn.is_selected():
-                    btn.set_size(self._snap_size_to_grid(btn.size))
+                    btn.set_base_size(self._snap_size_to_grid(btn.base_size))
                     self.modify()
                     self._update_btn_geometry(btn)
 
@@ -898,13 +904,21 @@ class AnimPickerPanel(QtWidgets.QWidget):
         Update the actual geometry of a button to include its position and view transformations.
         """
         # snap size to grid
-        grid_size = self._snap_size_to_grid(btn.size)
+        grid_size = self._snap_size_to_grid(btn.base_size)
         # snap location to grid
-        grid_location = self._snap_pos_to_grid(btn.location)
+        grid_location = self._snap_pos_to_grid(btn.base_location)
         center_offset = (QPointF(*grid_size.toTuple()) * 0.5).toPoint()
 
+        # transform to view space
         rect = QRect(grid_location - center_offset, grid_size)
-        btn.setGeometry(self.transform_rect(rect))
+        view_rect = self.transform_rect(rect)
+
+        # apply margin
+        margin = max(int(self.view_scale * self.item_margin), self.item_margin_min)
+        grid_size -= QSize(margin, margin)
+        view_rect = view_rect.marginsRemoved(QtCore.QMargins(margin, margin, margin, margin))
+
+        btn.setGeometry(view_rect)
 
     def _snap_pos_to_grid(self, pos: QPoint) -> QPoint:
         """
