@@ -4,10 +4,10 @@ names:
   # the format for sequential control naming
   number_format: "_{num:02}"
   keywords:
-    general: [ world, root, main, pelvis, spine, torso, chest ]
+    general: [ world, root, main, pelvis, spine, torso, chest, tail ]
     arms: [ clavicle, shoulder, elbow, upperarm, lowerarm, hand, wrist, index, middle, ring, pinky, thumb ]
     legs: [ hip, leg, knee, thigh, calf, foot, ankle, heel, ball, toe, toes ]
-    head: [ head, eye, eyes, ear, nose, mouth, hair, jaw, teeth, tongue, cheek ]
+    head: [ head, neck, eye, eyes, ear, nose, mouth, hair, jaw, teeth, tongue, cheek ]
   prefixes: [ ]
   suffixes:
     - { name: ik, sort: 7 }
