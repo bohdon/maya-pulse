@@ -22,10 +22,26 @@ class Ui_QuickNameEditor(object):
         self.verticalLayout_4 = QVBoxLayout(QuickNameEditor)
         self.verticalLayout_4.setSpacing(2)
         self.verticalLayout_4.setObjectName(u"verticalLayout_4")
+        self.horizontalLayout_3 = QHBoxLayout()
+        self.horizontalLayout_3.setObjectName(u"horizontalLayout_3")
         self.set_name_btn = QPushButton(QuickNameEditor)
         self.set_name_btn.setObjectName(u"set_name_btn")
 
-        self.verticalLayout_4.addWidget(self.set_name_btn)
+        self.horizontalLayout_3.addWidget(self.set_name_btn)
+
+        self.set_name_by_link_btn = QPushButton(QuickNameEditor)
+        self.set_name_by_link_btn.setObjectName(u"set_name_by_link_btn")
+        sizePolicy = QSizePolicy(QSizePolicy.Maximum, QSizePolicy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.set_name_by_link_btn.sizePolicy().hasHeightForWidth())
+        self.set_name_by_link_btn.setSizePolicy(sizePolicy)
+        self.set_name_by_link_btn.setMinimumSize(QSize(115, 0))
+
+        self.horizontalLayout_3.addWidget(self.set_name_by_link_btn)
+
+
+        self.verticalLayout_4.addLayout(self.horizontalLayout_3)
 
         self.verticalSpacer_4 = QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.Minimum)
 
@@ -142,7 +158,12 @@ class Ui_QuickNameEditor(object):
         self.set_name_btn.setStatusTip(QCoreApplication.translate("QuickNameEditor", u"The current constructed name. Click to rename the selected node(s).", None))
 #endif // QT_CONFIG(statustip)
         self.set_name_btn.setText(QCoreApplication.translate("QuickNameEditor", u"*", None))
-        self.set_name_btn.setProperty("cssClasses", QCoreApplication.translate("QuickNameEditor", u"large", None))
+        self.set_name_btn.setProperty("cssClasses", QCoreApplication.translate("QuickNameEditor", u"bold", None))
+#if QT_CONFIG(statustip)
+        self.set_name_by_link_btn.setStatusTip(QCoreApplication.translate("QuickNameEditor", u"Set the name of the selected nodes by copying the name of their linked target and appending a suffix.", None))
+#endif // QT_CONFIG(statustip)
+        self.set_name_by_link_btn.setText(QCoreApplication.translate("QuickNameEditor", u"Set Name by Link", None))
+        self.set_name_by_link_btn.setProperty("cssClasses", "")
         self.prefixes_title.setText(QCoreApplication.translate("QuickNameEditor", u"Prefixes", None))
         self.prefixes_title.setProperty("cssClasses", QCoreApplication.translate("QuickNameEditor", u" section-title", None))
         self.spacer_label2.setText("")

@@ -9,6 +9,7 @@ Link information is stored in the scene on each node using metadata.
 
 import logging
 import operator
+from typing import List
 
 import pymel.core as pm
 
@@ -63,13 +64,13 @@ def is_linked(node):
     return meta.has_metaclass(node, class_name=LINK_METACLASS)
 
 
-def get_linked_nodes(node):
+def get_linked_nodes(node) -> List[pm.PyNode]:
     """
     Return all leaders a node is linked to.
     """
     link_data = get_link_meta_data(node)
     positioner = get_positioner(link_data.get("type", LinkType.DEFAULT))
-    positioner.get_target_nodes(link_data)
+    return positioner.get_target_nodes(link_data)
 
 
 def get_link_meta_data(node):
@@ -251,7 +252,7 @@ class LinkPositioner(object):
         if target_nodes:
             return target_nodes[0]
 
-    def get_target_nodes(self, link_data):
+    def get_target_nodes(self, link_data) -> List[pm.PyNode]:
         return link_data.get("targetNodes", [])
 
 

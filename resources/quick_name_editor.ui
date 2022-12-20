@@ -18,17 +18,46 @@
     <number>2</number>
    </property>
    <item>
-    <widget class="QPushButton" name="set_name_btn">
-     <property name="statusTip">
-      <string>The current constructed name. Click to rename the selected node(s).</string>
-     </property>
-     <property name="text">
-      <string>*</string>
-     </property>
-     <property name="cssClasses" stdset="0">
-      <string>large</string>
-     </property>
-    </widget>
+    <layout class="QHBoxLayout" name="horizontalLayout_3">
+     <item>
+      <widget class="QPushButton" name="set_name_btn">
+       <property name="statusTip">
+        <string>The current constructed name. Click to rename the selected node(s).</string>
+       </property>
+       <property name="text">
+        <string>*</string>
+       </property>
+       <property name="cssClasses" stdset="0">
+        <string>bold</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="set_name_by_link_btn">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>115</width>
+         <height>0</height>
+        </size>
+       </property>
+       <property name="statusTip">
+        <string>Set the name of the selected nodes by copying the name of their linked target and appending a suffix.</string>
+       </property>
+       <property name="text">
+        <string>Set Name by Link</string>
+       </property>
+       <property name="cssClasses" stdset="0">
+        <string/>
+       </property>
+      </widget>
+     </item>
+    </layout>
    </item>
    <item>
     <spacer name="verticalSpacer_4">

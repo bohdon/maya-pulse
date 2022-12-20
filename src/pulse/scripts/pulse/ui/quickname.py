@@ -2,16 +2,18 @@
 Widget for quickly naming nodes using preset lists of
 keywords, prefixes, and suffixes
 """
-
+import logging
 from functools import partial
 
 import pymel.core as pm
 
 from ..vendor.Qt import QtWidgets
-from .. import names
+from .. import names, links
 from .. import editor_utils
 from .core import PulseWindow, BlueprintUIModel
 from .gen.quick_name_editor import Ui_QuickNameEditor
+
+LOG = logging.getLogger(__name__)
 
 
 class QuickNameEditor(QtWidgets.QWidget):
@@ -43,6 +45,7 @@ class QuickNameEditor(QtWidgets.QWidget):
         self.setup_suffixes_ui(parent, self.ui.suffixes_vbox)
 
         self.ui.set_name_btn.clicked.connect(self._on_preview_btn_clicked)
+        self.ui.set_name_by_link_btn.clicked.connect(self._on_set_name_by_link_btn_clicked)
         self.ui.edit_config_btn.clicked.connect(editor_utils.open_blueprint_config_in_source_editor)
 
         self.refresh_preview_label()
@@ -261,17 +264,28 @@ class QuickNameEditor(QtWidgets.QWidget):
         suffixes = self.sort_ordered_names(suffixes, "suffixes")
         return "_".join(suffixes)
 
-    def evaluate_name(self, include_number=False):
+    def evaluate_name(self, include_number=False) -> str:
         """
         Return the fully combined name, including suffixes and prefixes
         """
+        keyword = self.active_keyword if self.active_keyword else "*"
+        return self.evaluate_name_with_keyword(keyword, include_number)
+
+    def evaluate_name_with_keyword(self, keyword: str, include_number=False) -> str:
+        """
+        Return a fully combined name including suffixes and prefixes, using a specified keyword.
+
+        Args:
+            keyword: The main part of the name, to be placed in between suffixes and prefixes.
+            include_number: Include a `{num}` formatting argument so that the result can be numbered for multiple nodes.
+        """
+
         components = []
         # prefix
         prefix = self.evaluate_prefix()
         if prefix:
             components.append(prefix)
         # keyword
-        keyword = self.active_keyword if self.active_keyword else "*"
         if include_number:
             num_fmt = self.names_config.get("number_format", "_{num:02}")
             keyword += num_fmt
@@ -304,6 +318,16 @@ class QuickNameEditor(QtWidgets.QWidget):
         """
         self.rename_selected_nodes()
 
+    def _on_set_name_by_link_btn_clicked(self):
+        for node in pm.selected():
+            linked_nodes = links.get_linked_nodes(node)
+            if linked_nodes:
+                keyword = str(linked_nodes[0])
+                new_name = self.evaluate_name_with_keyword(keyword)
+                node.rename(new_name)
+            else:
+                LOG.warning("%s is not linked to any node", node)
+
     def rename_selected_nodes(self):
         """
         Perform the renaming of all selected nodes based on the
@@ -313,8 +337,8 @@ class QuickNameEditor(QtWidgets.QWidget):
             sel = pm.selected()
             is_multiple_nodes = len(sel) > 1
             name = self.evaluate_name(include_number=is_multiple_nodes)
-            for i, s in enumerate(pm.selected()):
-                s.rename(name.format(num=i + 1))
+            for idx, node in enumerate(pm.selected()):
+                node.rename(name.format(num=idx + 1))
 
 
 class QuickNameWindow(PulseWindow):
