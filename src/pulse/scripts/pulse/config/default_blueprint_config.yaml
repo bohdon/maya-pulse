@@ -33,6 +33,7 @@ colors:
   root: "#f6bd15"
   main_c: "#f6bd15"
   alt_c: "#594407"
+  extra_c: "#582380"
   main_l: "#186fd5"
   main_r: "#832121"
 symmetry:
