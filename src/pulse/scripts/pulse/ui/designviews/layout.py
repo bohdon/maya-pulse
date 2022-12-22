@@ -41,8 +41,8 @@ class LayoutLinkEditorWidget(QtWidgets.QWidget):
         self.ui = Ui_LayoutLinkEditor()
         self.ui.setupUi(self)
 
-        self.ui.link_btn.clicked.connect(cmd(self.link_selected, linkType=links.LinkType.DEFAULT))
-        self.ui.link_ikpole_btn.clicked.connect(cmd(self.link_selected, linkType=links.LinkType.IK_POLE))
+        self.ui.link_btn.clicked.connect(cmd(self.link_selected, link_type=links.LinkType.DEFAULT))
+        self.ui.link_ikpole_btn.clicked.connect(cmd(self.link_selected, link_type=links.LinkType.IK_POLE))
         self.ui.link_center_btn.clicked.connect(cmd(self.link_selected_weighted))
         self.ui.recreate_link_btn.clicked.connect(cmd(self.recreate_links_for_selected))
         self.ui.unlink_btn.clicked.connect(cmd(self.unlink_selected))
