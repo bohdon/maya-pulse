@@ -1,7 +1,11 @@
+import logging
+
 import pymel.core as pm
 
 from . import math
 from . import nodes
+
+logger = logging.getLogger(__name__)
 
 
 def get_root_joint(jnt):
@@ -124,14 +128,17 @@ def center_joint(jnt, child=None):
     """
     parent = jnt.getParent()
     if not isinstance(parent, pm.nt.Joint):
-        raise ValueError(f"{jnt} is not a child of a joint and cannot be centered")
+        logger.warning(f"{jnt} is not a child of a joint and cannot be centered")
+        return
     if child is None:
         children = jnt.getChildren(typ="joint")
         if not children:
-            raise ValueError(f"{jnt} has no child joints and cannot be centered")
+            logger.warning(f"{jnt} has no child joints and cannot be centered")
+            return
         child = children[0]
     elif not isinstance(child, pm.nt.Joint):
-        raise TypeError("child must be a joint")
+        logger.warning("child must be a joint")
+        return
     mid = nodes.get_translation_midpoint(parent, child)
     pm.move(jnt, mid, ws=True, pcp=True)
 
