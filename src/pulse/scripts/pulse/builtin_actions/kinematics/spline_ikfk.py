@@ -1,5 +1,6 @@
 from typing import List
 
+from maya import cmds
 import pymel.core as pm
 
 from pulse import nodes, util_nodes, joints, control_shapes
@@ -49,12 +50,6 @@ class SplineIKFKAction(BuildAction):
             type=AttrType.BOOL,
             value=True,
             description="Enable stretchiness by translating bones based on the spline length.",
-        ),
-        dict(
-            name="addPoleLine",
-            type=AttrType.BOOL,
-            value=True,
-            description="Add a curve shape to the mid FK control that draws a line to the bone.",
         )
     ]
 
@@ -65,13 +60,14 @@ class SplineIKFKAction(BuildAction):
 
     def run(self):
         # retrieve mid and root joints
-        start_joint = self.startJoint
-        end_joint = self.endJoint
-        mid_joints = self._get_joint_chain(start_joint, end_joint)
+        start_jnt = self.startJoint
+        end_jnt = self.endJoint
+        mid_jnts = self._get_joint_chain(start_jnt, end_jnt)
+        target_jnts = [start_jnt] + mid_jnts[:] + [end_jnt]
 
         # duplicate joints for ik chain
         ik_joint_name_fmt = "{0}_ik"
-        ik_jnts = nodes.duplicate_branch(start_joint, end_joint, name_fmt=ik_joint_name_fmt)
+        ik_jnts = nodes.duplicate_branch(start_jnt, end_jnt, name_fmt=ik_joint_name_fmt)
         start_ik_joint = ik_jnts[0]
         end_ik_joint = ik_jnts[-1]
 
@@ -79,6 +75,8 @@ class SplineIKFKAction(BuildAction):
         if self.builder.debug:
             for jnt in ik_jnts:
                 jnt.displayLocalAxis.set(True)
+        else:
+            start_ik_joint.visibility.set(False)
 
         # parent the joints to the start ctl
         start_ik_joint.setParent(self.startCtl)
@@ -111,8 +109,9 @@ class SplineIKFKAction(BuildAction):
             # show cvs when debugging
             pm.toggle(curve_shape, controlVertex=True)
         else:
-            # hide curve
+            # hide curve and ik
             curve.visibility.set(False)
+            ik_handle.visibility.set(False)
 
         # cluster the cvs, group the first two and last two
         cv_groups = [curve_shape.cv[:1]]
@@ -136,13 +135,23 @@ class SplineIKFKAction(BuildAction):
             # parent cluster handle to the ctl
             cluster_handle.setParent(ik_ctl)
 
+            if not self.builder.debug:
+                cluster_handle.visibility.set(False)
+
         # TODO: reset curve cvs to zeros everywhere, then reset cluster pivots and transforms to be absolute
         # TODO: add bezier-handle-style offsets to 1st and 2nd-to-last cvs as desired
 
         # apply stretch via translate X offsets
         if self.isStretchy:
-            self._setup_joint_translation_stretch(ik_jnts[1:], curve_shape)
+            delta_length = self._setup_joint_translation_stretch(ik_jnts[1:], curve_shape)
+            self.endIkCtl.addAttr("stretchDelta", attributeType="double", keyable=False)
+            delta_length >> self.endIkCtl.stretchDelta
+            cmds.setAttr(f"{self.endIkCtl}.stretchDelta", edit=True, lock=True, channelBox=True)
 
+        # connect the target matrices to the joints
+        for ik_jnt, target_jnt in zip(ik_jnts[:-1], target_jnts[:-1]):
+            nodes.connect_matrix(ik_jnt.wm, target_jnt, nodes.ConnectMatrixMethod.SNAP)
+        nodes.connect_matrix(self.endIkCtl.wm, end_jnt, nodes.ConnectMatrixMethod.SNAP)
 
     @staticmethod
     def _get_closest_ctl_to_cv(cv: pm.NurbsCurveCV, ctls: List[pm.nt.Transform]) -> pm.nt.Transform:
@@ -159,13 +168,16 @@ class SplineIKFKAction(BuildAction):
         return best_ctl
 
     @staticmethod
-    def _setup_joint_translation_stretch(jnts: List[pm.PyNode], curve_shape: pm.nt.NurbsCurve):
+    def _setup_joint_translation_stretch(jnts: List[pm.PyNode], curve_shape: pm.nt.NurbsCurve) -> pm.Attribute:
         """
         Apply translational stretching to joints based on the length of a curve.
 
         Args:
             jnts: The joints to move, should not include the start joint of a spline ik chain.
             curve_shape: The curve length that is driving the stretch.
+
+        Returns:
+            An output attribute that represents the delta length of the curve compared to its rest length.
         """
         # TODO: manual stretch factor attribute
         # TODO: use un-scaled curve arc length to allow hierarchy scaling above the curve
@@ -190,6 +202,8 @@ class SplineIKFKAction(BuildAction):
             else:
                 jnt_offset = util_nodes.subtract(jnt.translateX.get(), unit_delta_offset)
             jnt_offset >> jnt.translateX
+
+        return delta_length
 
     @staticmethod
     def _get_joint_chain(start_joint: pm.PyNode, end_joint: pm.PyNode) -> List[pm.PyNode]:
