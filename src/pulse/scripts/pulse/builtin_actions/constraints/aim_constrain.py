@@ -70,10 +70,16 @@ class AimConstrainAction(BuildAction):
         ),
         dict(
             name="createBlend",
-            type="bool",
+            type=AttrType.BOOL,
             value=False,
             description="If true, create an offset and setup a blend attribute on the node to allow switching "
             "between aim and non-aim",
+        ),
+        dict(
+            name="blendAttrName",
+            type=AttrType.STRING,
+            value="aimBlend",
+            description="The name of the attribute to use for controlling the aim blend, if enabled.",
         ),
     ]
 
@@ -108,8 +114,8 @@ class AimConstrainAction(BuildAction):
             pulse.nodes.connect_matrix(wt_add.matrixSum, _follower, pulse.nodes.ConnectMatrixMethod.SNAP)
 
             # create blend attr and connect to matrix blend
-            self.follower.addAttr("aimBlend", min=0, max=1, attributeType="double", defaultValue=1, keyable=1)
-            blend_attr = self.follower.attr("aimBlend")
+            self.follower.addAttr(self.blendAttrName, min=0, max=1, attributeType="double", defaultValue=1, keyable=1)
+            blend_attr = self.follower.attr(self.blendAttrName)
             blend_attr >> wt_add.wtMatrix[0].weightIn
             pulse.util_nodes.reverse(blend_attr) >> wt_add.wtMatrix[1].weightIn
 
