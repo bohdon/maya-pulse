@@ -1,3 +1,5 @@
+from typing import List
+
 import pymel.core as pm
 
 from pulse.vendor import pymetanode as meta
@@ -121,13 +123,26 @@ class FootControlAction(BuildAction):
         # setup hierarchy
         # ---------------
 
-        # control > heel > outerTilt > innerTilt > toe > ball
+        # freeze pivots first, so that relative transform values can be directly connected later
+        for pivot in [self.heelPivot, self.outerTiltPivot, self.innerTiltPivot, self.toePivot, self.ballPivot]:
+            nodes.freeze_offset_matrix(pivot)
+
+        # parent pivots in order of priority:
+        #   control > heel > outerTilt > innerTilt > toe > ball
+        parent_hierarchy: List[pm.nt.Transform] = [
+            self.control,
+            self.heelPivot,
+            self.outerTiltPivot,
+            self.innerTiltPivot,
+            self.toePivot,
+            self.ballPivot,
+        ]
+
         offset_connect_method = nodes.ConnectMatrixMethod.CREATE_OFFSET
-        nodes.connect_matrix(self.control.wm, self.heelPivot, offset_connect_method)
-        nodes.connect_matrix(self.heelPivot.wm, self.outerTiltPivot, offset_connect_method)
-        nodes.connect_matrix(self.outerTiltPivot.wm, self.innerTiltPivot, offset_connect_method)
-        nodes.connect_matrix(self.innerTiltPivot.wm, self.toePivot, offset_connect_method)
-        nodes.connect_matrix(self.toePivot.wm, self.ballPivot, offset_connect_method)
+        for idx, parent in enumerate(parent_hierarchy):
+            if idx + 1 < len(parent_hierarchy):
+                child = parent_hierarchy[idx + 1]
+                nodes.connect_matrix(parent.wm, child, offset_connect_method)
 
         # ballPivot > ankleFollower
         nodes.connect_matrix(self.ballPivot.wm, self.ankleFollower, offset_connect_method)
@@ -175,12 +190,13 @@ class FootControlAction(BuildAction):
         # lock up nodes
         # -------------
 
-        for pivot in [self.toePivot, self.ballPivot, self.outerTiltPivot, self.innerTiltPivot, self.heelPivot]:
-            pivot.v.set(False)
-            for a in ("tx", "ty", "tz", "rx", "ry", "rz", "sx", "sy", "sz"):
-                attr = pivot.attr(a)
-                attr.setLocked(True)
-                attr.setKeyable(False)
+        if not self.builder.debug:
+            for pivot in [self.toePivot, self.ballPivot, self.outerTiltPivot, self.innerTiltPivot, self.heelPivot]:
+                pivot.v.set(False)
+                for a in ("tx", "ty", "tz", "rx", "ry", "rz", "sx", "sy", "sz"):
+                    attr = pivot.attr(a)
+                    attr.setLocked(True)
+                    attr.setKeyable(False)
 
         # setup meta data
         # ---------------
