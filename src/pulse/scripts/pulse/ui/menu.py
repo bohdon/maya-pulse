@@ -43,6 +43,7 @@ def install_main_menu():
     from .main_settings import MainSettingsWindow
     from .util_views import CopyPasteMatrixWindow
     from .anim.picker import AnimPickerWindow
+    from .anim.tools import AnimToolsWindow
     from . import contextmenus
 
     _create_menu(MAIN_MENU_LABEL, MAIN_MENU_ID)
@@ -57,6 +58,7 @@ def install_main_menu():
     pm.menuItem(parent=MAIN_MENU_ID, divider=True)
     anim_menu_id = pm.menuItem(parent=MAIN_MENU_ID, label="Animation", subMenu=True, tearOff=True)
     pm.menuItem(parent=anim_menu_id, label="Anim Picker", command=_cmd(AnimPickerWindow.toggleWindow))
+    pm.menuItem(parent=anim_menu_id, label="Anim Tools", command=_cmd(AnimToolsWindow.toggleWindow))
     pm.menuItem(parent=anim_menu_id, label="Copy Paste Matrix Util", command=_cmd(CopyPasteMatrixWindow.toggleWindow))
     pm.menuItem(parent=anim_menu_id, divider=True)
     pm.menuItem(
