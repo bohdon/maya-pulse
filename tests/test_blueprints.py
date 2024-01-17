@@ -1,7 +1,7 @@
 import unittest
 import pymel.core as pm
 
-from pulse.core import Blueprint, BlueprintSettings, BlueprintBuilder
+from pulse.core import Blueprint, BlueprintBuilder, BlueprintFile, BlueprintSettings
 from pulse.core import BuildStep
 from pulse.core import load_actions, get_all_rigs
 
@@ -39,21 +39,29 @@ class TestBlueprints(unittest.TestCase):
         pm.delete(get_all_rigs())
 
     def test_build(self):
-        bp = Blueprint()
-        bp.set_setting(BlueprintSettings.RIG_NAME, "test")
-        bp.reset_to_default()
+        blueprint_file = BlueprintFile()
 
-        main_step = bp.get_step_by_path("/Main")
+        # initialize default actions and set rig name
+        blueprint = blueprint_file.blueprint
+        blueprint.reset_to_default()
+        blueprint.set_setting(BlueprintSettings.RIG_NAME, "test")
 
-        ctl_node = pm.polyCube(n="my_ctl")[0]
+        # disable 'Rename Scene' step since we will not be saving any scenes
+        rename_step = blueprint.root_step.get_child_by_name("Rename Scene")
+        rename_step.is_disabled = True
 
+        # add anim control build step
+        ctl_node = pm.polyCube(name="my_ctl")[0]
         ctl_step = BuildStep(action_id="Pulse.AnimControl")
-        ctl_step.action_proxy.get_attr("controlNode").set_value(ctl_node)
+        ctl_step.action_proxy.get_attr("useAllControls").set_value(False)
+        ctl_step.action_proxy.get_attr("controlNodes").set_value([ctl_node])
+
+        main_step = blueprint.get_step_by_path("/Main")
         main_step.add_child(ctl_step)
 
         self.assertTrue(len(main_step.children) == 1)
 
-        builder = BlueprintBuilder(bp)
+        builder = BlueprintBuilder(blueprint_file)
         builder.start()
 
         self.assertTrue(builder.is_finished)

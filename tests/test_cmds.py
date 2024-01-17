@@ -13,8 +13,8 @@ class TestPulseCmds(unittest.TestCase):
     def setUp(self):
         cmds.loadPlugin("pulse", quiet=True)
         load_actions()
-        self.blueprint_model = BlueprintUIModel.get_default_model()
-        self.blueprint_model.new_file()
+        self.blueprint_model = BlueprintUIModel.get()
+        self.blueprint_model.new_file(use_default_actions=False)
 
     def test_create_step(self):
         bp = self.blueprint_model.blueprint
