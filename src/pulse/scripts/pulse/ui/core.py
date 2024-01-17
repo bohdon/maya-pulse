@@ -1463,7 +1463,7 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
         elif role == QtCore.Qt.CheckStateRole:
             if step.is_root():
                 return False
-            step.isDisabled = True if value else False
+            step.is_disabled = True if value else False
             self.dataChanged.emit(index, index, [])
             self._emit_data_changed_on_all_children(index, [])
             # emit data changed on all children

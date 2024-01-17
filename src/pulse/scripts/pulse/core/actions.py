@@ -1411,7 +1411,7 @@ class BuildStep(object):
         # the BuildActionProxy for this step
         self._action_proxy = action_proxy
         # is this build step currently disabled?
-        self.isDisabled = False
+        self.is_disabled = False
         # the last known results of a build validation for this step
         self._validate_results: List[logging.LogRecord] = []
 
@@ -1462,7 +1462,7 @@ class BuildStep(object):
         """
         Return true if this step or any of its parents are disabled.
         """
-        if self.isDisabled:
+        if self.is_disabled:
             return True
         if self._parent:
             return self._parent.is_disabled_in_hierarchy()
@@ -1620,12 +1620,17 @@ class BuildStep(object):
             self.add_child(step)
 
     def remove_child(self, step: "BuildStep"):
+        if not step:
+            raise ValueError(f"{step} is not a valid BuildStep")
+
         if not self.can_have_children():
             return
 
         if step in self._children:
             self._children.remove(step)
             step.set_parent_internal(None)
+        else:
+            LOG.error(f"{step} is not a child of {self}")
 
     def remove_child_internal(self, step):
         if step in self._children:
@@ -1740,7 +1745,7 @@ class BuildStep(object):
         if not self.can_have_children():
             return
         for child in self._children:
-            if child.isDisabled:
+            if child.is_disabled:
                 continue
             yield child
             for descendant in child.child_iterator():
@@ -1788,7 +1793,7 @@ class BuildStep(object):
         data = UnsortableOrderedDict()
         data["name"] = self._name
 
-        if self.isDisabled:
+        if self.is_disabled:
             data["isDisabled"] = True
 
         if self._action_proxy:
@@ -1807,7 +1812,7 @@ class BuildStep(object):
         Args:
             data: A dict containing serialized data for this step
         """
-        self.isDisabled = data.get("isDisabled", False)
+        self.is_disabled = data.get("isDisabled", False)
 
         if "action" in data:
             new_action_proxy = BuildActionProxy()
