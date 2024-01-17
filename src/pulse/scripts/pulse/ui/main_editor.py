@@ -45,7 +45,7 @@ class MainEditor(QtWidgets.QWidget):
 
         new_action = QtWidgets.QAction("New Blueprint", parent)
         new_action.setStatusTip("Start a new Blueprint.")
-        new_action.triggered.connect(self.blueprint_model.new_file)
+        new_action.triggered.connect(partial(self.blueprint_model.new_file, True))
         file_menu.addAction(new_action)
 
         open_action = QtWidgets.QAction("Open Blueprint...", parent)

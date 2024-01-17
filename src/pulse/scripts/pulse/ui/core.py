@@ -138,7 +138,6 @@ class PulseWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
 
         # create instance if it doesn't exist
         if not cls.INSTANCE:
-
             # load required plugins
             if cls.REQUIRED_PLUGINS:
                 for plugin in cls.REQUIRED_PLUGINS:
@@ -471,10 +470,13 @@ class BlueprintUIModel(QtCore.QObject):
         """
         return self.is_file_open() and self._blueprint_file.can_load()
 
-    def new_file(self):
+    def new_file(self, use_default_actions=True):
         """
         Start a new Blueprint File.
         Does not write the file to disk.
+
+        Args:
+            use_default_actions (bool): If true, add the default build actions from blueprint config
         """
         # close first, prompting to save
         if self.is_file_open():
@@ -486,7 +488,8 @@ class BlueprintUIModel(QtCore.QObject):
         self._blueprint_file = BlueprintFile()
         self._blueprint_file.resolve_file_path(allow_existing=False)
         self._blueprint_file.blueprint.set_setting(BlueprintSettings.RIG_NAME, "untitled")
-        self._blueprint_file.blueprint.reset_to_default()
+        if use_default_actions:
+            self._blueprint_file.blueprint.reset_to_default()
 
         self.build_step_tree_model.set_blueprint(self.blueprint)
         self.build_step_tree_model.endResetModel()
@@ -637,7 +640,6 @@ class BlueprintUIModel(QtCore.QObject):
         Reload the current Blueprint File from disk.
         """
         if self.can_load():
-
             if self.is_file_modified():
                 # confirm loss of changes
                 file_path = self.get_blueprint_file_path()

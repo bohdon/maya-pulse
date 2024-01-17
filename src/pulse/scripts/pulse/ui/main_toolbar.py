@@ -3,6 +3,7 @@ Toolbar for running main actions like validate and build.
 """
 
 import logging
+from functools import partial
 
 import maya.cmds as cmds
 
@@ -44,7 +45,7 @@ class MainToolbar(QtWidgets.QWidget):
         self.blueprint_model.read_only_changed.connect(self._on_read_only_changed)
         self.blueprint_model.setting_changed.connect(self._on_setting_changed)
 
-        self.ui.new_blueprint_btn.clicked.connect(self.blueprint_model.new_file)
+        self.ui.new_blueprint_btn.clicked.connect(partial(self.blueprint_model.new_file, True))
         self.ui.validate_btn.clicked.connect(self.blueprint_model.run_validation)
         self.ui.build_btn.clicked.connect(self.blueprint_model.run_build)
         self.ui.interactive_next_btn.clicked.connect(self.blueprint_model.interactive_build_next_action)
