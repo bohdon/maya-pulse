@@ -4,13 +4,12 @@ import sys
 from importlib.machinery import SourceFileLoader
 
 import pymel.core as pm
+from PySide2 import QtWidgets
 
+from pulse import source_editor
 from pulse.core import BuildAction, BuildActionError
 from pulse.core import BuildActionAttributeType as AttrType
-from pulse.vendor.Qt import QtWidgets
 from pulse.ui.action_editor import BuildActionProxyForm
-from pulse import source_editor
-
 from . import COLOR, CATEGORY
 
 # template for a new script file

@@ -6,12 +6,12 @@ import logging
 import os
 from functools import partial
 
-from ..colors import LinearColor
-from ..vendor.Qt import QtWidgets
-from ..core import BuildActionRegistry
-from .core import BlueprintUIModel, PulseWindow
+from PySide2 import QtWidgets
 
+from .core import BlueprintUIModel, PulseWindow
 from .gen.action_palette import Ui_ActionPalette
+from ..colors import LinearColor
+from ..core import BuildActionRegistry
 
 LOG = logging.getLogger(__name__)
 LOG_LEVEL_KEY = "PYLOG_%s" % LOG.name.split(".")[0].upper()

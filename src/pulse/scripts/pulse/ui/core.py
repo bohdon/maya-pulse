@@ -10,20 +10,20 @@ import maya.OpenMaya as api
 import maya.OpenMayaUI as mui
 import maya.cmds as cmds
 import pymel.core as pm
+from PySide2 import QtCore, QtWidgets, QtGui
 from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
-from ..editor_utils import open_blueprint_scene
 
-from ..vendor import pymetanode as meta
-from ..vendor.Qt import QtCore, QtWidgets, QtGui
+from .utils import CollapsibleFrame
+from .utils import dpi_scale
 from .. import editor_utils
 from ..core import Blueprint, BlueprintFile, BlueprintSettings, BlueprintBuilder, BlueprintValidator
 from ..core import BuildStep, BuildAction
+from ..core import get_all_rigs
 from ..core import load_actions
 from ..core import serialize_attr_value
-from ..core import get_all_rigs
+from ..editor_utils import open_blueprint_scene
 from ..prefs import option_var_property
-from .utils import CollapsibleFrame
-from .utils import dpi_scale
+from ..vendor import pymetanode as meta
 
 LOG = logging.getLogger(__name__)
 LOG.level = logging.DEBUG

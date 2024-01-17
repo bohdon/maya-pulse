@@ -1,10 +1,10 @@
 import logging
 
 import pymel.core as pm
+from PySide2 import QtCore, QtWidgets
 
 from .core import PulseWindow
 from .. import nodes
-from ..vendor.Qt import QtCore, QtWidgets
 
 LOG = logging.getLogger(__name__)
 

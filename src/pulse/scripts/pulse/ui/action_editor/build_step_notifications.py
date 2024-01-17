@@ -1,11 +1,12 @@
 import logging
 from typing import Optional
 
-from ...vendor.Qt import QtCore, QtWidgets
-from ...core import BuildStep
-from ... import names
+from PySide2 import QtCore, QtWidgets
+
 from ..core import BlueprintUIModel
 from ..utils import clear_layout
+from ... import names
+from ...core import BuildStep
 
 logger = logging.getLogger(__name__)
 

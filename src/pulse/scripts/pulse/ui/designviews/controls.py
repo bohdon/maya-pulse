@@ -1,8 +1,9 @@
+from PySide2 import QtCore, QtWidgets
+
 from ..utils import get_icon
 from ..utils import undo_and_repeat_partial as cmd
 from ... import control_shapes
 from ... import editor_utils
-from ...vendor.Qt import QtCore, QtWidgets
 
 
 class ControlsDesignPanel(QtWidgets.QWidget):

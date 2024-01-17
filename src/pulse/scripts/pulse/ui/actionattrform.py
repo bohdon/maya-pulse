@@ -10,14 +10,14 @@ from typing import Optional, cast
 
 import maya.cmds as cmds
 import pymel.core as pm
+from PySide2 import QtCore, QtGui, QtWidgets
 
-from ..core import BuildStep, BuildActionProxy, BuildActionAttribute, BuildActionAttributeType
-from ..vendor import pymetanode as meta
-from ..core import serialize_attr_value
-from ..vendor.Qt import QtCore, QtGui, QtWidgets
-from .. import names
-from .core import BuildStepTreeModel
 from . import utils
+from .core import BuildStepTreeModel
+from .. import names
+from ..core import BuildStep, BuildActionProxy, BuildActionAttribute, BuildActionAttributeType
+from ..core import serialize_attr_value
+from ..vendor import pymetanode as meta
 
 LOG = logging.getLogger(__name__)
 

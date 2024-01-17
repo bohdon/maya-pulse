@@ -4,12 +4,12 @@ A panel for displaying Pulse and blueprint settings.
 import os
 
 import pymel.core as pm
+from PySide2 import QtCore, QtGui, QtWidgets
 
-from pulse.vendor.Qt import QtCore, QtGui, QtWidgets
-from ..core import BlueprintSettings, BuildActionPackageRegistry
 from . import utils
 from .core import BlueprintUIModel, PulseWindow
 from .gen.main_settings import Ui_MainSettings
+from ..core import BlueprintSettings, BuildActionPackageRegistry
 
 
 class ActionPackagesList(QtWidgets.QWidget):

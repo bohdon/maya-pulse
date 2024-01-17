@@ -1,11 +1,12 @@
 import logging
 from functools import partial
 from typing import Optional, cast
-from ...vendor.Qt import QtCore, QtWidgets, QtGui
 
-from ...core import BuildActionProxy, BuildStep
-from ..core import BuildStepTreeModel, BlueprintUIModel
+from PySide2 import QtCore, QtWidgets, QtGui
+
 from .build_action_data_form import MainBuildActionDataForm, BuildActionDataForm
+from ..core import BuildStepTreeModel, BlueprintUIModel
+from ...core import BuildActionProxy, BuildStep
 
 logger = logging.getLogger(__name__)
 

@@ -2,14 +2,13 @@
 Animation tools for working with keyframes and the graph editor.
 """
 import logging
-from maya import cmds
+
 import pymel.core as pm
+from PySide2 import QtWidgets
 
-from ...vendor.Qt import QtCore, QtGui, QtWidgets
 from ..core import PulseWindow
-from ..utils import undo_and_repeat_partial as cmd
-
 from ..gen.anim_tools import Ui_AnimTools
+from ..utils import undo_and_repeat_partial as cmd
 
 logger = logging.getLogger(__name__)
 

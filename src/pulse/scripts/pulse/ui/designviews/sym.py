@@ -1,8 +1,9 @@
-from ...vendor.Qt import QtWidgets
-from ...prefs import option_var_property
-from ... import editor_utils
-from ..utils import undo_and_repeat_partial as cmd
+from PySide2 import QtWidgets
+
 from ..gen.designpanel_symmetry import Ui_SymmetryDesignPanel
+from ..utils import undo_and_repeat_partial as cmd
+from ... import editor_utils
+from ...prefs import option_var_property
 
 
 class SymmetryDesignPanel(QtWidgets.QWidget):

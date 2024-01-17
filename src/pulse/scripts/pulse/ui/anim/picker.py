@@ -9,18 +9,17 @@ from functools import partial
 from typing import Optional, Union
 
 import pymel.core as pm
+from PySide2 import QtCore, QtGui, QtWidgets
+from PySide2.QtCore import QPoint, QPointF, QRect, QSize, QSizeF
 from maya import OpenMaya, cmds
 
+from ..core import PulseWindow
+from ..gen.anim_picker import Ui_AnimPicker
+from ..utils import clear_layout
 from ... import nodes
 from ...colors import LinearColor
 from ...prefs import option_var_property
-from ...vendor.Qt import QtCore, QtGui, QtWidgets
-from ...vendor.Qt.QtCore import QPoint, QPointF, QRect, QSize, QSizeF
 from ...vendor import pymetanode as meta
-from ..core import PulseWindow
-from ..utils import clear_layout
-
-from ..gen.anim_picker import Ui_AnimPicker
 
 logger = logging.getLogger(__name__)
 

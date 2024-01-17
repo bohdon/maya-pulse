@@ -1,16 +1,15 @@
 import pymel.core as pm
+from PySide2 import QtWidgets
 from maya import OpenMaya as api
 
-from ...vendor.Qt import QtWidgets
-from ... import editor_utils
-from ... import links
-from ..core import PulseWindow
 from .. import utils
-from ..utils import undo_and_repeat_partial as cmd
-
+from ..core import PulseWindow
 from ..gen.designpanel_layout import Ui_LayoutDesignPanel
 from ..gen.layout_link_editor import Ui_LayoutLinkEditor
 from ..gen.layout_link_info_widget import Ui_LayoutLinkInfoWidget
+from ..utils import undo_and_repeat_partial as cmd
+from ... import editor_utils
+from ... import links
 
 
 class LayoutDesignPanel(QtWidgets.QWidget):

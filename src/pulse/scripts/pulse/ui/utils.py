@@ -9,10 +9,9 @@ from functools import partial
 from typing import Optional, Callable
 
 import maya.cmds as cmds
+from PySide2 import QtCore, QtWidgets, QtGui
 from maya.OpenMayaUI import MQtUtil
 from shiboken2 import wrapInstance
-
-from ..vendor.Qt import QtCore, QtWidgets, QtGui
 
 LOG = logging.getLogger(__name__)
 

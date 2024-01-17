@@ -8,12 +8,12 @@ from functools import partial
 from typing import Optional, cast
 
 import maya.cmds as cmds
+from PySide2 import QtCore, QtWidgets, QtGui
 
-from ..vendor.Qt import QtCore, QtWidgets, QtGui
-from ..core import BuildStep, BuildActionRegistry, BuildActionSpec
 from .core import BlueprintUIModel, BuildStepTreeModel
 from .core import PulseWindow
 from .gen.action_tree import Ui_ActionTree
+from ..core import BuildStep, BuildActionRegistry, BuildActionSpec
 
 LOG = logging.getLogger(__name__)
 

@@ -6,16 +6,15 @@ import logging
 from functools import partial
 
 import maya.cmds as cmds
+from PySide2 import QtGui, QtWidgets
 
-from ..vendor.Qt import QtGui, QtWidgets
-from ..core import BlueprintSettings
 from . import utils
-from .core import BlueprintUIModel
-from .main_settings import MainSettingsWindow
 from .action_editor import ActionEditorWindow
+from .core import BlueprintUIModel
 from .designtoolkit import DesignToolkitWindow
-
 from .gen.main_toolbar import Ui_MainToolbar
+from .main_settings import MainSettingsWindow
+from ..core import BlueprintSettings
 
 LOG = logging.getLogger(__name__)
 

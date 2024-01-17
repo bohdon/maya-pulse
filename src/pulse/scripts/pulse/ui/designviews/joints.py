@@ -1,14 +1,13 @@
 from functools import partial
 
 import pymel.core as pm
+from PySide2 import QtWidgets
 
-from ...vendor.Qt import QtWidgets
+from ..gen.designpanel_joint_orients import Ui_JointOrientsDesignPanel
+from ..gen.designpanel_joints import Ui_JointsDesignPanel
+from ..utils import undo_and_repeat_partial as cmd
 from ... import editor_utils
 from ...prefs import option_var_property
-from ..utils import undo_and_repeat_partial as cmd
-
-from ..gen.designpanel_joints import Ui_JointsDesignPanel
-from ..gen.designpanel_joint_orients import Ui_JointOrientsDesignPanel
 
 
 class JointsDesignPanel(QtWidgets.QWidget):

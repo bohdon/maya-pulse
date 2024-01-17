@@ -8,12 +8,12 @@ import logging
 from functools import partial
 
 import pymel.core as pm
+from PySide2 import QtWidgets
 
-from ..vendor.Qt import QtWidgets
-from .. import names, links
-from .. import editor_utils
 from .core import PulseWindow, BlueprintUIModel
 from .gen.quick_name_editor import Ui_QuickNameEditor
+from .. import editor_utils
+from .. import names, links
 
 LOG = logging.getLogger(__name__)
 
