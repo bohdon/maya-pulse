@@ -21,7 +21,8 @@ build() {
     echo "Building..."
     mkdir -p build
     cp -R src/$PACKAGE_NAME build/
-    cp -R src/$PACKAGE_NAME.mod build/
+    cp src/$PACKAGE_NAME.mod build/
+    cp LICENSE build/$PACKAGE_NAME
 }
 
 clean() {
@@ -49,13 +50,13 @@ install() {
     build
     echo "Installing..."
     cp -v build/$PACKAGE_NAME.mod $MAYA_MODULES_INSTALL_PATH/$PACKAGE_NAME.mod
-    cp -R build/$PACKAGE_NAME $MAYA_MODULES_INSTALL_PATH/$PACKAGE_NAME
+    cp -Rv build/$PACKAGE_NAME $MAYA_MODULES_INSTALL_PATH/$PACKAGE_NAME
 }
 
 uninstall() {
     echo "Uninstalling..."
     rm -v $MAYA_MODULES_INSTALL_PATH/$PACKAGE_NAME.mod || true
-    rm -R $MAYA_MODULES_INSTALL_PATH/$PACKAGE_NAME || true
+    rm -Rv $MAYA_MODULES_INSTALL_PATH/$PACKAGE_NAME || true
 }
 
 
