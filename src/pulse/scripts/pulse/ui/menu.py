@@ -3,6 +3,7 @@ Menus that can be installed into the Maya UI for quickly launching Pulse.
 """
 import webbrowser
 
+import maya.cmds
 import pymel.core as pm
 
 MAIN_MENU_LABEL = "Pulse"
@@ -97,7 +98,7 @@ def _create_menu(label: str, menu_id: str):
         menu_id: The id of the menu.
     """
     # delete menu if it exists
-    if pm.menu(menu_id, exists=True):
-        pm.deleteUI(menu_id)
+    if pm.menu(menu_id, query=True, exists=True):
+        pm.deleteUI(menu_id, menu=True)
 
     pm.menu(menu_id, parent="MayaWindow", tearOff=True, allowOptionBoxes=True, label=label)
