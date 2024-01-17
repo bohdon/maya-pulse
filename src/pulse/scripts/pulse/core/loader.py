@@ -1,6 +1,7 @@
 """
 Functionality for finding and loading Pulse Build Actions from a library of actions.
 """
+from __future__ import annotations
 
 import importlib
 import logging

@@ -1,12 +1,15 @@
 """
 An anim picker for easily selecting controls while animating.
 """
+from __future__ import annotations
+
 import logging
 import os
 from functools import partial
-from typing import List, Optional, Union
-from maya import OpenMaya, cmds
+from typing import Optional, Union
+
 import pymel.core as pm
+from maya import OpenMaya, cmds
 
 from ... import nodes
 from ...colors import LinearColor
@@ -29,7 +32,7 @@ def scale_rect(rect: QRect, scale: float) -> QRect:
     return QRect(top_left, rect.size() * scale)
 
 
-def find_picker_nodes() -> List[pm.PyNode]:
+def find_picker_nodes() -> list[pm.PyNode]:
     """
     Return all nodes in the scene that have picker metadata.
     """
@@ -282,7 +285,7 @@ class AnimPickerButton(QtWidgets.QPushButton):
         """
         return self._is_selected
 
-    def is_node_selected(self, sel: List[Union[str, pm.PyNode]] = None) -> bool:
+    def is_node_selected(self, sel: list[Union[str, pm.PyNode]] = None) -> bool:
         """
         Is the node for this button currently selected?
 
@@ -437,13 +440,13 @@ class AnimPickerPanel(QtWidgets.QWidget):
         self.drag_resize_sensitivity = 0.75
         # if true, update scene selection while dragging
         self.select_on_drag = False
-        self.pending_node_selection: List[pm.PyNode] = []
+        self.pending_node_selection: list[pm.PyNode] = []
         self.selection_rect = QRect()
         # the current selection operation
         self.select_operation: Optional[str] = AnimPickerSelectOperation.NONE
         self.is_drag_selecting = False
         # the list of all buttons
-        self.buttons: List[AnimPickerButton] = []
+        self.buttons: list[AnimPickerButton] = []
         # the current button being placed with left click, gives an opportunity to reposition before committing
         self.placement_btn: Optional[AnimPickerButton] = None
         self.cb_ids = []
@@ -1067,7 +1070,7 @@ class AnimPickerWidget(QtWidgets.QWidget):
         super(AnimPickerWidget, self).__init__(parent=parent)
 
         # the list of available pickers, which may be a mix of nodes and files
-        self._pickers: List[AnimPickerModel] = []
+        self._pickers: list[AnimPickerModel] = []
         # the currently opened picker
         self._current_picker: Optional[AnimPickerModel] = None
 

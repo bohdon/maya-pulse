@@ -2,6 +2,8 @@
 Widget for quickly naming nodes using preset lists of
 keywords, prefixes, and suffixes
 """
+from __future__ import annotations
+
 import logging
 from functools import partial
 

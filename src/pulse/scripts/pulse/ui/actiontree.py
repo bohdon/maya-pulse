@@ -1,10 +1,11 @@
 """
 Tree widget for displaying the build step hierarchy of a blueprint.
 """
+from __future__ import annotations
 
 import logging
 from functools import partial
-from typing import Optional, Dict, List, cast
+from typing import Optional, cast
 
 import maya.cmds as cmds
 
@@ -85,7 +86,7 @@ class ActionTreeView(QtWidgets.QTreeView):
         if not indexes:
             return
 
-        steps: List[BuildStep] = []
+        steps: list[BuildStep] = []
         for index in indexes:
             step: BuildStep = cast(BuildStepTreeModel, self.model()).step_for_index(index)
             if step and not step.is_root():
@@ -130,7 +131,7 @@ class ActionTreeView(QtWidgets.QTreeView):
         if not indexes:
             return
 
-        steps: List[BuildStep] = []
+        steps: list[BuildStep] = []
         for index in indexes:
             step: BuildStep = cast(BuildStepTreeModel, self.model()).step_for_index(index)
             if step:
@@ -204,7 +205,7 @@ class ActionTree(QtWidgets.QWidget):
 
         actions_menu.addSeparator()
 
-        all_action_specs: List[BuildActionSpec] = BuildActionRegistry.get().get_all_actions()
+        all_action_specs: list[BuildActionSpec] = BuildActionRegistry.get().get_all_actions()
 
         grp_action = QtWidgets.QAction("Group", parent)
         grp_action.triggered.connect(self.blueprint_model.create_group)
@@ -213,7 +214,7 @@ class ActionTree(QtWidgets.QWidget):
         # create action sub menu for each category
         categories = [spec.category for spec in all_action_specs]
         categories = list(set(categories))
-        cat_menus: Dict[str, QtWidgets.QMenu] = {}
+        cat_menus: dict[str, QtWidgets.QMenu] = {}
 
         for cat in sorted(categories):
             cat_menu = actions_menu.addMenu(cat)

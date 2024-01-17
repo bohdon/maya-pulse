@@ -1,9 +1,12 @@
+from __future__ import annotations
+
 import logging
 from functools import partial
-from typing import cast, Dict
-from maya import cmds
-from ...vendor.Qt import QtCore, QtWidgets, QtGui
+from typing import cast
 
+from maya import cmds
+
+from ...vendor.Qt import QtCore, QtWidgets, QtGui
 from ...core import BuildActionProxy, BuildStep, BuildActionData, BuildActionAttribute
 from ..actionattrform import ActionAttrForm, BatchAttrForm, ActionAttrFormBase
 from ..core import BuildStepTreeModel
@@ -38,7 +41,7 @@ class BuildActionDataForm(QtWidgets.QWidget):
             self.ui.remove_btn.setVisible(False)
 
         # the map of all attr forms, indexed by attr name
-        self._attr_forms: Dict[str, ActionAttrFormBase] = {}
+        self._attr_forms: dict[str, ActionAttrFormBase] = {}
         self.update_attr_form_list()
 
         self.ui.remove_btn.clicked.connect(self._on_remove_clicked)
@@ -104,7 +107,6 @@ class BuildActionDataForm(QtWidgets.QWidget):
                 del self._attr_forms[attrName]
 
         for i, attr in enumerate(action_data.get_attrs().values()):
-
             # the current attr form, if any
             attr_form = self._attr_forms.get(attr.name, None)
 

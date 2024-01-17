@@ -2,6 +2,8 @@
 Form ui classes for any type of action attribute, e.g.
 float forms, node and node list forms, combo box forms, etc.
 """
+from __future__ import annotations
+
 import logging
 import os.path
 from typing import Optional, cast
