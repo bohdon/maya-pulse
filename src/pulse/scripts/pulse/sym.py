@@ -5,16 +5,15 @@ from copy import copy
 from typing import List, Optional, Tuple
 
 import pymel.core as pm
-from .vendor import pymetanode as meta
-from .vendor.mayacoretools import preserved_selection
-from .vendor.overrides import overrides
 
-from .core import Blueprint
-from .core import BuildActionProxy, BuildActionAttribute, BuildActionAttributeType
 from . import editor_utils
 from . import joints
 from . import links
 from . import nodes
+from .core import Blueprint
+from .core import BuildActionProxy, BuildActionAttribute, BuildActionAttributeType
+from .vendor import pymetanode as meta
+from .vendor.mayacoretools import preserved_selection
 
 LOG = logging.getLogger(__name__)
 
@@ -309,7 +308,6 @@ class MirrorParenting(MirrorOperation):
         # when true, will search for centered nodes for joints
         self.findCenteredJoints = True
 
-    @overrides
     def mirror_node(self, source_node: pm.nt.Transform, dest_node: pm.nt.Transform, is_new_node: bool):
         """
         Change the parent of a dest node to match that of a source node,
@@ -366,7 +364,6 @@ class MirrorTransforms(MirrorOperation):
         # the type of transformation mirroring to use
         self.params = MirrorParams()
 
-    @overrides
     def mirror_node(self, source_node: pm.nt.Transform, dest_node: pm.nt.Transform, is_new_node: bool):
         """
         Move a node to the mirrored position of another node.
@@ -464,7 +461,6 @@ class MirrorCurveShapes(MirrorOperation):
         # the shape types to consider when replacing existing shapes
         self.shapeTypes = ["nurbsCurve"]
 
-    @overrides
     def mirror_node(self, source_node: pm.nt.Transform, dest_node: pm.nt.Transform, is_new_node: bool):
         # curve shape mirroring doesn't care about the actual
         # position, its only job is to flip the curve
@@ -532,7 +528,6 @@ class MirrorJointDisplay(MirrorOperation):
     Mirrors the display settings of joints
     """
 
-    @overrides
     def mirror_node(self, source_node: pm.nt.Transform, dest_node: pm.nt.Transform, is_new_node: bool):
         if source_node.type() == "joint" and dest_node.type() == "joint":
             dest_node.radius.set(source_node.radius.get())
@@ -634,7 +629,6 @@ class MirrorNames(BlueprintMirrorOperation):
             self._replacements = _generate_mirror_name_replacements(self.get_config())
         return self._replacements
 
-    @overrides
     def mirror_node(self, source_node: pm.nt.Transform, dest_node: pm.nt.Transform, is_new_node: bool):
         name = source_node.nodeName()
         dest_name = _get_mirrored_name_with_replacements(name, self._get_replacements())
@@ -661,7 +655,6 @@ class MirrorColors(BlueprintMirrorOperation):
             self._replacements = _generate_mirror_name_replacements(self.get_config())
         return self._replacements
 
-    @overrides
     def mirror_node(self, source_node: pm.nt.Transform, dest_node: pm.nt.Transform, is_new_node: bool):
         source_color = nodes.get_override_color(source_node)
         if source_color:
@@ -681,7 +674,6 @@ class MirrorLinks(BlueprintMirrorOperation):
     Mirrors Blueprint links. See links.py
     """
 
-    @overrides
     def mirror_node(self, source_node: pm.nt.Transform, dest_node: pm.nt.Transform, is_new_node: bool):
         # get link meta data
         source_link_data = links.get_link_meta_data(source_node)
