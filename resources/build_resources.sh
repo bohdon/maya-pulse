@@ -2,12 +2,13 @@
 
 # Utility for compiling Qt uis and resources to python code.
 
-# Requires pyside2-uic and pyside2-rcc which can be installed via:
+# Requires pyside2-uic.exe and pyside2-rcc.exe which can be installed via:
 #   pip install pyside2
+# The exes will be installed to <python>/Scripts.
 
-# Qt Designer can be installed with:
-#   pip install qt5-tools
-# and browsing to <python>\Lib\site-packages\qt5_applications\Qt\bin\designer.exe
+# Qt Designer (designer.exe) is also included with the pyside2 package.
+
+# Python 3.11+ is not supported, since PySide2 was replaced by PySide6.
 
 script_dir=$( cd "$(dirname "${BASH_SOURCE[0]}")" ; pwd -P )
 
@@ -23,12 +24,12 @@ build_qt() {
 
 # compile a .ui to a .py
 build_ui() {
-    build_qt "pyside2-uic --from-imports" "$1.ui" "$1"
+    build_qt "pyside2-uic -g python --from-imports" "$1.ui" "$1"
 }
 
 # compile a .qrc to a .py
 build_res() {
-    build_qt "pyside2-rcc" $1 $2
+    build_qt "pyside2-rcc -g python" $1 $2
 }
 
 # build all UIs
