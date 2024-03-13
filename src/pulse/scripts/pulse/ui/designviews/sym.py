@@ -7,6 +7,7 @@ from ...prefs import option_var_property
 
 
 class SymmetryDesignPanel(QtWidgets.QWidget):
+    mirror_axis = option_var_property("pulse.editor.mirrorAxis", 0)
     include_children = option_var_property("pulse.editor.mirrorIncludeChildren", True)
     mirror_transforms = option_var_property("pulse.editor.mirrorTransforms", True)
     mirror_parenting = option_var_property("pulse.editor.mirrorParenting", True)
@@ -14,6 +15,9 @@ class SymmetryDesignPanel(QtWidgets.QWidget):
     mirror_appearance = option_var_property("pulse.editor.mirrorAppearance", True)
     mirror_curve_shapes = option_var_property("pulse.editor.mirrorCurveShapes", True)
     allow_create = option_var_property("pulse.editor.mirrorAllowCreate", True)
+
+    def set_mirror_axis(self, value):
+        self.mirror_axis = value
 
     def set_include_children(self, value):
         self.include_children = True if value > 0 else False
@@ -42,6 +46,7 @@ class SymmetryDesignPanel(QtWidgets.QWidget):
         self.ui = Ui_SymmetryDesignPanel()
         self.ui.setupUi(self)
 
+        self.ui.axis_combo.setCurrentIndex(self.mirror_axis)
         self.ui.include_children_check.setChecked(self.include_children)
         self.ui.allow_create_check.setChecked(self.allow_create)
         self.ui.transforms_check.setChecked(self.mirror_transforms)
@@ -50,6 +55,7 @@ class SymmetryDesignPanel(QtWidgets.QWidget):
         self.ui.appearance_check.setChecked(self.mirror_appearance)
         self.ui.curve_shapes_check.setChecked(self.mirror_curve_shapes)
 
+        self.ui.axis_combo.currentIndexChanged.connect(self.set_mirror_axis)
         self.ui.include_children_check.stateChanged.connect(self.set_include_children)
         self.ui.allow_create_check.stateChanged.connect(self.set_allow_create)
         self.ui.transforms_check.stateChanged.connect(self.set_mirror_transforms)
@@ -71,5 +77,6 @@ class SymmetryDesignPanel(QtWidgets.QWidget):
             reparent=self.mirror_parenting,
             transform=self.mirror_transforms,
             appearance=self.mirror_appearance,
+            axis=self.mirror_axis,
         )
         cmd(editor_utils.mirror_selected, **kw)()

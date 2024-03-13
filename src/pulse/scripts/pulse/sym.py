@@ -287,9 +287,23 @@ class MirrorOperation(object):
 
     def __init__(self):
         # the axis to mirror across
-        self.axis = 0
+        self._axis: int = 0
         # if set, the custom matrix to use as the base for mirroring
-        self.axisMatrix = None
+        self._axis_mtx: Optional[pm.dt.Matrix] = None
+
+    @property
+    def axis(self):
+        return self._axis
+
+    def set_axis(self, value: int):
+        self._axis = value
+
+    @property
+    def axis_mtx(self):
+        return self._axis_mtx
+
+    def set_axis_mtx(self, value: Optional[pm.dt.Matrix]):
+        self._axis_mtx = value
 
     def mirror_node(self, source_node: pm.nt.Transform, dest_node: pm.nt.Transform, is_new_node: bool):
         """
@@ -364,6 +378,14 @@ class MirrorTransforms(MirrorOperation):
         # the type of transformation mirroring to use
         self.params = MirrorParams()
 
+    def set_axis(self, value: int):
+        super().set_axis(value)
+        self.params.axis = self.axis
+
+    def set_axis_mtx(self, value: Optional[pm.dt.Matrix]):
+        super().set_axis_mtx(value)
+        self.params.axis_mtx = self.axis_mtx
+
     def mirror_node(self, source_node: pm.nt.Transform, dest_node: pm.nt.Transform, is_new_node: bool):
         """
         Move a node to the mirrored position of another node.
@@ -415,7 +437,7 @@ class MirrorTransforms(MirrorOperation):
             node_pairs: A list of (source, dest) node pairs to flip.
         """
         flip_data_list = []
-        for (source_node, dest_node) in node_pairs:
+        for source_node, dest_node in node_pairs:
             flip_data = self._prepare_flip(source_node, dest_node)
             flip_data_list.append(flip_data)
 
@@ -717,24 +739,24 @@ class MirrorUtil(object):
         # the axis to mirror across
         self.axis = 0
         # if set, the custom matrix to use as the base for mirroring
-        self.axisMatrix = None
+        self.axis_mtx = None
 
         # don't mirror nodes that are centered along the mirror axis
-        self.skipCentered = True
+        self.skip_centered = True
 
         # valid all source nodes before mirroring, potentially
         # cleaning or modifying their pairing data
-        self.validateNodes = True
+        self.validate_nodes = True
 
         # if True, allows nodes to be created if no pair exists
-        self.isCreationAllowed = True
+        self.is_creation_allowed = True
 
         # if True, applies operations to the nodes and all their children
-        self.isRecursive = False
+        self.is_recursive = False
 
         # list of any nodes created during the operation, only valid
         # after creating node pairs, but before run() has finished
-        self._newNodes = []
+        self._new_nodes = []
 
     def add_operation(self, operation):
         self._operations.append(operation)
@@ -749,9 +771,9 @@ class MirrorUtil(object):
             # ensure consistent mirroring settings for all operations
             self.configure_operation(operation)
             for pair in pairs:
-                is_new_node = pair[1] in self._newNodes
+                is_new_node = pair[1] in self._new_nodes
                 operation.mirror_node(pair[0], pair[1], is_new_node)
-        self._newNodes = []
+        self._new_nodes = []
 
     def should_mirror_node(self, source_node) -> bool:
         """
@@ -761,28 +783,28 @@ class MirrorUtil(object):
         which may be included with recursive operations, but not
         wanted when mirroring.
         """
-        if self.skipCentered:
+        if self.skip_centered:
             if is_centered(source_node, self.axis):
                 return False
 
         return True
 
-    def configure_operation(self, operation):
+    def configure_operation(self, operation: MirrorOperation):
         """
         Configure a MirrorOperation instance.
         """
-        operation.axis = self.axis
-        operation.axisMatrix = self.axisMatrix
+        operation.set_axis(self.axis)
+        operation.set_axis_mtx(self.axis_mtx)
 
     def gather_nodes(self, source_nodes):
         """
         Return a filtered and expanded list of source nodes to be mirrored,
-        including children if isRecursive is True, and filtering nodes that
+        including children if is_recursive is True, and filtering nodes that
         should not be mirrored.
         """
         result = []
 
-        if self.isRecursive:
+        if self.is_recursive:
             source_nodes = nodes.get_parent_nodes(source_nodes)
 
         # expand to children
@@ -791,7 +813,7 @@ class MirrorUtil(object):
                 if self.should_mirror_node(sourceNode):
                     result.append(sourceNode)
 
-            if self.isRecursive:
+            if self.is_recursive:
                 children = nodes.get_descendants_top_to_bottom(sourceNode, type=["transform", "joint"])
 
                 for child in children:
@@ -809,13 +831,13 @@ class MirrorUtil(object):
         pairs = []
 
         for source_node in source_nodes:
-            if self.validateNodes:
+            if self.validate_nodes:
                 validate_mirror_node(source_node)
 
-            if self.isCreationAllowed:
+            if self.is_creation_allowed:
                 dest_node, is_new_node = self._get_or_create_pair_node(source_node)
                 if dest_node and is_new_node:
-                    self._newNodes.append(dest_node)
+                    self._new_nodes.append(dest_node)
             else:
                 dest_node = get_paired_node(source_node)
 
@@ -829,7 +851,7 @@ class MirrorUtil(object):
     def _get_or_create_pair_node(self, source_node) -> Tuple[pm.nt.Transform, bool]:
         """
         Return the pair node of a node, and if none exists, create a new pair node.
-        Does not check isCreationAllowed.
+        Does not check `is_creation_allowed`.
 
         Returns:
             The pair node (PyNode), and a bool that is True if the node was just created, False otherwise.
@@ -844,7 +866,7 @@ class MirrorUtil(object):
     def get_or_create_pair_node(self, source_node) -> pm.nt.Transform:
         """
         Return the pair node of a node, and if none exists,
-        create a new pair node. Does not check isCreationAllowed.
+        create a new pair node. Does not check `is_creation_allowed`.
         """
         return self._get_or_create_pair_node(source_node)[0]
 

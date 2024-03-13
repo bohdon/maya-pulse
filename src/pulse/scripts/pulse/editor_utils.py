@@ -583,7 +583,7 @@ def unpair_selected():
 
 
 def mirror_selected(
-    recursive=True, create=True, curve_shapes=True, links=True, reparent=True, transform=True, appearance=True
+    recursive=True, create=True, curve_shapes=True, links=True, reparent=True, transform=True, appearance=True, axis=0
 ):
     """
     Perform a mirroring operation on the selected nodes.
@@ -596,6 +596,7 @@ def mirror_selected(
         reparent (bool): Mirror the parenting structure of the nodes
         transform (bool): Mirror the transform matrices of the nodes
         appearance (bool): Mirror the name and color of the nodes
+        axis (int): The axis to mirror on.
     """
     sel_nodes = pm.selected()
     if not sel_nodes:
@@ -603,8 +604,9 @@ def mirror_selected(
         return
 
     util = sym.MirrorUtil()
-    util.isRecursive = recursive
-    util.isCreationAllowed = create
+    util.is_recursive = recursive
+    util.is_creation_allowed = create
+    util.axis = axis
 
     if curve_shapes:
         util.add_operation(sym.MirrorCurveShapes())
