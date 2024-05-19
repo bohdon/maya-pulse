@@ -2,13 +2,12 @@
 Widget for quickly editing the color of animation controls.
 """
 
-from PySide2 import QtWidgets
-
 from .core import PulseWindow, BlueprintUIModel
 from .gen.quick_color_editor import Ui_QuickColorEditor
 from .utils import undo_and_repeat_partial as cmd
 from .. import editor_utils
 from ..colors import LinearColor
+from ..vendor.Qt import QtWidgets
 
 
 class QuickColorEditor(QtWidgets.QWidget):

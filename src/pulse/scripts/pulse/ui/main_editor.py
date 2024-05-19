@@ -4,8 +4,6 @@ and the list of pulse actions.
 """
 from functools import partial
 
-from PySide2 import QtCore, QtWidgets
-
 from .action_editor import ActionEditorWindow
 from .actionpalette import ActionPaletteWindow
 from .actiontree import ActionTree, ActionTreeWindow
@@ -13,6 +11,7 @@ from .core import PulseWindow, BlueprintUIModel
 from .designtoolkit import DesignToolkitWindow
 from .gen.main_editor import Ui_MainEditor
 from .main_toolbar import MainToolbar
+from ..vendor.Qt import QtCore, QtWidgets
 
 
 class MainEditor(QtWidgets.QWidget):

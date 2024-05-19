@@ -4,7 +4,7 @@ import sys
 from importlib.machinery import SourceFileLoader
 
 import pymel.core as pm
-from PySide2 import QtWidgets
+from pulse.vendor.Qt import QtWidgets
 
 from pulse import source_editor
 from pulse.core import BuildAction, BuildActionError

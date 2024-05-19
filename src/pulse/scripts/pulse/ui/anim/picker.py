@@ -9,8 +9,6 @@ from functools import partial
 from typing import Optional, Union
 
 import pymel.core as pm
-from PySide2 import QtCore, QtGui, QtWidgets
-from PySide2.QtCore import QPoint, QPointF, QRect, QSize, QSizeF
 from maya import OpenMaya, cmds
 
 from ..core import PulseWindow
@@ -20,6 +18,8 @@ from ... import nodes
 from ...colors import LinearColor
 from ...prefs import option_var_property
 from ...vendor import pymetanode as meta
+from ...vendor.Qt import QtCore, QtGui, QtWidgets
+from ...vendor.Qt.QtCore import QPoint, QPointF, QRect, QSize, QSizeF
 
 logger = logging.getLogger(__name__)
 
@@ -453,7 +453,7 @@ class AnimPickerPanel(QtWidgets.QWidget):
         self.drag_last_pos = QPoint()
 
         layout = QtWidgets.QVBoxLayout(self)
-        layout.setMargin(0)
+        layout.setContentsMargins(0, 0, 0, 0)
         self.bg_frame = QtWidgets.QFrame(self)
         self.bg_frame.setStyleSheet("background-color: rgba(255, 255, 255, 5%)")
         layout.addWidget(self.bg_frame)

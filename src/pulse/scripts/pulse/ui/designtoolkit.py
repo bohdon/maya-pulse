@@ -3,8 +3,6 @@ A toolkit for setting up pulse blueprints including control and joint creation,
 joint orienting, symmetry and other design tools.
 """
 
-from PySide2 import QtWidgets
-
 from .core import PulseWindow, PulsePanelWidget
 from .designviews.controls import ControlsDesignPanel
 from .designviews.general import GeneralDesignPanel
@@ -13,6 +11,7 @@ from .designviews.layout import LayoutDesignPanel
 from .designviews.sym import SymmetryDesignPanel
 from .designviews.weights import WeightsDesignPanel
 from .gen.design_toolkit import Ui_DesignToolkit
+from ..vendor.Qt import QtWidgets
 
 PANEL_DEFINITIONS = [
     {
@@ -89,7 +88,7 @@ class DesignToolkitWindow(PulseWindow):
         self.setWindowTitle("Pulse Design Toolkit")
 
         layout = QtWidgets.QVBoxLayout(self)
-        layout.setMargin(0)
+        layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(layout)
 
         widget = DesignToolkit(self)

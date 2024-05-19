@@ -3,15 +3,21 @@
 ################################################################################
 ## Form generated from reading UI file 'designpanel_symmetry.ui'
 ##
-## Created by: Qt User Interface Compiler version 5.15.2
+## Created by: Qt User Interface Compiler version 6.7.0
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
 
-from PySide2.QtCore import *
-from PySide2.QtGui import *
-from PySide2.QtWidgets import *
-
+from ...vendor.Qt.QtCore import (QCoreApplication, QDate, QDateTime, QLocale,
+    QMetaObject, QObject, QPoint, QRect,
+    QSize, QTime, QUrl, Qt)
+from ...vendor.Qt.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
+    QFont, QFontDatabase, QGradient, QIcon,
+    QImage, QKeySequence, QLinearGradient, QPainter,
+    QPalette, QPixmap, QRadialGradient, QTransform)
+from ...vendor.Qt.QtWidgets import (QApplication, QCheckBox, QComboBox, QGridLayout,
+    QPushButton, QSizePolicy, QSpacerItem, QVBoxLayout,
+    QWidget)
 
 class Ui_SymmetryDesignPanel(object):
     def setupUi(self, SymmetryDesignPanel):
@@ -54,7 +60,7 @@ class Ui_SymmetryDesignPanel(object):
 
         self.gridLayout.addWidget(self.allow_create_check, 5, 1, 1, 1)
 
-        self.verticalSpacer = QSpacerItem(20, 6, QSizePolicy.Minimum, QSizePolicy.Minimum)
+        self.verticalSpacer = QSpacerItem(20, 6, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Minimum)
 
         self.gridLayout.addItem(self.verticalSpacer, 4, 0, 1, 1)
 

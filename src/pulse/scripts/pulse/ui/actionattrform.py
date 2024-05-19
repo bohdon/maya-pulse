@@ -10,7 +10,6 @@ from typing import Optional, cast
 
 import maya.cmds as cmds
 import pymel.core as pm
-from PySide2 import QtCore, QtGui, QtWidgets
 
 from . import utils
 from .core import BuildStepTreeModel
@@ -18,6 +17,7 @@ from .. import names
 from ..core import BuildStep, BuildActionProxy, BuildActionAttribute, BuildActionAttributeType
 from ..core import serialize_attr_value
 from ..vendor import pymetanode as meta
+from ..vendor.Qt import QtCore, QtGui, QtWidgets
 
 LOG = logging.getLogger(__name__)
 
@@ -65,7 +65,7 @@ class ActionAttrFormBase(QtWidgets.QFrame):
         self.main_layout = QtWidgets.QHBoxLayout(parent)
         # margin that will give us some visible area of
         # the frame that can change color based on valid state
-        self.main_layout.setMargin(2)
+        self.main_layout.setContentsMargins(2, 2, 2, 2)
 
         # create main form layout
         self.form_layout = QtWidgets.QFormLayout(parent)
@@ -104,7 +104,7 @@ class ActionAttrFormBase(QtWidgets.QFrame):
         self.label.setMinimumSize(QtCore.QSize(self.LABEL_WIDTH, self.LABEL_HEIGHT))
         self.label.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignTrailing | QtCore.Qt.AlignTop)
         # add some space above the label, so it lines up
-        self.label.setMargin(2)
+        self.label.setContentsMargins(2, 2, 2, 2)
         self.label.setText(names.to_title(self.attr.name))
         # set description tooltips
         description = self.attr.description

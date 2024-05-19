@@ -3,16 +3,22 @@
 ################################################################################
 ## Form generated from reading UI file 'main_settings.ui'
 ##
-## Created by: Qt User Interface Compiler version 5.15.2
+## Created by: Qt User Interface Compiler version 6.7.0
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
 
-from PySide2.QtCore import *
-from PySide2.QtGui import *
-from PySide2.QtWidgets import *
-
-from  . import icons_rc
+from ...vendor.Qt.QtCore import (QCoreApplication, QDate, QDateTime, QLocale,
+    QMetaObject, QObject, QPoint, QRect,
+    QSize, QTime, QUrl, Qt)
+from ...vendor.Qt.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
+    QFont, QFontDatabase, QGradient, QIcon,
+    QImage, QKeySequence, QLinearGradient, QPainter,
+    QPalette, QPixmap, QRadialGradient, QTransform)
+from ...vendor.Qt.QtWidgets import (QApplication, QCheckBox, QFormLayout, QLabel,
+    QLineEdit, QSizePolicy, QSpacerItem, QTabWidget,
+    QVBoxLayout, QWidget)
+from . import icons_rc
 
 class Ui_MainSettings(object):
     def setupUi(self, MainSettings):
@@ -51,7 +57,7 @@ class Ui_MainSettings(object):
 
         self.formLayout_2.setWidget(1, QFormLayout.FieldRole, self.file_path_text_label)
 
-        self.verticalSpacer_4 = QSpacerItem(20, 20, QSizePolicy.Minimum, QSizePolicy.Minimum)
+        self.verticalSpacer_4 = QSpacerItem(20, 20, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Minimum)
 
         self.formLayout_2.setItem(2, QFormLayout.SpanningRole, self.verticalSpacer_4)
 
@@ -100,7 +106,7 @@ class Ui_MainSettings(object):
 
         self.verticalLayout_2.addLayout(self.formLayout_2)
 
-        self.verticalSpacer_2 = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding)
+        self.verticalSpacer_2 = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
 
         self.verticalLayout_2.addItem(self.verticalSpacer_2)
 
@@ -131,7 +137,7 @@ class Ui_MainSettings(object):
 
         self.config_file_path_label = QLabel(self.global_tab)
         self.config_file_path_label.setObjectName(u"config_file_path_label")
-        sizePolicy = QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Preferred)
+        sizePolicy = QSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Preferred)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.config_file_path_label.sizePolicy().hasHeightForWidth())
@@ -141,7 +147,7 @@ class Ui_MainSettings(object):
 
         self.formLayout_3.setWidget(1, QFormLayout.FieldRole, self.config_file_path_label)
 
-        self.verticalSpacer_3 = QSpacerItem(20, 20, QSizePolicy.Minimum, QSizePolicy.Minimum)
+        self.verticalSpacer_3 = QSpacerItem(20, 20, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Minimum)
 
         self.formLayout_3.setItem(2, QFormLayout.SpanningRole, self.verticalSpacer_3)
 
@@ -158,7 +164,7 @@ class Ui_MainSettings(object):
 
         self.verticalLayout_3.addLayout(self.formLayout_3)
 
-        self.verticalSpacer = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding)
+        self.verticalSpacer = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
 
         self.verticalLayout_3.addItem(self.verticalSpacer)
 

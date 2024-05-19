@@ -2,11 +2,10 @@ import logging
 from functools import partial
 from typing import Optional, cast
 
-from PySide2 import QtCore, QtWidgets, QtGui
-
 from .build_action_data_form import MainBuildActionDataForm, BuildActionDataForm
 from ..core import BuildStepTreeModel, BlueprintUIModel
 from ...core import BuildActionProxy, BuildStep
+from ...vendor.Qt import QtCore, QtWidgets, QtGui
 
 logger = logging.getLogger(__name__)
 
@@ -73,7 +72,7 @@ class BuildActionProxyForm(QtWidgets.QWidget):
         """
         self.main_layout = QtWidgets.QVBoxLayout(parent)
         self.main_layout.setSpacing(2)
-        self.main_layout.setMargin(0)
+        self.main_layout.setContentsMargins(0, 0, 0, 0)
 
         self.setup_layout_header(parent, self.main_layout)
 
@@ -101,7 +100,7 @@ class BuildActionProxyForm(QtWidgets.QWidget):
         layout.addWidget(self.variant_header)
 
         variant_header_layout = QtWidgets.QHBoxLayout(self.variant_header)
-        variant_header_layout.setMargin(5)
+        variant_header_layout.setContentsMargins(5, 5, 5, 5)
         variant_header_layout.setSpacing(4)
 
         # add variant button

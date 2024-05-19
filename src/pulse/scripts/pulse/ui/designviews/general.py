@@ -1,11 +1,11 @@
 import pymel.core as pm
-from PySide2 import QtWidgets
 
 from ..gen.designpanel_general import Ui_GeneralDesignPanel
 from ..quickcolor import QuickColorWindow
 from ..quickname import QuickNameWindow
 from ..utils import undo_and_repeat_partial as cmd
 from ... import editor_utils
+from ...vendor.Qt import QtWidgets
 
 
 class GeneralDesignPanel(QtWidgets.QWidget):

@@ -3,16 +3,22 @@
 ################################################################################
 ## Form generated from reading UI file 'layout_link_editor.ui'
 ##
-## Created by: Qt User Interface Compiler version 5.15.2
+## Created by: Qt User Interface Compiler version 6.7.0
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
 
-from PySide2.QtCore import *
-from PySide2.QtGui import *
-from PySide2.QtWidgets import *
-
-from  . import icons_rc
+from ...vendor.Qt.QtCore import (QCoreApplication, QDate, QDateTime, QLocale,
+    QMetaObject, QObject, QPoint, QRect,
+    QSize, QTime, QUrl, Qt)
+from ...vendor.Qt.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
+    QFont, QFontDatabase, QGradient, QIcon,
+    QImage, QKeySequence, QLinearGradient, QPainter,
+    QPalette, QPixmap, QRadialGradient, QTransform)
+from ...vendor.Qt.QtWidgets import (QApplication, QCheckBox, QHBoxLayout, QLabel,
+    QPushButton, QScrollArea, QSizePolicy, QSpacerItem,
+    QToolButton, QVBoxLayout, QWidget)
+from . import icons_rc
 
 class Ui_LayoutLinkEditor(object):
     def setupUi(self, LayoutLinkEditor):
@@ -69,7 +75,7 @@ class Ui_LayoutLinkEditor(object):
 
         self.verticalLayout.addWidget(self.snap_to_targets_btn)
 
-        self.verticalSpacer = QSpacerItem(20, 20, QSizePolicy.Minimum, QSizePolicy.Minimum)
+        self.verticalSpacer = QSpacerItem(20, 20, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Minimum)
 
         self.verticalLayout.addItem(self.verticalSpacer)
 
@@ -77,7 +83,7 @@ class Ui_LayoutLinkEditor(object):
         self.horizontalLayout_3.setObjectName(u"horizontalLayout_3")
         self.section_title_links = QLabel(LayoutLinkEditor)
         self.section_title_links.setObjectName(u"section_title_links")
-        sizePolicy = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+        sizePolicy = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.section_title_links.sizePolicy().hasHeightForWidth())
@@ -111,7 +117,7 @@ class Ui_LayoutLinkEditor(object):
 
         self.verticalLayout_3.addLayout(self.link_info_vbox)
 
-        self.verticalSpacer_2 = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding)
+        self.verticalSpacer_2 = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
 
         self.verticalLayout_3.addItem(self.verticalSpacer_2)
 

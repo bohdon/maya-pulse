@@ -35,12 +35,14 @@ def tear_down_ui():
     Hide and delete UI elements and registered callbacks.
     Intended for development reloading purposes.
     """
-    from .gen import icons_rc
     from .contextmenus import unregister_context_menu
+    from .gen import icons_rc
+    from .menu import delete_main_menu
 
     close_all_editors()
     unregister_context_menu()
     icons_rc.qCleanupResources()
+    delete_main_menu()
 
 
 def close_all_editors():

@@ -12,7 +12,7 @@ https://github.com/bohdon/maya-pulse
 from .version import __version__
 
 
-def reload():
+def reload(install_menu=True):
     """
     Perform a development reload of the Pulse python package.
     """
@@ -44,7 +44,8 @@ def reload():
 
     from .ui import show_editor_ui, menu
 
-    menu.install_main_menu()
+    if install_menu:
+        menu.install_main_menu()
 
     if is_ui_showing:
         pm.evalDeferred(show_editor_ui)

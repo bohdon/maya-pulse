@@ -3,16 +3,22 @@
 ################################################################################
 ## Form generated from reading UI file 'anim_picker.ui'
 ##
-## Created by: Qt User Interface Compiler version 5.15.2
+## Created by: Qt User Interface Compiler version 6.7.0
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
 
-from PySide2.QtCore import *
-from PySide2.QtGui import *
-from PySide2.QtWidgets import *
-
-from  . import icons_rc
+from ...vendor.Qt.QtCore import (QCoreApplication, QDate, QDateTime, QLocale,
+    QMetaObject, QObject, QPoint, QRect,
+    QSize, QTime, QUrl, Qt)
+from ...vendor.Qt.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
+    QFont, QFontDatabase, QGradient, QIcon,
+    QImage, QKeySequence, QLinearGradient, QPainter,
+    QPalette, QPixmap, QRadialGradient, QTransform)
+from ...vendor.Qt.QtWidgets import (QApplication, QFrame, QHBoxLayout, QLabel,
+    QSizePolicy, QSpacerItem, QToolButton, QVBoxLayout,
+    QWidget)
+from . import icons_rc
 
 class Ui_AnimPicker(object):
     def setupUi(self, AnimPicker):
@@ -26,7 +32,7 @@ class Ui_AnimPicker(object):
         self.verticalLayout.setContentsMargins(2, 2, 2, 2)
         self.header_frame = QFrame(AnimPicker)
         self.header_frame.setObjectName(u"header_frame")
-        sizePolicy = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Maximum)
+        sizePolicy = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Maximum)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.header_frame.sizePolicy().hasHeightForWidth())
@@ -59,7 +65,7 @@ class Ui_AnimPicker(object):
 
         self.horizontalLayout_2.addWidget(self.new_btn)
 
-        self.horizontalSpacer = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
+        self.horizontalSpacer = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
 
         self.horizontalLayout_2.addItem(self.horizontalSpacer)
 

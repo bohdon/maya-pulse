@@ -1,8 +1,7 @@
-from PySide2 import QtWidgets
-
 from ..gen.designpanel_weights import Ui_WeightsDesignPanel
 from ..utils import undo_and_repeat_partial as cmd
 from ... import editor_utils
+from ...vendor.Qt import QtWidgets
 
 
 class WeightsDesignPanel(QtWidgets.QWidget):

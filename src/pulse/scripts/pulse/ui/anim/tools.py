@@ -4,11 +4,11 @@ Animation tools for working with keyframes and the graph editor.
 import logging
 
 import pymel.core as pm
-from PySide2 import QtWidgets
 
 from ..core import PulseWindow
 from ..gen.anim_tools import Ui_AnimTools
 from ..utils import undo_and_repeat_partial as cmd
+from ...vendor.Qt import QtWidgets
 
 logger = logging.getLogger(__name__)
 

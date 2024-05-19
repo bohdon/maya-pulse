@@ -1,5 +1,4 @@
 import pymel.core as pm
-from PySide2 import QtWidgets
 from maya import OpenMaya as api
 
 from .. import utils
@@ -10,6 +9,7 @@ from ..gen.layout_link_info_widget import Ui_LayoutLinkInfoWidget
 from ..utils import undo_and_repeat_partial as cmd
 from ... import editor_utils
 from ... import links
+from ...vendor.Qt import QtWidgets
 
 
 class LayoutDesignPanel(QtWidgets.QWidget):
@@ -159,7 +159,7 @@ class LayoutLinkEditorWindow(PulseWindow):
         self.setWindowTitle("Layout Link Editor")
 
         layout = QtWidgets.QVBoxLayout(self)
-        layout.setMargin(0)
+        layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(layout)
 
         widget = LayoutLinkEditorWidget(self)

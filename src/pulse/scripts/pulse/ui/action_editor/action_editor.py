@@ -1,13 +1,12 @@
 import logging
 
-from PySide2 import QtCore, QtWidgets
-
 from .build_step_form import BuildStepForm
 from ..core import BlueprintUIModel
 from ..core import PulseWindow
 from ..gen.action_editor import Ui_ActionEditor
 from ..utils import clear_layout
 from ...prefs import option_var_property
+from ...vendor.Qt import QtCore, QtWidgets
 
 logger = logging.getLogger(__name__)
 

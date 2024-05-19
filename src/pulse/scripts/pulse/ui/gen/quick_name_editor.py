@@ -3,16 +3,22 @@
 ################################################################################
 ## Form generated from reading UI file 'quick_name_editor.ui'
 ##
-## Created by: Qt User Interface Compiler version 5.15.2
+## Created by: Qt User Interface Compiler version 6.7.0
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
 
-from PySide2.QtCore import *
-from PySide2.QtGui import *
-from PySide2.QtWidgets import *
-
-from  . import icons_rc
+from ...vendor.Qt.QtCore import (QCoreApplication, QDate, QDateTime, QLocale,
+    QMetaObject, QObject, QPoint, QRect,
+    QSize, QTime, QUrl, Qt)
+from ...vendor.Qt.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
+    QFont, QFontDatabase, QGradient, QIcon,
+    QImage, QKeySequence, QLinearGradient, QPainter,
+    QPalette, QPixmap, QRadialGradient, QTransform)
+from ...vendor.Qt.QtWidgets import (QApplication, QHBoxLayout, QLabel, QPushButton,
+    QSizePolicy, QSpacerItem, QToolButton, QVBoxLayout,
+    QWidget)
+from . import icons_rc
 
 class Ui_QuickNameEditor(object):
     def setupUi(self, QuickNameEditor):
@@ -31,7 +37,7 @@ class Ui_QuickNameEditor(object):
 
         self.set_name_by_link_btn = QPushButton(QuickNameEditor)
         self.set_name_by_link_btn.setObjectName(u"set_name_by_link_btn")
-        sizePolicy = QSizePolicy(QSizePolicy.Maximum, QSizePolicy.Fixed)
+        sizePolicy = QSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.set_name_by_link_btn.sizePolicy().hasHeightForWidth())
@@ -43,7 +49,7 @@ class Ui_QuickNameEditor(object):
 
         self.verticalLayout_4.addLayout(self.horizontalLayout_3)
 
-        self.verticalSpacer_4 = QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.Minimum)
+        self.verticalSpacer_4 = QSpacerItem(20, 10, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Minimum)
 
         self.verticalLayout_4.addItem(self.verticalSpacer_4)
 
@@ -69,7 +75,7 @@ class Ui_QuickNameEditor(object):
 
         self.verticalLayout.addLayout(self.prefixes_vbox)
 
-        self.verticalSpacer = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding)
+        self.verticalSpacer = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
 
         self.verticalLayout.addItem(self.verticalSpacer)
 
@@ -90,7 +96,7 @@ class Ui_QuickNameEditor(object):
 
         self.verticalLayout_2.addLayout(self.keywords_vbox)
 
-        self.verticalSpacer_2 = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding)
+        self.verticalSpacer_2 = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
 
         self.verticalLayout_2.addItem(self.verticalSpacer_2)
 
@@ -117,7 +123,7 @@ class Ui_QuickNameEditor(object):
 
         self.verticalLayout_3.addLayout(self.suffixes_vbox)
 
-        self.verticalSpacer_3 = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding)
+        self.verticalSpacer_3 = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
 
         self.verticalLayout_3.addItem(self.verticalSpacer_3)
 

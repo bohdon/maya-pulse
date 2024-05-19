@@ -4,13 +4,13 @@ import logging
 from functools import partial
 from typing import cast
 
-from PySide2 import QtCore, QtWidgets, QtGui
 from maya import cmds
 
 from ..actionattrform import ActionAttrForm, BatchAttrForm, ActionAttrFormBase
 from ..core import BuildStepTreeModel
 from ..gen.build_action_data_form import Ui_BuildActionDataForm
 from ...core import BuildActionProxy, BuildStep, BuildActionData, BuildActionAttribute
+from ...vendor.Qt import QtCore, QtWidgets, QtGui
 
 logger = logging.getLogger(__name__)
 

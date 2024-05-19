@@ -6,7 +6,6 @@ import logging
 from typing import cast
 
 import pymel.core as pm
-from PySide2 import QtCore, QtWidgets
 
 from .build_action_proxy_form import BuildActionProxyForm
 from ..core import BuildStepTreeModel
@@ -14,6 +13,7 @@ from ..gen.build_step_form import Ui_BuildStepForm
 from ... import source_editor
 from ...colors import LinearColor
 from ...core import BuildStep
+from ...vendor.Qt import QtCore, QtWidgets
 
 logger = logging.getLogger(__name__)
 

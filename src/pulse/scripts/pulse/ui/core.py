@@ -10,7 +10,6 @@ import maya.OpenMaya as api
 import maya.OpenMayaUI as mui
 import maya.cmds as cmds
 import pymel.core as pm
-from PySide2 import QtCore, QtWidgets, QtGui
 from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
 
 from .utils import CollapsibleFrame
@@ -24,6 +23,7 @@ from ..core import serialize_attr_value
 from ..editor_utils import open_blueprint_scene
 from ..prefs import option_var_property
 from ..vendor import pymetanode as meta
+from ..vendor.Qt import QtCore, QtWidgets, QtGui
 
 LOG = logging.getLogger(__name__)
 LOG.level = logging.DEBUG
@@ -52,7 +52,7 @@ class PulsePanelWidget(QtWidgets.QWidget):
 
     def setup_ui(self, parent):
         self.main_layout = QtWidgets.QVBoxLayout(parent)
-        self.main_layout.setMargin(0)
+        self.main_layout.setContentsMargins(0, 0, 0, 0)
         self.main_layout.setSpacing(3)
 
         # header frame
@@ -272,7 +272,7 @@ class PulseWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 The QWidget class to instantiate and wrap in a simple layout.
         """
         layout = QtWidgets.QVBoxLayout(self)
-        layout.setMargin(0)
+        layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(layout)
 
         self.main_widget = widget_cls(self)

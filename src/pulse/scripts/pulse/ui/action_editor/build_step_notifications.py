@@ -1,12 +1,11 @@
 import logging
 from typing import Optional
 
-from PySide2 import QtCore, QtWidgets
-
 from ..core import BlueprintUIModel
 from ..utils import clear_layout
 from ... import names
 from ...core import BuildStep
+from ...vendor.Qt import QtCore, QtWidgets
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +31,7 @@ class BuildStepNotifications(QtWidgets.QWidget):
 
     def setup_ui(self, parent):
         self.layout = QtWidgets.QVBoxLayout(parent)
-        self.layout.setMargin(0)
+        self.layout.setContentsMargins(0, 0, 0, 0)
 
     def _refresh(self):
         clear_layout(self.layout)

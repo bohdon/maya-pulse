@@ -1,9 +1,8 @@
-from PySide2 import QtCore, QtWidgets
-
 from ..utils import get_icon
 from ..utils import undo_and_repeat_partial as cmd
 from ... import control_shapes
 from ... import editor_utils
+from ...vendor.Qt import QtCore, QtWidgets
 
 
 class ControlsDesignPanel(QtWidgets.QWidget):
@@ -14,11 +13,11 @@ class ControlsDesignPanel(QtWidgets.QWidget):
 
     def setup_ui(self, parent):
         layout = QtWidgets.QVBoxLayout(parent)
-        layout.setMargin(0)
+        layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(4)
 
         create_layout = QtWidgets.QGridLayout(parent)
-        create_layout.setMargin(0)
+        create_layout.setContentsMargins(0, 0, 0, 0)
         create_layout.setSpacing(2)
 
         control_shapes.load_builtin_control_shapes()
@@ -51,7 +50,7 @@ class ControlsDesignPanel(QtWidgets.QWidget):
 
         # setup edit controls ui
         edit_layout = QtWidgets.QHBoxLayout(parent)
-        edit_layout.setMargin(0)
+        edit_layout.setContentsMargins(0, 0, 0, 0)
         edit_layout.setSpacing(2)
 
         def _create_rotate_components_button(text, css_classes: str, axis, degrees):

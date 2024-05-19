@@ -3,16 +3,22 @@
 ################################################################################
 ## Form generated from reading UI file 'quick_color_editor.ui'
 ##
-## Created by: Qt User Interface Compiler version 5.15.2
+## Created by: Qt User Interface Compiler version 6.7.0
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
 
-from PySide2.QtCore import *
-from PySide2.QtGui import *
-from PySide2.QtWidgets import *
-
-from  . import icons_rc
+from ...vendor.Qt.QtCore import (QCoreApplication, QDate, QDateTime, QLocale,
+    QMetaObject, QObject, QPoint, QRect,
+    QSize, QTime, QUrl, Qt)
+from ...vendor.Qt.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
+    QFont, QFontDatabase, QGradient, QIcon,
+    QImage, QKeySequence, QLinearGradient, QPainter,
+    QPalette, QPixmap, QRadialGradient, QTransform)
+from ...vendor.Qt.QtWidgets import (QApplication, QGridLayout, QHBoxLayout, QLabel,
+    QPushButton, QSizePolicy, QSpacerItem, QToolButton,
+    QVBoxLayout, QWidget)
+from . import icons_rc
 
 class Ui_QuickColorEditor(object):
     def setupUi(self, QuickColorEditor):
@@ -33,7 +39,7 @@ class Ui_QuickColorEditor(object):
 
         self.verticalLayout_4.addLayout(self.color_btns_layout)
 
-        self.verticalSpacer_4 = QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.Expanding)
+        self.verticalSpacer_4 = QSpacerItem(20, 10, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
 
         self.verticalLayout_4.addItem(self.verticalSpacer_4)
 
