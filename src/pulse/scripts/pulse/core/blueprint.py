@@ -1,26 +1,33 @@
+from __future__ import annotations
+
 import logging
 import os
+from enum import Enum
 from typing import Optional
 
 # TODO: remove maya dependencies from this core module, add BlueprintBuilder subclass that uses maya progress bars
 import pymel.core as pm
 
-from ..vendor import yaml
+from . import PulseAsset
+from .config import PulseConfig
+from .module import BlueprintBase, BlueprintModule
+from .serializer import UnsortableOrderedDict
 from .. import version
-from .serializer import PulseDumper, PulseLoader, UnsortableOrderedDict
-from .actions import BuildStep
+from ..vendor import yaml
 
 __all__ = [
     "Blueprint",
-    "BlueprintFile",
     "BlueprintSettings",
-    "get_default_config_file",
-    "load_default_config",
 ]
 
 LOG = logging.getLogger(__name__)
 
-BLUEPRINT_VERSION = version.__version__
+
+class BlueprintVersion(Enum):
+    INITIAL = 0
+    PULSE_ASSETS = 1
+
+    LATEST = PULSE_ASSETS
 
 
 def get_default_config_file() -> str:
@@ -31,7 +38,7 @@ def get_default_config_file() -> str:
     return os.path.realpath(os.path.join(pulse_dir, "config/default_blueprint_config.yaml"))
 
 
-def load_default_config() -> Optional[dict]:
+def load_default_config() -> dict | None:
     """
     Load and return the default blueprint config
     """
@@ -50,7 +57,7 @@ def _load_config(file_path) -> Optional[dict]:
         return yaml.safe_load(fp)
 
 
-class BlueprintSettings(object):
+class BlueprintSettings(dict):
     """
     Constants defining the keys for Blueprint settings.
     """
@@ -59,49 +66,31 @@ class BlueprintSettings(object):
     RIG_NODE_NAME_FORMAT = "rigNodeNameFormat"
     DEBUG_BUILD = "debugBuild"
 
+    def __init__(self):
+        super().__init__()
+        self.reset()
 
-class Blueprint(object):
+    def reset(self):
+        self.clear()
+        self[BlueprintSettings.RIG_NAME] = ""
+        self[BlueprintSettings.RIG_NODE_NAME_FORMAT] = "{rigName}_rig"
+        self[BlueprintSettings.DEBUG_BUILD] = False
+
+
+class Blueprint(BlueprintBase):
     """
     A Blueprint contains all the information necessary to build
-    a full rig. It is essentially made up of configuration settings
-    and an ordered hierarchy of BuildActions.
+    a full rig. It is made up of one or more BlueprintModules and a config.
     """
 
-    @staticmethod
-    def from_data(data) -> "Blueprint":
-        """
-        Create a Blueprint instance from serialized data
-        """
-        blueprint = Blueprint()
-        blueprint.deserialize(data)
-        return blueprint
-
-    def __init__(self):
+    def __init__(self, file_path: str = None, is_read_only=False):
+        super().__init__(file_path=file_path, is_read_only=is_read_only)
+        # asset version
+        self.version = BlueprintVersion.LATEST.value
         # various settings used by the blueprint, such as the rig name
-        self.settings = {}
-        self.add_missing_settings()
-        # the version of this blueprint
-        self.version: str = BLUEPRINT_VERSION
-        # the root step of this blueprint
-        self.root_step: BuildStep = BuildStep("Root")
-        # the config file to use when designing this Blueprint
-        self.config_file_path: str = get_default_config_file()
-        # the config, automatically loaded when calling `get_config`
-        self._config: Optional[dict] = None
-        # the maya scene path associated with this blueprint
-        self.scene_path: str = ""
-        self.update_scene_path()
-
-    def add_missing_settings(self):
-        """
-        Add new or missing settings to the Blueprint, do not overwrite any existing settings.
-        """
-        if BlueprintSettings.RIG_NAME not in self.settings:
-            self.set_setting(BlueprintSettings.RIG_NAME, "")
-        if BlueprintSettings.RIG_NODE_NAME_FORMAT not in self.settings:
-            self.set_setting(BlueprintSettings.RIG_NODE_NAME_FORMAT, "{rigName}_rig")
-        if BlueprintSettings.DEBUG_BUILD not in self.settings:
-            self.set_setting(BlueprintSettings.DEBUG_BUILD, False)
+        self.settings = BlueprintSettings()
+        # the config for this blueprint
+        self.config = PulseConfig(get_default_config_file())
 
     def get_setting(self, key: str, default=None):
         """
@@ -115,247 +104,29 @@ class Blueprint(object):
         """
         self.settings[key] = value
 
-    def update_scene_path(self):
-        """
-        Update the associated scene path to the currently open Maya scene.
-        """
-        self.scene_path = str(pm.sceneName())
+    def pre_save(self):
+        super().pre_save()
+        self.set_scene_path_to_current()
 
-    def serialize(self) -> UnsortableOrderedDict:
-        self.update_scene_path()
-        data = UnsortableOrderedDict()
-        data["version"] = self.version
+    def post_load(self):
+        super().post_load()
+        self.version = BlueprintVersion.LATEST.value
+
+    def _serialize(self) -> UnsortableOrderedDict:
+        data = super()._serialize()
         data["settings"] = self.settings
-        data["steps"] = self.root_step.serialize()
-        data["scene_path"] = self.scene_path
         return data
 
-    def deserialize(self, data: dict) -> bool:
-        """
-        Returns:
-            True if the data was deserialized successfully
-        """
-        # TODO: update blueprint version when loaded, and system for upgrading data
-        self.version = data.get("version", None)
-        self.settings = data.get("settings", {})
-        self.root_step.deserialize(data.get("steps", {"name": "Root"}))
-        # inject new or missing settings
-        self.add_missing_settings()
-        self.scene_path = data.get("scene_path", "")
+    def _deserialize(self, data: dict):
+        super()._deserialize(data)
+        self.settings.reset()
+        self.settings.update(data.get("settings", {}))
         return True
-
-    def load_from_file(self, file_path: str) -> bool:
-        """
-        Returns:
-            True if the load was successful
-        """
-        LOG.debug("Loading blueprint: %s", file_path)
-
-        try:
-            with open(file_path, "r") as fp:
-                data = yaml.load(fp, Loader=PulseLoader)
-        except IOError:
-            return False
-
-        if not data:
-            return False
-
-        return self.deserialize(data)
-
-    def save_to_file(self, file_path: str) -> bool:
-        """
-        Returns:
-            True if the save was successful
-        """
-        LOG.info("Saving blueprint: %s", file_path)
-
-        data = self.serialize()
-        with open(file_path, "w") as fp:
-            yaml.dump(data, fp, default_flow_style=False, Dumper=PulseDumper)
-
-        return True
-
-    def dump_yaml(self) -> str:
-        data = self.serialize()
-        return yaml.dump(data, default_flow_style=False, Dumper=PulseDumper)
-
-    def load_from_yaml(self, yaml_str: str) -> bool:
-        """
-        Load this Blueprint from a yaml string
-        """
-        try:
-            data = yaml.load(yaml_str, Loader=PulseLoader)
-        except Exception:
-            return False
-
-        if not data:
-            return False
-
-        return self.deserialize(data)
-
-    def get_step_by_path(self, path: str) -> BuildStep:
-        """
-        Return a BuildStep from the Blueprint by path
-
-        Args:
-            path: A path pointing to a BuildStep, e.g. '/My/Build/Step'
-        """
-        if not path or path == "/":
-            return self.root_step
-        else:
-            step = self.root_step.get_child_by_path(path)
-            if step:
-                return step
-            else:
-                LOG.warning("Could not find BuildStep: %s", path)
 
     def reset_to_default(self):
         """
         Reset the Blueprint to the default set of actions.
         """
-        default_data = self.get_config().get("default_blueprint", {})
+        default_data = self.config.get("default_blueprint", {})
         self.deserialize(default_data)
-
-    def get_config(self) -> dict:
-        """
-        Return the config for this Blueprint.
-        Load the config from disk if it hasn't been loaded yet.
-        """
-        if self._config is None and self.config_file_path:
-            self.load_config()
-        return self._config
-
-    def load_config(self):
-        """
-        Load the config for this Blueprint from the current file path.
-        Reloads the config even if it is already loaded.
-        """
-        if self.config_file_path:
-            self._config = _load_config(self.config_file_path)
-
-
-class BlueprintFile(object):
-    """
-    Contains a Blueprint and file path info for saving and loading, as well as
-    tracking modification status.
-
-    A Blueprint File is considered valid by default, even without a file path,
-    just like a new 'untitled' maya scene file. A file path must be assigned before it
-    can be saved.
-    """
-
-    # the file extension to use for blueprint files
-    file_ext: str = "yml"
-
-    def __init__(self, file_path: Optional[str] = None, is_read_only: bool = False):
-        self.blueprint = Blueprint()
-        self.file_path = file_path
-        self.is_read_only = is_read_only
-        self._is_modified = False
-
-    def has_file_path(self) -> bool:
-        return bool(self.file_path)
-
-    def can_load(self) -> bool:
-        return self.has_file_path()
-
-    def can_save(self) -> bool:
-        return self.has_file_path() and not self.is_read_only
-
-    def is_modified(self) -> bool:
-        return self._is_modified
-
-    def modify(self):
-        """
-        Mark the blueprint file as modified.
-        """
-        self._is_modified = True
-
-    def clear_modified(self):
-        """
-        Clear the modified status of the file.
-        """
-        self._is_modified = False
-
-    def get_file_name(self) -> Optional[str]:
-        """
-        Return the base name of the file path.
-        """
-        if self.file_path:
-            return os.path.basename(self.file_path)
-
-    def save(self) -> bool:
-        """
-        Save the Blueprint to file.
-
-        Returns:
-            True if the file was saved successfully.
-        """
-        if not self.file_path:
-            LOG.warning("Cant save Blueprint, file path is not set.")
-            return False
-
-        success = self.blueprint.save_to_file(self.file_path)
-
-        if success:
-            self.clear_modified()
-        else:
-            LOG.error("Failed to save Blueprint to file: %s", self.file_path)
-
-        return success
-
-    def save_as(self, file_path: str) -> bool:
-        """
-        Save the Blueprint with a new file path.
-        """
-        self.file_path = file_path
-        return self.save()
-
-    def load(self) -> bool:
-        """
-        Load the blueprint from file.
-        """
-        if not self.file_path:
-            LOG.warning("Cant load Blueprint, file path is not set.")
-            return False
-
-        if not os.path.isfile(self.file_path):
-            LOG.warning("Blueprint file does not exist: %s", self.file_path)
-            return False
-
-        success = self.blueprint.load_from_file(self.file_path)
-
-        if success:
-            self.clear_modified()
-        else:
-            LOG.error("Failed to load Blueprint from file: %s", self.file_path)
-
-        return success
-
-    def resolve_file_path(self, allow_existing=False):
-        """
-        Automatically resolve the current file path based on the open maya scene.
-        Does nothing if file path is already set.
-
-        Args:
-            allow_existing: bool
-                If true, allow resolving to a path that already exists on disk.
-        """
-        if not self.file_path:
-            file_path = self.get_default_file_path()
-            if file_path:
-                if allow_existing or not os.path.isfile(file_path):
-                    self.file_path = file_path
-
-    def get_default_file_path(self) -> Optional[str]:
-        """
-        Return the file path to use for a new blueprint file.
-        Uses the open maya scene by default.
-
-        # TODO: move out of core into a maya specific subclass
-        """
-        scene_name = pm.sceneName()
-
-        if scene_name:
-            base_name = os.path.splitext(scene_name)[0]
-            return f"{base_name}.{self.file_ext}"
+        self.modify()

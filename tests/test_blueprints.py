@@ -1,12 +1,13 @@
 import unittest
+
 import pymel.core as pm
 
-from pulse.core import Blueprint, BlueprintBuilder, BlueprintFile, BlueprintSettings
+from pulse.core import Blueprint, BlueprintBuilder, BlueprintSettings
 from pulse.core import BuildStep
 from pulse.core import load_actions, get_all_rigs
 
 EXAMPLE_BLUEPRINT_A = """
-version: 1.0.0
+version: 1
 settings:
   rigName: TestRig
 steps:
@@ -39,12 +40,12 @@ class TestBlueprints(unittest.TestCase):
         pm.delete(get_all_rigs())
 
     def test_build(self):
-        blueprint_file = BlueprintFile()
-
         # initialize default actions and set rig name
-        blueprint = blueprint_file.blueprint
+        blueprint = Blueprint()
         blueprint.reset_to_default()
         blueprint.set_setting(BlueprintSettings.RIG_NAME, "test")
+
+        self.assertGreater(blueprint.root_step.num_children(), 0)
 
         # disable 'Rename Scene' step since we will not be saving any scenes
         rename_step = blueprint.root_step.get_child_by_name("Rename Scene")
@@ -59,16 +60,16 @@ class TestBlueprints(unittest.TestCase):
         main_step = blueprint.get_step_by_path("/Main")
         main_step.add_child(ctl_step)
 
-        self.assertTrue(len(main_step.children) == 1)
+        self.assertEqual(main_step.num_children(), 1)
 
-        builder = BlueprintBuilder(blueprint_file)
+        builder = BlueprintBuilder(blueprint)
         builder.start()
 
         self.assertTrue(builder.is_finished)
         self.assertFalse(builder.has_errors())
 
         rig_node = pm.ls("test_rig")
-        self.assertTrue(len(rig_node) == 1)
+        self.assertEqual(len(rig_node), 1)
 
         # make sure anim control action was run
         ctl_node = pm.ls("my_ctl")[0]
@@ -78,7 +79,7 @@ class TestBlueprints(unittest.TestCase):
 
         # check top-level transforms (4 cameras + 1 rig node)
         assemblies = pm.ls(assemblies=True)
-        self.assertTrue(len(assemblies) == 5)
+        self.assertEqual(len(assemblies), 5)
 
     def test_build_steps(self):
         bp = Blueprint()
@@ -145,10 +146,10 @@ class TestBlueprints(unittest.TestCase):
 
     def test_deserialize(self):
         bp = Blueprint()
-        bp.load_from_yaml(EXAMPLE_BLUEPRINT_A)
+        bp.deserialize_yaml(EXAMPLE_BLUEPRINT_A)
 
         self.assertEqual(bp.get_setting(BlueprintSettings.RIG_NAME), "TestRig")
-        self.assertTrue(bp.root_step.num_children() == 4)
+        self.assertEqual(bp.root_step.num_children(), 4)
 
         step_a = bp.get_step_by_path("/Main/GroupA")
         step_c = bp.get_step_by_path("/Main/GroupA/GroupC")

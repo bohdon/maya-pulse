@@ -131,7 +131,7 @@ class PythonAction(BuildAction):
     ]
 
     def validate(self):
-        blueprint_file_path = self.builder.blueprint_file.file_path
+        blueprint_file_path = self.builder.blueprint.file_path
         if not blueprint_file_path:
             self.logger.error("Blueprint is not saved, could not determine script file path.")
             return
@@ -147,7 +147,7 @@ class PythonAction(BuildAction):
             self.logger.error("Function '%s' was not found.", self.function)
 
     def run(self):
-        blueprint_file_path = self.builder.blueprint_file.file_path
+        blueprint_file_path = self.builder.blueprint.file_path
         if not blueprint_file_path:
             raise BuildActionError("Failed to get blueprint file path from builder.")
 

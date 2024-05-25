@@ -2,6 +2,8 @@
 UI model classes, and base classes for common widgets.
 """
 
+from __future__ import annotations
+
 import logging
 import os
 from typing import Optional, List, cast
@@ -15,7 +17,7 @@ from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
 from .utils import CollapsibleFrame
 from .utils import dpi_scale
 from .. import editor_utils
-from ..core import Blueprint, BlueprintFile, BlueprintSettings, BlueprintBuilder, BlueprintValidator
+from ..core import Blueprint, BlueprintSettings, BlueprintBuilder, BlueprintValidator
 from ..core import BuildStep, BuildAction
 from ..core import get_all_rigs
 from ..core import load_actions
@@ -289,7 +291,7 @@ class BlueprintUIModel(QtCore.QObject):
     """
 
     # shared instance
-    _instance: Optional["BlueprintUIModel"] = None
+    _instance: BlueprintUIModel | None = None
 
     # automatically save the blueprint file when the maya scene is saved
     auto_save = option_var_property("pulse.editor.auto_save", True)
@@ -332,7 +334,7 @@ class BlueprintUIModel(QtCore.QObject):
     on_validate_event = QtCore.Signal()
 
     @classmethod
-    def get(cls) -> "BlueprintUIModel":
+    def get(cls) -> BlueprintUIModel:
         """
         Return the shared model instance.
         """
@@ -350,7 +352,7 @@ class BlueprintUIModel(QtCore.QObject):
             cls._instance = None
 
     @classmethod
-    def get_default_model(cls) -> "BlueprintUIModel":
+    def get_default_model(cls) -> BlueprintUIModel:
         """
         Deprecated: Use BlueprintUIModel.get() instead.
         """
@@ -362,11 +364,8 @@ class BlueprintUIModel(QtCore.QObject):
         # load actions if they haven't been already
         load_actions()
 
-        # the currently open blueprint file
-        self._blueprint_file: Optional[BlueprintFile] = None
-
-        # a null blueprint used when no blueprint file is opened to allow UI to still behave
-        self._null_blueprint = Blueprint()
+        # the current Blueprint asset
+        self._blueprint: Blueprint | None = None
 
         # the tree item model and selection model for BuildSteps
         self.build_step_tree_model = BuildStepTreeModel(self.blueprint, self, self)
@@ -385,48 +384,44 @@ class BlueprintUIModel(QtCore.QObject):
         self._refresh_rig_exists()
 
         if self.auto_load:
-            self.open_file()
+            self.try_open_file(self.get_blueprint_file_path_for_scene())
 
     def on_delete(self):
         self._remove_scene_callbacks()
 
     @property
-    def blueprint_file(self) -> BlueprintFile:
-        """
-        The Blueprint File being edited.
-        Will be None if no Blueprint is currently being edited.
-        """
-        return self._blueprint_file
+    def blueprint(self):
+        return self._blueprint
 
-    @property
-    def blueprint(self) -> Blueprint:
+    def set_blueprint(self, blueprint: Blueprint | None):
         """
-        The Blueprint of the currently open Blueprint File.
-        Always valid, even when no Blueprint file is open.
+        Set the current Blueprint asset
         """
-        if self._blueprint_file:
-            return self._blueprint_file.blueprint
-        return self._null_blueprint
+        self.build_step_tree_model.beginResetModel()
+        self._blueprint = blueprint
+        self.build_step_tree_model.endResetModel()
+        self.is_file_modified_changed.emit(self.is_file_modified())
+        self.file_changed.emit()
+        self.read_only_changed.emit(self.is_read_only())
 
     def is_file_open(self) -> bool:
         """
         Is a Blueprint File currently available?
         """
-        return self._blueprint_file is not None
+        return self.blueprint is not None
 
     def is_file_modified(self) -> bool:
         """
         Return whether modifications have been made to the open Blueprint File since it was last saved.
         """
-        return self.is_file_open() and self._blueprint_file.is_modified()
+        return self.is_file_open() and self.blueprint.is_modified()
 
     def modify(self):
         """
         Mark the current blueprint file as modified.
         """
         if self.is_file_open() and not self.is_read_only():
-            # TODO: store modified state in blueprint so blueprintFile doesn't have to be updated
-            self._blueprint_file.modify()
+            self.blueprint.modify()
             self.is_file_modified_changed.emit(self.is_file_modified())
 
     def is_read_only(self) -> bool:
@@ -441,34 +436,34 @@ class BlueprintUIModel(QtCore.QObject):
             # no blueprint open to edit
             return True
 
-        return self._blueprint_file.is_read_only
+        return self.blueprint.is_read_only
 
     def get_blueprint_file_path(self) -> Optional[str]:
         """
         Return the full path of the current Blueprint File.
         """
         if self.is_file_open():
-            return self._blueprint_file.file_path
+            return self.blueprint.file_path
 
     def get_blueprint_file_name(self) -> Optional[str]:
         """
         Return the base name of the current Blueprint File.
         """
         if self.is_file_open():
-            return self._blueprint_file.get_file_name()
+            return self.blueprint.get_file_name()
 
     def can_save(self) -> bool:
         """
         Can the blueprint file currently be saved?
         """
         self._refresh_rig_exists()
-        return self.is_file_open() and self._blueprint_file.can_save() and not self.does_rig_exist
+        return self.is_file_open() and self.blueprint.can_save() and not self.is_read_only()
 
     def can_load(self) -> bool:
         """
         Can the blueprint file currently be loaded?
         """
-        return self.is_file_open() and self._blueprint_file.can_load()
+        return self.is_file_open() and self.blueprint.can_load()
 
     def new_file(self, use_default_actions=True):
         """
@@ -483,50 +478,57 @@ class BlueprintUIModel(QtCore.QObject):
             if not self.close_file():
                 return
 
-        self.build_step_tree_model.beginResetModel()
-
-        self._blueprint_file = BlueprintFile()
-        self._blueprint_file.resolve_file_path(allow_existing=False)
-        self._blueprint_file.blueprint.set_setting(BlueprintSettings.RIG_NAME, "untitled")
+        new_blueprint = Blueprint(file_path=self.get_new_blueprint_file_path())
+        new_blueprint.set_setting(BlueprintSettings.RIG_NAME, "untitled")
         if use_default_actions:
-            self._blueprint_file.blueprint.reset_to_default()
+            new_blueprint.reset_to_default()
 
-        self.build_step_tree_model.set_blueprint(self.blueprint)
-        self.build_step_tree_model.endResetModel()
+        self.set_blueprint(new_blueprint)
 
-        self.file_changed.emit()
-        self.read_only_changed.emit(self.is_read_only())
-
-    def open_file(self, file_path: Optional[str] = None):
+    def get_new_blueprint_file_path(self) -> str | None:
         """
-        Open a Blueprint File.
+        Return the path to use for a new Blueprint.
+        """
+        file_path = self.get_blueprint_file_path_for_scene()
+        # don't use an existing file
+        if file_path and not os.path.isfile(file_path):
+            return file_path
+
+    def get_blueprint_file_path_for_scene(self) -> str | None:
+        """
+        Return the Blueprint file path to use for the current scene.
+        """
+        scene_name = pm.sceneName()
+        if scene_name:
+            base_name = os.path.splitext(scene_name)[0]
+            return f"{base_name}.{Blueprint.file_ext}"
+
+    def try_open_file(self, file_path: str | None, read_only=False):
+        """
+        Try to open a Blueprint asset, but only if it exists
+        """
+        if file_path and os.path.isfile(file_path):
+            self.open_file(file_path, read_only)
+
+    def open_file(self, file_path: str, read_only=False):
+        """
+        Open a Blueprint asset.
 
         Args:
             file_path: str
                 The path to a blueprint.
+            read_only: bool
+                Open the asset as read-only.
         """
         # close first, prompting to save
         if self.is_file_open():
             if not self.close_file():
                 return
 
-        new_blueprint_file = BlueprintFile(file_path=file_path)
+        new_blueprint = Blueprint(file_path=file_path, is_read_only=read_only)
+        new_blueprint.load()
 
-        if not new_blueprint_file.file_path:
-            # resolve file path automatically from maya scene
-            new_blueprint_file.resolve_file_path(allow_existing=True)
-
-        # don't open a file unless it exists
-        if not new_blueprint_file.file_path or not os.path.isfile(new_blueprint_file.file_path):
-            return
-
-        self.build_step_tree_model.beginResetModel()
-
-        self._blueprint_file = new_blueprint_file
-        self._blueprint_file.load()
-
-        self.build_step_tree_model.set_blueprint(self.blueprint)
-        self.build_step_tree_model.endResetModel()
+        self.set_blueprint(new_blueprint)
 
         self.file_changed.emit()
         self.read_only_changed.emit(self.is_read_only())
@@ -552,7 +554,7 @@ class BlueprintUIModel(QtCore.QObject):
             True if the file was saved.
         """
         if self.can_save():
-            success = self._blueprint_file.save()
+            success = self.blueprint.save()
             self.is_file_modified_changed.emit(self.is_file_modified())
             return success
         return False
@@ -564,13 +566,13 @@ class BlueprintUIModel(QtCore.QObject):
         Returns:
             True if the file was saved.
         """
-        if self.is_file_open():
-            self._blueprint_file.file_path = file_path
-            self.file_changed.emit()
-            success = self._blueprint_file.save()
-            self.is_file_modified_changed.emit(self.is_file_modified())
-            return success
-        return False
+        if not self.is_file_open():
+            return False
+
+        success = self.blueprint.save_as(file_path)
+        self.file_changed.emit()
+        self.is_file_modified_changed.emit(self.is_file_modified())
+        return success
 
     def _save_file_with_prompt(self, force_prompt=False) -> bool:
         if not self.is_file_open():
@@ -581,12 +583,12 @@ class BlueprintUIModel(QtCore.QObject):
             LOG.error("Cannot save read-only Blueprint")
             return False
 
-        if force_prompt or not self._blueprint_file.has_file_path():
+        if force_prompt or not self.blueprint.has_file_path():
             # prompt for file path
             file_path_results = pm.fileDialog2(cap="Save Blueprint", fileFilter="Pulse Blueprint (*.yml)")
             if not file_path_results:
                 return False
-            self._blueprint_file.file_path = file_path_results[0]
+            self.blueprint.file_path = file_path_results[0]
             self.file_changed.emit()
 
         self.save_file()
@@ -637,25 +639,26 @@ class BlueprintUIModel(QtCore.QObject):
 
     def reload_file(self):
         """
-        Reload the current Blueprint File from disk.
+        Reload the current Blueprint asset from disk.
         """
-        if self.can_load():
-            if self.is_file_modified():
-                # confirm loss of changes
-                file_path = self.get_blueprint_file_path()
-                response = pm.confirmDialog(
-                    title="Reload Blueprint",
-                    message=f"Are you sure you want to reload {file_path}? " "All changes will be lost.",
-                    button=["Reload", "Cancel"],
-                    dismissString="Cancel",
-                )
-                if response != "Reload":
-                    return
+        if not self.can_load():
+            return
 
-            self.build_step_tree_model.beginResetModel()
-            self._blueprint_file.load()
-            self.is_file_modified_changed.emit(self.is_file_modified())
-            self.build_step_tree_model.endResetModel()
+        if self.is_file_modified():
+            # confirm loss of changes
+            file_path = self.get_blueprint_file_path()
+            response = pm.confirmDialog(
+                title="Reload Blueprint",
+                message=f"Are you sure you want to reload {file_path}? " "All changes will be lost.",
+                button=["Reload", "Cancel"],
+                dismissString="Cancel",
+            )
+            if response != "Reload":
+                return
+
+        new_blueprint = Blueprint(file_path=self.blueprint.file_path)
+        new_blueprint.load()
+        self.set_blueprint(new_blueprint)
 
     def close_file(self, prompt_save_changes=True) -> bool:
         """
@@ -666,33 +669,24 @@ class BlueprintUIModel(QtCore.QObject):
             if not self.save_or_discard_changes_with_prompt():
                 return False
 
-        self.build_step_tree_model.beginResetModel()
-
-        self._blueprint_file = None
-
-        self.build_step_tree_model.set_blueprint(self.blueprint)
-        self.build_step_tree_model.endResetModel()
-
-        self.file_changed.emit()
-        self.read_only_changed.emit(self.is_read_only())
+        self.set_blueprint(None)
         return True
-
-    def get_rig_name(self):
-        """
-        Helper to return the BlueprintSettings.RIG_NAME setting.
-        """
-        return self.get_setting(BlueprintSettings.RIG_NAME)
 
     def get_setting(self, key, default=None):
         """
         Helper to return a Blueprint setting.
         """
-        return self.blueprint.get_setting(key, default)
+        if self.is_file_open():
+            return self.blueprint.get_setting(key, default)
+        return default
 
     def set_setting(self, key, value):
         """
         Set a Blueprint setting.
         """
+        if not self.is_file_open():
+            return
+
         if self.is_read_only():
             LOG.error("set_setting: Cannot edit readonly Blueprint")
             return
@@ -733,14 +727,7 @@ class BlueprintUIModel(QtCore.QObject):
     def _on_before_save_scene(self, client_data=None):
         if self._should_auto_save():
             LOG.debug("Auto-saving Blueprint...")
-
-            # automatically resolve file path if not yet set
-            if not self._blueprint_file.has_file_path():
-                # don't automatically save over existing blueprint
-                self._blueprint_file.resolve_file_path(allow_existing=False)
-                self.file_changed.emit()
-
-            self.save_file()
+            self.save_file_with_prompt()
 
     def _on_before_open_scene(self, client_data=None):
         self.is_changing_scenes = True
@@ -750,7 +737,7 @@ class BlueprintUIModel(QtCore.QObject):
         self.is_changing_scenes = False
         self._refresh_rig_exists()
         if self.auto_load:
-            self.open_file()
+            self.try_open_file(self.get_blueprint_file_path_for_scene())
         self.change_scene_finished.emit()
 
     def _on_before_new_scene(self, client_data=None):
@@ -1154,10 +1141,10 @@ class BlueprintUIModel(QtCore.QObject):
         if not self.is_file_open():
             return
 
-        if not BlueprintBuilder.pre_build_validate(self.blueprint_file):
+        if not BlueprintBuilder.pre_build_validate(self.blueprint):
             return
 
-        validator = BlueprintValidator(self.blueprint_file)
+        validator = BlueprintValidator(self.blueprint)
         validator.start()
 
         self.on_validate_event.emit()
@@ -1170,7 +1157,7 @@ class BlueprintUIModel(QtCore.QObject):
         if not self.can_build():
             return False
 
-        if not BlueprintBuilder.pre_build_validate(self.blueprint_file):
+        if not BlueprintBuilder.pre_build_validate(self.blueprint):
             return
 
         # save maya scene
@@ -1179,14 +1166,14 @@ class BlueprintUIModel(QtCore.QObject):
             return
 
         # update scene path, so we can re-open the current maya scene later
-        self.blueprint.update_scene_path()
+        self.blueprint.set_scene_path_to_current()
 
         # save blueprint
         if self.is_file_modified():
             if not self.save_file_with_prompt():
                 return
 
-        builder = BlueprintBuilder(self.blueprint_file)
+        builder = BlueprintBuilder(self.blueprint)
         builder.start()
 
         # TODO: add build events so this can be done by observer pattern
@@ -1204,7 +1191,7 @@ class BlueprintUIModel(QtCore.QObject):
             # already running
             return
 
-        if not BlueprintBuilder.pre_build_validate(self.blueprint_file):
+        if not BlueprintBuilder.pre_build_validate(self.blueprint):
             return
 
         # save maya scene
@@ -1213,14 +1200,14 @@ class BlueprintUIModel(QtCore.QObject):
             return
 
         # update scene path, so we can re-open the current maya scene later
-        self.blueprint.update_scene_path()
+        self.blueprint.set_scene_path_to_current()
 
         # save blueprint
         if self.is_file_modified():
             if not self.save_file_with_prompt():
                 return
 
-        self.interactive_builder = BlueprintBuilder(self.blueprint_file)
+        self.interactive_builder = BlueprintBuilder(self.blueprint)
         self.interactive_builder.cancel_on_interrupt = False
         self.interactive_builder.start(run=False)
 
@@ -1282,8 +1269,6 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
         super(BuildStepTreeModel, self).__init__(parent=parent)
 
         self.blueprint_model = blueprint_model
-        # TODO: why a separate blueprint variable when we have a model?
-        self._blueprint = blueprint
 
         # used to keep track of drag move actions since we don't have enough data
         # within one function to group undo chunks completely
@@ -1295,10 +1280,7 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
 
     @property
     def blueprint(self) -> Blueprint:
-        return self._blueprint
-
-    def set_blueprint(self, blueprint: Blueprint):
-        self._blueprint = blueprint
+        return self.blueprint_model.blueprint
 
     def is_read_only(self) -> bool:
         if self.blueprint_model:
@@ -1323,6 +1305,10 @@ class BuildStepTreeModel(QtCore.QAbstractItemModel):
         """
         Create a QModelIndex for a row, column, and parent index
         """
+        if not self.blueprint:
+            # no data available
+            return QtCore.QModelIndex()
+
         if column != 0:
             return QtCore.QModelIndex()
 
@@ -1689,8 +1675,11 @@ class BuildStepSelectionModel(QtCore.QItemSelectionModel):
         if not self.model() or not hasattr(self.model(), "_blueprint"):
             return
 
-        blueprint = cast(BuildStepTreeModel, self.model()).blueprint
-        steps = [blueprint.get_step_by_path(p) for p in paths]
+        bp_model: BuildStepTreeModel = self.model()
+        if not bp_model.blueprint:
+            return
+
+        steps = [bp_model.blueprint.get_step_by_path(p) for p in paths]
         indexes = [cast(BuildStepTreeModel, self.model()).index_by_step(s) for s in steps if s]
         self.clearSelection()
         for index in indexes:

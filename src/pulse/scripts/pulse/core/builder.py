@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 import os
 import tempfile
@@ -7,12 +9,12 @@ from typing import Optional, Iterable, List, Type, Set, Tuple
 
 # TODO: remove maya dependencies from this core module, add BlueprintBuilder subclass that uses maya progress bars
 import pymel.core as pm
-from ..vendor import pymetanode as meta
 
-from .. import names
-from .blueprint import Blueprint, BlueprintSettings, BlueprintFile
 from .actions import BuildStep, BuildAction
+from .blueprint import Blueprint, BlueprintSettings
 from .rigs import RIG_METACLASS
+from .. import names
+from ..vendor import pymetanode as meta
 
 __all__ = [
     "BlueprintBuilder",
@@ -28,7 +30,7 @@ class BlueprintBuildLogHandler(logging.Handler):
     Handler that sends logs to the blueprint builder so that it can track warnings and errors.
     """
 
-    def __init__(self, builder: "BlueprintBuilder"):
+    def __init__(self, builder: BlueprintBuilder):
         super().__init__()
         self.builder = builder
 
@@ -45,34 +47,37 @@ class BlueprintBuilder(object):
     """
 
     @classmethod
-    def pre_build_validate(cls, blueprint_file: BlueprintFile) -> bool:
+    def pre_build_validate(cls, blueprint: Blueprint) -> bool:
         """
         Perform a quick pre-build validation on a Blueprint
         to ensure that building can at least be started.
         """
-        if not blueprint_file or not blueprint_file.blueprint:
+        if not blueprint:
             LOG.error("No Blueprint was provided")
             return False
 
-        if not blueprint_file.blueprint.get_setting(BlueprintSettings.RIG_NAME):
+        if not blueprint.get_setting(BlueprintSettings.RIG_NAME):
             LOG.error("Rig name is not set")
             return False
 
-        if not blueprint_file.blueprint.root_step.has_any_children():
+        if not blueprint.root_step.has_any_children():
             LOG.error("Blueprint has no actions. Create new actions to begin.")
             return False
 
         return True
 
-    def __init__(self, blueprint_file: BlueprintFile, debug: Optional[bool] = None, log_dir=None):
+    def __init__(self, blueprint: Blueprint, debug: Optional[bool] = None, log_dir=None):
         """
         Initialize a BlueprintBuilder
 
         Args:
-            blueprint_file: The BlueprintFile with the Blueprint to build.
+            blueprint: The Blueprint to build.
             log_dir: The directory where logs should be written.
         """
-        self.blueprint_file = blueprint_file
+        if not blueprint:
+            raise ValueError("blueprint must be valid")
+
+        self.blueprint = blueprint
 
         if debug is None:
             debug = self.blueprint.get_setting(BlueprintSettings.DEBUG_BUILD)
@@ -128,10 +133,6 @@ class BlueprintBuilder(object):
 
         self.file_handler: Optional[logging.FileHandler] = None
         self.setup_file_logger(log_dir)
-
-    @property
-    def blueprint(self) -> Blueprint:
-        return self.blueprint_file.blueprint
 
     @property
     def rig(self) -> pm.PyNode:
@@ -463,7 +464,7 @@ class BlueprintBuilder(object):
             # problematic steps without crashing the whole build
             try:
                 index = 0
-                for action in step.action_iterator(self.blueprint.get_config()):
+                for action in step.action_iterator(self.blueprint.config):
                     yield step, action, index
                     index += 1
             except Exception as exc:
@@ -582,8 +583,8 @@ class BlueprintValidator(BlueprintBuilder):
     Runs `validate` for all BuildActions in a Blueprint.
     """
 
-    def __init__(self, blueprint_file: BlueprintFile, debug: Optional[bool] = None, log_dir=None):
-        super(BlueprintValidator, self).__init__(blueprint_file, debug, log_dir)
+    def __init__(self, blueprint: Blueprint, debug: Optional[bool] = None, log_dir=None):
+        super(BlueprintValidator, self).__init__(blueprint, debug, log_dir)
         self.builder_name = "Validator"
         self.progress_title = "Validating Blueprint"
         self.show_progress_ui = False
