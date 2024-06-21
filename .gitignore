@@ -44,3 +44,4 @@ coverage.xml
 
 # Editor Settings
 .vscode/
+.idea/
