@@ -100,13 +100,13 @@ class DagNodeTag(yaml.YAMLObject):
         if node.value == "null":
             return None
         else:
-            return meta.find_node_by_uuid(node.value)
+            return meta.find_node_by_id(node.value)
 
     @classmethod
     def to_yaml(cls, dumper, data):
         if data:
-            uuid = str(meta.get_uuid(data))
-            return dumper.represent_scalar(cls.yaml_tag, uuid)
+            node_id = str(meta.get_node_id(data))
+            return dumper.represent_scalar(cls.yaml_tag, node_id)
         else:
             return dumper.represent_scalar(cls.yaml_tag, "null")
 
