@@ -602,6 +602,19 @@ class BuildActionNodeAttribute(BuildActionAttribute):
 
         return new_value is None or isinstance(new_value, pm.nt.DependNode)
 
+    def set_value(self, new_value):
+        import pymel.core as pm
+
+        if isinstance(new_value, str):
+            # find nodes by name
+            try:
+                new_value = pm.PyNode(new_value)
+            except pm.general.MayaNodeError as e:
+                LOG.error(e)
+                return
+
+        super().set_value(new_value)
+
     def validate(self):
         # unless explicitly optional, a value must be set
         if not self.is_optional and not self.is_value_set():
@@ -626,6 +639,24 @@ class BuildActionNodeListAttribute(BuildActionAttribute):
         import pymel.core as pm
 
         return isinstance(new_value, list) and all([isinstance(v, pm.nt.DependNode) for v in new_value])
+
+    def set_value(self, new_value):
+        import pymel.core as pm
+
+        def resolve_node(val):
+            if isinstance(val, str):
+                # find nodes by name
+                try:
+                    val = pm.PyNode(val)
+                except pm.general.MayaNodeError as e:
+                    LOG.error(e)
+            return val
+
+        # find nodes by name
+        if isinstance(new_value, list):
+            new_value = [resolve_node(val) for val in new_value]
+
+        super().set_value(new_value)
 
     def validate(self):
         # unless explicitly optional, a value must be set
