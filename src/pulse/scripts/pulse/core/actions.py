@@ -230,6 +230,7 @@ class BuildActionAttributeType(object):
     BOOL = "bool"
     INT = "int"
     FLOAT = "float"
+    FLOAT_LIST = "floatlist"
     VECTOR3 = "vector3"
     STRING = "string"
     STRING_LIST = "stringlist"
@@ -469,6 +470,31 @@ class BuildActionFloatAttribute(BuildActionAttribute):
 
     def is_acceptable_value(self, new_value):
         return isinstance(new_value, (int, float))
+
+
+class BuildActionFloatListAttribute(BuildActionAttribute):
+    """
+    A list of floats attribute.
+    """
+
+    class_attr_type = BuildActionAttributeType.FLOAT_LIST
+
+    def get_type_default_value(self):
+        return []
+
+    def is_acceptable_value(self, new_value):
+        return isinstance(new_value, list) and all([isinstance(val, (int, float)) for val in new_value])
+
+    def validate(self):
+        value = self.get_value()
+        # list defaults to optional
+        is_optional = self.config.get("optional", True)
+        if not is_optional and not value:
+            self._invalid_reason = "required"
+            self._is_valid = False
+        else:
+            self._invalid_reason = None
+            self._is_valid = True
 
 
 class BuildActionVector3Attribute(BuildActionAttribute):
