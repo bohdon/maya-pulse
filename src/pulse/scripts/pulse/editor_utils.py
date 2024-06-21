@@ -729,4 +729,4 @@ def open_blueprint_config_in_source_editor():
     """
     blueprint = get_editor_blueprint()
     if blueprint:
-        source_editor.open_file(blueprint.config_file_path)
+        source_editor.open_file(blueprint.config.file_path)

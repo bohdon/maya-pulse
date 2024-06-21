@@ -67,7 +67,7 @@ class MainSettings(QtWidgets.QWidget):
 
         self.ui.file_path_text_label.setText(self._get_scene_relative_blueprint_file_path())
         self._update_all_setting_values()
-        self.ui.config_file_path_label.setText(self.blueprintModel.blueprint.config_file_path)
+        self.ui.config_file_path_label.setText(self.blueprintModel.blueprint.config.file_path)
 
         self.ui.rig_name_edit.textEdited.connect(self._on_edit_rig_name)
         self.ui.rig_node_fmt_edit.textEdited.connect(self._on_edit_rig_node_name_format)
