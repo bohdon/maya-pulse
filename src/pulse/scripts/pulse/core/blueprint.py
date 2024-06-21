@@ -114,7 +114,7 @@ class Blueprint(BlueprintBase):
 
     def _serialize(self) -> UnsortableOrderedDict:
         data = super()._serialize()
-        data["settings"] = self.settings
+        data["settings"] = dict(self.settings)
         return data
 
     def _deserialize(self, data: dict):
