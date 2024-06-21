@@ -79,14 +79,14 @@ class MainEditor(QtWidgets.QWidget):
 
         file_menu.addSeparator()
 
-        autosave_check = QtWidgets.QAction("Auto Save", parent)
+        autosave_check = QtWidgets.QAction("Auto-save on scene save", parent)
         autosave_check.setCheckable(True)
         autosave_check.setChecked(self.blueprint_model.auto_save)
         autosave_check.toggled.connect(self.blueprint_model.set_auto_save)
         autosave_check.setStatusTip("Automatically save Blueprint files when a scene is saved")
         file_menu.addAction(autosave_check)
 
-        autoload_check = QtWidgets.QAction("Auto Load", parent)
+        autoload_check = QtWidgets.QAction("Auto-load on scene open", parent)
         autoload_check.setCheckable(True)
         autoload_check.setChecked(self.blueprint_model.auto_load)
         autoload_check.toggled.connect(self.blueprint_model.set_auto_load)
@@ -128,6 +128,16 @@ class MainEditor(QtWidgets.QWidget):
     def setup_actions_menu(self, parent, menu_bar):
         self.action_tree_widget.setup_actions_menu(parent, menu_bar)
 
+    def setup_build_menu(self, parent, menu_bar):
+        build_menu = menu_bar.addMenu("Build")
+
+        autosave_check = QtWidgets.QAction("Auto-save scene on build", parent)
+        autosave_check.setCheckable(True)
+        autosave_check.setChecked(self.blueprint_model.auto_save_scene_on_build)
+        autosave_check.toggled.connect(self.blueprint_model.set_auto_save_scene_on_build)
+        autosave_check.setStatusTip("Automatically save the Maya scene before building")
+        build_menu.addAction(autosave_check)
+
     def debug_print_serialized(self):
         print(self.blueprint_model, self.blueprint_model.blueprint)
         print(self.blueprint_model.get_blueprint_file_path())
@@ -160,3 +170,4 @@ class MainEditorWindow(PulseWindow):
         self.main_widget.setup_file_menu(self, self.menu_bar)
         self.main_widget.setup_window_menu(self, self.menu_bar)
         self.main_widget.setup_actions_menu(self, self.menu_bar)
+        self.main_widget.setup_build_menu(self, self.menu_bar)

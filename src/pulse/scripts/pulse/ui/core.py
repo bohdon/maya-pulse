@@ -302,6 +302,9 @@ class BlueprintUIModel(QtCore.QObject):
     # automatically show the action editor when selecting an action in the tree
     auto_show_action_editor = option_var_property("pulse.editor.auto_show_action_editor", True)
 
+    # automatically save the maya scene before building
+    auto_save_scene_on_build = option_var_property("pulse.editor.auto_save_scene_on_build", True)
+
     def set_auto_save(self, value):
         self.auto_save = value
 
@@ -310,6 +313,9 @@ class BlueprintUIModel(QtCore.QObject):
 
     def set_auto_show_action_editor(self, value):
         self.auto_show_action_editor = value
+
+    def set_auto_save_scene_on_build(self, value):
+        self.auto_save_scene_on_build = value
 
     # called after a scene change (new or opened) to allow ui to update
     # if it was previously frozen while is_changing_scenes is true
@@ -1161,9 +1167,9 @@ class BlueprintUIModel(QtCore.QObject):
             return
 
         # save maya scene
-        # TODO: expose prompt to save scene as option
-        if not editor_utils.save_scene_if_dirty(prompt=False):
-            return
+        if self.auto_save_scene_on_build:
+            if not editor_utils.save_scene_if_dirty(prompt=False):
+                return
 
         # update scene path, so we can re-open the current maya scene later
         self.blueprint.set_scene_path_to_current()
