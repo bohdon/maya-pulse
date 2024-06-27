@@ -2,6 +2,7 @@
 The main editor that contains the build toolbar, blueprint settings,
 and the list of pulse actions.
 """
+
 from functools import partial
 
 from .action_editor import ActionEditorWindow
@@ -131,12 +132,19 @@ class MainEditor(QtWidgets.QWidget):
     def setup_build_menu(self, parent, menu_bar):
         build_menu = menu_bar.addMenu("Build")
 
-        autosave_check = QtWidgets.QAction("Auto-save scene on build", parent)
-        autosave_check.setCheckable(True)
-        autosave_check.setChecked(self.blueprint_model.auto_save_scene_on_build)
-        autosave_check.toggled.connect(self.blueprint_model.set_auto_save_scene_on_build)
-        autosave_check.setStatusTip("Automatically save the Maya scene before building")
-        build_menu.addAction(autosave_check)
+        autosave_bp_check = QtWidgets.QAction("Auto-save blueprint on build", parent)
+        autosave_bp_check.setCheckable(True)
+        autosave_bp_check.setChecked(self.blueprint_model.auto_save_blueprint_on_build)
+        autosave_bp_check.toggled.connect(self.blueprint_model.set_auto_save_blueprint_on_build)
+        autosave_bp_check.setStatusTip("Automatically save the Blueprint before building")
+        build_menu.addAction(autosave_bp_check)
+
+        autosave_scene_check = QtWidgets.QAction("Auto-save scene on build", parent)
+        autosave_scene_check.setCheckable(True)
+        autosave_scene_check.setChecked(self.blueprint_model.auto_save_scene_on_build)
+        autosave_scene_check.toggled.connect(self.blueprint_model.set_auto_save_scene_on_build)
+        autosave_scene_check.setStatusTip("Automatically save the Maya scene before building")
+        build_menu.addAction(autosave_scene_check)
 
     def debug_print_serialized(self):
         print(self.blueprint_model, self.blueprint_model.blueprint)

@@ -305,6 +305,9 @@ class BlueprintUIModel(QtCore.QObject):
     # automatically save the maya scene before building
     auto_save_scene_on_build = option_var_property("pulse.editor.auto_save_scene_on_build", True)
 
+    # automatically save the blueprint before building
+    auto_save_blueprint_on_build = option_var_property("pulse.editor.auto_save_blueprint_on_build", True)
+
     def set_auto_save(self, value):
         self.auto_save = value
 
@@ -316,6 +319,9 @@ class BlueprintUIModel(QtCore.QObject):
 
     def set_auto_save_scene_on_build(self, value):
         self.auto_save_scene_on_build = value
+
+    def set_auto_save_blueprint_on_build(self, value):
+        self.auto_save_blueprint_on_build = value
 
     # called after a scene change (new or opened) to allow ui to update
     # if it was previously frozen while is_changing_scenes is true
@@ -1158,26 +1164,36 @@ class BlueprintUIModel(QtCore.QObject):
     def can_build(self) -> bool:
         return self.is_file_open() and not self.does_rig_exist
 
-    def run_build(self):
-        """Build the current blueprint."""
-        if not self.can_build():
-            return False
-
+    def run_pre_build(self) -> bool:
+        """
+        Handle pre-build auto-saves, run build validation, and update the blueprint scene path.
+        """
         if not BlueprintBuilder.pre_build_validate(self.blueprint):
-            return
+            return False
 
         # save maya scene
         if self.auto_save_scene_on_build:
             if not editor_utils.save_scene_if_dirty(prompt=False):
-                return
+                return False
 
         # update scene path, so we can re-open the current maya scene later
         self.blueprint.set_scene_path_to_current()
 
         # save blueprint
-        if self.is_file_modified():
-            if not self.save_file_with_prompt():
-                return
+        if self.auto_save_blueprint_on_build:
+            if self.is_file_modified():
+                if not self.save_file_with_prompt():
+                    return False
+
+        return True
+
+    def run_build(self):
+        """Build the current blueprint."""
+        if not self.can_build() or self.is_interactive_building():
+            return False
+
+        if not self.run_pre_build():
+            return
 
         builder = BlueprintBuilder(self.blueprint)
         builder.start()
@@ -1197,21 +1213,8 @@ class BlueprintUIModel(QtCore.QObject):
             # already running
             return
 
-        if not BlueprintBuilder.pre_build_validate(self.blueprint):
+        if not self.run_pre_build():
             return
-
-        # save maya scene
-        # TODO: expose prompt to save scene as option
-        if not editor_utils.save_scene_if_dirty(prompt=False):
-            return
-
-        # update scene path, so we can re-open the current maya scene later
-        self.blueprint.set_scene_path_to_current()
-
-        # save blueprint
-        if self.is_file_modified():
-            if not self.save_file_with_prompt():
-                return
 
         self.interactive_builder = BlueprintBuilder(self.blueprint)
         self.interactive_builder.cancel_on_interrupt = False
