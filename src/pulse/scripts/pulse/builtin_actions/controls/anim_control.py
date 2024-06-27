@@ -98,7 +98,7 @@ class AnimControlAction(BuildAction):
                 self.logger.error(f"{ctl} is not uniquely named.")
 
         # check for unnamed controls
-        names_config = self.blueprint.get_config().get("names", {})
+        names_config = self.blueprint.config.get("names", {})
         pattern_fmt_str = names_config.get("anim_ctl_pattern")
         if pattern_fmt_str:
             # the pattern format contains {name}, and needs surrounding ^ and $

@@ -5,6 +5,8 @@ Many UI commands are located here, as they can be more specific
 than the core api but still not dependent on a UI.
 """
 
+from __future__ import annotations
+
 import logging
 import os
 from typing import Optional
@@ -17,10 +19,11 @@ from . import links
 from . import nodes
 from . import shapes
 from . import skins
-from . import sym
 from . import source_editor
+from . import sym
 from .cameras import save_cameras, restore_cameras
 from .colors import LinearColor
+from .core import Blueprint
 from .vendor.mayacoretools import preserved_selection
 
 LOG = logging.getLogger(__name__)
@@ -83,7 +86,7 @@ def save_scene_if_dirty(prompt=True):
         return True
 
 
-def get_editor_blueprint():
+def get_editor_blueprint() -> Blueprint:
     """
     Return the shared Blueprint instance from the default UI model
     """
@@ -690,8 +693,7 @@ def get_named_color(name: str) -> Optional[LinearColor]:
     """
     blueprint = get_editor_blueprint()
     if blueprint:
-        config = blueprint.get_config()
-        color_config = config.get("colors", {})
+        color_config = blueprint.config.get("colors", {})
         hex_color = color_config.get(name)
         if hex_color:
             return LinearColor.from_hex(hex_color)
@@ -703,7 +705,7 @@ def get_color_name(color: LinearColor) -> Optional[str]:
     """
     blueprint = get_editor_blueprint()
     if blueprint:
-        color_config = blueprint.get_config().get("colors", {})
+        color_config = blueprint.config.get("colors", {})
         # build a reverse map of names indexed by color
         colors_to_names = {h: n for n, h in color_config.items()}
         hex_color = color.as_hex()

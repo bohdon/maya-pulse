@@ -20,10 +20,11 @@ class QuickColorEditor(QtWidgets.QWidget):
 
         self.blueprintModel = BlueprintUIModel.get_default_model()
 
-        # the blueprint config
-        self.config = self.blueprintModel.blueprint.get_config()
         # the section of the config containing all colors
-        self.colors_config = self.config.get("colors", {})
+        if self.blueprintModel.blueprint:
+            self.colors_config = self.blueprintModel.blueprint.config.get("colors", {})
+        else:
+            self.colors_config = {}
 
         self.ui = Ui_QuickColorEditor()
         self.ui.setupUi(self)

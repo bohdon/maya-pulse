@@ -396,7 +396,7 @@ class BlueprintUIModel(QtCore.QObject):
         self._remove_scene_callbacks()
 
     @property
-    def blueprint(self):
+    def blueprint(self) -> Blueprint | None:
         return self._blueprint
 
     def set_blueprint(self, blueprint: Blueprint | None):

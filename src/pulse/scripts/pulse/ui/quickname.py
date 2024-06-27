@@ -2,6 +2,7 @@
 Widget for quickly naming nodes using preset lists of
 keywords, prefixes, and suffixes
 """
+
 from __future__ import annotations
 
 import logging
@@ -29,10 +30,11 @@ class QuickNameEditor(QtWidgets.QWidget):
 
         self.blueprint_model = BlueprintUIModel.get_default_model()
 
-        # the blueprint config
-        self.config = self.blueprint_model.blueprint.get_config()
         # the section of the config that contains naming keywords
-        self.names_config = self.config.get("names", {})
+        if self.blueprint_model.blueprint:
+            self.names_config = self.blueprint_model.blueprint.config.get("names", {})
+        else:
+            self.names_config = {}
 
         self.active_keyword = None
 

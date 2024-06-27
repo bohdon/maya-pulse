@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 import re
 from abc import ABC
@@ -564,18 +566,15 @@ class BlueprintMirrorOperation(MirrorOperation, ABC):
         super(BlueprintMirrorOperation, self).__init__()
         # the Blueprint owner of the mirror operation
         self.blueprint: Optional[Blueprint] = None
-        # the Blueprint's config data
-        self._config: Optional[dict] = None
 
-    def get_config(self):
+    def get_config(self) -> dict:
         """
         Return the Blueprint's config. Caches the config
         on the first request.
         """
-        if self._config is None:
-            if self.blueprint:
-                self._config = self.blueprint.get_config()
-        return self._config
+        if self.blueprint:
+            return self.blueprint.config
+        return {}
 
 
 def _create_name_replacement(search, replace):
