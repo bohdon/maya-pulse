@@ -491,7 +491,6 @@ class BlueprintUIModel(QtCore.QObject):
                 return
 
         new_blueprint = Blueprint(file_path=self.get_new_blueprint_file_path())
-        new_blueprint.set_setting(BlueprintSettings.RIG_NAME, "untitled")
         if use_default_actions:
             new_blueprint.reset_to_default()
 
@@ -684,13 +683,12 @@ class BlueprintUIModel(QtCore.QObject):
         self.set_blueprint(None)
         return True
 
-    def get_setting(self, key, default=None):
+    def get_setting(self, key):
         """
         Helper to return a Blueprint setting.
         """
         if self.is_file_open():
-            return self.blueprint.get_setting(key, default)
-        return default
+            return self.blueprint.get_setting(key)
 
     def set_setting(self, key, value):
         """

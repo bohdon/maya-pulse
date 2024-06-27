@@ -2,9 +2,9 @@
 
 # Utility for compiling Qt uis and resources to python code.
 
-# Requires pyside6-uic.exe and pyside6-rcc.exe which can be installed via:
+# Requires uic.exe and rcc.exe which can be installed via:
 #   pip install pyside6
-# The exes will be installed to <python>/Scripts.
+# The exes will be installed to <python>/Lib/site-packages/PySide6.
 
 # Qt Designer is included with the pyside6 package:
 #   site-packages/PySide6/designer.exe
@@ -29,12 +29,12 @@ build_qt() {
 
 # compile a .ui to a .py
 build_ui() {
-    build_qt "pyside6-uic -g python --from-imports" "$1.ui" "$1"
+    build_qt "uic -g python --from-imports" "$1.ui" "$1"
 }
 
 # compile a .qrc to a .py
 build_res() {
-    build_qt "pyside6-rcc -g python" $1 $2
+    build_qt "rcc -g python" $1 $2
 }
 
 # build all UIs

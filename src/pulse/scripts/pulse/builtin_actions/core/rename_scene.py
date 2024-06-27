@@ -25,8 +25,8 @@ class RenameSceneAction(BuildAction):
         dict(
             name="filename",
             type=AttributeType.STRING,
-            value="{rigName}_built",
-            description="The new scene name. Can contain the {rigName} format key.",
+            value="{scene_name}_built",
+            description="The new scene name. Will provide the {scene_name} format key with the current scene name.",
         )
     ]
 
@@ -41,10 +41,6 @@ class RenameSceneAction(BuildAction):
         if not scene_name:
             raise BuildActionError("Scene is not saved.")
 
-        rig_name = self.blueprint.get_setting(BlueprintSettings.RIG_NAME)
-        if not rig_name:
-            raise BuildActionError("No rig name was set.")
-
-        file_name = self.filename.format(rigName=rig_name) + ".ma"
+        file_name = self.filename.format(scene_name=scene_name) + ".ma"
         file_path = os.path.join(os.path.dirname(scene_name), file_name)
         pm.renameFile(file_path)

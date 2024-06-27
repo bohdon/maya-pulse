@@ -86,7 +86,7 @@ class MainToolbar(QtWidgets.QWidget):
         self._update_rig_name()
 
     def _on_setting_changed(self, key: str, value: object):
-        if key == BlueprintSettings.RIG_NAME:
+        if key == BlueprintSettings.NAME:
             self._update_rig_name()
 
     def _update_rig_name(self):
@@ -100,7 +100,7 @@ class MainToolbar(QtWidgets.QWidget):
         if self.blueprint_model.is_file_modified():
             file_name += "*"
 
-        self.ui.rig_name_label.setText(self.blueprint_model.get_setting(BlueprintSettings.RIG_NAME))
+        self.ui.rig_name_label.setText(self.blueprint_model.get_setting(BlueprintSettings.NAME))
         self.ui.blueprint_file_name_label.setText(file_name)
         self.ui.blueprint_file_name_label.setToolTip(self.blueprint_model.get_blueprint_file_path())
 

@@ -62,8 +62,9 @@ class BlueprintSettings(dict):
     Constants defining the keys for Blueprint settings.
     """
 
-    RIG_NAME = "rigName"
-    RIG_NODE_NAME_FORMAT = "rigNodeNameFormat"
+    # the display name of the Blueprint
+    NAME = "rigName"
+
     DEBUG_BUILD = "debugBuild"
 
     def __init__(self):
@@ -72,8 +73,7 @@ class BlueprintSettings(dict):
 
     def reset(self):
         self.clear()
-        self[BlueprintSettings.RIG_NAME] = ""
-        self[BlueprintSettings.RIG_NODE_NAME_FORMAT] = "{rigName}_rig"
+        self[BlueprintSettings.NAME] = ""
         self[BlueprintSettings.DEBUG_BUILD] = False
 
 
@@ -92,11 +92,11 @@ class Blueprint(BlueprintBase):
         # the config for this blueprint
         self.config = PulseConfig(get_default_config_file())
 
-    def get_setting(self, key: str, default=None):
+    def get_setting(self, key: str):
         """
         Return a Blueprint setting by key.
         """
-        return self.settings.get(key, default)
+        return self.settings.get(key)
 
     def set_setting(self, key: str, value):
         """

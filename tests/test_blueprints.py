@@ -43,13 +43,17 @@ class TestBlueprints(unittest.TestCase):
         # initialize default actions and set rig name
         blueprint = Blueprint()
         blueprint.reset_to_default()
-        blueprint.set_setting(BlueprintSettings.RIG_NAME, "test")
+        blueprint.set_setting(BlueprintSettings.NAME, "test")
 
         self.assertGreater(blueprint.root_step.num_children(), 0)
 
         # disable 'Rename Scene' step since we will not be saving any scenes
         rename_step = blueprint.root_step.get_child_by_name("Rename Scene")
         rename_step.is_disabled = True
+
+        # set rig node name
+        create_rig_step = blueprint.root_step.get_child_by_name("Create Rig")
+        create_rig_step.action_proxy.get_attr("rigName").set_value("test_rig")
 
         # add anim control build step
         ctl_node = pm.polyCube(name="my_ctl")[0]
@@ -148,7 +152,7 @@ class TestBlueprints(unittest.TestCase):
         bp = Blueprint()
         bp.deserialize_yaml(EXAMPLE_BLUEPRINT_A)
 
-        self.assertEqual(bp.get_setting(BlueprintSettings.RIG_NAME), "TestRig")
+        self.assertEqual(bp.get_setting(BlueprintSettings.NAME), "TestRig")
         self.assertEqual(bp.root_step.num_children(), 4)
 
         step_a = bp.get_step_by_path("/Main/GroupA")

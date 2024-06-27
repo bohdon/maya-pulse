@@ -56,10 +56,6 @@ class BlueprintBuilder(object):
             LOG.error("No Blueprint was provided")
             return False
 
-        if not blueprint.get_setting(BlueprintSettings.RIG_NAME):
-            LOG.error("Rig name is not set")
-            return False
-
         if not blueprint.root_step.has_any_children():
             LOG.error("Blueprint has no actions. Create new actions to begin.")
             return False
@@ -119,7 +115,7 @@ class BlueprintBuilder(object):
         # after the build is finished, but can be accessed via BuildAction methods during build.
         self.rig_metadata = {}
 
-        self._rig_name: str = self.blueprint.get_setting(BlueprintSettings.RIG_NAME)
+        self._rig_name: str = self.blueprint.get_setting(BlueprintSettings.NAME) or "(no name)"
 
         # create a logger for this build and setup handlers
         self.logger = logging.getLogger("pulse.build")
@@ -182,7 +178,7 @@ class BlueprintBuilder(object):
 
         # the output directory for log files
         date_str = datetime.now().strftime("%Y-%m-%d_%H%M%S")
-        rig_name = self.blueprint.get_setting(BlueprintSettings.RIG_NAME, "test")
+        rig_name = self.blueprint.get_setting(BlueprintSettings.NAME) or "untitled"
         log_file_name = f"pulse_build_{rig_name}_{date_str}.log"
         log_file = os.path.join(log_dir, log_file_name)
 

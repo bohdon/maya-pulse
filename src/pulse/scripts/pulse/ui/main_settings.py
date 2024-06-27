@@ -69,8 +69,7 @@ class MainSettings(QtWidgets.QWidget):
         self._update_all_setting_values()
         self.ui.config_file_path_label.setText(self.blueprintModel.blueprint.config.file_path)
 
-        self.ui.rig_name_edit.textEdited.connect(self._on_edit_rig_name)
-        self.ui.rig_node_fmt_edit.textEdited.connect(self._on_edit_rig_node_name_format)
+        self.ui.name_edit.textEdited.connect(self._on_edit_name)
         self.ui.debug_build_check.stateChanged.connect(self._on_edit_debug_build)
 
         self.blueprintModel.setting_changed.connect(self._on_setting_changed)
@@ -80,8 +79,7 @@ class MainSettings(QtWidgets.QWidget):
         self._on_read_only_changed(self.blueprintModel.is_read_only())
 
     def _update_all_setting_values(self):
-        self.ui.rig_name_edit.setText(self.blueprintModel.get_setting(BlueprintSettings.RIG_NAME))
-        self.ui.rig_node_fmt_edit.setText(self.blueprintModel.get_setting(BlueprintSettings.RIG_NODE_NAME_FORMAT))
+        self.ui.name_edit.setText(self.blueprintModel.get_setting(BlueprintSettings.NAME))
 
     def _on_file_changed(self):
         """
@@ -91,20 +89,15 @@ class MainSettings(QtWidgets.QWidget):
         # if blueprint changed then all settings should be refreshed
         self._update_all_setting_values()
 
-    def _on_edit_rig_name(self):
-        self.blueprintModel.set_setting(BlueprintSettings.RIG_NAME, self.ui.rig_name_edit.text())
-
-    def _on_edit_rig_node_name_format(self):
-        self.blueprintModel.set_setting(BlueprintSettings.RIG_NODE_NAME_FORMAT, self.ui.rig_node_fmt_edit.text())
+    def _on_edit_name(self):
+        self.blueprintModel.set_setting(BlueprintSettings.NAME, self.ui.name_edit.text())
 
     def _on_edit_debug_build(self):
         self.blueprintModel.set_setting(BlueprintSettings.DEBUG_BUILD, self.ui.debug_build_check.isChecked())
 
     def _on_setting_changed(self, key: str, value: object):
-        if key == BlueprintSettings.RIG_NAME:
-            self.ui.rig_name_edit.setText(str(value))
-        elif key == BlueprintSettings.RIG_NODE_NAME_FORMAT:
-            self.ui.rig_node_fmt_edit.setText(str(value))
+        if key == BlueprintSettings.NAME:
+            self.ui.name_edit.setText(str(value))
 
     def _on_read_only_changed(self, is_read_only):
         self.ui.blueprint_tab.setEnabled(not is_read_only)
