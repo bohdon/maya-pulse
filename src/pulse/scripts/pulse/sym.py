@@ -1221,7 +1221,15 @@ class MirrorActionUtil(object):
             value:
                 The attribute value to mirror.
         """
-        if not attr.config.get("canMirror", True):
+        default_mirrorable_types = [
+            BuildActionAttributeType.NODE,
+            BuildActionAttributeType.NODE_LIST,
+            BuildActionAttributeType.STRING,
+            BuildActionAttributeType.STRING_LIST,
+        ]
+        default_can_mirror = attr.type in default_mirrorable_types
+
+        if not attr.config.get("canMirror", default_can_mirror):
             # don't mirror the attributes value, just copy it
             return value
 
@@ -1250,5 +1258,14 @@ class MirrorActionUtil(object):
 
         elif attr.type == BuildActionAttributeType.STRING_LIST:
             return [get_mirrored_name(v, self.config) for v in value]
+
+        elif attr.type == BuildActionAttributeType.FLOAT:
+            return -value
+
+        elif attr.type == BuildActionAttributeType.FLOAT_LIST:
+            return [-v for v in value]
+
+        elif attr.type == BuildActionAttributeType.VECTOR3:
+            return [-v for v in value]
 
         return value
