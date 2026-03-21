@@ -1,9 +1,11 @@
 import logging
+import re
 from typing import List
 
 import maya.OpenMaya as api
 import maya.OpenMayaAnim as apianim
 import pymel.core as pm
+from maya import cmds
 
 from .vendor import pymetanode as meta
 
@@ -198,6 +200,85 @@ def normalize_weights_data(weights):
         weights_copy.append((vert, norm_wts))
 
     return weights_copy
+
+
+def move_inf_weights_to_parents(weights, inf_pattern):
+    """
+    Find influences by pattern, and move their weights to the first parent not removed.
+
+    Return:
+        A tuple of (new_weights, changed) where changed is true if any influences were remapped.
+    """
+    pat = re.compile(inf_pattern)
+    inf_parent_map = {}
+
+    def get_new_inf(inf: str) -> str:
+        """
+        Return the influence to use for a given influence, remapping
+        to it's parent if this influence will be removed.
+        """
+        if not pat.match(inf):
+            return inf
+
+        # check cached map
+        if inf in inf_parent_map:
+            return inf_parent_map[inf]
+
+        parent = inf
+        while True:
+            parent = cmds.listRelatives(parent, parent=True)
+            if not parent:
+                break
+            parent = parent[0]
+
+            # use the parent (if it won't also be removed)
+            if not pat.match(parent):
+                return parent
+
+        # no valid parent, skip removal
+        return inf
+
+    def combine_vert_weights(_vert_weights: list[tuple[str, float]]):
+        new_wts_map = {}
+        changed = False
+        for inf, weight in _vert_weights:
+            new_inf = get_new_inf(inf)
+
+            if inf != new_inf:
+                changed = True
+                # log the first remap
+                if inf not in inf_parent_map:
+                    LOG.info(f"Replacing {inf} with {new_inf}")
+                    inf_parent_map[inf] = new_inf
+
+            if new_inf in new_wts_map:
+                # combine with existing influence
+                new_wts_map[new_inf] += weight
+            else:
+                # add new influence
+                new_wts_map[new_inf] = weight
+
+        # clamp or round weights that are nearly 1
+        _result = []
+        for inf, new_weight in new_wts_map.items():
+            if abs(new_weight) < 0.0001:
+                # prune
+                continue
+            elif abs(1.0 - new_weight) < 0.0001:
+                new_weight = 1.0
+            _result.append((inf, new_weight))
+
+        return _result, changed
+
+    result = []
+    did_any_change = False
+    for vert_idx, vert_weights in weights:
+        new_vert_weights, did_change = combine_vert_weights(vert_weights)
+        did_any_change |= did_change
+
+        result.append((vert_idx, new_vert_weights))
+
+    return result, did_any_change
 
 
 def normalize_skin_weights(skin):
