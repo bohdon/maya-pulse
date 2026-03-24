@@ -8,6 +8,7 @@ import pymel.core as pm
 from maya import cmds
 
 from .vendor import pymetanode as meta
+from .vendor.mayacoretools import preserved_selection
 
 LOG = logging.getLogger(__name__)
 
@@ -363,3 +364,47 @@ def apply_skin_weights_from_file(file_path, *skins: List[pm.nt.SkinCluster]):
 
     skin_weights = meta.decode_metadata(content)
     apply_skin_weights_map(skin_weights, *skins)
+
+
+def smooth_mesh_border_normals(meshes, merge_threshold=0.001):
+    """
+    Fix seams along the borders of adjacent meshes by combining, smoothing, and transferring
+    normals back to the original meshes. Affects all normals touching the border faces, but
+    makes sure only the border vertex normals remain locked.
+    """
+    with preserved_selection():
+        dupes = pm.duplicate(meshes)
+        combined = pm.polyUnite(dupes, constructionHistory=False)
+        pm.polyMergeVertex(distance=merge_threshold, constructionHistory=False)
+        pm.polySoftEdge(angle=360, constructionHistory=False)
+
+        for mesh in meshes:
+            pm.select(mesh.faces)
+            pm.polySelectConstraint(border=True, mode=2)
+            pm.polySelectConstraint(border=False, mode=0)
+
+            # copy normals on border faces (affects two rows of vertices)
+            pm.transferAttributes(
+                combined,
+                pm.selected(),
+                transferPositions=False,
+                transferNormals=True,
+                transferUVs=False,
+                transferColors=False,
+                sampleSpace=3,
+                searchMethod=3,
+            )
+            pm.delete(mesh, constructionHistory=True)
+
+            # unfreeze non-border vertex normals (unlock the non-border row)
+            pm.mel.ConvertSelectionToVertices()
+            border_vts = pm.polySelectConstraint(border=True, mode=2, returnSelection=True)
+            pm.polySelectConstraint(border=False, mode=0)
+            pm.select(border_vts, deselect=True)
+            pm.polyNormalPerVertex(pm.selected(), unFreezeNormal=True)
+
+            # and smooth the non-border edges as well
+            pm.mel.ConvertSelectionToContainedEdges()
+            pm.polySoftEdge(angle=360, constructionHistory=False)
+
+        pm.delete(combined)
