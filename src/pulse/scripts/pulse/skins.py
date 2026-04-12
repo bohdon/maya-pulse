@@ -282,6 +282,20 @@ def move_inf_weights_to_parents(weights, inf_pattern):
     return result, did_any_change
 
 
+def remove_inf_namespaces(weights):
+    """
+    Remove influence namespaces from weights data
+    """
+    result = []
+    for vert_idx, vert_weights in weights:
+        new_vert_weights = []
+        for inf, weight in vert_weights:
+            new_inf = inf.split(":")[-1]
+            new_vert_weights.append((new_inf, weight))
+        result.append((vert_idx, new_vert_weights))
+    return result
+
+
 def normalize_skin_weights(skin):
     """
     Normalize the weights of a skin manually be retrieving the weights,
