@@ -50,7 +50,7 @@ def get_meshes_from_skin(skin):
 
 def get_skin_influences(skin):
     """
-    Return all influences affecting a sking.
+    Return all influences affecting a skin.
 
     Args:
         skin (PyNode): A skin cluster node
@@ -366,7 +366,7 @@ def apply_skin_weights_from_file(file_path, *skins: List[pm.nt.SkinCluster]):
     apply_skin_weights_map(skin_weights, *skins)
 
 
-def smooth_mesh_border_normals(meshes, merge_threshold=0.001):
+def smooth_mesh_border_normals(meshes, merge_threshold=0.005):
     """
     Fix seams along the borders of adjacent meshes by combining, smoothing, and transferring
     normals back to the original meshes. Affects all normals touching the border faces, but
@@ -408,3 +408,54 @@ def smooth_mesh_border_normals(meshes, merge_threshold=0.001):
             pm.polySoftEdge(angle=360, constructionHistory=False)
 
         pm.delete(combined)
+
+
+def combine_and_merge_skinned(meshes, merge_threshold=0.005):
+    orig_parent = meshes[0].getParent()
+
+    # combine the meshes with skinning first for weights
+    unite_results = pm.polyUniteSkinned(meshes, constructionHistory=False)
+    combined_mesh, combined_skcl = [pm.PyNode(n) for n in unite_results]
+    combined_skcl.rename(f"{combined_mesh}_skcl")
+    merged_mesh = pm.duplicate(combined_mesh)[0]
+    merged_mesh.rename(f"{meshes[0]}_merged")
+    pm.delete(merged_mesh, constructionHistory=True)
+
+    # merge the duplicate and smooth
+    pm.polyMergeVertex(merged_mesh, distance=merge_threshold, constructionHistory=False)
+    pm.polySoftEdge(merged_mesh, angle=360, constructionHistory=False)
+
+    # rebind merged to the same influences
+    bind_jnts = list(get_skin_influences(combined_skcl).values())
+    bind_kwargs = dict(
+        removeUnusedInfluence=False,
+        skinMethod=0,
+        toSelectedBones=True,
+        toSkeletonAndTransforms=False,
+        bindMethod=0,
+    )
+
+    pm.select(bind_jnts + [merged_mesh])
+    results = cmds.skinCluster(name=f"{merged_mesh}_skcl", **bind_kwargs)
+    merged_skcl = pm.PyNode(results[0])
+
+    # copy weights to merged mesh
+    pm.copySkinWeights(
+        sourceSkin=combined_skcl,
+        destinationSkin=merged_skcl,
+        noMirror=True,
+        surfaceAssociation="closestComponent",
+        influenceAssociation="closestJoint",
+    )
+
+    # delete unmerged combined mesh
+    pm.delete(combined_mesh)
+    # delete leftover original mesh transforms
+    pm.delete(meshes)
+
+    # ensure same parent as before, and select new mesh
+    if orig_parent:
+        merged_mesh.setParent(orig_parent)
+    pm.select(merged_mesh)
+
+    return merged_mesh, merged_skcl
